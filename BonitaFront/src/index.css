@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animaciones ya existentes */
+@keyframes marquee-left {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes marquee-right {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  /* Aplicar las animaciones */
+.animate-marquee-left{
+  animation: marquee-left 20s linear infinite;
+}
+.animate-marquee-right {
+  animation: marquee-right 10s linear infinite;
+  
+}
+  /* Flayer más llamativo */
+  .flayer-text {
+    font-family: 'Nunuto', sans-serif; /* Cambia a una fuente más llamativa */
+    text-shadow: 2px 2px 4px rgba(115, 109, 109, 0.7); /* Añadir sombra al texto */
+    color: #141413; /* Un color amarillo brillante para el texto */
+    background: linear-gradient(90deg, rgb(120, 120, 116) 0%, rgb(255, 255, 255) 100%); /* Efecto de gradiente */
+    -webkit-background-clip: text; /* Truco para el gradiente en el texto */
+    -webkit-text-fill-color: transparent; /* Hace que solo se vea el gradiente */
+    font-weight: 900; /* Aumentar el grosor */
+    letter-spacing: 2px; /* Añadir espacio entre letras */
+  }
+  .carousel-container {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .carousel-content {
+    display: flex;
+    animation: slide 10s infinite;
+  }
+  
+  .carousel-image {
+    min-width: 100%;
+    transition: transform 1s ease;
+  }
+  
+  @keyframes slide {
+    0% {
+      transform: translateX(0%);
+    }
+    33% {
+      transform: translateX(-100%);
+    }
+    66% {
+      transform: translateX(-200%);
+    }
+    100% {
+      transform: translateX(0%);
+    }
+  }
+  .payment-logo {
+    width: 100px; /* Ajusta el tamaño del logo a lo que necesites */
+    height: auto; /* Mantener proporción */
+    object-fit: contain; /* Asegura que la imagen se ajuste correctamente dentro de su contenedor */
+   
+  }
+  .payment-logos {
+    display: flex;
+    align-items: center; /* Alinea los logos verticalmente */
+    justify-content: center; /* Centra los logos horizontalmente */
+    overflow: hidden;
+    background-color: black;
+    padding: 1rem 0; /* Ajusta el padding según sea necesario */
+    width: 80px; /* Ajusta el tamaño del logo a lo que necesites */
+    height: auto; /* Mantener proporción */
+    object-fit: contain;
+  }

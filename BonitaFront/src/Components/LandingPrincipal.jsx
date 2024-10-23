@@ -1,15 +1,13 @@
-import React from 'react';
+
 import banner from './../assets/img/banner.png';
-import banner1 from './../assets/img/BannerPrincipal/bannerA.jpeg';
-import banner2 from './../assets/img/BannerPrincipal/bannerB.jpeg';
-import banner3 from './../assets/img/BannerPrincipal/bannerC.jpeg';
+import banner1 from './../assets/img/BannerPrincipal/bannerA.jpg';
+import banner2 from './../assets/img/BannerPrincipal/bannerB.jpg';
+import banner3 from './../assets/img/BannerPrincipal/bannerA.jpg';
 import efecti from '../assets/img/pagos/efecty.png';
 import logoAmeric from '../assets/img/pagos/logoAmeric.png';
 import logoVisa from '../assets/img/pagos/logoVisa.png';
 import master from '../assets/img/pagos/master.png';
 import pse from '../assets/img/PSE.png';
-import envios from '../assets/img/pagos/envios.png';
-import pagos from '../assets/img/pagos/pagoConEntrega.png'
 import logoAz from '../assets/img/logoSolo.png'
 
 const LandingPrincipal = () => {
@@ -26,26 +24,26 @@ const LandingPrincipal = () => {
         </div>
       </div>
      {/* Flayer - Propaganda que se mueve hacia la izquierda */}
-<div className="text-center font-nunito font-semibold overflow-hidden bg-black">
+<div className="text-center font-nunito font-semibold overflow-hidden bg-gray-600">
   <div className="flex justify-center items-center space-x-40 animate-marquee-right">
     {/* Primer Texto en Movimiento */}
-    <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl mr-10 text-yellow-500">
+    {/* <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl mr-10 text-yellow-500">
       <img src={pagos} alt="Payment Logo 1" className="w-20 h-auto mr-3" />
       PAGO CONTRAENTREGA
-    </div>
+    </div> */}
 
     {/* Segundo Texto en Movimiento */}
-    <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl text-yellow-500">
+    {/* <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl text-yellow-500">
       <img src={envios} alt="Payment Logo 1" className="w-20 h-auto mr-3" />
       ENVIO GRATIS A PARTIR DE $160.000
       <img src={envios} alt="Payment Logo 1" className="w-20 h-auto ml-3" />
-    </div>
+    </div> */}
   </div>
 </div>
 
 
       {/* Secciones divididas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+      <div className="grid grid-cols-1  gap-4 mt-2">
         {/* Sección Caballeros */}
         <div className="relative group">
           <a href="/caballeros">
@@ -62,21 +60,7 @@ const LandingPrincipal = () => {
           </a>
         </div>
 
-        {/* Sección Damas */}
-        <div className="relative group">
-          <a href="/damas">
-            <img
-              src={banner}
-              alt="Damas"
-              className="w-full h-auto object-cover"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <h2 className="text-white text-3xl md:text-4xl font-bold group-hover:underline font-nunito">
-                 Damas
-              </h2>
-            </div>
-          </a>
-        </div>
+       
       </div>
  {/* Flayer - Propaganda que se mueve hacia la izquierda */}
  <div className="text-center overflow-hidden bg-black py-4">

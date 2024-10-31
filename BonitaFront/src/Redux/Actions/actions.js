@@ -59,6 +59,9 @@ import {
   FETCH_SB_REQUEST,
   FETCH_SB_SUCCESS,
   FETCH_SB_FAILURE,
+  FETCH_USER_REQUEST,
+  FETCH_USER_SUCCESS,
+  FETCH_USER_FAILURE
 
 } from './actions-type';
 
@@ -309,7 +312,7 @@ export const fetchFilteredProducts = (searchTerm, priceFilter, categoryName, isO
   dispatch({ type: FETCH_PRODUCTS_REQUEST });
 
   try {
-    let url = `${BASE_URL}/product?search=${searchTerm}`;
+    let url = `${BASE_URL}/product/search?search=${searchTerm}`;
     
     if (priceFilter && priceFilter.min !== null && priceFilter.max !== null) {
       url += `&minPrice=${priceFilter.min}&maxPrice=${priceFilter.max}`;
@@ -325,8 +328,8 @@ export const fetchFilteredProducts = (searchTerm, priceFilter, categoryName, isO
     const response = await fetch(url);
     const data = await response.json();
 
-    if (!data.error && data.data && data.data.products) {
-      dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: data.data.products });
+    if (!data.error && data.products) {
+      dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: data.products });
     } else {
       dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: data.message });
     }
@@ -334,6 +337,7 @@ export const fetchFilteredProducts = (searchTerm, priceFilter, categoryName, isO
     dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
   }
 };
+
 
 
 
@@ -486,5 +490,22 @@ export const fetchSB = () => async (dispatch) => {
     dispatch({ type: FETCH_SB_SUCCESS, payload: response.data.data.subCategories });
   } catch (error) {
     dispatch({ type: FETCH_SB_FAILURE, payload: error.message });
+  }
+};
+
+export const fetchUserByDocument = (n_document) => async (dispatch) => {
+  dispatch({ type: FETCH_USER_REQUEST });
+
+  try {
+    const response = await fetch(`http://localhost:3001/user/${n_document}`);
+    const data = await response.json();
+console.log(data)
+    if (data) {
+      dispatch({ type: FETCH_USER_SUCCESS, payload: data });
+    } else {
+      dispatch({ type: FETCH_USER_FAILURE, payload: "Usuario no encontrado" });
+    }
+  } catch (error) {
+    dispatch({ type: FETCH_USER_FAILURE, payload: error.message });
   }
 };

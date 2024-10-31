@@ -22,6 +22,8 @@ import FilteredProducts from "./Components/Product/FilteredProducts";
 import PrivateRoute from './Components/PrivateRoute';
 import LandingPrincipal from "./Components/LandingPrincipal";
 import WhatsappButton from "./Components/WhatsappButton";
+import Facturacion from "./Components/Taxxa/Facturacion";
+import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
 
   function App() {
     return (
@@ -53,6 +55,12 @@ import WhatsappButton from "./Components/WhatsappButton";
             <Route exact path="/gracias" element={<ThankYouPage />} /> 
             <Route path="/updateProduct/:id" element={<PrivateRoute>
               <UpdateProduct />
+            </PrivateRoute>} /> 
+            <Route path="/panel/facturacion" element={<PrivateRoute>
+              <Facturacion />
+            </PrivateRoute>} /> 
+            <Route path="/loginTaxxa" element={<PrivateRoute>
+              <LoginTaxxa />
             </PrivateRoute>} /> 
             <Route path="/category" element={<CreateCategory/>}/>  
             <Route path="/sb" element={<CreateSB/>}/>  

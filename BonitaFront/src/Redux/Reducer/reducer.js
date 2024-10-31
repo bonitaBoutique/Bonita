@@ -57,6 +57,9 @@ import {
   FETCH_SB_REQUEST,
   FETCH_SB_SUCCESS,
   FETCH_SB_FAILURE,
+  FETCH_USER_REQUEST,
+  FETCH_USER_SUCCESS,
+  FETCH_USER_FAILURE
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -68,6 +71,7 @@ const initialState = {
   product: null,
   similarProducts: [],
   products: [],
+  data:null,
   error: null,
 
   userRegister: {
@@ -138,7 +142,14 @@ const initialState = {
     error: null,
     data: {},
   },
+
+  
+
 };
+
+
+
+
 
 const rootReducer = (state = initialState, action) => {
   switch (action.type) {
@@ -665,6 +676,29 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
+      case FETCH_USER_REQUEST:
+  return {
+    ...state,
+    loading: true,
+    error: null, // Resetea el error al hacer la solicitud
+  };
+
+case FETCH_USER_SUCCESS:
+  return {
+    ...state,
+    loading: false,
+    error: null,
+    data: action.payload.data || null, // Ajusta para acceder a los datos del usuario
+  };
+
+case FETCH_USER_FAILURE:
+  return {
+    ...state,
+    loading: false,
+    error: action.payload,
+    data: null, // Opcional, pero puede ayudar a mantener el estado limpio
+  };
+  
     default:
       return state;
   }

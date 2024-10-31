@@ -64,6 +64,10 @@ module.exports = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    isDian: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
       stock_control: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

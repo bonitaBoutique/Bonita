@@ -3,6 +3,8 @@ const controller = require('../controller');
 
 const router = Router();
 
+router.get('/search', controller.getAllProduct);
+
 router.get('/', controller.getAllProduct);
  
 router.get('/:id', controller.getProductId);

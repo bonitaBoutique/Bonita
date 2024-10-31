@@ -22,7 +22,7 @@ router.delete("/:n_document", authenticate, authorize(['Admin']), deleteUser);
 router.get("/", authenticate, authorize(['Admin']), getAllUsers);
 
 // Ruta para obtener un usuario por documento
-router.get("/:n_document", authenticate, authorize(['Admin', 'User']), getUserByDocument);
+router.get("/:n_document", getUserByDocument);
 
 module.exports = router;
 

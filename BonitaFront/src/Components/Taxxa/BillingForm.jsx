@@ -39,7 +39,7 @@ const BillingForm = () => {
     if (userTaxxa.userInfo.error) {
       setShowRegistrationPopup(true);
     } else if (userTaxxa.userInfo.data) {
-      const { first_name, last_name, email, phone, city, n_document } = userTaxxa.userInfo.data;
+      const { first_name, last_name, email, phone, n_document } = userTaxxa.userInfo.data;
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
         scostumername: `${first_name} ${last_name}`.trim(),

@@ -1,5 +1,4 @@
 // BillingForm.js
-
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserByDocument } from '../../Redux/Actions/actions';
@@ -11,23 +10,21 @@ const BillingForm = () => {
   const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
   const [jbuyer, setBuyer] = useState({
     wlegalorganizationtype: '',
-    scostumername: '',
-    sfiscalresponsibilities: '',
-    stributaryidentificationkey: '',
-    stributaryidentificationname: '',
-    sfiscalregime: '',
-    wdoctype: '',
-    sdocno: '', // Este campo se llenará con n_document
-    scorporateregistrationschemename: '',
-    scontactperson: '',
-    selectronicmail: '',
-    stelephone: '',
-    saddressline1: '',
-    wdepartmentcode: '',
-    sdepartmentname: '',
-    wprovincecode: '',
-    scityname: '',
-    szip: '',
+    scostumername: 'CONSUMIDOR FINAL',
+    stributaryidentificationkey: 'ZZ',
+    stributaryidentificationname: 'No aplica',
+    sfiscalresponsibilities: 'R-99-PN',
+    sfiscalregime: '48',
+    jpartylegalentity: {
+      wdoctype: '',
+      sdocno: '',
+      scorporateregistrationschemename: 'CONSUMIDOR FINAL',
+    },
+    jcontact: {
+      scontactperson: 'CONSUMIDOR FINAL',
+      selectronicmail: '',
+      stelephone: '0000000',
+    },
   });
 
   const dispatch = useDispatch();
@@ -46,19 +43,23 @@ const BillingForm = () => {
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
         scostumername: `${first_name} ${last_name}`.trim(),
-        scorporateregistrationschemename: `${first_name} ${last_name}`.trim(),
-        selectronicmail: email || '',
-        stelephone: phone || '',
-        scityname: city || '',
-        sdocno: n_document || '', // Asigna n_document a sdocno
-        
+        jpartylegalentity: {
+          ...prevBuyer.jpartylegalentity,
+          sdocno: n_document || '',
+          scorporateregistrationschemename: `${first_name} ${last_name}`.trim(),
+        },
+        jcontact: {
+          scontactperson: `${first_name} ${last_name}`.trim(),
+          selectronicmail: email || '',
+          stelephone: phone || '',
+        },
       }));
     }
   }, [userTaxxa]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(jbuyer); // Aquí enviarías `jbuyer` al backend
+    console.log(jbuyer); // Aquí enviarías `jbuyer` al backend con la estructura solicitada
   };
 
   const closePopup = () => setShowRegistrationPopup(false);
@@ -94,6 +95,7 @@ const BillingForm = () => {
 };
 
 export default BillingForm;
+
 
 
 

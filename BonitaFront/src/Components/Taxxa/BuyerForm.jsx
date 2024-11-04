@@ -1,60 +1,57 @@
+/* eslint-disable react/prop-types */
 // BuyerForm.js
 
 const BuyerForm = ({ jbuyer, setBuyer }) => {
     const handleChange = (e) => {
       const { name, value } = e.target;
-
-      setBuyer((prevBuyer) => ({
-        ...prevBuyer,
-        [name]: value,
-        sfiscalregime: name === 'wlegalorganizationtype' 
-          ? value === 'company' 
-            ? '48' // Persona jurídica
-            : '49' // Persona natural
-          : prevBuyer.sfiscalregime,
-      }));
-
-      if (name === 'sfiscalresponsibilitiesType') {
-        switch (value) {
-          case 'O1':
-            setBuyer((prevBuyer) => ({
-              ...prevBuyer,
-              stributaryidentificationkey: '01',
-              stributaryidentificationname: 'IVA',
-            }));
-            break;
-          case 'O4':
-            setBuyer((prevBuyer) => ({
-              ...prevBuyer,
-              stributaryidentificationkey: '04',
-              stributaryidentificationname: 'INC',
-            }));
-            break;
-          case 'ZA':
-            setBuyer((prevBuyer) => ({
-              ...prevBuyer,
-              stributaryidentificationkey: 'ZA',
-              stributaryidentificationname: 'IVA e INC',
-            }));
-            break;
-          case 'R-99-PN':
-            setBuyer((prevBuyer) => ({
-              ...prevBuyer,
-              stributaryidentificationkey: 'ZZ',
-              stributaryidentificationname: 'No aplica',
-            }));
-            break;
-          default:
-            setBuyer((prevBuyer) => ({
-              ...prevBuyer,
-              stributaryidentificationkey: '',
-              stributaryidentificationname: '',
-            }));
-            break;
+  
+      setBuyer((prevBuyer) => {
+        let updatedBuyer = { ...prevBuyer };
+  
+        // Condicionales para actualizar campos específicos en la estructura
+        if (name in updatedBuyer) {
+          updatedBuyer[name] = value;
+        } else if (name in updatedBuyer.jpartylegalentity) {
+          updatedBuyer.jpartylegalentity[name] = value;
+        } else if (name in updatedBuyer.jcontact) {
+          updatedBuyer.jcontact[name] = value;
         }
-      }
+  
+        // Actualiza `sfiscalregime` basado en `wlegalorganizationtype`
+        if (name === 'wlegalorganizationtype') {
+          updatedBuyer.sfiscalregime = value === 'company' ? '48' : '49';
+        }
+  
+        // Condicional para `sfiscalresponsibilities`
+        if (name === 'sfiscalresponsibilities') {
+          switch (value) {
+            case 'O1':
+              updatedBuyer.stributaryidentificationkey = '01';
+              updatedBuyer.stributaryidentificationname = 'IVA';
+              break;
+            case 'O4':
+              updatedBuyer.stributaryidentificationkey = '04';
+              updatedBuyer.stributaryidentificationname = 'INC';
+              break;
+            case 'ZA':
+              updatedBuyer.stributaryidentificationkey = 'ZA';
+              updatedBuyer.stributaryidentificationname = 'IVA e INC';
+              break;
+            case 'R-99-PN':
+              updatedBuyer.stributaryidentificationkey = 'ZZ';
+              updatedBuyer.stributaryidentificationname = 'No aplica';
+              break;
+            default:
+              updatedBuyer.stributaryidentificationkey = '';
+              updatedBuyer.stributaryidentificationname = '';
+              break;
+          }
+        }
+  
+        return updatedBuyer;
+      });
     };
-
+  
     return (
       <>
         <label>
@@ -71,26 +68,17 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
         <label>
           Responsabilidad Fiscal:
           <select name="sfiscalresponsibilities" value={jbuyer.sfiscalresponsibilities} onChange={handleChange}>
-            <option value="O-13">Gran contribuyente</option>
-            <option value="O-15">Autorretenedor</option>
-            <option value="O-23">Agente de retención IVA</option>
-            <option value="O-47">Régimen simple de tributación</option>
             <option value="R-99-PN">No aplica – Otros *</option>
-          </select>
-        </label>
-        <label>
-          Identificación Tributaria:
-          <select name="sfiscalresponsibilitiesType" value={jbuyer.sfiscalresponsibilitiesType} onChange={handleChange}>
             <option value="O1">IVA</option>
             <option value="O4">INC</option>
             <option value="ZA">IVA e INC</option>
-            <option value="R-99-PN">No aplica</option>
+            
           </select>
         </label>
         <label>
           Tipo de Documento:
-          <select name="wdoctype" value={jbuyer.wdoctype} onChange={handleChange}>
-            <option value="">Selecciona un tipo de documento</option>
+          <select name="wdoctype" value={jbuyer.jpartylegalentity.wdoctype} onChange={handleChange}>
+          <option value="">Selecciona un tipo de documento</option>
             <option value="RC">Registro civil</option>
             <option value="TI">Tarjeta de identidad</option>
             <option value="CC">Cédula de ciudadanía</option>
@@ -103,12 +91,30 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
             <option value="PPT">PPT (Permiso Protección Temporal)</option>
             <option value="FI">NIT de otro país</option>
             <option value="NUIP">NUIP</option>
+           
           </select>
+        </label>
+        <label>
+          Número de Documento:
+          <input type="text" name="sdocno" value={jbuyer.jpartylegalentity.sdocno} onChange={handleChange} />
+        </label>
+        <label>
+          Persona de Contacto:
+          <input type="text" name="scontactperson" value={jbuyer.jcontact.scontactperson} onChange={handleChange} />
+        </label>
+        <label>
+          Correo Electrónico:
+          <input type="email" name="selectronicmail" value={jbuyer.jcontact.selectronicmail} onChange={handleChange} />
+        </label>
+        <label>
+          Teléfono:
+          <input type="text" name="stelephone" value={jbuyer.jcontact.stelephone} onChange={handleChange} />
         </label>
       </>
     );
-};
-
-export default BuyerForm;
+  };
+  
+  export default BuyerForm;
+  
 
   

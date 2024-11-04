@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import CreateProduct from "./Components/Product/CreateProduct"
 import ProductsList from "./Components/Product/ProducstList";
 import ProductDetails from "./Components/Product/ProductDetails";
@@ -22,7 +22,7 @@ import FilteredProducts from "./Components/Product/FilteredProducts";
 import PrivateRoute from './Components/PrivateRoute';
 import LandingPrincipal from "./Components/LandingPrincipal";
 import WhatsappButton from "./Components/WhatsappButton";
-import Facturacion from "./Components/Taxxa/Facturacion";
+import BillingForm from "./Components/Taxxa/BillingForm";
 import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
 
   function App() {
@@ -57,7 +57,7 @@ import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
               <UpdateProduct />
             </PrivateRoute>} /> 
             <Route path="/panel/facturacion" element={<PrivateRoute>
-              <Facturacion />
+              <BillingForm />
             </PrivateRoute>} /> 
             <Route path="/loginTaxxa" element={<PrivateRoute>
               <LoginTaxxa />

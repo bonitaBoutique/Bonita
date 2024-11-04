@@ -497,7 +497,7 @@ export const fetchUserByDocument = (n_document) => async (dispatch) => {
   dispatch({ type: FETCH_USER_REQUEST });
 
   try {
-    const response = await fetch(`http://localhost:3001/user/${n_document}`);
+    const response = await fetch(`${BASE_URL}/user/${n_document}`);
     const data = await response.json();
 console.log(data)
     if (data) {

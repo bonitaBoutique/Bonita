@@ -74,6 +74,12 @@ const initialState = {
   data:null,
   error: null,
 
+  userTaxxa: {
+    userInfo: null,
+    loading: false,
+    error: null,
+  },
+
   userRegister: {
     userInfo: localStorage.getItem("userInfo")
       ? JSON.parse(localStorage.getItem("userInfo"))
@@ -350,23 +356,6 @@ const rootReducer = (state = initialState, action) => {
         },
       };
 
-    case USER_REGISTER_REQUEST:
-      return {
-        ...state,
-        loading: true,
-      };
-    case USER_REGISTER_SUCCESS:
-      return {
-        ...state,
-        loading: false,
-        userInfo: action.payload,
-      };
-    case USER_REGISTER_FAIL:
-      return {
-        ...state,
-        loading: false,
-        error: action.payload,
-      };
     case USER_LOGIN_REQUEST:
       return {
         ...state,
@@ -677,27 +666,63 @@ const rootReducer = (state = initialState, action) => {
         },
       };
       case FETCH_USER_REQUEST:
-  return {
-    ...state,
-    loading: true,
-    error: null, // Resetea el error al hacer la solicitud
-  };
-
-case FETCH_USER_SUCCESS:
-  return {
-    ...state,
-    loading: false,
-    error: null,
-    data: action.payload.data || null, // Ajusta para acceder a los datos del usuario
-  };
-
-case FETCH_USER_FAILURE:
-  return {
-    ...state,
-    loading: false,
-    error: action.payload,
-    data: null, // Opcional, pero puede ayudar a mantener el estado limpio
-  };
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: true,
+            error: null,
+          },
+        };
+      case FETCH_USER_SUCCESS:
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: false,
+            userInfo: action.payload,
+            error: null,
+          },
+        };
+      case FETCH_USER_FAILURE:
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: false,
+            userInfo: null,
+            error: action.payload,
+          },
+        };
+  
+      case USER_REGISTER_REQUEST:
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: true,
+            error: null,
+          },
+        };
+      case USER_REGISTER_SUCCESS:
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: false,
+            userInfo: action.payload,
+            error: null,
+          },
+        };
+      case USER_REGISTER_FAIL:
+        return {
+          ...state,
+          userTaxxa: {
+            ...state.userTaxxa,
+            loading: false,
+            error: action.payload,
+          },
+        };
   
     default:
       return state;

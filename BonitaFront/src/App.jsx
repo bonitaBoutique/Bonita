@@ -24,6 +24,9 @@ import LandingPrincipal from "./Components/LandingPrincipal";
 import WhatsappButton from "./Components/WhatsappButton";
 import BillingForm from "./Components/Taxxa/BillingForm";
 import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
+import SellerForm from "./Components/Taxxa/SellerForm";
+import Panel from "./Components/Taxxa/Panel";
+import PanelProductos from "./Components/Product/PanelProductos"
 
   function App() {
     return (
@@ -47,9 +50,7 @@ import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
             <Route exact path="/allOrders" element={ <PrivateRoute>
               <OrdersList/>
             </PrivateRoute>}/>
-            <Route exact path="/createProducts" element={<PrivateRoute>
-              <CreateProduct />
-            </PrivateRoute>} />
+            
             <Route exact path="/cart" element={<Cart />} />
             <Route exact path="/checkout" element={<Checkout />} />  
             <Route exact path="/gracias" element={<ThankYouPage />} /> 
@@ -59,12 +60,25 @@ import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
             <Route path="/panel/facturacion" element={<PrivateRoute>
               <BillingForm />
             </PrivateRoute>} /> 
+            <Route path="/panel" element={<PrivateRoute>
+              <Panel />
+            </PrivateRoute>} />
+            <Route path="/panelProductos" element={<PrivateRoute>
+              <PanelProductos />
+            </PrivateRoute>} /> 
+            <Route path="/panel/seller" element={<PrivateRoute>
+              <SellerForm />
+            </PrivateRoute>} />
             <Route path="/loginTaxxa" element={<PrivateRoute>
               <LoginTaxxa />
             </PrivateRoute>} /> 
+
             <Route path="/category" element={<CreateCategory/>}/>  
             <Route path="/sb" element={<CreateSB/>}/>  
-            <Route path="/productsCat/:categoryName" element={<FilteredProducts />} />     
+            <Route path="/productsCat/:categoryName" element={<FilteredProducts />} />
+            <Route exact path="/createProducts" element={<PrivateRoute>
+              <CreateProduct />
+            </PrivateRoute>} />     
           </Routes>
         </div>
         <Footer/>

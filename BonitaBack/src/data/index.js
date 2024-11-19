@@ -82,8 +82,8 @@ Payment.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 OrderDetail.hasMany(Payment, { foreignKey: 'id_orderDetail' });
 
 //Product ---> Image
-Product.hasMany(Image, { foreignKey: 'id_product' });
-Image.belongsTo(Product, { foreignKey: 'id_product' });
+Product.hasMany(Image, { foreignKey: 'codigo' });
+Image.belongsTo(Product, { foreignKey: 'codigo' });
 
 Category.hasMany(SubCategory, {foreignKey: 'id_category'})
 SubCategory.belongsTo(Category, {foreingKey: 'id_category'})

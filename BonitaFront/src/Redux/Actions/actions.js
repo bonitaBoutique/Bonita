@@ -61,7 +61,16 @@ import {
   FETCH_SB_FAILURE,
   FETCH_USER_REQUEST,
   FETCH_USER_SUCCESS,
-  FETCH_USER_FAILURE
+  FETCH_USER_FAILURE,
+  FETCH_SELLER_REQUEST,
+  FETCH_SELLER_SUCCESS,
+  FETCH_SELLER_FAILURE,
+  CREATE_SELLER_REQUEST,
+  CREATE_SELLER_SUCCESS,
+  CREATE_SELLER_FAILURE,
+  UPDATE_SELLER_REQUEST,
+  UPDATE_SELLER_SUCCESS,
+  UPDATE_SELLER_FAILURE
 
 } from './actions-type';
 
@@ -509,3 +518,74 @@ console.log(data)
     dispatch({ type: FETCH_USER_FAILURE, payload: error.message });
   }
 };
+
+export const fetchSellerData = () => async (dispatch) => {
+  dispatch({ type: FETCH_SELLER_REQUEST });
+
+  try {
+    const response = await fetch(`${BASE_URL}/seller`);
+    const result = await response.json();
+
+    console.log("Respuesta completa del servidor:", result); // Para ver toda la estructura
+
+    if (response.ok) {
+      dispatch({ type: FETCH_SELLER_SUCCESS, payload: result.data }); // Acceder a `result.data`
+    } else {
+      dispatch({ type: FETCH_SELLER_FAILURE, payload: result.message || 'Error al obtener los datos del comercio' });
+    }
+  } catch (error) {
+    console.log("Error en fetchSellerData:", error.message); // Loguear cualquier error
+    dispatch({ type: FETCH_SELLER_FAILURE, payload: error.message });
+  }
+};
+
+
+
+
+
+export const createSellerData = (sellerData) => async (dispatch) => {
+  dispatch({ type: CREATE_SELLER_REQUEST });
+
+  try {
+    const response = await fetch(`${BASE_URL}/seller/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sellerData),
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      dispatch({ type: CREATE_SELLER_SUCCESS, payload: data.data });
+    } else {
+      dispatch({ type: CREATE_SELLER_FAILURE, payload: data.error || 'Error al crear los datos del comercio' });
+    }
+  } catch (error) {
+    dispatch({ type: CREATE_SELLER_FAILURE, payload: error.message });
+  }
+};
+
+export const updateSellerData = (id, sellerData) => async (dispatch) => {
+  dispatch({ type: UPDATE_SELLER_REQUEST });
+
+  try {
+    const response = await fetch(`${BASE_URL}/seller/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sellerData),
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      dispatch({ type: UPDATE_SELLER_SUCCESS, payload: data.data });
+      return true; // Retorna éxito
+    } else {
+      dispatch({ type: UPDATE_SELLER_FAILURE, payload: data.error || 'Error al actualizar los datos del comercio' });
+      return false; // Retorna fallo
+    }
+  } catch (error) {
+    dispatch({ type: UPDATE_SELLER_FAILURE, payload: error.message });
+    return false; // Retorna fallo
+  }
+};
+
+

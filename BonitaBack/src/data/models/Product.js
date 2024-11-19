@@ -1,17 +1,26 @@
 const { DataTypes } = require("sequelize");
+//codigo,
+codigoBarra, fecha,marca,description,codigoProv,price,stock,images,sizes,colors,isOffer
 
 module.exports = (sequelize) => {
   sequelize.define(
     "Product",
     {
-      id_product: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+      codigo: {
+        type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
       },
 
-      name: {
+      codigoBarra: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      fecha: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      marca: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -19,9 +28,17 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      codigoProv: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      stock: {
+        type: DataTypes.INTEGER,
       },
       sizes: {
         type: DataTypes.TEXT, 
@@ -55,10 +72,6 @@ module.exports = (sequelize) => {
         set(value) {
           this.setDataValue("materials", JSON.stringify(value));
         },
-      },
-
-      stock: {
-        type: DataTypes.INTEGER,
       },
       isOffer: {
       type: DataTypes.BOOLEAN,

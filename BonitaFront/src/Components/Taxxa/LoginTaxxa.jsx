@@ -22,7 +22,7 @@ const LoginTaxxa = () => {
 
       console.log('Login exitoso:', response.data);
       localStorage.setItem('taxxaToken', response.data.token);
-      navigate('/panel/facturacion');
+      navigate('/panel');
     } catch (error) {
       console.error('Error al iniciar sesión:', error.response ? error.response.data : error.message);
     }

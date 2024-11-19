@@ -59,7 +59,16 @@ import {
   FETCH_SB_FAILURE,
   FETCH_USER_REQUEST,
   FETCH_USER_SUCCESS,
-  FETCH_USER_FAILURE
+  FETCH_USER_FAILURE,
+  FETCH_SELLER_REQUEST,
+  FETCH_SELLER_SUCCESS,
+  FETCH_SELLER_FAILURE,
+  CREATE_SELLER_REQUEST,
+  CREATE_SELLER_SUCCESS,
+  CREATE_SELLER_FAILURE,
+  UPDATE_SELLER_REQUEST,
+  UPDATE_SELLER_SUCCESS,
+  UPDATE_SELLER_FAILURE
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -76,6 +85,11 @@ const initialState = {
 
   userTaxxa: {
     userInfo: null,
+    loading: false,
+    error: null,
+  },
+  sellerData: {
+    data: null,
     loading: false,
     error: null,
   },
@@ -723,6 +737,95 @@ const rootReducer = (state = initialState, action) => {
             error: action.payload,
           },
         };
+
+        case FETCH_SELLER_REQUEST:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: true,
+          error: null,
+        },
+      };
+    case FETCH_SELLER_SUCCESS:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          data: action.payload,
+          error: null,
+        },
+      };
+    case FETCH_SELLER_FAILURE:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          error: action.payload,
+        },
+      };
+
+    // Create Seller Data
+    case CREATE_SELLER_REQUEST:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: true,
+          error: null,
+        },
+      };
+    case CREATE_SELLER_SUCCESS:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          data: action.payload,
+          error: null,
+        },
+      };
+    case CREATE_SELLER_FAILURE:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          error: action.payload,
+        },
+      };
+
+    // Update Seller Data
+    case UPDATE_SELLER_REQUEST:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: true,
+          error: null,
+        },
+      };
+    case UPDATE_SELLER_SUCCESS:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          data: action.payload,
+          error: null,
+        },
+      };
+    case UPDATE_SELLER_FAILURE:
+      return {
+        ...state,
+        sellerData: {
+          ...state.sellerData,
+          loading: false,
+          error: action.payload,
+        },
+      };
   
     default:
       return state;

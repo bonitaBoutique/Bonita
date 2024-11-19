@@ -31,43 +31,39 @@ module.exports = async (req, res) => {
 
     try {
       const {
-        name,
+        codigo,
+        codigoBarra, 
+        fecha,
+        marca,
         description,
+        codigoProv,
         price,
         stock,
-        id_category,
-        id_SB,
         sizes,
         colors,
-        materials,
-        section,
-        isOffer 
+        isOffer,
       } = req.body;
 
-      if (!name || !description || !price) {
+      if (!codigo || !description || !price || !codigoBarra || !fecha || !marca || !codigoProv || !stock || !sizes || !colors ) {
         return response(res, 400, { error: 'Missing required fields' });
       }
 
       const images = req.files;
 
       const product = await Product.create({
-        name,
+        codigo,
         description,
         price: parseFloat(price),
         stock: parseInt(stock, 10),
-        id_category,
-        id_SB,
-        sizes: sizes ? JSON.parse(sizes) : null,
-        colors: colors ? JSON.parse(colors) : null,
-        materials: materials ?JSON.parse(materials): null,
-        section,
+        sizes: sizes,
+        colors: colors,
         isOffer: isOffer === 'true' 
       });
 
       if (images && images.length > 0) {
         const imagePromises = images.map(async (image) => {
           const createdImage = await Image.create({
-            id_product: product.id_product,
+            codigo: product.codigo,
             url: image.path,
           });
           return createdImage;

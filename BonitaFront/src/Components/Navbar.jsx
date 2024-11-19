@@ -176,13 +176,13 @@ export default function Navbar() {
           <Menu.Item>
             {({ active }) => (
               <Link
-                to="/createProducts"
+                to="/panelProductos"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
                   'block px-4 py-2 text-sm text-gray-700'
                 )}
               >
-                Crear Productos
+                Panel Productos
               </Link>
             )}
           </Menu.Item>
@@ -212,7 +212,7 @@ export default function Navbar() {
               </Link>
             )}
           </Menu.Item>
-          <Menu.Item>
+          {/* <Menu.Item>
             {({ active }) => (
               <Link
                 to="/category"
@@ -224,8 +224,8 @@ export default function Navbar() {
                 Nueva Categoría
               </Link>
             )}
-          </Menu.Item>
-          <Menu.Item>
+          </Menu.Item> */}
+          {/* <Menu.Item>
             {({ active }) => (
               <Link
                 to="/sb"
@@ -237,7 +237,7 @@ export default function Navbar() {
                 Nueva SubCategoría
               </Link>
             )}
-          </Menu.Item>
+          </Menu.Item> */}
           <Menu.Item>
             {({ active }) => (
               <Link

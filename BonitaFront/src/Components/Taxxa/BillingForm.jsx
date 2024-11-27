@@ -36,9 +36,9 @@ const BillingForm = () => {
   };
 
   useEffect(() => {
-    if (userTaxxa.userInfo.error) {
+    if (userTaxxa.userInfo && userTaxxa.userInfo.error) {
       setShowRegistrationPopup(true);
-    } else if (userTaxxa.userInfo.data) {
+    } else if (userTaxxa.userInfo && userTaxxa.userInfo.data) {
       const { first_name, last_name, email, phone, n_document } = userTaxxa.userInfo.data;
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
@@ -56,6 +56,7 @@ const BillingForm = () => {
       }));
     }
   }, [userTaxxa]);
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();

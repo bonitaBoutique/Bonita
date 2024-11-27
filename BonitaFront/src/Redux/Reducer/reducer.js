@@ -84,7 +84,7 @@ const initialState = {
   error: null,
 
   userTaxxa: {
-    userInfo: null,
+    userInfo: {},
     loading: false,
     error: null,
   },

@@ -1,12 +1,11 @@
 const { DataTypes } = require("sequelize");
-//codigo,
-codigoBarra, fecha,marca,description,codigoProv,price,stock,images,sizes,colors,isOffer
+//codigo,codigoBarra, fecha,marca,description,codigoProv,price,stock,images,sizes,colors,isOffer
 
 module.exports = (sequelize) => {
   sequelize.define(
     "Product",
     {
-      codigo: {
+      id_product: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
@@ -41,57 +40,24 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
       },
       sizes: {
-        type: DataTypes.TEXT, 
-        allowNull: true,
-        get() {
-          const value = this.getDataValue("sizes");
-          return value ? JSON.parse(value) : [];
-        },
-        set(value) {
-          this.setDataValue("sizes", JSON.stringify(value));
-        },
+        type: DataTypes.STRING, 
+        
       },
       colors: {
-        type: DataTypes.TEXT, // Usar TEXT en lugar de STRING
+        type: DataTypes.STRING, // Usar TEXT en lugar de STRING
         allowNull: true,
-        get() {
-          const value = this.getDataValue("colors");
-          return value ? JSON.parse(value) : [];
-        },
-        set(value) {
-          this.setDataValue("colors", JSON.stringify(value));
-        },
       },
-      materials: {
-        type: DataTypes.TEXT, // Usar TEXT en lugar de STRING
-        allowNull: true,
-        get() {
-          const value = this.getDataValue("materials");
-          return value ? JSON.parse(value) : [];
-        },
-        set(value) {
-          this.setDataValue("materials", JSON.stringify(value));
-        },
-      },
-      isOffer: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
+
+      
     isDian: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-      stock_control: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-      section: {
-        type: DataTypes.ENUM("Caballero", "Dama", "Unisex"),
-        allowNull: true,
-      },
+     
+     
       tax_classification: {
         type: DataTypes.STRING,
-        defaultValue: "Taxed",
+        defaultValue: "IVA",
       },
       tax_included: {
         type: DataTypes.BOOLEAN,
@@ -115,7 +81,7 @@ module.exports = (sequelize) => {
       },
       unit: {
         type: DataTypes.STRING,
-        defaultValue: "94",
+        defaultValue: "und",
       },
 
       deletedAt: {

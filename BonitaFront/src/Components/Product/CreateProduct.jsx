@@ -48,6 +48,7 @@ const dispatch = useDispatch();
       !price ||
       !stock ||
       images.length === 0
+      
     ) {
       setAlertMessage("Por favor complete todos los campos y seleccione al menos una imagen.");
       return;

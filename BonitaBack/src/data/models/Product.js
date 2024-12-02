@@ -6,14 +6,15 @@ module.exports = (sequelize) => {
     "Product",
     {
       id_product: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        allowNull: false,
-      },
+  type: DataTypes.STRING,
+  primaryKey: true,
+  allowNull: false,
+  unique: true,
+},
 
       codigoBarra: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       fecha: {
         type: DataTypes.STRING,
@@ -31,7 +32,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      
+
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -40,22 +41,19 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
       },
       sizes: {
-        type: DataTypes.STRING, 
-        
+        type: DataTypes.STRING,
       },
       colors: {
-        type: DataTypes.STRING, // Usar TEXT en lugar de STRING
+        type: DataTypes.STRING, 
         allowNull: true,
       },
 
-      
-    isDian: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
-    },
-     
-     
-      tax_classification: {
+      isDian: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+
+      tax: {
         type: DataTypes.STRING,
         defaultValue: "IVA",
       },
@@ -63,25 +61,20 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      tax_consumption_value: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-      },
-      taxes_id: {
+
+      taxes_rate: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      prices_currency_code: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      prices_price_list_position: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+
       unit: {
         type: DataTypes.STRING,
         defaultValue: "und",
+      },
+      images: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        defaultValue: [],
+        allowNull: false,
       },
 
       deletedAt: {

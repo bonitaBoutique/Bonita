@@ -78,48 +78,21 @@ export const createProduct = (productData) => async (dispatch) => {
   dispatch({ type: CREATE_PRODUCT_REQUEST });
 
   try {
-    const formData = new FormData();
-    formData.append('name', productData.name);
-    formData.append('description', productData.description);
-    formData.append('price', productData.price);
-    formData.append('stock', productData.stock);
-    formData.append('id_category', productData.id_category);
-    formData.append('id_SB', productData.id_SB)
-    formData.append('section', productData.section)
-    formData.append('isOffer', productData.isOffer)
-
-    if (productData.sizes) {
-      formData.append('sizes', JSON.stringify(productData.sizes));
-    }
-
-    if (productData.colors) {
-      formData.append('colors', JSON.stringify(productData.colors));
-    }
-    if (productData.materials) {
-      formData.append('materials', JSON.stringify(productData.materials));
-    }
-
-    productData.images.forEach((image) => {
-      formData.append('images', image);
-    });
-
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
-    }
-
-
-    const response = await axios.post(`${BASE_URL}/product/createProducts`, formData, {
+    // Enviar los datos como JSON (sin necesidad de multipart/form-data)
+    await axios.post(`http://localhost:3001/product/createProducts`, productData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+        'Content-Type': 'application/json',  // Correcto para enviar datos JSON
+      },
     });
 
-    dispatch({ type: CREATE_PRODUCT_SUCCESS, payload: response.data });
-    dispatch(fetchProducts());
+    dispatch({ type: CREATE_PRODUCT_SUCCESS });
+    
   } catch (error) {
     dispatch({ type: CREATE_PRODUCT_FAILURE, payload: error.message });
   }
 };
+
+
 
 
 
@@ -139,36 +112,56 @@ export const fetchProducts = () => async (dispatch) => {
 
   try {
     const response = await axios.get(`${BASE_URL}/product/`);
-    dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: response.data.data.products });
+    console.log("Respuesta de la API:", response); // Muestra toda la respuesta
+
+    // Verifica si la respuesta contiene productos y envía solo los productos
+    if (response.data && response.data.data && response.data.data.products) {
+      dispatch({
+        type: FETCH_PRODUCTS_SUCCESS,
+        payload: response.data.data.products, // Accedemos a los productos directamente
+      });
+    } else {
+      dispatch({
+        type: FETCH_PRODUCTS_FAILURE,
+        payload: "No se encontraron productos.",
+      });
+    }
   } catch (error) {
+    console.log("Error de la API:", error);
     dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
   }
 };
 
-export const fetchProductById = (id) => async (dispatch) => {
+
+
+
+
+export const fetchProductById = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCT_REQUEST });
 
   try {
-    const response = await axios.get(`${BASE_URL}/product/${id}`);
+    const response = await axios.get(`${BASE_URL}/product/${id_product}`);
     
     // Verifica la estructura de la respuesta
-    console.log('API response:', response.data); 
+    console.log('API response:', response); 
     
-    const { product, relatedProducts } = response.data.data;
-
-    // Asegúrate de que estos valores no sean undefined
+    // Asegúrate de acceder correctamente a la propiedad "product" dentro de "data"
+    const { product } = response.data;  // Accede a data -> product
+    
+    // Verifica que el producto esté bien recibido
     console.log('Product:', product);
-    console.log('Related Products:', relatedProducts);
     
+    // Despacha la acción de éxito con el producto
     dispatch({ 
       type: FETCH_PRODUCT_SUCCESS, 
-      payload: { product, similarProducts: relatedProducts } 
+      payload: { product } 
     });
   } catch (error) {
     console.log('Error fetching product by ID:', error);
     dispatch({ type: FETCH_PRODUCT_FAILURE, payload: error.message });
   }
 };
+
 
 
 export const addToCart = (id_product) => ({

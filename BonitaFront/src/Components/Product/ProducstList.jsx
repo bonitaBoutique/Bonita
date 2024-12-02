@@ -1,9 +1,8 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProducts,
   fetchFilteredProducts,
-
   deleteProduct,
 } from "../../Redux/Actions/actions";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,10 +13,14 @@ const ProductsList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 8; // Número de productos por página
+  const productsPerPage = 8;
+
+
   const products = useSelector((state) => state.products || []);
+  console.log(products)
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
+  
   const searchTerm = useSelector((state) => state.searchTerm);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
 
@@ -28,18 +31,14 @@ const ProductsList = () => {
       dispatch(fetchProducts());
     }
   }, [dispatch, searchTerm]);
-
+  console.log("Estado después de la acción: ", products);
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct
-  );
+  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleButtonClick = (product) => {
-    // Redirigir a la ruta /products/id
     navigate(`/product/${product.id_product}`);
   };
 
@@ -81,7 +80,7 @@ const ProductsList = () => {
     );
   }
 
-  if (!products || products.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-colorFooter py-16">
         <p className="text-white text-lg">No hay productos disponibles.</p>
@@ -92,10 +91,10 @@ const ProductsList = () => {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-colorFooter py-16">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 uppercase font-nunito font-semibold ">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 uppercase font-nunito font-semibold">
           {currentProducts.map((product) => (
             <div key={product.id_product} className="group relative max-w-xs">
-              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden ">
+              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden">
                 <Link to={`/product/${product.id_product}`}>
                   <img
                     src={
@@ -103,20 +102,15 @@ const ProductsList = () => {
                         ? product.Images[0].url
                         : "https://via.placeholder.com/150"
                     }
-                    alt={product.name}
-                    className="h-full w-full object-cover object-center rounded-lg "
+                    alt={product.description || "Producto sin nombre"}
+                    className="h-full w-full object-cover object-center rounded-lg"
                   />
                 </Link>
-                {product.isOffer && (
-                  <span className="absolute top-2 left-2 bg-gray-500 text-colorLogo text-xl px-2 py-0 rounded-md">
-                    OFERTA
-                  </span>
-                )}
               </div>
               <div className="mt-4 px-4">
                 <h3 className="text-2xl font-semibold font-nunito text-gray-300">
                   <Link to={`/product/${product.id_product}`}>
-                    {product.name}
+                    {product.description}
                   </Link>
                 </h3>
                 <p className="text-lg font-medium font-nunito text-gray-300">
@@ -128,7 +122,8 @@ const ProductsList = () => {
                   onClick={() => handleButtonClick(product)}
                   className="mt-4 flex items-center justify-center w-full bg-colorLogo font-nunito font-semibold text-gray-900 py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors duration-300"
                 >
-                  <FiShoppingCart className="mr-2 text-colorFooter" /> Añadir al carrito
+                  <FiShoppingCart className="mr-2 text-colorFooter" /> Añadir al
+                  carrito
                 </button>
               </div>
               {userInfo && userInfo.role === "Admin" && (
@@ -179,4 +174,6 @@ const ProductsList = () => {
     </div>
   );
 };
+
 export default ProductsList;
+

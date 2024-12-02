@@ -135,6 +135,7 @@ const initialState = {
         )
       : 0,
   },
+
   order: {
     loading: false,
     success: false,
@@ -217,23 +218,21 @@ const rootReducer = (state = initialState, action) => {
         },
       };
 
-    case FETCH_PRODUCT_REQUEST:
+      case FETCH_PRODUCTS_REQUEST:
+      return { ...state, loading: true };
+    
+    case FETCH_PRODUCTS_SUCCESS:
       return {
         ...state,
-        loading: true,
+        products: action.payload,  // Aquí debes actualizar 'products' con el payload recibido
+        loading: false
       };
-    case FETCH_PRODUCT_SUCCESS:
-      return {
-        ...state,
-        product: action.payload.product,
-        similarProducts: action.payload.similarProducts, // Guarda los productos similares
-        loading: false,
-      };
-    case FETCH_PRODUCT_FAILURE:
+    
+    case FETCH_PRODUCTS_FAILURE:
       return {
         ...state,
         error: action.payload,
-        loading: false,
+        loading: false
       };
     case ADD_TO_CART:
       const existingItem = state.cart.items.find(
@@ -421,24 +420,7 @@ const rootReducer = (state = initialState, action) => {
         ...state,
         categoryFilter: action.payload,
       };
-    case FETCH_PRODUCTS_REQUEST:
-      return {
-        ...state,
-        loading: true,
-        error: null,
-      };
-    case FETCH_PRODUCTS_SUCCESS:
-      return {
-        ...state,
-        loading: false,
-        products: action.payload,
-      };
-    case FETCH_PRODUCTS_FAILURE:
-      return {
-        ...state,
-        loading: false,
-        error: action.payload,
-      };
+    
     case CLEAR_ORDER_STATE:
       return {
         ...state,

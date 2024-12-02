@@ -43,32 +43,17 @@ const LandingPrincipal = () => {
 
 
       {/* Secciones divididas */}
-      <div className="grid grid-cols-1  gap-4 mt-2">
-        {/* Sección Caballeros */}
-        <div className="relative group">
-          <a href="/caballeros">
-            <img
-              src={banner}
-              alt="Caballeros"
-              className="w-full h-auto object-cover"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <h2 className="text-white text-3xl md:text-4xl font-bold group-hover:underline font-nunito">
-                 Caballeros
-              </h2>
-            </div>
-          </a>
-        </div>
+     
 
        
-      </div>
+      
  {/* Flayer - Propaganda que se mueve hacia la izquierda */}
  <div className="text-center overflow-hidden bg-black py-4">
   <div className="flex justify-center items-center space-x-20 animate-marquee-left">
     {/* Imagen 1 */}
     <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl mr-10 text-yellow-500">
-      <img src={logoAz} alt="Payment Logo 1" className="w-10 h-auto mr-3" />
-      MEDIOS DE PAGO
+      
+     
     </div>
     
     <img src={efecti} alt="Payment Logo 1" className="payment-logo" />
@@ -83,13 +68,21 @@ const LandingPrincipal = () => {
     {/* Imagen 4 */}
     <img src={master} alt="Payment Logo 4" className="payment-logo" />
     
+     <img src={efecti} alt="Payment Logo 1" className="payment-logo" />
+   
+
+    {/* Imagen 2 */}
+    <img src={logoAmeric} alt="Payment Logo 2" className="payment-logo" />
+
+    {/* Imagen 3 */}
+    <img src={logoVisa} alt="Payment Logo 3" className="payment-logo" />
+
     {/* Imagen 4 */}
-    <img src={pse} alt="Payment Logo 4" className="payment-logo" />
-    <div className="flex items-center whitespace-nowrap text-3xl md:text-4xl mr-10 text-yellow-500">
-      
-      MEDIOS DE PAGO
-      <img src={logoAz} alt="Payment Logo 1" className="w-10 h-auto ml-3" />
-    </div>
+    <img src={master} alt="Payment Logo 4" className="payment-logo" />
+   
+   
+     
+   
   </div>
 </div>
 

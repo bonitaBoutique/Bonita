@@ -30,7 +30,7 @@ import PanelProductos from "./Components/Product/PanelProductos"
 
   function App() {
     return (
-      <Router>
+      <>
     
         <div>
          <Navbar/>
@@ -84,7 +84,7 @@ import PanelProductos from "./Components/Product/PanelProductos"
         <Footer/>
         <CartButton /> 
         <WhatsappButton/>
-      </Router>
+      </>
     );
   }
 export default App

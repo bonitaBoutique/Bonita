@@ -7,7 +7,7 @@ router.get('/search', controller.getAllProduct);
 
 router.get('/', controller.getAllProduct);
  
-router.get('/:id', controller.getProductId);
+router.get('/:id_product', controller.getProductId);
 
 router.post('/createProducts', controller.createProduct);
 

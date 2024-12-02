@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
- sequelize.define(
+  sequelize.define(
     'Image',
     {
       id_image: {
@@ -10,24 +10,13 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.UUIDV4,
       },
+      id_product: {
+        type: DataTypes.STRING, // Asegúrate de que coincide con el tipo en `Product`.
+        allowNull: false,
+      },
       url: {
         type: DataTypes.STRING,
         allowNull: false,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      deletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: null,
       },
     },
     {

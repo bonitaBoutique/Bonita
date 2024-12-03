@@ -77,7 +77,7 @@ const initialState = {
   categoryFilter: "",
   searchResults: [],
   loading: false,
-  product: null,
+  product: {},
   similarProducts: [],
   products: [],
   data:null,
@@ -164,13 +164,7 @@ const initialState = {
     data: {},
   },
 
-  
-
 };
-
-
-
-
 
 const rootReducer = (state = initialState, action) => {
   switch (action.type) {
@@ -224,7 +218,7 @@ const rootReducer = (state = initialState, action) => {
     case FETCH_PRODUCTS_SUCCESS:
       return {
         ...state,
-        products: action.payload,  // Aquí debes actualizar 'products' con el payload recibido
+        products: action.payload,  
         loading: false
       };
     
@@ -234,6 +228,26 @@ const rootReducer = (state = initialState, action) => {
         error: action.payload,
         loading: false
       };
+
+      case FETCH_PRODUCT_REQUEST:
+        return {
+          ...state,
+          loading: true,
+          error: null,
+        };
+      case FETCH_PRODUCT_SUCCESS:
+        return {
+          ...state,
+          product: action.payload,  
+          loading: false,
+        };
+      case FETCH_PRODUCT_FAILURE:
+        return {
+          ...state,
+          error: action.payload,
+          loading: false,
+        };
+
     case ADD_TO_CART:
       const existingItem = state.cart.items.find(
         (item) => item.id_product === action.payload.id_product

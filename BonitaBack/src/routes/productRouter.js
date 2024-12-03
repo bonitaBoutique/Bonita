@@ -14,7 +14,7 @@ router.post('/createProducts', controller.createProduct);
 router.delete('/deleteProducts/:id', controller.deleteProduct);
 
 router.put('/updateProducts/:id', controller.putProduct);
-
+router.get("/stock/:id_product", controller.getProductStock);
 
 
 

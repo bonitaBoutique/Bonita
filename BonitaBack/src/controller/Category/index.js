@@ -4,6 +4,4 @@ const getCategory = require("./getCategory");
 module.exports={
     createCategory,
     getCategory
-    
-    
 }

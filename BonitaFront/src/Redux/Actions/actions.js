@@ -140,27 +140,21 @@ export const fetchProductById = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCT_REQUEST });
 
   try {
-    const response = await axios.get(`${BASE_URL}/product/${id_product}`);
+    const response = await axios.get(`http://localhost:3001/product/${id_product}`);
     
-    // Verifica la estructura de la respuesta
-    console.log('API response:', response); 
+    // Acceso correcto a "product"
+    const product = response.data.data.product; 
     
-    // Asegúrate de acceder correctamente a la propiedad "product" dentro de "data"
-    const { product } = response.data;  // Accede a data -> product
-    
-    // Verifica que el producto esté bien recibido
-    console.log('Product:', product);
-    
-    // Despacha la acción de éxito con el producto
     dispatch({ 
       type: FETCH_PRODUCT_SUCCESS, 
-      payload: { product } 
+      payload: product 
     });
   } catch (error) {
-    console.log('Error fetching product by ID:', error);
+    console.error('Error fetching product by ID:', error);
     dispatch({ type: FETCH_PRODUCT_FAILURE, payload: error.message });
   }
 };
+
 
 
 

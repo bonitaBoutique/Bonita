@@ -26,7 +26,7 @@ const PanelProductos = () => {
                 Cargar Articulos
               </Link>
              
-              <Link to="/productsList" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
+              <Link to="/panel/productos" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
                 Listar Articulos
               </Link>
             </>

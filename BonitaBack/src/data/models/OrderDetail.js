@@ -48,6 +48,12 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+
+      isFacturable: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false, 
+      },
+
       deletedAt: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -63,6 +69,8 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
+
+
     },
     {
       paranoid: true,

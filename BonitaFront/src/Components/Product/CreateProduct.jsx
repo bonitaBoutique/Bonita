@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { createProduct } from "../../Redux/Actions/actions";
 import { useNavigate } from "react-router-dom";
-import { openCloudinaryWidget } from '../../cloudinaryConfig';
+import { openCloudinaryWidget } from "../../cloudinaryConfig";
 import Swal from "sweetalert2";
 
 //Cod,FECHA INICIAL,marca,COD PROV,DESCRIPCION,Talla ,Color ,CANT, PRECIO,, VENTA,,ESTATUS, codigo barras
 
 const CreateProduct = () => {
-  
   const [fecha, setFecha] = useState("");
   const [marca, setMarca] = useState("");
   const [codigoProv, setCodigoProv] = useState("");
@@ -18,7 +17,7 @@ const CreateProduct = () => {
   const [stock, setStock] = useState("");
   const [colors, setColors] = useState("");
   const [images, setImages] = useState([]);
- 
+
   const [alertMessage, setAlertMessage] = useState("");
   const [isDian, setIsDian] = useState(false);
   const dispatch = useDispatch();
@@ -27,17 +26,14 @@ const CreateProduct = () => {
 
   const handleWidget = () => {
     openCloudinaryWidget((uploadedImageUrl) => {
-      setImages(prevImages => [...prevImages, uploadedImageUrl]);
+      setImages((prevImages) => [...prevImages, uploadedImageUrl]);
     });
   };
-
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Form submitted");
     if (
-      
       !fecha ||
       !marca ||
       !codigoProv ||
@@ -45,7 +41,6 @@ const CreateProduct = () => {
       !price ||
       !stock ||
       !colors ||
-      !isDian ||
       !sizes ||
       images.length === 0
     ) {
@@ -56,11 +51,7 @@ const CreateProduct = () => {
       return;
     }
 
-    
-
     const productData = {
-      
-      
       fecha,
       marca,
       description,
@@ -87,7 +78,6 @@ const CreateProduct = () => {
         confirmButtonText: "OK",
       });
 
-     
       setFecha("");
       setMarca("");
       setDescription("");
@@ -219,27 +209,29 @@ const CreateProduct = () => {
         </div>
 
         <div className="col-span-2">
-  <label className="block text-sm font-medium text-gray-700">Imágenes</label>
-  <button
-    type="button"
-    onClick={handleWidget}
-    className="mt-1 block w-full py-2 px-4 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700"
-  >
-    Subir Imágenes
-  </button>
+          <label className="block text-sm font-medium text-gray-700">
+            Imágenes
+          </label>
+          <button
+            type="button"
+            onClick={handleWidget}
+            className="mt-1 block w-full py-2 px-4 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700"
+          >
+            Subir Imágenes
+          </button>
 
-  {/* Muestra las imágenes seleccionadas */}
-  <div className="mt-4 grid grid-cols-3 gap-4">
-    {images.map((img, index) => (
-      <img
-        key={index}
-        src={img}
-        alt={`Imagen ${index + 1}`}
-        className="w-full h-32 object-cover rounded-md"
-      />
-    ))}
-  </div>
-</div>
+          {/* Muestra las imágenes seleccionadas */}
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            {images.map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt={`Imagen ${index + 1}`}
+                className="w-full h-32 object-cover rounded-md"
+              />
+            ))}
+          </div>
+        </div>
 
         <div>
           <label
@@ -280,7 +272,7 @@ const CreateProduct = () => {
             ¿Es facturable?
           </label>
           <select
-            value={isDian}
+            value={isDian.toString()} // Convierte el booleano a string para el select
             onChange={(e) => setIsDian(e.target.value === "true")}
             className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 text-sm"
           >

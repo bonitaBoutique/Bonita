@@ -27,6 +27,7 @@ import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
 import SellerForm from "./Components/Taxxa/SellerForm";
 import Panel from "./Components/Taxxa/Panel";
 import PanelProductos from "./Components/Product/PanelProductos"
+import ListadoProductos from "./Components/stock/ListadoProductos";
 
   function App() {
     return (
@@ -60,12 +61,19 @@ import PanelProductos from "./Components/Product/PanelProductos"
             <Route path="/panel/facturacion" element={<PrivateRoute>
               <BillingForm />
             </PrivateRoute>} /> 
+            <Route path="/panel/productos" element={<PrivateRoute>
+              <ListadoProductos />
+            </PrivateRoute>} />
             <Route path="/panel" element={<PrivateRoute>
               <Panel />
             </PrivateRoute>} />
             <Route path="/panelProductos" element={<PrivateRoute>
               <PanelProductos />
-            </PrivateRoute>} /> 
+            </PrivateRoute>} />
+            <Route path="/createProducts" element={<PrivateRoute>
+              <CreateProduct />
+            </PrivateRoute>} />
+            
             <Route path="/panel/seller" element={<PrivateRoute>
               <SellerForm />
             </PrivateRoute>} />
@@ -76,7 +84,7 @@ import PanelProductos from "./Components/Product/PanelProductos"
             <Route path="/category" element={<CreateCategory/>}/>  
             <Route path="/sb" element={<CreateSB/>}/>  
             <Route path="/productsCat/:categoryName" element={<FilteredProducts />} />
-            <Route exact path="/createProducts" element={<PrivateRoute>
+            <Route exact path="/panel/createProducts" element={<PrivateRoute>
               <CreateProduct />
             </PrivateRoute>} />     
           </Routes>

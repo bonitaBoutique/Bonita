@@ -93,9 +93,6 @@ export const createProduct = (productData) => async (dispatch) => {
 };
 
 
-
-
-
 export const fetchCategories = () => async (dispatch) => {
   dispatch({ type: FETCH_CATEGORIES_REQUEST });
 

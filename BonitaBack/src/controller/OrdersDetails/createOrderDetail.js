@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
     // Verificar el stock de los productos
     const products = await Product.findAll({
       where: { id_product: id_product },
-      attributes: ["id_product", "stock"],
+      attributes: ["id_product", "stock", 'isDian'],
     });
 
     const productosSinStock = products.filter((product) => {
@@ -40,6 +40,7 @@ module.exports = async (req, res) => {
     // Generar la firma de integridad
     const referencia = `SO-${uuidv4()}`;
     const integritySignature = generarFirmaIntegridad(referencia, amount * 100, "COP", secretoIntegridad);
+    const isFacturable = products.some(product => product.isDian);
 
     // Crear la orden
     const orderDetail = await OrderDetail.create({
@@ -51,6 +52,7 @@ module.exports = async (req, res) => {
       address,
       deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
       n_document,
+      isFacturable,
       integritySignature,
     });
 

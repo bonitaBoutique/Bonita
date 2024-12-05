@@ -15,12 +15,11 @@ const ProductsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 8;
 
-
   const products = useSelector((state) => state.products || []);
-  console.log(products)
+  console.log(products);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
-  
+
   const searchTerm = useSelector((state) => state.searchTerm);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
 
@@ -31,10 +30,15 @@ const ProductsList = () => {
       dispatch(fetchProducts());
     }
   }, [dispatch, searchTerm]);
-  console.log("Estado después de la acción: ", products);
+
+  const productsInStock = products.filter((product) => product.stock > 0); // Filtrar productos con stock
+
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = productsInStock.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -151,7 +155,7 @@ const ProductsList = () => {
           <nav className="block">
             <ul className="flex pl-0 rounded list-none flex-wrap">
               {Array.from(
-                { length: Math.ceil(products.length / productsPerPage) },
+                { length: Math.ceil(productsInStock.length / productsPerPage) },
                 (_, i) => (
                   <li key={i}>
                     <button
@@ -176,4 +180,3 @@ const ProductsList = () => {
 };
 
 export default ProductsList;
-

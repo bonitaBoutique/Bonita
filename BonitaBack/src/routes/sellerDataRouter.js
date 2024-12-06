@@ -5,9 +5,9 @@ const router = Router();
 
 
 
-router.post('/create', controller.createSellerData);
+router.post('/', controller.getOrCreateSellerData);
 router.put('/:id', controller.updateSellerData);
-router.get('/', controller.getSellerData)
+
 
 
 

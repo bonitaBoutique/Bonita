@@ -10,16 +10,11 @@ const LoginTaxxa = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`/api`, {
-        jApi: {
-          sMethod: "classTaxxa.fjTokenGenerate",
-          jParams: {
-            sEmail: email,
-            sPass: password,
-          }
-        }
+      const response = await axios.post(`http://localhost:3002/login`, {
+        email, // Directamente los campos que espera el backend
+        password
       });
-
+  
       console.log('Login exitoso:', response.data);
       localStorage.setItem('taxxaToken', response.data.token);
       navigate('/panel');
@@ -27,6 +22,7 @@ const LoginTaxxa = () => {
       console.error('Error al iniciar sesión:', error.response ? error.response.data : error.message);
     }
   };
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">

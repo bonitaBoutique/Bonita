@@ -503,28 +503,22 @@ console.log(data)
   }
 };
 
-export const fetchSellerData = () => async (dispatch) => {
+export const fetchSellerData = (dni) => async (dispatch) => {
   dispatch({ type: FETCH_SELLER_REQUEST });
 
   try {
-    const response = await fetch(`${BASE_URL}/seller`);
+    const response = await fetch(`${BASE_URL}/seller?dni=${dni}`); // Pasar el DNI como parámetro
     const result = await response.json();
 
-    console.log("Respuesta completa del servidor:", result); // Para ver toda la estructura
-
     if (response.ok) {
-      dispatch({ type: FETCH_SELLER_SUCCESS, payload: result.data }); // Acceder a `result.data`
+      dispatch({ type: FETCH_SELLER_SUCCESS, payload: result.data });
     } else {
       dispatch({ type: FETCH_SELLER_FAILURE, payload: result.message || 'Error al obtener los datos del comercio' });
     }
   } catch (error) {
-    console.log("Error en fetchSellerData:", error.message); // Loguear cualquier error
     dispatch({ type: FETCH_SELLER_FAILURE, payload: error.message });
   }
 };
-
-
-
 
 
 export const createSellerData = (sellerData) => async (dispatch) => {

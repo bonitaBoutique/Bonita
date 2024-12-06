@@ -1,16 +1,36 @@
 const { SellerData } = require('../../data');
 
 // Crear los datos del comercio
-const createSellerData = async (req, res) => {
+const getOrCreateSellerData = async (req, res) => {
   try {
-    const newSeller = await SellerData.create(req.body); // Crear el registro con req.body
-    res.status(201).json({ message: 'Datos del comercio creados exitosamente', data: newSeller });
+    const { sdocno } = req.body; // Asumimos que el DNI viene en el body
+
+    // Buscar por el DNI en la base de datos
+    let sellerData = await SellerData.findOne({ where: { sdocno } });
+
+    if (!sellerData) {
+      // Si no se encuentra, crear un nuevo registro con los datos del body
+      sellerData = await SellerData.create(req.body);
+      return res.status(201).json({ 
+        message: 'Datos del comercio creados exitosamente', 
+        data: sellerData 
+      });
+    }
+
+    // Si se encuentra, devolver los datos encontrados
+    res.status(200).json({ 
+      message: 'Datos del comercio encontrados exitosamente', 
+      data: sellerData 
+    });
+
   } catch (error) {
-    console.error('Error al crear los datos del comercio:', error);
-    res.status(500).json({ message: 'Error al crear los datos del comercio', error: error.message });
+    console.error('Error al obtener o crear los datos del comercio:', error);
+    res.status(500).json({ 
+      message: 'Error al obtener o crear los datos del comercio', 
+      error: error.message 
+    });
   }
 };
-
 
 const updateSellerData = async (req, res) => {
   try {
@@ -34,23 +54,10 @@ const updateSellerData = async (req, res) => {
 };
 
 
-const getSellerData = async (req, res) => {
-  try {
-    const sellerData = await SellerData.findOne(); // Obtener el primer registro en la tabla (o modificar según tus necesidades)
 
-    if (!sellerData) {
-      return res.status(404).json({ message: 'Datos del comercio no encontrados' });
-    }
-    
-    res.status(200).json({ message: 'Datos del comercio obtenidos exitosamente', data: sellerData });
-  } catch (error) {
-    console.error('Error al obtener los datos del comercio:', error);
-    res.status(500).json({ message: 'Error al obtener los datos del comercio', error: error.message });
-  }
-};
 
 module.exports = {
-  createSellerData,
+  getOrCreateSellerData,
   updateSellerData,
-  getSellerData
+  
 };

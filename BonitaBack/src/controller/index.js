@@ -1,7 +1,7 @@
 const SellerData = require("../data/models/SellerData");
 const {catchedAsync} = require("../utils");
 const webhook = require("./webhook");
-const { createSellerData, updateSellerData, getSellerData } = require("./Taxxa/sellerDataControllers");
+const {  updateSellerData, getOrCreateSellerData } = require("./Taxxa/sellerDataControllers");
 const { getProductStock } = require("./Products");
 
 
@@ -25,8 +25,8 @@ module.exports = {
     getOrderByOrderId:catchedAsync(require("./OrdersDetails/getOrderByOrderId")),
     updateOrderDetail:catchedAsync(require("./OrdersDetails/updateOrderDetail")),
     webhook:catchedAsync(require("./webhook")),
-    createSellerData: catchedAsync(createSellerData),  // Aquí importa directamente el controlador
+    getOrCreateSellerData: catchedAsync(getOrCreateSellerData),  // Aquí importa directamente el controlador
     updateSellerData: catchedAsync(updateSellerData),
-    getSellerData: catchedAsync(getSellerData),
+    
     getProductStock: catchedAsync(require("./Products/getProductStock"))
 }

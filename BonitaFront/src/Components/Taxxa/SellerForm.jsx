@@ -37,31 +37,38 @@ const SellerForm = ({ jseller, setSeller }) => {
 
   useEffect(() => {
     dispatch(fetchSellerData());
+    console.log('fetchSellerData ejecutado'); // Confirmación de la acción
   }, [dispatch]);
 
   useEffect(() => {
     if (sellerData) {
+      console.log('Datos del vendedor cargados:', sellerData); // Verifica los datos iniciales
       setFormData(sellerData);
     }
   }, [sellerData]);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Datos enviados:', formData); // Verifica el objeto antes de enviarlo
+    
     if (sellerData && sellerData.id) {
       const success = await dispatch(updateSellerData(sellerData.id, formData));
       if (success) {
-        alert("Datos actualizados con éxito"); // Muestra el alert
-        navigate("/panel"); // Redirige a /panel
+        alert("Datos actualizados con éxito");
+        navigate("/panel");
       } else {
         alert("Error al actualizar los datos");
       }
     }
   };
   
+  
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const updatedFormData = { ...formData, [e.target.name]: e.target.value };
+    console.log(`Cambio en el campo ${e.target.name}:`, updatedFormData); // Verifica cada cambio
+    setFormData(updatedFormData);
   };
-
   return (
     <form onSubmit={handleSubmit} className="p-8 max-w-3xl mx-auto bg-white shadow-lg mt-32 rounded-lg">
       <h2 className="text-2xl font-semibold mb-6 text-gray-800">Datos del Comercio</h2>

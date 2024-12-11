@@ -520,12 +520,11 @@ export const fetchSellerData = (dni) => async (dispatch) => {
   }
 };
 
-
 export const createSellerData = (sellerData) => async (dispatch) => {
   dispatch({ type: CREATE_SELLER_REQUEST });
 
   try {
-    const response = await fetch(`${BASE_URL}/seller/create`, {
+    const response = await fetch(`${BASE_URL}/seller/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sellerData),

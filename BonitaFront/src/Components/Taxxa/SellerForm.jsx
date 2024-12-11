@@ -2,7 +2,7 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchSellerData, updateSellerData } from '../../Redux/Actions/actions';
+import { fetchSellerData, updateSellerData, createSellerData } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -25,15 +25,20 @@ const SellerForm = ({ jseller, setSeller }) => {
     wdepartmentcode: "",
     wtowncode: "",
     scityname: "",
-    selectronicmail: "",
-    registration_wdepartmentcode: "",
-    registration_scityname: "",
-    registration_saddressline1: "",
-    registration_scountrycode: "",
-    registration_wprovincecode: "",
-    registration_szip: "",
-    registration_sdepartmentname: ""
+    jcontact: {
+      selectronicmail: "",
+      jregistrationaddress: {
+        wdepartmentcode: "",
+        scityname: "",
+        saddressline1: "",
+        scountrycode: "CO",
+        wprovincecode: "",
+        szip: "",
+        sdepartmentname: "",
+      },
+    },
   });
+  
 
   useEffect(() => {
     dispatch(fetchSellerData());
@@ -51,8 +56,9 @@ const SellerForm = ({ jseller, setSeller }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Datos enviados:', formData); // Verifica el objeto antes de enviarlo
-    
+
     if (sellerData && sellerData.id) {
+      // Actualizar datos existentes
       const success = await dispatch(updateSellerData(sellerData.id, formData));
       if (success) {
         alert("Datos actualizados con éxito");
@@ -60,20 +66,45 @@ const SellerForm = ({ jseller, setSeller }) => {
       } else {
         alert("Error al actualizar los datos");
       }
+    } else {
+      // Crear nuevos datos
+      const success = await dispatch(createSellerData(formData));
+      if (success) {
+        alert("Datos creados con éxito");
+        navigate("/panel");
+      } else {
+        alert("Error al crear los datos");
+      }
     }
   };
   
   
   const handleChange = (e) => {
-    const updatedFormData = { ...formData, [e.target.name]: e.target.value };
-    console.log(`Cambio en el campo ${e.target.name}:`, updatedFormData); // Verifica cada cambio
+    const { name, value } = e.target;
+  
+    const updateNestedField = (obj, path, value) => {
+      const keys = path.split('.');
+      let current = obj;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        if (!current[key]) current[key] = {}; // Crear si no existe
+        current = current[key];
+      }
+      current[keys[keys.length - 1]] = value;
+    };
+  
+    const updatedFormData = { ...formData };
+    updateNestedField(updatedFormData, name, value);
+  
     setFormData(updatedFormData);
   };
+
+
   return (
-    <form onSubmit={handleSubmit} className="p-8 max-w-3xl mx-auto bg-white shadow-lg mt-32 rounded-lg">
+    <form onSubmit={handleSubmit} className="p-8 max-w-7xl mx-auto bg-white shadow-lg mt-20 rounded-lg">
       <h2 className="text-2xl font-semibold mb-6 text-gray-800">Datos del Comercio</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">
@@ -101,11 +132,14 @@ const SellerForm = ({ jseller, setSeller }) => {
             className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             <option value="R-99-PN">No aplica – Otros *</option>
-            <option value="O1">IVA</option>
-            <option value="O4">INC</option>
-            <option value="ZA">IVA e INC</option>
+            <option value="O-13"> Gran contribuyente </option>
+            <option value="O-15"> Autorretenedor</option>
+            <option value="O-23">Agente de retención IVA</option>
+            <option value="O-47">Régimen simple de tributación</option>
+
           </select>
         </div>
+       
 
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">
@@ -157,8 +191,7 @@ const SellerForm = ({ jseller, setSeller }) => {
           />
         </div>
 
-        {/* Resto de campos, todos con el mismo estilo */}
-        {/* Ejemplo de un campo adicional */}
+        
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Nombre Comercial:</label>
           <input
@@ -170,8 +203,140 @@ const SellerForm = ({ jseller, setSeller }) => {
           />
         </div>
 
-        {/* Continúa con otros campos siguiendo el mismo patrón */}
-        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Contacto (Nombre):</label>
+          <input
+            type="text"
+            name="scontactperson"
+            value={formData.scontactperson}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2"> Código Postal:</label>
+          <input
+            type="text"
+            name="saddresszip"
+            value={formData.saddresszip}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2"> Código Depto:</label>
+          <input
+            type="text"
+            name="wdepartmentcode"
+            value={formData.wdepartmentcode}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2"> Código Ciudad:</label>
+          <input
+            type="text"
+            name="wtowncode"
+            value={formData.wtowncode}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2"> Ciudad (Nombre):</label>
+          <input
+            type="text"
+            name="scityname"
+            value={formData.scityname}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Correo Electrónico:</label>
+        <input
+          type="email"
+          name="jcontact.selectronicmail" // Campo anidado
+          value={formData.jcontact.selectronicmail}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Departamento (Código):</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.wdepartmentcode" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.wdepartmentcode}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Ciudad (Nombre):</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.scityname" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.scityname}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Domicilio:</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.saddressline1" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.saddressline1}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Código Ciudad:</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.scountrycode" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.scountrycode}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Código Provincia:</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.wprovincecode" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.wprovincecode}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Código Postal:</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.szip" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.szip}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Departamento:</label>
+        <input
+          type="text"
+          name="jcontact.jregistrationaddress.sdepartmentname" // Campo anidado
+          value={formData.jcontact.jregistrationaddress.sdepartmentname}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
+
       </div>
 
       <button

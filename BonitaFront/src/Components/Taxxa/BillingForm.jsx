@@ -1,31 +1,40 @@
-// BillingForm.js
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserByDocument } from '../../Redux/Actions/actions';
-import BuyerForm from './BuyerForm';
-import UserRegistrationPopup from './UserRegistrationPopup';
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserByDocument } from "../../Redux/Actions/actions";
+import BuyerForm from "./BuyerForm";
+import UserRegistrationPopup from "./UserRegistrationPopup";
+import DocumentTypePopup from "./DocumentTypePopup"; // Importa el popup
 
 const BillingForm = () => {
-  const [n_document, setNDocument] = useState('');
+  const [n_document, setNDocument] = useState("");
   const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
+  const [showInvoicePopup, setShowInvoicePopup] = useState(false); // Estado para el popup
   const [jbuyer, setBuyer] = useState({
-    wlegalorganizationtype: '',
-    scostumername: 'CONSUMIDOR FINAL',
-    stributaryidentificationkey: 'ZZ',
-    stributaryidentificationname: 'No aplica',
-    sfiscalresponsibilities: 'R-99-PN',
-    sfiscalregime: '48',
+    wlegalorganizationtype: "",
+    scostumername: "CONSUMIDOR FINAL",
+    stributaryidentificationkey: "ZZ",
+    stributaryidentificationname: "No aplica",
+    sfiscalresponsibilities: "R-99-PN",
+    sfiscalregime: "48",
     jpartylegalentity: {
-      wdoctype: '',
-      sdocno: '',
-      scorporateregistrationschemename: 'CONSUMIDOR FINAL',
+      wdoctype: "",
+      sdocno: "",
+      scorporateregistrationschemename: "CONSUMIDOR FINAL",
     },
     jcontact: {
-      scontactperson: 'CONSUMIDOR FINAL',
-      selectronicmail: '',
-      stelephone: '0000000',
+      scontactperson: "CONSUMIDOR FINAL",
+      selectronicmail: "",
+      stelephone: "0000000",
     },
   });
+
+  const handleProceedToDocument = () => {
+    if (jbuyer.scostumername === "CONSUMIDOR FINAL") {
+      alert("Completa los datos del comprador antes de continuar.");
+      return;
+    }
+    setShowInvoicePopup(true); // Abrir el popup para seleccionar el tipo de comprobante
+  };
 
   const dispatch = useDispatch();
   const userTaxxa = useSelector((state) => state.userTaxxa);
@@ -39,24 +48,24 @@ const BillingForm = () => {
     if (userTaxxa.userInfo && userTaxxa.userInfo.error) {
       setShowRegistrationPopup(true);
     } else if (userTaxxa.userInfo && userTaxxa.userInfo.data) {
-      const { first_name, last_name, email, phone, n_document } = userTaxxa.userInfo.data;
+      const { first_name, last_name, email, phone, n_document } =
+        userTaxxa.userInfo.data;
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
         scostumername: `${first_name} ${last_name}`.trim(),
         jpartylegalentity: {
           ...prevBuyer.jpartylegalentity,
-          sdocno: n_document || '',
+          sdocno: n_document || "",
           scorporateregistrationschemename: `${first_name} ${last_name}`.trim(),
         },
         jcontact: {
           scontactperson: `${first_name} ${last_name}`.trim(),
-          selectronicmail: email || '',
-          stelephone: phone || '',
+          selectronicmail: email || "",
+          stelephone: phone || "",
         },
       }));
     }
   }, [userTaxxa]);
-  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -66,7 +75,7 @@ const BillingForm = () => {
   const closePopup = () => setShowRegistrationPopup(false);
 
   return (
-    <div className="p-6 max-w-lg mx-auto pt-80 grid-cols-4">
+    <div className="p-6 max-w-lg mx-auto pt-40 grid-cols-4">
       <form onSubmit={handleFetchUser} className="flex flex-col gap-4 mb-6">
         <label className="text-gray-700">Número de Documento</label>
         <input
@@ -76,7 +85,10 @@ const BillingForm = () => {
           className="p-2 border border-gray-300 rounded"
           required
         />
-        <button type="submit" className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+        <button
+          type="submit"
+          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        >
           Buscar Usuario
         </button>
       </form>
@@ -85,17 +97,32 @@ const BillingForm = () => {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <BuyerForm jbuyer={jbuyer} setBuyer={setBuyer} />
-        <button type="submit" className="bg-green-500 text-white py-2 rounded hover:bg-green-600">
-          Enviar Factura
-        </button>
+       
       </form>
 
       {showRegistrationPopup && <UserRegistrationPopup onClose={closePopup} />}
+      <button
+        type="button"
+        onClick={handleProceedToDocument}
+        className="bg-blue-500 text-white py-2 rounded mt-12 hover:bg-blue-600"
+      >
+        Proceder a Facturar o Nota de Crédito
+      </button>
+
+      {/* Popup para seleccionar tipo de comprobante */}
+      {showInvoicePopup && (
+        <DocumentTypePopup
+          onClose={() => setShowInvoicePopup(false)}
+          onSubmit={(type) => console.log("Tipo de comprobante seleccionado:", type)}
+        />
+      )}
     </div>
   );
 };
 
 export default BillingForm;
+
+
 
 
 

@@ -2,7 +2,6 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   sequelize.define('SellerData', {
-   
     wlegalorganizationtype: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -14,6 +13,7 @@ module.exports = (sequelize) => {
     sdocno: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     sdoctype: {
       type: DataTypes.STRING,
@@ -47,14 +47,10 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
-    // Campos de jcontact con prefijo
     contact_selectronicmail: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
-    // Campos de jregistrationaddress con prefijo
     registration_wdepartmentcode: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -85,3 +81,4 @@ module.exports = (sequelize) => {
     }
   });
 };
+

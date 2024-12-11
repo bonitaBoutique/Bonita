@@ -3,21 +3,66 @@ const { SellerData } = require('../../data');
 // Crear los datos del comercio
 const getOrCreateSellerData = async (req, res) => {
   try {
-    const { sdocno } = req.body; // Asumimos que el DNI viene en el body
+    const {
+      wlegalorganizationtype,
+      sfiscalresponsibilities,
+      sdocno,
+      sdoctype,
+      ssellername,
+      ssellerbrand,
+      scontactperson,
+      saddresszip,
+      wdepartmentcode,
+      wtowncode,
+      scityname,
+      jcontact: {
+        selectronicmail: contact_selectronicmail = null,
+        jregistrationaddress: {
+          wdepartmentcode: registration_wdepartmentcode = null,
+          scityname: registration_scityname = null,
+          saddressline1: registration_saddressline1 = null,
+          scountrycode: registration_scountrycode = null,
+          wprovincecode: registration_wprovincecode = null,
+          szip: registration_szip = null,
+          sdepartmentname: registration_sdepartmentname = null,
+        } = {},
+      } = {},
+    } = req.body;
 
-    // Buscar por el DNI en la base de datos
-    let sellerData = await SellerData.findOne({ where: { sdocno } });
+    // Buscar o crear el registro
+    const [sellerData, created] = await SellerData.findOrCreate({
+      where: { sdocno },
+      defaults: {
+        wlegalorganizationtype,
+        sfiscalresponsibilities,
+        sdocno,
+        sdoctype,
+        ssellername,
+        ssellerbrand,
+        scontactperson,
+        saddresszip,
+        wdepartmentcode,
+        wtowncode,
+        scityname,
+        contact_selectronicmail,
+        registration_wdepartmentcode,
+        registration_scityname,
+        registration_saddressline1,
+        registration_scountrycode,
+        registration_wprovincecode,
+        registration_szip,
+        registration_sdepartmentname,
+      },
+    });
 
-    if (!sellerData) {
-      // Si no se encuentra, crear un nuevo registro con los datos del body
-      sellerData = await SellerData.create(req.body);
+    // Respuesta
+    if (created) {
       return res.status(201).json({ 
         message: 'Datos del comercio creados exitosamente', 
         data: sellerData 
       });
     }
 
-    // Si se encuentra, devolver los datos encontrados
     res.status(200).json({ 
       message: 'Datos del comercio encontrados exitosamente', 
       data: sellerData 
@@ -32,26 +77,44 @@ const getOrCreateSellerData = async (req, res) => {
   }
 };
 
+
 const updateSellerData = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("ID recibido para actualizar:", id);
-    console.log("Datos recibidos para actualizar:", req.body);
+    const updateData = req.body;
 
-    const updatedData = await SellerData.update(req.body, {
+    // Validar que existen datos para actualizar
+    if (!Object.keys(updateData).length) {
+      return res.status(400).json({ message: 'No hay datos para actualizar' });
+    }
+
+    console.log("ID recibido para actualizar:", id);
+    console.log("Datos recibidos para actualizar:", updateData);
+
+    // Actualizar el registro
+    const [rowsUpdated, updatedRecords] = await SellerData.update(updateData, {
       where: { id },
       returning: true,
     });
 
-    if (updatedData[0] === 0) {
+    if (rowsUpdated === 0) {
       return res.status(404).json({ message: 'Datos no encontrados' });
     }
-    res.status(200).json({ message: 'Datos del comercio actualizados exitosamente', data: updatedData[1][0] });
+
+    res.status(200).json({ 
+      message: 'Datos del comercio actualizados exitosamente', 
+      data: updatedRecords[0] 
+    });
+
   } catch (error) {
     console.error('Error al actualizar los datos del comercio:', error);
-    res.status(500).json({ message: 'Error al actualizar los datos del comercio', error: error.message });
+    res.status(500).json({ 
+      message: 'Error al actualizar los datos del comercio', 
+      error: error.message 
+    });
   }
 };
+
 
 
 

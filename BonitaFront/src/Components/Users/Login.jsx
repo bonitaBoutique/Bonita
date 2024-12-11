@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/banner.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner4b.png'
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -32,7 +32,7 @@ const Login = () => {
     >
       <form 
         onSubmit={submitHandler} 
-        className="max-w-lg w-full bg-white p-8 rounded-lg shadow-md"
+        className="max-w-lg w-full bg-white bg-opacity-80 p-8 rounded-lg shadow-md"
       >
         <h2 className="text-2xl mb-6 text-center">Iniciar Sesión</h2>
         {error && (

@@ -20,14 +20,7 @@
     }
   }
   
-  /* Aplicar las animaciones */
-.animate-marquee-left{
-  animation: marquee-left 20s linear infinite;
-}
-.animate-marquee-right {
-  animation: marquee-right 10s linear infinite;
-  
-}
+
   /* Flayer más llamativo */
   .flayer-text {
     font-family: 'Nunuto', sans-serif; /* Cambia a una fuente más llamativa */
@@ -85,3 +78,17 @@
     height: auto; /* Mantener proporción */
     object-fit: contain;
   }
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .animate-marquee {
+    display: flex;
+    animation: marquee 15s linear infinite;
+  }
+  

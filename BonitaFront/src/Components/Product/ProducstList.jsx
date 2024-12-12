@@ -112,9 +112,9 @@ const ProductsList = () => {
                 </Link>
               </div>
               <div className="mt-4 px-4">
-                <h3 className="text-2xl font-semibold font-nunito text-gray-300">
+                <h3 className="text-2xl font-semibold font-nunito text-pink-200">
                   <Link to={`/product/${product.id_product}`}>
-                    {product.description}
+                    {product.marca}
                   </Link>
                 </h3>
                 <p className="text-lg font-medium font-nunito text-gray-300">
@@ -124,7 +124,7 @@ const ProductsList = () => {
               <div className="mt-4 mb-4 px-4 flex justify-between items-center">
                 <button
                   onClick={() => handleButtonClick(product)}
-                  className="mt-4 flex items-center justify-center w-full bg-colorLogo font-nunito font-semibold text-gray-900 py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors duration-300"
+                  className="mt-4 flex items-center justify-center w-full bg-pink-100 font-nunito font-semibold text-gray-900 py-2 px-4 rounded-lg hover:bg-pink-300 transition-colors duration-300"
                 >
                   <FiShoppingCart className="mr-2 text-colorFooter" /> Añadir al
                   carrito

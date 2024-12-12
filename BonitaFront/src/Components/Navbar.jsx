@@ -8,9 +8,9 @@ import { setSearchTerm, fetchFilteredProducts, fetchCategories, logout } from '.
 
 const navigation = [
   { name: 'Tienda', href: '/products', current: true },
-  { name: 'Colecciones', href: '#about', current: false },
+ 
   { name: 'Contactanos', href: '#footer', current: false },
-  { name: 'Ofertas', href: '#', current: false },
+ 
 ];
 
 function classNames(...classes) {

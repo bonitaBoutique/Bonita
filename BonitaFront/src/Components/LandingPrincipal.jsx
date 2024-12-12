@@ -7,29 +7,28 @@ import logoAmeric from "../assets/img/pagos/logoAmeric.png";
 import logoVisa from "../assets/img/pagos/logoVisa.png";
 import master from "../assets/img/pagos/master.png";
 import ZoomCard from "./ZoomCard";
+import ProductsList from "./Product/ProducstList";
 
 const LandingPrincipal = () => {
   return (
     <div className="min-h-screen bg-gray-200">
-      {/* Carrusel de banners */}
-      <div className="h-screen w-full overflow-hidden relative">
-        <div className="carousel h-full">
-          <img
-            src={banner3}
-            alt="Banner 1"
-            className="w-full h-full object-cover"
-          />
-          <img
-            src={banner2}
-            alt="Banner 2"
-            className="w-full h-full object-cover"
-          />
-          <img
-            src={banner3}
-            alt="Banner 3"
-            className="w-full h-full object-cover"
-          />
+    {/* Carrusel de banners */}
+    <div className="h-screen w-full overflow-hidden relative">
+      <div className="carousel h-full relative">
+        <img
+          src={banner3}
+          alt="Banner 1"
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Frase sobre la imagen */}
+        <div className="absolute top-1/2 left-8 transform -translate-y-1/2 text-pink-100">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight font-nunito">
+            ENCONTRÁ TODO <br /> EN EL MISMO LUGAR
+          </h1>
         </div>
+
+      </div>
       </div>
 
       {/* Cards de estilos de ropa */}
@@ -49,6 +48,9 @@ const LandingPrincipal = () => {
           title="Jeans"
           onClick={() => handleCardClick("jeans-section")}
         />
+      </div>
+      <div>
+      <ProductsList />
       </div>
 
       {/* Carrusel de logos de pago */}

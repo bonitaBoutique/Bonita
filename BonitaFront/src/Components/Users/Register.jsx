@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/BannerPrincipal/banner3.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner6.png'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -48,7 +48,7 @@ const Register = () => {
   return (
     <div 
     className="min-h-screen flex justify-center items-center bg-colorBeige  bg-cover bg-center p-4" 
-
+    style={{ backgroundImage: `url(${imgFondo})` }}
   >
     <div 
       className="w-full max-w-sm p-6 bg-white bg-opacity-80 rounded-md shadow-lg space-y-4"

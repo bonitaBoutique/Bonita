@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/BannerPrincipal/banner4b.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner6.png'
 
 const Login = () => {
   const [email, setEmail] = useState('');

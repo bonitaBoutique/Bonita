@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/banner.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner6.png'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -47,127 +47,136 @@ const Register = () => {
 
   return (
     <div 
-    className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center " 
+    className="min-h-screen flex justify-center items-center bg-colorBeige  bg-cover bg-center p-4" 
     style={{ backgroundImage: `url(${imgFondo})` }}
   >
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md mt-24 mb-4">
-        <h2 className="text-2xl font-bold mb-4 text-center">Registro de Cliente</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div 
+      className="w-full max-w-sm p-6 bg-white bg-opacity-80 rounded-md shadow-lg space-y-4"
+    >
+      <h2 className="text-xl font-semibold text-center">Registro de Cliente</h2>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            <label className="text-sm font-medium">Nombre</label>
             <input
               type="text"
               name="first_name"
               value={formData.first_name}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border rounded-md text-sm"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Apellido</label>
+            <label className="text-sm font-medium">Apellido</label>
             <input
               type="text"
               name="last_name"
               value={formData.last_name}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border rounded-md text-sm"
               required
             />
           </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border rounded-md text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Contraseña</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border rounded-md text-sm"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Número de Documento</label>
+            <label className="text-sm font-medium">Documento</label>
             <input
               type="text"
               name="n_document"
               value={formData.n_document}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border rounded-md text-sm"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+            <label className="text-sm font-medium">Teléfono</label>
             <input
               type="text"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border rounded-md text-sm"
             />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-sm font-medium">Ciudad</label>
+          <input
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium">Género</label>
+          <select
+            name="gender"
+            value={formData.gender}
+            onChange={handleChange}
+            className="mt-1 block w-full p-2 border rounded-md text-sm"
+          >
+            <option value="">Seleccione</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+            <option value="O">Otro</option>
+          </select>
+        </div>
+        </div>
+        {loggedInUserInfo && loggedInUserInfo.role === 'Admin' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700">Ciudad</label>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Género</label>
+            <label className="text-sm font-medium">Rol</label>
             <select
-              name="gender"
-              value={formData.gender}
+              name="role"
+              value={formData.role}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border rounded-md text-sm"
             >
-              <option value="">Seleccione</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="O">Otro</option>
+              <option value="User">Usuario</option>
+              <option value="Admin">Administrador</option>
             </select>
           </div>
-          {loggedInUserInfo && loggedInUserInfo.role === 'Admin' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Rol</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="User">Usuario</option>
-                <option value="Admin">Administrador</option>
-              </select>
-            </div>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-colorFooter text-white py-2 px-4 rounded-md hover:bg-gray-700"
-            disabled={loading}
-          >
-            {loading ? 'Registrando...' : 'Registrar'}
-          </button>
-          {error && <div className="text-red-500 mt-2">{error}</div>}
-        </form>
-        {userInfo && <div className="text-green-500 mt-2">Registro exitoso!</div>}
-      </div>
+        )}
+        <button
+          type="submit"
+          className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-900 text-sm"
+          disabled={loading}
+        >
+          {loading ? 'Registrando...' : 'Registrar'}
+        </button>
+        {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
+      </form>
+      
     </div>
+  </div>
+  
   );
 };
 

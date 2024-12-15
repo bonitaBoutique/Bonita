@@ -86,14 +86,14 @@ const ProductsList = () => {
 
   if (products.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-colorFooter py-16">
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige py-16">
         <p className="text-white text-lg">No hay productos disponibles.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-colorFooter py-16">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 uppercase font-nunito font-semibold">
           {currentProducts.map((product) => (
@@ -112,19 +112,19 @@ const ProductsList = () => {
                 </Link>
               </div>
               <div className="mt-4 px-4">
-                <h3 className="text-2xl font-semibold font-nunito text-gray-300">
+                <h3 className="text-2xl font-semibold font-nunito text-stone-700">
                   <Link to={`/product/${product.id_product}`}>
-                    {product.description}
+                    {product.marca}
                   </Link>
                 </h3>
-                <p className="text-lg font-medium font-nunito text-gray-300">
+                <p className="text-lg font-semibold font-nunito text-gray-800">
                   ${product.price}
                 </p>
               </div>
               <div className="mt-4 mb-4 px-4 flex justify-between items-center">
                 <button
                   onClick={() => handleButtonClick(product)}
-                  className="mt-4 flex items-center justify-center w-full bg-colorLogo font-nunito font-semibold text-gray-900 py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors duration-300"
+                  className="mt-4 flex items-center justify-center w-full bg-amber-100 opacity-80 border-2 font-nunito font-semibold text-gray-700 py-2 px-4 rounded-lg hover:bg-amber-200 transition-colors duration-300"
                 >
                   <FiShoppingCart className="mr-2 text-colorFooter" /> Añadir al
                   carrito
@@ -161,8 +161,8 @@ const ProductsList = () => {
                     <button
                       className={`${
                         currentPage === i + 1
-                          ? "bg-gray-600 text-white hover:bg-gray-400"
-                          : "bg-gray-700 text-gray-200 hover:bg-gray-300"
+                          ? "bg-rose-300 text-white hover:bg-rose-400"
+                          : "bg-rose-300 text-gray-200 hover:bg-rose-400"
                       } px-3 py-2 ml-1 rounded`}
                       onClick={() => paginate(i + 1)}
                     >

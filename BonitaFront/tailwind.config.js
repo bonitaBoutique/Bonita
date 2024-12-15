@@ -8,7 +8,7 @@ export default {
         colorPreguntas:"#cccccc",
         colorLogo:"#ffb422",
         colorDetalle:"#2e5059",
-        colorBeige:"#D3C7B8",
+        colorBeige:"#8F8074",
       },
       fontFamily: {
         nunito: ['Nunito', 'sans-serif'], 

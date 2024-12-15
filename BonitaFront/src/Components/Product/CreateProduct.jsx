@@ -108,7 +108,7 @@ const CreateProduct = () => {
         onSubmit={handleSubmit}
         className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl grid grid-cols-2 gap-6"
       >
-        <h2 className="col-span-2 text-3xl font-bold font-nunito bg-yellow-600 p-4 rounded text-center text-gray-600">
+        <h2 className="col-span-2 text-3xl font-bold font-nunito bg-colorBeige p-4 rounded text-center text-gray-600">
           Cargar nuevo Artículo
         </h2>
 

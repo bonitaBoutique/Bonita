@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/BannerPrincipal/banner4b.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner3.png'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -47,8 +47,8 @@ const Register = () => {
 
   return (
     <div 
-    className="min-h-screen flex justify-center items-center bg-cover bg-center p-4" 
-    style={{ backgroundImage: `url(${imgFondo})` }}
+    className="min-h-screen flex justify-center items-center bg-colorBeige  bg-cover bg-center p-4" 
+
   >
     <div 
       className="w-full max-w-sm p-6 bg-white bg-opacity-80 rounded-md shadow-lg space-y-4"
@@ -124,6 +124,7 @@ const Register = () => {
             />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-sm font-medium">Ciudad</label>
           <input
@@ -148,6 +149,7 @@ const Register = () => {
             <option value="O">Otro</option>
           </select>
         </div>
+        </div>
         {loggedInUserInfo && loggedInUserInfo.role === 'Admin' && (
           <div>
             <label className="text-sm font-medium">Rol</label>
@@ -171,7 +173,7 @@ const Register = () => {
         </button>
         {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
       </form>
-      {userInfo && <div className="text-green-500 text-sm mt-2">Registro exitoso!</div>}
+      
     </div>
   </div>
   

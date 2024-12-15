@@ -1,7 +1,9 @@
 import React from "react";
-import banner1 from "./../assets/img/BannerPrincipal/banner1.png";
-import banner2 from "./../assets/img/BannerPrincipal/banner2.png";
-import banner3 from "./../assets/img/BannerPrincipal/banner8.png";
+import banner7 from "./../assets/img/BannerPrincipal/3.png";
+import banner5 from "./../assets/img/BannerPrincipal/1.png";
+import banner6 from "./../assets/img/BannerPrincipal/9.png";
+import banner2 from "./../assets/img/BannerPrincipal/dorada.png";
+import banner3 from "./../assets/img/BannerPrincipal/banner10.png";
 import efecti from "../assets/img/pagos/efecty.png";
 import logoAmeric from "../assets/img/pagos/logoAmeric.png";
 import logoVisa from "../assets/img/pagos/logoVisa.png";
@@ -11,18 +13,18 @@ import ProductsList from "./Product/ProducstList";
 
 const LandingPrincipal = () => {
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen bg-black">
     {/* Carrusel de banners */}
     <div className="h-screen w-full overflow-hidden relative">
       <div className="carousel h-full relative">
         <img
           src={banner3}
           alt="Banner 1"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-55"
         />
         
         {/* Frase sobre la imagen */}
-        <div className="absolute top-1/2 left-8 transform -translate-y-1/2 text-pink-100">
+        <div className="absolute top-1/2 left-8 transform -translate-y-1/2 text-rose-200">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight font-nunito">
             ENCONTRÁ TODO <br /> EN EL MISMO LUGAR
           </h1>
@@ -34,18 +36,18 @@ const LandingPrincipal = () => {
       {/* Cards de estilos de ropa */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 py-12 px-4">
         <ZoomCard
-          image={banner2}
-          title="Vestidos"
+          image={banner5}
+          title="Calidad"
           onClick={() => handleCardClick("vestidos-section")}
         />
         <ZoomCard
-          image={banner2}
-          title="Blazers"
+          image={banner7}
+          title="Moda"
           onClick={() => handleCardClick("blazers-section")}
         />
         <ZoomCard
-          image={banner2}
-          title="Jeans"
+          image={banner6}
+          title="Tendencia"
           onClick={() => handleCardClick("jeans-section")}
         />
       </div>

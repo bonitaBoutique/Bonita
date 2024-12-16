@@ -9,6 +9,10 @@ module.exports = (sequelize) => {
         primaryKey: true,
         allowNull: false,
       },
+      wdoctype: {
+        type: DataTypes.ENUM('RC', 'TI', 'CC','TE', 'CE', 'NIT','PAS', 'DEX', 'PEP','PPT', 'FI', 'NUIP'),
+        allowNull: true,
+      },
       first_name: {
         type: DataTypes.STRING,
       },
@@ -41,6 +45,34 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM('User', 'Admin'),
         defaultValue: 'User',
       },
+      wlegalorganizationtype: {
+        type: DataTypes.ENUM('person', 'company'),
+        allowNull: true,
+        defaultValue: 'person',
+      },
+      scostumername: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        
+      },
+      stributaryidentificationkey: {
+        type: DataTypes.ENUM('O-1', 'O-4', 'ZZ', 'ZA'),
+        allowNull: true,
+        defaultValue: 'O-1',
+        
+      },
+      sfiscalresponsibilities: {
+        type: DataTypes.ENUM('O-13', 'O-15', 'O-23', 'O-47', 'R-99-PN'),
+        allowNull: true,
+        defaultValue: 'R-99',
+      },
+      sfiscalregime: {
+        type: DataTypes.ENUM('48', "49"),
+        allowNull: true,
+        defaultValue: '48',
+      },
+      
+
       deletedAt: {
         type: DataTypes.DATE,
         allowNull: true,

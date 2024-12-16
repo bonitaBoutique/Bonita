@@ -116,9 +116,6 @@ const updateSellerData = async (req, res) => {
 };
 
 
-
-
-
 module.exports = {
   getOrCreateSellerData,
   updateSellerData,

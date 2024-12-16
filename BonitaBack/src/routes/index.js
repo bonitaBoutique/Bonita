@@ -10,6 +10,9 @@ router.use("/user", require("./userRouter"))
 router.use("/auth", require("./authRouter"))
 router.use("/eventos", require("./webhookRouter"))
 router.use('/seller', require("./sellerDataRouter"))
+router.use('/taxxa', require("./taxxaRouter"))
+
+
 
 
 module.exports = router;

@@ -36,7 +36,12 @@ module.exports = async (req, res) => {
       password: hash,
       phone: user.phone,
       city: user.city,
-      role: user.role 
+      role: user.role, 
+      wlegalorganizationtype: user.wlegalorganizationtype,
+      scostumername: user.scostumername,
+      stributaryidentificationkey: user.stributaryidentificationkey,
+      sfiscalresponsibilities: user.sfiscalresponsibilities,
+      sfiscalregime:user.sfiscalregime
     });
 
     // Crear token

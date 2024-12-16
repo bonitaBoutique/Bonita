@@ -14,6 +14,8 @@ const UserRegistrationPopup = ({ onClose }) => {
     password: '',
     phone: '',
     city: '',
+    
+
   });
 
   const handleChange = (e) => {

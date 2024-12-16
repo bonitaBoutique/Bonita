@@ -27,6 +27,7 @@ module.exports = {
     webhook:catchedAsync(require("./webhook")),
     getOrCreateSellerData: catchedAsync(getOrCreateSellerData),  // Aquí importa directamente el controlador
     updateSellerData: catchedAsync(updateSellerData),
+    TaxxaService: catchedAsync(require("./Taxxa/TaxxaService")),
     
     getProductStock: catchedAsync(require("./Products/getProductStock"))
 }

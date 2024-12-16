@@ -11,20 +11,20 @@ const BillingForm = () => {
   const [showInvoicePopup, setShowInvoicePopup] = useState(false); // Estado para el popup
   const [jbuyer, setBuyer] = useState({
     wlegalorganizationtype: "",
-    scostumername: "CONSUMIDOR FINAL",
-    stributaryidentificationkey: "ZZ",
-    stributaryidentificationname: "No aplica",
-    sfiscalresponsibilities: "R-99-PN",
-    sfiscalregime: "48",
+    scostumername: "",
+    stributaryidentificationkey: "",
+    stributaryidentificationname: "",
+    sfiscalresponsibilities: "",
+    sfiscalregime: "",
     jpartylegalentity: {
       wdoctype: "",
       sdocno: "",
-      scorporateregistrationschemename: "CONSUMIDOR FINAL",
+      scorporateregistrationschemename: "",
     },
     jcontact: {
-      scontactperson: "CONSUMIDOR FINAL",
+      scontactperson: "",
       selectronicmail: "",
-      stelephone: "0000000",
+      stelephone: "",
     },
   });
 

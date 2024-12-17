@@ -351,6 +351,8 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
   }
 };
 
+
+
 export const fetchAllOrders = () => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ALLS_ORDERS_REQUEST });

@@ -52,14 +52,10 @@ sequelize.models = Object.fromEntries(capsEntries);
 // Para relacionarlos hacemos un destructuring
 const { User, Product, StockMovement, Category, Delivery, OrderDetail, Payment, Image, OrderProduct, SubCategory, Invoice } = sequelize.models;
 
-OrderDetail.hasMany(Product, {
-  foreignKey: 'id_orderDetail',
-  as: 'products'
-});
-Product.belongsTo(OrderDetail, {
-  foreignKey: 'id_orderDetail',
-  as: 'orderDetail'
-});
+OrderDetail.belongsToMany(Product, { through: 'OrderProduct', as: 'products', foreignKey: 'id_orderDetail' });
+
+// Product.js
+Product.belongsToMany(OrderDetail, { through: 'OrderProduct', as: 'orders', foreignKey: 'id_product' });
 //User --> Order
 OrderDetail.belongsTo(User,{foreignKey:"n_document"})
 User.hasMany(OrderDetail,{foreignKey: "n_document"})

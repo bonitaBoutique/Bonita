@@ -28,6 +28,9 @@ const Panel = () => {
               <Link to="/panel/facturacion" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
                 Facturación
               </Link>
+              <Link to="/panel/ordenesPendientes" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
+                Ordenes Pendientes
+              </Link>
             </>
         
         </div>

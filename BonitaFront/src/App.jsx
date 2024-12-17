@@ -23,11 +23,14 @@ import PrivateRoute from './Components/PrivateRoute';
 import LandingPrincipal from "./Components/LandingPrincipal";
 import WhatsappButton from "./Components/WhatsappButton";
 import BillingForm from "./Components/Taxxa/BillingForm";
-import LoginTaxxa from "./Components/Taxxa/loginTaxxa";
+import Invoice from "./Components/Taxxa/Invoice"
+import CreditN from "./Components/Taxxa/CreditN";
 import SellerForm from "./Components/Taxxa/SellerForm";
 import Panel from "./Components/Taxxa/Panel";
 import PanelProductos from "./Components/Product/PanelProductos"
 import ListadoProductos from "./Components/stock/ListadoProductos";
+import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
+
 
   function App() {
     return (
@@ -73,12 +76,17 @@ import ListadoProductos from "./Components/stock/ListadoProductos";
             <Route path="/createProducts" element={<PrivateRoute>
               <CreateProduct />
             </PrivateRoute>} />
-            
             <Route path="/panel/seller" element={<PrivateRoute>
               <SellerForm />
             </PrivateRoute>} />
-            <Route path="/loginTaxxa" element={<PrivateRoute>
-              <LoginTaxxa />
+            <Route path="/panel/ordenesPendientes" element={<PrivateRoute>
+              <OrdenesPendientes />
+            </PrivateRoute>} />
+            <Route path="/invoice" element={<PrivateRoute>
+              <Invoice />
+            </PrivateRoute>} />
+            <Route path="/creditN" element={<PrivateRoute>
+              <CreditN />
             </PrivateRoute>} /> 
 
             <Route path="/category" element={<CreateCategory/>}/>  

@@ -4,8 +4,10 @@ import { fetchUserByDocument } from "../../Redux/Actions/actions";
 import BuyerForm from "./BuyerForm";
 import UserRegistrationPopup from "./UserRegistrationPopup";
 import DocumentTypePopup from "./DocumentTypePopup"; // Importa el popup
+import { useNavigate } from "react-router-dom";
 
 const BillingForm = () => {
+  const navigate = useNavigate();
   const [n_document, setNDocument] = useState("");
   const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
   const [showInvoicePopup, setShowInvoicePopup] = useState(false); // Estado para el popup
@@ -111,11 +113,17 @@ const BillingForm = () => {
 
       {/* Popup para seleccionar tipo de comprobante */}
       {showInvoicePopup && (
-        <DocumentTypePopup
-          onClose={() => setShowInvoicePopup(false)}
-          onSubmit={(type) => console.log("Tipo de comprobante seleccionado:", type)}
-        />
-      )}
+  <DocumentTypePopup
+    onClose={() => setShowInvoicePopup(false)}
+    onSubmit={(type) => {
+      if (type === "01") {
+        navigate("/invoice"); // Navegar a la ruta de facturas
+      } else if (type === "91") {
+        navigate("/creditN"); // Navegar a la ruta de notas de crédito
+      }
+    }}
+  />
+)}
     </div>
   );
 };

@@ -74,8 +74,10 @@ module.exports = async (req, res) => {
           by: cantidadSalida,
           where: { id_product: productId },
         });
-      })
-    );
+
+        await orderDetail.addProduct(productId, { through: { quantity: cantidadSalida } });
+  })
+);
 
     // Incluir productos en la respuesta final
     const updatedOrderDetail = await OrderDetail.findOne({

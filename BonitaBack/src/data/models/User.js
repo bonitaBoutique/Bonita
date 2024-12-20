@@ -64,7 +64,7 @@ module.exports = (sequelize) => {
       sfiscalresponsibilities: {
         type: DataTypes.ENUM('O-13', 'O-15', 'O-23', 'O-47', 'R-99-PN'),
         allowNull: true,
-        defaultValue: 'R-99',
+        defaultValue: 'R-99-PN',
       },
       sfiscalregime: {
         type: DataTypes.ENUM('48', "49"),

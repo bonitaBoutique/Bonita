@@ -6,6 +6,7 @@ module.exports = {
     WOMPI_EVENT_KEY: process.env.EVENTS_SECRET_KEY,
     USERNAME: process.env.USERNAME,
     ACCESS_KEY: process.env.ACCESS_KEY,
+    PORT:process.env.PORT,
     PARTNER_ID: process.env.PARTNER_ID,
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
 CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,

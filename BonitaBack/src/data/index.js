@@ -8,6 +8,7 @@ const {
   DB_HOST,
   DB_PORT,
   DB_NAME,
+  DB_DEPLOY
   } = require('../config/envs');
 //-------------------------------- CONFIGURACION PARA TRABAJAR LOCALMENTE-----------------------------------
 // const sequelize = new Sequelize(

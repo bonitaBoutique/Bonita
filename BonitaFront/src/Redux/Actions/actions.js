@@ -85,7 +85,7 @@ export const createProduct = (productData) => async (dispatch) => {
 
   try {
     // Enviar los datos como JSON (sin necesidad de multipart/form-data)
-    await axios.post(`http://localhost:3001/product/createProducts`, productData, {
+    await axios.post(`${BASE_URL}/product/createProducts`, productData, {
       headers: {
         'Content-Type': 'application/json',  // Correcto para enviar datos JSON
       },
@@ -143,7 +143,7 @@ export const fetchProductById = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCT_REQUEST });
 
   try {
-    const response = await axios.get(`http://localhost:3001/product/${id_product}`);
+    const response = await axios.get(`${BASE_URL}/product/${id_product}`);
     
     // Acceso correcto a "product"
     const product = response.data.data.product; 

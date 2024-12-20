@@ -7,7 +7,6 @@ module.exports = {
     USERNAME: process.env.USERNAME,
     ACCESS_KEY: process.env.ACCESS_KEY,
     PARTNER_ID: process.env.PARTNER_ID,
-    DB_DEPLOY: process.env.DB_DEPLOY,
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
 CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
 CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,

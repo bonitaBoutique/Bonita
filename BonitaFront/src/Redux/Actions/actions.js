@@ -36,6 +36,9 @@ import {
   FETCH_ORDERS_REQUEST,
   FETCH_ORDERS_SUCCESS,
   FETCH_ORDERS_FAILURE,
+  FETCH_ORDERBYID_REQUEST,
+  FETCH_ORDERBYID_SUCCESS,
+  FETCH_ORDERBYID_FAILURE,
   FETCH_ALLS_ORDERS_REQUEST,
   FETCH_ALLS_ORDERS_SUCCESS,
   FETCH_ALLS_ORDERS_FAILURE,
@@ -70,7 +73,10 @@ import {
   CREATE_SELLER_FAILURE,
   UPDATE_SELLER_REQUEST,
   UPDATE_SELLER_SUCCESS,
-  UPDATE_SELLER_FAILURE
+  UPDATE_SELLER_FAILURE,
+  SEND_INVOICE_REQUEST,
+  SEND_INVOICE_SUCCESS,
+  SEND_INVOICE_FAILURE
 
 } from './actions-type';
 
@@ -351,6 +357,30 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
   }
 };
 
+export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_ORDERBYID_REQUEST });
+    console.log('Fetching order by ID:', id_orderDetail); // Log antes de realizar la solicitud
+
+    const { data } = await axios.get(`${BASE_URL}/order/products/${id_orderDetail}`);
+    console.log('Response data:', data); // Log para inspeccionar la respuesta
+
+    dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: data.data.orderDetail });
+    console.log('Dispatched success:', data.data.orderDetail); // Log después del dispatch
+  } catch (error) {
+    console.error('Error fetching order:', error); // Log del error para más contexto
+
+    dispatch({
+      type: FETCH_ORDERBYID_FAILURE,
+      payload: error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message,
+    });
+  }
+};
+
+
+
 
 
 export const fetchAllOrders = () => async (dispatch) => {
@@ -566,5 +596,28 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
     return false; // Retorna fallo
   }
 };
+
+export const sendInvoice = (invoiceData) => async (dispatch) => {
+  dispatch({ type: SEND_INVOICE_REQUEST });
+  try {
+    const response = await fetch(`${BASE_URL}/taxxa/doc`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(invoiceData),
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al enviar la factura");
+    }
+
+    const data = await response.json();
+    dispatch({ type: SEND_INVOICE_SUCCESS, payload: data });
+  } catch (error) {
+    dispatch({ type: SEND_INVOICE_FAILURE, payload: error.message });
+  }
+};
+
 
 

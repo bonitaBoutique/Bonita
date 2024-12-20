@@ -6,6 +6,7 @@ const { getProductStock } = require("./Products");
 
 
 
+
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
     createCategory:catchedAsync(require("./Category/createCategory")),

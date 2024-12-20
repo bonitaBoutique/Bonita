@@ -3,10 +3,10 @@ const paymentMethods = [
   { value: "48", label: "Tarjeta Crédito" },
   { value: "49", label: "Tarjeta Débito" },
   { value: "47", label: "Transferencia Débito Bancaria" },
-  { value: "42", label: "Consiganción bancaria" },
+  
   { value: "44", label: "Nota cambiaria" },
   { value: "42", label: "Consiganción bancaria" },
-  { value: "44", label: "Nota cambiaria" },
+  
   { value: "3", label: "Débito ACH" },
   { value: "25", label: "Cheque certificado" },
   { value: "26", label: "Cheque Local" },

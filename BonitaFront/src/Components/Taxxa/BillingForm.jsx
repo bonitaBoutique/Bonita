@@ -5,6 +5,7 @@ import BuyerForm from "./BuyerForm";
 import UserRegistrationPopup from "./UserRegistrationPopup";
 import DocumentTypePopup from "./DocumentTypePopup"; // Importa el popup
 import { useNavigate } from "react-router-dom";
+import OrdenesPendientes from "./OrdenesPendientes";
 
 const BillingForm = () => {
   const navigate = useNavigate();
@@ -77,7 +78,13 @@ const BillingForm = () => {
   const closePopup = () => setShowRegistrationPopup(false);
 
   return (
-    <div className="p-6 max-w-lg mx-auto pt-40 grid-cols-4">
+  <div className="p-6  pt-16">
+
+      <OrdenesPendientes/>
+    
+    <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">
+
+    
       <form onSubmit={handleFetchUser} className="flex flex-col gap-4 mb-6">
         <label className="text-gray-700">Número de Documento</label>
         <input
@@ -117,14 +124,18 @@ const BillingForm = () => {
     onClose={() => setShowInvoicePopup(false)}
     onSubmit={(type) => {
       if (type === "01") {
-        navigate("/invoice"); // Navegar a la ruta de facturas
+        navigate("/invoice", { state: { buyer: jbuyer } });
+ // Navegar a la ruta de facturas
       } else if (type === "91") {
-        navigate("/creditN"); // Navegar a la ruta de notas de crédito
+        navigate("/creditN", { state: { buyer: jbuyer } });
+; // Navegar a la ruta de notas de crédito
       }
     }}
   />
+  
 )}
-    </div>
+</div> 
+  </div>
   );
 };
 

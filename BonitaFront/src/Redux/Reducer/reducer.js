@@ -34,6 +34,9 @@ import {
   FETCH_ORDERS_REQUEST,
   FETCH_ORDERS_SUCCESS,
   FETCH_ORDERS_FAILURE,
+  FETCH_ORDERBYID_REQUEST,
+  FETCH_ORDERBYID_SUCCESS,
+  FETCH_ORDERBYID_FAILURE,
   FETCH_ALLS_ORDERS_REQUEST,
   FETCH_ALLS_ORDERS_SUCCESS,
   FETCH_ALLS_ORDERS_FAILURE,
@@ -68,7 +71,11 @@ import {
   CREATE_SELLER_FAILURE,
   UPDATE_SELLER_REQUEST,
   UPDATE_SELLER_SUCCESS,
-  UPDATE_SELLER_FAILURE
+  UPDATE_SELLER_FAILURE,
+  SEND_INVOICE_REQUEST,
+  SEND_INVOICE_SUCCESS,
+  SEND_INVOICE_FAILURE
+  
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -80,7 +87,7 @@ const initialState = {
   product: {},
   similarProducts: [],
   products: [],
-  data:null,
+  data: null,
   error: null,
 
   userTaxxa: {
@@ -135,6 +142,11 @@ const initialState = {
         )
       : 0,
   },
+  invoice: {
+    loading: false,
+    success: false,
+    error: null,
+  },
 
   order: {
     loading: false,
@@ -146,6 +158,11 @@ const initialState = {
     loading: false,
     orders: [],
     error: null,
+  },
+  orderById: {
+    loading: false,
+    error: null,
+    order: {},
   },
   ordersGeneral: {
     loading: false,
@@ -163,7 +180,6 @@ const initialState = {
     error: null,
     data: {},
   },
-
 };
 
 const rootReducer = (state = initialState, action) => {
@@ -212,41 +228,41 @@ const rootReducer = (state = initialState, action) => {
         },
       };
 
-      case FETCH_PRODUCTS_REQUEST:
+    case FETCH_PRODUCTS_REQUEST:
       return { ...state, loading: true };
-    
+
     case FETCH_PRODUCTS_SUCCESS:
       return {
         ...state,
-        products: action.payload,  
-        loading: false
+        products: action.payload,
+        loading: false,
       };
-    
+
     case FETCH_PRODUCTS_FAILURE:
       return {
         ...state,
         error: action.payload,
-        loading: false
+        loading: false,
       };
 
-      case FETCH_PRODUCT_REQUEST:
-        return {
-          ...state,
-          loading: true,
-          error: null,
-        };
-      case FETCH_PRODUCT_SUCCESS:
-        return {
-          ...state,
-          product: action.payload,  
-          loading: false,
-        };
-      case FETCH_PRODUCT_FAILURE:
-        return {
-          ...state,
-          error: action.payload,
-          loading: false,
-        };
+    case FETCH_PRODUCT_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
+    case FETCH_PRODUCT_SUCCESS:
+      return {
+        ...state,
+        product: action.payload,
+        loading: false,
+      };
+    case FETCH_PRODUCT_FAILURE:
+      return {
+        ...state,
+        error: action.payload,
+        loading: false,
+      };
 
     case ADD_TO_CART:
       const existingItem = state.cart.items.find(
@@ -434,7 +450,7 @@ const rootReducer = (state = initialState, action) => {
         ...state,
         categoryFilter: action.payload,
       };
-    
+
     case CLEAR_ORDER_STATE:
       return {
         ...state,
@@ -472,6 +488,36 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
+      case FETCH_ORDERBYID_REQUEST:
+        return {
+          ...state,
+          orderById: {
+            ...state.orderById,
+            loading: true,
+            error: null,
+          },
+        };
+      
+      case FETCH_ORDERBYID_SUCCESS:
+        return {
+          ...state,
+          orderById: {
+            loading: false,
+            order: action.payload,  // Verifica que action.payload contiene el objeto esperado
+            error: null,
+          },
+        };
+      
+      case FETCH_ORDERBYID_FAILURE:
+        return {
+          ...state,
+          orderById: {
+            loading: false,
+            order: {},
+            error: action.payload,
+          },
+        };
+      
     case FETCH_ALLS_ORDERS_REQUEST:
       return {
         ...state,
@@ -675,66 +721,66 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-      case FETCH_USER_REQUEST:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: true,
-            error: null,
-          },
-        };
-      case FETCH_USER_SUCCESS:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: false,
-            userInfo: action.payload,
-            error: null,
-          },
-        };
-      case FETCH_USER_FAILURE:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: false,
-            userInfo: null,
-            error: action.payload,
-          },
-        };
-  
-      case USER_REGISTER_REQUEST:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: true,
-            error: null,
-          },
-        };
-      case USER_REGISTER_SUCCESS:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: false,
-            userInfo: action.payload,
-            error: null,
-          },
-        };
-      case USER_REGISTER_FAIL:
-        return {
-          ...state,
-          userTaxxa: {
-            ...state.userTaxxa,
-            loading: false,
-            error: action.payload,
-          },
-        };
+    case FETCH_USER_REQUEST:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: true,
+          error: null,
+        },
+      };
+    case FETCH_USER_SUCCESS:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: false,
+          userInfo: action.payload,
+          error: null,
+        },
+      };
+    case FETCH_USER_FAILURE:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: false,
+          userInfo: null,
+          error: action.payload,
+        },
+      };
 
-        case FETCH_SELLER_REQUEST:
+    case USER_REGISTER_REQUEST:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: true,
+          error: null,
+        },
+      };
+    case USER_REGISTER_SUCCESS:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: false,
+          userInfo: action.payload,
+          error: null,
+        },
+      };
+    case USER_REGISTER_FAIL:
+      return {
+        ...state,
+        userTaxxa: {
+          ...state.userTaxxa,
+          loading: false,
+          error: action.payload,
+        },
+      };
+
+    case FETCH_SELLER_REQUEST:
       return {
         ...state,
         sellerData: {
@@ -822,7 +868,38 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
+      case SEND_INVOICE_REQUEST:
+        return {
+          ...state,
+          invoice: {
+            ...state.invoice,
+            loading: true,
+            success: false,
+            error: null,
+          },
+        };
+      case SEND_INVOICE_SUCCESS:
+        return {
+          ...state,
+          invoice: {
+            ...state.invoice,
+            loading: false,
+            success: true,
+            error: null,
+          },
+        };
+      case SEND_INVOICE_FAILURE:
+        return {
+          ...state,
+          invoice: {
+            ...state.invoice,
+            loading: false,
+            success: false,
+            error: action.payload,
+          },
+        };
   
+
     default:
       return state;
   }

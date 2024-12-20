@@ -38,6 +38,7 @@ module.exports = async (req, res) => {
       description,
       codigoProv,
       price,
+      priceVenta,
       stock,
       sizes,
       colors,

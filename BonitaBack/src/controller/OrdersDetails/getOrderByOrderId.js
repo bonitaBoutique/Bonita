@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
       include: {
         model: Product,
         as: 'products',
-        attributes: ['id_product'], // Trae solo los IDs de productos
+        attributes: ['id_product', 'codigoBarra', 'price', 'description'], // Incluye los campos adicionales
       },
     });
 
@@ -33,6 +33,9 @@ module.exports = async (req, res) => {
       n_document: order.n_document,
       products: order.products.map(product => ({
         id_product: product.id_product,
+        codigoBarra: product.codigoBarra,
+        price: product.price,
+        description: product.description,
       })),
       integritySignature: order.integritySignature,
       trackingNumber: order.trackingNumber,
@@ -44,6 +47,7 @@ module.exports = async (req, res) => {
     return response(res, 500, { error: error.message });
   }
 };
+
 
 
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, updateProduct, deleteProduct } from "../../Redux/Actions/actions"; // Ajusta la ruta según tu estructura
+import * as XLSX from "xlsx"; // Importar SheetJS
 
 const ListadoProductos = () => {
   const dispatch = useDispatch();
@@ -8,6 +9,7 @@ const ListadoProductos = () => {
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const [filtro, setFiltro] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -17,21 +19,47 @@ const ListadoProductos = () => {
     setFiltro(e.target.value.toLowerCase());
   };
 
-  const toggleTiendaOnline = (producto) => {
-    // Crear el objeto actualizado con el valor invertido de tiendaOnLine
-    const updatedProduct = { ...producto, tiendaOnLine: !producto.tiendaOnLine };
-  
-    // Despachar la acción para actualizar el producto en el backend
-    dispatch(updateProduct(producto.id_product, updatedProduct));
-  
-    // Opcionalmente actualizar el estado local para que el cambio sea visible de inmediato
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts((prevSelected) =>
+      prevSelected.includes(productId)
+        ? prevSelected.filter((id) => id !== productId)
+        : [...prevSelected, productId]
+    );
   };
-  
+
+  const toggleTiendaOnline = (producto) => {
+    const updatedProduct = { ...producto, tiendaOnLine: !producto.tiendaOnLine };
+    dispatch(updateProduct(producto.id_product, updatedProduct));
+  };
 
   const handleDeleteProduct = (id_product) => {
     if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
       dispatch(deleteProduct(id_product));
     }
+  };
+
+  const handleDownloadExcel = () => {
+    const selectedData = products.filter((producto) =>
+      selectedProducts.includes(producto.id_product)
+    );
+
+    const dataForExcel = selectedData.map((producto) => ({
+      Código_Barra: producto.codigoBarra,
+      Marca: producto.marca,
+      Código_Proveedor: producto.codigoProv,
+      Descripción: producto.description,
+      Costo: producto.price,
+      Precio_Venta: producto.priceSell,
+      Stock: producto.stock,
+      Tamaños: producto.sizes,
+      Colores: producto.colors,
+      Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+    XLSX.writeFile(workbook, "productos_seleccionados.xlsx");
   };
 
   const productosFiltrados = products.filter((producto) =>
@@ -52,10 +80,19 @@ const ListadoProductos = () => {
         onChange={handleFiltroChange}
       />
 
+      <button
+        onClick={handleDownloadExcel}
+        className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
+        disabled={selectedProducts.length === 0}
+      >
+        Descargar Excel
+      </button>
+
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto border-collapse border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
+              <th className="px-4 py-2 border border-gray-300 text-left text-gray-600">Seleccionar</th>
               {[
                 "Código Barra",
                 "Marca",
@@ -67,7 +104,7 @@ const ListadoProductos = () => {
                 "Tamaños",
                 "Colores",
                 "Tienda Online",
-                "Acciones"
+                "Acciones",
               ].map((header) => (
                 <th
                   key={header}
@@ -81,6 +118,13 @@ const ListadoProductos = () => {
           <tbody>
             {productosFiltrados.map((producto) => (
               <tr key={producto.id_product} className="hover:bg-gray-50">
+                <td className="px-4 py-2 border border-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.includes(producto.id_product)}
+                    onChange={() => toggleProductSelection(producto.id_product)}
+                  />
+                </td>
                 <td className="px-4 py-2 border border-gray-300">{producto.codigoBarra}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.marca}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.codigoProv}</td>
@@ -118,5 +162,6 @@ const ListadoProductos = () => {
 };
 
 export default ListadoProductos;
+
 
 

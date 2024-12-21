@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
         {
           model: Product,
           as: 'products', // Debe coincidir con el alias definido en la relación
-          attributes: ['id_product', 'description', 'price', 'isDian', 'codigoBarra'], // Ajusta los campos necesarios
+          attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'], // Ajusta los campos necesarios
         },
         {
           model: User,
@@ -44,6 +44,7 @@ module.exports = async (req, res) => {
           description: product.description,
           price: product.price,
           isDian: product.isDian,
+          tiendaOnLine:product.tiendaOnLine,
           codigoBarra:product.codigoBarra
         })),
       };
@@ -67,6 +68,7 @@ module.exports = async (req, res) => {
         description: product.description,
         price: product.price,
         isDian: product.isDian,
+        tiendaOnLine:product.tiendaOnLine,
         codigoBarra:product.codigoBarra
       })),
     }));

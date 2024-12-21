@@ -118,7 +118,7 @@ const ProductsList = () => {
                   </Link>
                 </h3>
                 <p className="text-lg font-semibold font-nunito text-gray-800">
-                  ${product.price}
+                  ${product.priceSell}
                 </p>
               </div>
               <div className="mt-4 mb-4 px-4 flex justify-between items-center">
@@ -130,6 +130,7 @@ const ProductsList = () => {
                   carrito
                 </button>
               </div>
+
               {userInfo && userInfo.role === "Admin" && (
                 <div className="absolute top-2 right-2 flex space-x-2">
                   <button

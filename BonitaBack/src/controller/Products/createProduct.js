@@ -19,15 +19,18 @@ const generateNextId = async () => {
 };
 
 // Función para generar el código de barras
-const generateBarcode = (fecha, sizes, colors, price, id_product) => {
-  const pricePart = Math.floor(price).toString().slice(0, 2); // Extrae los dos primeros dígitos del precio.
+const generateBarcode = (fecha, sizes, colors, priceSell, id_product) => {
+  // Toma la parte entera del precio y extrae los miles o decenas de miles.
+  const pricePart = Math.floor(priceSell).toString();
+  const significantPrice = pricePart.slice(0, pricePart.length - 3); // Extrae los miles.
 
   // Validamos que sizes y colors sean cadenas y les aplicamos toUpperCase solo si lo son.
   const sizesPart = sizes ? sizes.toString().toUpperCase() : 'DEFAULT';
   const colorsPart = colors ? colors.toString().toUpperCase() : 'DEFAULT';
 
-  return `${fecha}${sizesPart}${colorsPart}${pricePart}${id_product}`;
+  return `${fecha}${sizesPart}${colorsPart}${significantPrice}${id_product}`;
 };
+
 
 module.exports = async (req, res) => {
   console.log('Request body:', req.body)
@@ -38,7 +41,7 @@ module.exports = async (req, res) => {
       description,
       codigoProv,
       price,
-      priceVenta,
+      priceSell,
       stock,
       sizes,
       colors,
@@ -54,7 +57,7 @@ module.exports = async (req, res) => {
     const id_product = await generateNextId();
 
     // Genera el código de barras
-    const codigoBarra = generateBarcode(fecha, sizes, colors, price, id_product);
+    const codigoBarra = generateBarcode(fecha, sizes, colors, priceSell, id_product);
 
     // Crea el producto con las imágenes como array
     const product = await Product.create({
@@ -65,6 +68,7 @@ module.exports = async (req, res) => {
       description,
       codigoProv,
       price: parseFloat(price),
+      priceSell: parseFloat(priceSell),
       stock: parseInt(stock, 10),
       sizes,
       colors,

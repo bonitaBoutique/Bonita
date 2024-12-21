@@ -79,8 +79,8 @@ const Invoice = () => {
       console.log("Datos de la orden recibidos:", order);
   
       const products = order.products.reduce((acc, product, index) => {
-        const priceWithoutTax = parseFloat((product.price / 1.19).toFixed(2)); // Convertimos a número
-        const taxAmount = parseFloat((product.price - priceWithoutTax).toFixed(2));
+        const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2)); // Convertimos a número
+        const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
   
         acc[index] = {
           jextrainfo: {
@@ -107,13 +107,13 @@ const Invoice = () => {
       }, {});
   
       const totalAmountWithoutTax = order.products.reduce((total, product) => {
-        const priceWithoutTax = product.price / 1.19;
+        const priceWithoutTax = product.priceSell / 1.19;
         return total + priceWithoutTax * order.quantity;
       }, 0);
   
       const totalTaxAmount = order.products.reduce((total, product) => {
-        const priceWithoutTax = product.price / 1.19;
-        const taxAmount = product.price - priceWithoutTax;
+        const priceWithoutTax = product.priceSell / 1.19;
+        const taxAmount = product.priceSell - priceWithoutTax;
         return total + taxAmount * order.quantity;
       }, 0);
   
@@ -151,7 +151,7 @@ const Invoice = () => {
         },
       });
     }
-  }, [order]);
+  }, [buyer, order, orderId]);
   
   
 

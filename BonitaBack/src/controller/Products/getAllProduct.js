@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 
 module.exports = async (req, res) => {
   try {
-    const { search, price, categoryId, categoryName } = req.query;
+    const { search, priceSell, categoryId, categoryName } = req.query;
 
     let whereClause = {
       [Op.and]: [],
@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
       whereClause[Op.and].push({
         [Op.or]: [
           { name: { [Op.iLike]: `%${search}%` } },
-          { price: { [Op.eq]: price } },
+          { priceSell: { [Op.eq]: priceSell } },
         ],
       });
     }

@@ -12,7 +12,7 @@ const ProductCarousel = () => {
   const dispatch = useDispatch();
   const products = useSelector((state) => state.products || []);
   const categoryFilter = useSelector((state) => state.products.categoryFilter || '');
-
+  
   useEffect(() => {
    
     dispatch(setCategoryFilter(''));
@@ -61,7 +61,7 @@ const ProductCarousel = () => {
                     className="w-full h-80 object-contain rounded-2xl mb-2" // object-contain asegura que la imagen no se recorte
                   />
                  
-                  <p className="text-gray-400 font-nunito text-3xl font-semibold">${product.price}</p>
+                  <p className="text-gray-400 font-nunito text-3xl font-semibold">${product.priceSell}</p>
                 </div>
                 </Link>
               </SwiperSlide>

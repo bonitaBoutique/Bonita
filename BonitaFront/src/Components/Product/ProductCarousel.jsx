@@ -14,17 +14,14 @@ const ProductCarousel = () => {
   const categoryFilter = useSelector((state) => state.products.categoryFilter || '');
   
   useEffect(() => {
-   
     dispatch(setCategoryFilter(''));
-
-   
     dispatch(fetchFilteredProducts('', null, ''));
   }, [dispatch]);
 
-
+  // Filtrar los productos según la categoría y si están en tienda online
   const filteredProducts = categoryFilter === ''
-    ? products
-    : products.filter((product) => product.category === categoryFilter);
+    ? products.filter((product) => product.tiendaOnLine) // Solo productos con tiendaOnLine === true
+    : products.filter((product) => product.category === categoryFilter && product.tiendaOnLine); // Filtrado por categoría y tiendaOnLine
 
   return (
     <div className="carousel-container p-8 mt-20">
@@ -48,21 +45,20 @@ const ProductCarousel = () => {
           ? filteredProducts.map((product) => (
               <SwiperSlide key={product.id_product}>
                 <Link to={`/product/${product.id_product}`}>
-                <div className="w-80 mb-14 p-4 bg-colorFooter rounded-lg shadow-lg text-center ml-12">
-                  {product.isOffer && (
-                    <span className="absolute  font-semibold top-0 left-8 bg-gray-500 text-colorLogo text-xl px-2 py-0 rounded-md">
-                      OFERTA
-                    </span>
-                  )}
-                   <h3 className="mt-2 -mb-4 text-lg font-semibold font-nunito text-slate-800 bg-yellow-600 p-2 rounded">{product.name}</h3>
-                  <img
-                    src={product.Images[0]?.url || 'https://via.placeholder.com/150'}
-                    alt={product.name}
-                    className="w-full h-80 object-contain rounded-2xl mb-2" // object-contain asegura que la imagen no se recorte
-                  />
-                 
-                  <p className="text-gray-400 font-nunito text-3xl font-semibold">${product.priceSell}</p>
-                </div>
+                  <div className="w-80 mb-14 p-4 bg-colorFooter rounded-lg shadow-lg text-center ml-12">
+                    {product.isOffer && (
+                      <span className="absolute font-semibold top-0 left-8 bg-gray-500 text-colorLogo text-xl px-2 py-0 rounded-md">
+                        OFERTA
+                      </span>
+                    )}
+                    <h3 className="mt-2 -mb-4 text-lg font-semibold font-nunito text-slate-800 bg-yellow-600 p-2 rounded">{product.name}</h3>
+                    <img
+                      src={product.Images[0]?.url || 'https://via.placeholder.com/150'}
+                      alt={product.name}
+                      className="w-full h-80 object-contain rounded-2xl mb-2" // object-contain asegura que la imagen no se recorte
+                    />
+                    <p className="text-gray-400 font-nunito text-3xl font-semibold">${product.priceSell}</p>
+                  </div>
                 </Link>
               </SwiperSlide>
             ))
@@ -85,6 +81,7 @@ const ProductCarousel = () => {
 };
 
 export default ProductCarousel;
+
 
 
 

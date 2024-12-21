@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts } from '../../Redux/Actions/actions'; // Ajusta la ruta según tu estructura
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts, updateProduct, deleteProduct } from "../../Redux/Actions/actions"; // Ajusta la ruta según tu estructura
 
 const ListadoProductos = () => {
   const dispatch = useDispatch();
   const products = useSelector((state) => state.products || []);
-  console.log(products)
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const [filtro, setFiltro] = useState("");
@@ -16,6 +15,23 @@ const ListadoProductos = () => {
 
   const handleFiltroChange = (e) => {
     setFiltro(e.target.value.toLowerCase());
+  };
+
+  const toggleTiendaOnline = (producto) => {
+    // Crear el objeto actualizado con el valor invertido de tiendaOnLine
+    const updatedProduct = { ...producto, tiendaOnLine: !producto.tiendaOnLine };
+  
+    // Despachar la acción para actualizar el producto en el backend
+    dispatch(updateProduct(producto.id_product, updatedProduct));
+  
+    // Opcionalmente actualizar el estado local para que el cambio sea visible de inmediato
+  };
+  
+
+  const handleDeleteProduct = (id_product) => {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+      dispatch(deleteProduct(id_product));
+    }
   };
 
   const productosFiltrados = products.filter((producto) =>
@@ -45,11 +61,13 @@ const ListadoProductos = () => {
                 "Marca",
                 "Código Proveedor",
                 "Descripción",
-                "Precio",
+                "Costo",
+                "Precio Venta",
                 "Stock",
                 "Tamaños",
                 "Colores",
-                "Facturable (Dian)"
+                "Tienda Online",
+                "Acciones"
               ].map((header) => (
                 <th
                   key={header}
@@ -68,10 +86,28 @@ const ListadoProductos = () => {
                 <td className="px-4 py-2 border border-gray-300">{producto.codigoProv}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.description}</td>
                 <td className="px-4 py-2 border border-gray-300">${producto.price}</td>
+                <td className="px-4 py-2 border border-gray-300">${producto.priceSell}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.stock}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.sizes}</td>
                 <td className="px-4 py-2 border border-gray-300">{producto.colors}</td>
-                <td className="px-4 py-2 border border-gray-300">{producto.isDian ? 'Sí' : 'No'}</td>
+                <td className="px-4 py-2 border border-gray-300">
+                  <button
+                    onClick={() => toggleTiendaOnline(producto)}
+                    className={`px-4 py-2 rounded-lg ${
+                      producto.tiendaOnLine ? "bg-green-500 text-white" : "bg-gray-300 text-black"
+                    }`}
+                  >
+                    {producto.tiendaOnLine ? "Activo" : "Inactivo"}
+                  </button>
+                </td>
+                <td className="px-4 py-2 border border-gray-300">
+                  <button
+                    onClick={() => handleDeleteProduct(producto.id_product)}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                  >
+                    Eliminar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -82,3 +118,5 @@ const ListadoProductos = () => {
 };
 
 export default ListadoProductos;
+
+

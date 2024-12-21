@@ -31,11 +31,14 @@ const ProductsList = () => {
     }
   }, [dispatch, searchTerm]);
 
-  const productsInStock = products.filter((product) => product.stock > 0); // Filtrar productos con stock
+  // Filtrar productos con stock y solo los que tienen tiendaOnLine en true
+  const filteredProducts = products.filter(
+    (product) => product.stock > 0 && product.tiendaOnLine === true
+  );
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = productsInStock.slice(
+  const currentProducts = filteredProducts.slice(
     indexOfFirstProduct,
     indexOfLastProduct
   );
@@ -84,7 +87,7 @@ const ProductsList = () => {
     );
   }
 
-  if (products.length === 0) {
+  if (filteredProducts.length === 0) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige py-16">
         <p className="text-white text-lg">No hay productos disponibles.</p>
@@ -118,7 +121,7 @@ const ProductsList = () => {
                   </Link>
                 </h3>
                 <p className="text-lg font-semibold font-nunito text-gray-800">
-                  ${product.price}
+                  ${product.priceSell}
                 </p>
               </div>
               <div className="mt-4 mb-4 px-4 flex justify-between items-center">
@@ -130,6 +133,7 @@ const ProductsList = () => {
                   carrito
                 </button>
               </div>
+
               {userInfo && userInfo.role === "Admin" && (
                 <div className="absolute top-2 right-2 flex space-x-2">
                   <button
@@ -155,7 +159,7 @@ const ProductsList = () => {
           <nav className="block">
             <ul className="flex pl-0 rounded list-none flex-wrap">
               {Array.from(
-                { length: Math.ceil(productsInStock.length / productsPerPage) },
+                { length: Math.ceil(filteredProducts.length / productsPerPage) },
                 (_, i) => (
                   <li key={i}>
                     <button
@@ -180,3 +184,4 @@ const ProductsList = () => {
 };
 
 export default ProductsList;
+

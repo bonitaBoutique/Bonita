@@ -3,9 +3,9 @@ const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock,section,name_SB,sizes,colors,materials, isOffer } = req.body;
+  const { name, description, price, stock,section,name_SB,sizes,colors,materials, isOffer, tiendaOnLine } = req.body;
 
-  if (!name && !description && !price && !stock && !section && !name_SB && !sizes && !colors && !materials && isOffer === undefined) {
+  if (!name && !description && !price && !stock && !section && !name_SB && !sizes && !colors && !materials && isOffer && tiendaOnLine === undefined) {
     return response(res, 400, { error: "No data to update" });
   }
 
@@ -22,6 +22,7 @@ module.exports = async (req, res) => {
     product.price = price !== undefined ? parseFloat(price) : product.price;
     product.stock = stock !== undefined ? parseInt(stock, 10) : product.stock;
     product.isOffer = isOffer !== undefined ? isOffer === 'true' : product.isOffer; // Asegúrate de convertir el valor a booleano
+    product.tiendaOnLine = tiendaOnLine !== undefined ? JSON.parse(tiendaOnLine) : product.tiendaOnLine;
     product.section = section !== undefined ? section : product.section;
     product.name_SB = name_SB !== undefined ? name_SB : product.name_SB;
     product.sizes = sizes !== undefined ? sizes : product.sizes;

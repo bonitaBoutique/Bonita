@@ -13,6 +13,7 @@ const UpdateProduct = () => {
       name: '',
       description: '',
       price: 0,
+      priceSell: 0,
       stock: 0,
       images: [],
     });
@@ -29,6 +30,7 @@ const UpdateProduct = () => {
           name: product.name || '',
           description: product.description || '',
           price: product.price || 0,
+          priceSell: product.priceSell || 0,
           stock: product.stock || 0,
           images: product.images || [],
           section: product.section || '',
@@ -93,6 +95,16 @@ const UpdateProduct = () => {
                   type="number"
                   name="price"
                   value={formData.price}
+                  onChange={handleChange}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">Precio de Venta</label>
+                <input
+                  type="number"
+                  name="priceSell"
+                  value={formData.priceSell}
                   onChange={handleChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />

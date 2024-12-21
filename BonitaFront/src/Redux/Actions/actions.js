@@ -411,12 +411,21 @@ export const updateOrderState = (id_orderDetail, newState, trackingNumber) => as
   }
 };
 
-export const updateProduct = (id, productData) => async (dispatch) => {
+export const updateProduct = (id, productData) => async (dispatch, getState) => {
   dispatch({ type: UPDATE_PRODUCT_REQUEST });
 
   try {
     const response = await axios.put(`${BASE_URL}/product/updateProducts/${id}`, productData);
-    dispatch({ type: UPDATE_PRODUCT_SUCCESS, payload: response.data.data.product });
+
+    const updatedProduct = response.data.data.product;
+
+    dispatch({
+      type: UPDATE_PRODUCT_SUCCESS,
+      payload: updatedProduct, // Producto actualizado desde el backend
+    });
+
+    // Opcional: puedes usar console.log para depurar
+    console.log('Producto actualizado:', updatedProduct);
   } catch (error) {
     dispatch({ type: UPDATE_PRODUCT_FAILURE, payload: error.message });
   }

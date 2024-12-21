@@ -22,7 +22,7 @@ module.exports = (sequelize) => {
       },
       marca: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       description: {
         type: DataTypes.TEXT,
@@ -30,10 +30,14 @@ module.exports = (sequelize) => {
       },
       codigoProv: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
 
       price: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      priceSell: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
@@ -51,6 +55,10 @@ module.exports = (sequelize) => {
       },
 
       isDian: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      tiendaOnLine: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
@@ -76,7 +84,7 @@ module.exports = (sequelize) => {
       images: {
         type: DataTypes.ARRAY(DataTypes.STRING),
         defaultValue: [],
-        allowNull: false,
+        allowNull: true,
       },
 
       deletedAt: {

@@ -61,8 +61,9 @@ const ProductDetails = () => {
               <p className="text-lg text-gray-500 mb-4">
                 Color: {product.colors}
               </p>
+              
               <p className="text-xl font-semibold text-gray-800">
-                Precio: ${product.price}
+                Precio: ${product.priceSell}
               </p>
 
               <button

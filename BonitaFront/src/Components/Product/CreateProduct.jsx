@@ -14,6 +14,7 @@ const CreateProduct = () => {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [price, setPrice] = useState("");
+  const [priceSell, setPriceSell]= useState("")
   const [stock, setStock] = useState("");
   const [colors, setColors] = useState("");
   const [images, setImages] = useState([]);
@@ -39,6 +40,7 @@ const CreateProduct = () => {
       !codigoProv ||
       !description ||
       !price ||
+      !priceSell||
       !stock ||
       !colors ||
       !sizes ||
@@ -57,6 +59,7 @@ const CreateProduct = () => {
       description,
       codigoProv,
       price,
+      priceSell,
       stock,
       images,
       sizes,
@@ -83,6 +86,7 @@ const CreateProduct = () => {
       setDescription("");
       setCodigoProv("");
       setPrice("");
+      setPriceSell("");
       setStock("");
       setImages([]);
       setSizes("");
@@ -165,7 +169,7 @@ const CreateProduct = () => {
             htmlFor="codigoProv"
             className="block text-sm font-medium text-gray-700"
           >
-            Código Proveedor
+            Proveedor
           </label>
           <input
             type="text"
@@ -188,6 +192,21 @@ const CreateProduct = () => {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="Precio"
+            className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="priceSell"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Precio de Venta
+          </label>
+          <input
+            type="number"
+            value={priceSell}
+            onChange={(e) => setPriceSell(e.target.value)}
+            placeholder="Precio de Venta"
             className="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 text-sm"
           />
         </div>
@@ -269,7 +288,7 @@ const CreateProduct = () => {
             htmlFor="isDian"
             className="block text-sm font-medium text-gray-700"
           >
-            ¿Es facturable?
+           Codificado?
           </label>
           <select
             value={isDian.toString()} // Convierte el booleano a string para el select

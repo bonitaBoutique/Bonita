@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
       include: {
         model: Product,
         as: 'products',
-        attributes: ['id_product', 'codigoBarra', 'price', 'description'], // Incluye los campos adicionales
+        attributes: ['id_product', 'codigoBarra', 'price', 'priceSell', 'description'], // Incluye los campos adicionales
       },
     });
 
@@ -35,6 +35,7 @@ module.exports = async (req, res) => {
         id_product: product.id_product,
         codigoBarra: product.codigoBarra,
         price: product.price,
+        priceSell: product.priceSell,
         description: product.description,
       })),
       integritySignature: order.integritySignature,

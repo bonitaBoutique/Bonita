@@ -3,6 +3,7 @@ const {catchedAsync} = require("../utils");
 const webhook = require("./webhook");
 const {  updateSellerData, getOrCreateSellerData } = require("./Taxxa/sellerDataControllers");
 const { getProductStock } = require("./Products");
+const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
 
 
 
@@ -29,6 +30,8 @@ module.exports = {
     getOrCreateSellerData: catchedAsync(getOrCreateSellerData),  // Aquí importa directamente el controlador
     updateSellerData: catchedAsync(updateSellerData),
     TaxxaService: catchedAsync(require("./Taxxa/TaxxaService")),
-    
-    getProductStock: catchedAsync(require("./Products/getProductStock"))
+    getProductStock: catchedAsync(require("./Products/getProductStock")),
+    createReceipt: catchedAsync(require("./Caja/createReceipt")),
+    lastReceipt: catchedAsync(require("./Caja/lastReceipt")),
+    getReceipts: catchedAsync(require('./Caja/getReceipts'))
 }

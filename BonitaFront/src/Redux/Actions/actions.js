@@ -1,6 +1,6 @@
 import { BASE_URL } from "../../Config";
-import {jwtDecode} from 'jwt-decode';
-import axios from 'axios';
+import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   CREATE_PRODUCT_REQUEST,
   CREATE_PRODUCT_SUCCESS,
@@ -50,12 +50,12 @@ import {
   DELETE_PRODUCT_REQUEST,
   DELETE_PRODUCT_SUCCESS,
   DELETE_PRODUCT_FAILURE,
-  CATEGORY_CREATE_REQUEST, 
-  CATEGORY_CREATE_SUCCESS, 
+  CATEGORY_CREATE_REQUEST,
+  CATEGORY_CREATE_SUCCESS,
   CATEGORY_CREATE_FAIL,
- SB_CREATE_REQUEST, 
- SB_CREATE_SUCCESS, 
- SB_CREATE_FAIL,
+  SB_CREATE_REQUEST,
+  SB_CREATE_SUCCESS,
+  SB_CREATE_FAIL,
   FETCH_LATEST_ORDER_REQUEST,
   FETCH_LATEST_ORDER_SUCCESS,
   FETCH_LATEST_ORDER_FAILURE,
@@ -76,35 +76,45 @@ import {
   UPDATE_SELLER_FAILURE,
   SEND_INVOICE_REQUEST,
   SEND_INVOICE_SUCCESS,
-  SEND_INVOICE_FAILURE
+  SEND_INVOICE_FAILURE,
+  CREATE_RECEIPT_REQUEST,
+  CREATE_RECEIPT_SUCCESS,
+  CREATE_RECEIPT_FAILURE,
+  FETCH_LATEST_RECEIPTS_REQUEST,
+  FETCH_LATEST_RECEIPTS_SUCCESS,
+  FETCH_LATEST_RECEIPTS_FAILURE,
+  FETCH_RECEIPTS_REQUEST,
+  FETCH_RECEIPTS_SUCCESS,
+  FETCH_RECEIPTS_FAILURE
 
-} from './actions-type';
+} from "./actions-type";
 
 export const createProduct = (productData) => async (dispatch) => {
   dispatch({ type: CREATE_PRODUCT_REQUEST });
 
   try {
     // Enviar los datos como JSON (sin necesidad de multipart/form-data)
-    await axios.post(`http://localhost:3001/product/createProducts`, productData, {
+    await axios.post(`${BASE_URL}/product/createProducts`, productData, {
       headers: {
-        'Content-Type': 'application/json',  // Correcto para enviar datos JSON
+        "Content-Type": "application/json", // Correcto para enviar datos JSON
       },
     });
 
     dispatch({ type: CREATE_PRODUCT_SUCCESS });
-    
   } catch (error) {
     dispatch({ type: CREATE_PRODUCT_FAILURE, payload: error.message });
   }
 };
-
 
 export const fetchCategories = () => async (dispatch) => {
   dispatch({ type: FETCH_CATEGORIES_REQUEST });
 
   try {
     const response = await axios.get(`${BASE_URL}/category/`);
-    dispatch({ type: FETCH_CATEGORIES_SUCCESS, payload: response.data.data.categories });
+    dispatch({
+      type: FETCH_CATEGORIES_SUCCESS,
+      payload: response.data.data.categories,
+    });
   } catch (error) {
     dispatch({ type: FETCH_CATEGORIES_FAILURE, payload: error.message });
   }
@@ -135,31 +145,24 @@ export const fetchProducts = () => async (dispatch) => {
   }
 };
 
-
-
-
-
 export const fetchProductById = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCT_REQUEST });
 
   try {
-    const response = await axios.get(`http://localhost:3001/product/${id_product}`);
-    
+    const response = await axios.get(`${BASE_URL}/product/${id_product}`);
+
     // Acceso correcto a "product"
-    const product = response.data.data.product; 
-    
-    dispatch({ 
-      type: FETCH_PRODUCT_SUCCESS, 
-      payload: product 
+    const product = response.data.data.product;
+
+    dispatch({
+      type: FETCH_PRODUCT_SUCCESS,
+      payload: product,
     });
   } catch (error) {
-    console.error('Error fetching product by ID:', error);
+    console.error("Error fetching product by ID:", error);
     dispatch({ type: FETCH_PRODUCT_FAILURE, payload: error.message });
   }
 };
-
-
-
 
 export const addToCart = (id_product) => ({
   type: ADD_TO_CART,
@@ -196,14 +199,14 @@ export const createOrder = (orderData) => async (dispatch) => {
       payload: data.data.orderDetail,
     });
     dispatch(clearCart());
-    localStorage.removeItem('cartItems');
-
+    localStorage.removeItem("cartItems");
   } catch (error) {
     dispatch({
       type: ORDER_CREATE_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
@@ -214,15 +217,16 @@ export const fetchLatestOrder = () => async (dispatch) => {
     const { data } = await axios.get(`${BASE_URL}/order?latest=true`);
     dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data });
   } catch (error) {
-    dispatch({ type: FETCH_LATEST_ORDER_FAILURE, payload: error.response.data });
+    dispatch({
+      type: FETCH_LATEST_ORDER_FAILURE,
+      payload: error.response.data,
+    });
   }
 };
-
 
 export const clearOrderState = () => ({
   type: CLEAR_ORDER_STATE,
 });
-
 
 export const registerUser = (userData) => async (dispatch) => {
   try {
@@ -230,12 +234,11 @@ export const registerUser = (userData) => async (dispatch) => {
 
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     };
 
-    const { data } = await axios.post(`${BASE_URL}/user`,userData, config)
-   
+    const { data } = await axios.post(`${BASE_URL}/user`, userData, config);
 
     dispatch({
       type: USER_REGISTER_SUCCESS,
@@ -244,9 +247,10 @@ export const registerUser = (userData) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: USER_REGISTER_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
@@ -257,40 +261,46 @@ export const login = (email, password) => async (dispatch) => {
 
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     };
 
-    const { data } = await axios.post(`${BASE_URL}/auth/login`,{ email, password }, config);
+    const { data } = await axios.post(
+      `${BASE_URL}/auth/login`,
+      { email, password },
+      config
+    );
 
-      // Decodifica el token para obtener el rol del usuario
-      const decodedToken = jwtDecode(data.data.token);
-      const userInfo = {
-        token: data.token,
-        role: decodedToken.role,
-        n_document: decodedToken.n_document, // Agregar n_document desde el token decodificado
-        message: data.message,
-      };
+    // Decodifica el token para obtener el rol del usuario
+    const decodedToken = jwtDecode(data.data.token);
+    const userInfo = {
+      token: data.token,
+      role: decodedToken.role,
+      n_document: decodedToken.n_document, // Agregar n_document desde el token decodificado
+      message: data.message,
+    };
 
     dispatch({
       type: USER_LOGIN_SUCCESS,
       payload: userInfo,
     });
 
-    localStorage.setItem('userInfo', JSON.stringify(userInfo));
-     } catch (error) {
-       dispatch({
-         type: USER_LOGIN_FAIL,
-         payload: error.response && error.response.data.message ? error.response.data.message : error.message,
-       });
-     }
-   };
-
-export const logout = () => (dispatch) => {
-  localStorage.removeItem('userInfo');
-  dispatch({ type: USER_LOGOUT });
+    localStorage.setItem("userInfo", JSON.stringify(userInfo));
+  } catch (error) {
+    dispatch({
+      type: USER_LOGIN_FAIL,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
+    });
+  }
 };
 
+export const logout = () => (dispatch) => {
+  localStorage.removeItem("userInfo");
+  dispatch({ type: USER_LOGOUT });
+};
 
 export const setSearchTerm = (term) => ({
   type: SET_SEARCH_TERM,
@@ -307,52 +317,51 @@ export const setCategoryFilter = (category) => ({
   payload: category,
 });
 
-export const fetchFilteredProducts = (searchTerm, priceFilter, categoryName, isOffer) => async (dispatch) => {
-  dispatch({ type: FETCH_PRODUCTS_REQUEST });
+export const fetchFilteredProducts =
+  (searchTerm, priceFilter, categoryName, isOffer) => async (dispatch) => {
+    dispatch({ type: FETCH_PRODUCTS_REQUEST });
 
-  try {
-    let url = `${BASE_URL}/product/search?search=${searchTerm}`;
-    
-    if (priceFilter && priceFilter.min !== null && priceFilter.max !== null) {
-      url += `&minPrice=${priceFilter.min}&maxPrice=${priceFilter.max}`;
+    try {
+      let url = `${BASE_URL}/product/search?search=${searchTerm}`;
+
+      if (priceFilter && priceFilter.min !== null && priceFilter.max !== null) {
+        url += `&minPrice=${priceFilter.min}&maxPrice=${priceFilter.max}`;
+      }
+
+      if (categoryName) {
+        url += `&categoryName=${categoryName}`;
+      }
+      if (isOffer) {
+        url += `&isOffer=true`;
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data.error && data.products) {
+        dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: data.products });
+      } else {
+        dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: data.message });
+      }
+    } catch (error) {
+      dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
     }
-    
-    if (categoryName) {
-      url += `&categoryName=${categoryName}`;
-    }
-    if (isOffer) {
-      url += `&isOffer=true`;
-    }
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!data.error && data.products) {
-      dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: data.products });
-    } else {
-      dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: data.message });
-    }
-  } catch (error) {
-    dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
-  }
-};
-
-
-
-
+  };
 
 export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ORDERS_REQUEST });
 
     const { data } = await axios.get(`${BASE_URL}/order/${n_document}`);
-    
 
     dispatch({ type: FETCH_ORDERS_SUCCESS, payload: data.data.orders });
   } catch (error) {
     dispatch({
       type: FETCH_ORDERS_FAILURE,
-      payload: error.response && error.response.data.message ? error.response.data.message : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
@@ -360,76 +369,88 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
 export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ORDERBYID_REQUEST });
-    console.log('Fetching order by ID:', id_orderDetail); // Log antes de realizar la solicitud
+    console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
 
-    const { data } = await axios.get(`${BASE_URL}/order/products/${id_orderDetail}`);
-    console.log('Response data:', data); // Log para inspeccionar la respuesta
+    const { data } = await axios.get(
+      `${BASE_URL}/order/products/${id_orderDetail}`
+    );
+    console.log("Response data:", data); // Log para inspeccionar la respuesta
 
     dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: data.data.orderDetail });
-    console.log('Dispatched success:', data.data.orderDetail); // Log después del dispatch
+    console.log("Dispatched success:", data.data.orderDetail); // Log después del dispatch
   } catch (error) {
-    console.error('Error fetching order:', error); // Log del error para más contexto
+    console.error("Error fetching order:", error); // Log del error para más contexto
 
     dispatch({
       type: FETCH_ORDERBYID_FAILURE,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
-
-
-
-
 
 export const fetchAllOrders = () => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ALLS_ORDERS_REQUEST });
 
-    const { data } = await axios.get(`${BASE_URL}/order`); 
-    console.log('API response data:', data);
+    const { data } = await axios.get(`${BASE_URL}/order`);
+    console.log("API response data:", data);
 
     dispatch({ type: FETCH_ALLS_ORDERS_SUCCESS, payload: data.data.orders });
   } catch (error) {
     dispatch({
       type: FETCH_ALLS_ORDERS_FAILURE,
-      payload: error.response && error.response.data.message ? error.response.data.message : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
   }
 };
 
-export const updateOrderState = (id_orderDetail, newState, trackingNumber) => async (dispatch) => {
-  try {
-    const { data } = await axios.put(`${BASE_URL}/order/${id_orderDetail}`, { state_order: newState , trackingNumber});
+export const updateOrderState =
+  (id_orderDetail, newState, trackingNumber) => async (dispatch) => {
+    try {
+      const { data } = await axios.put(`${BASE_URL}/order/${id_orderDetail}`, {
+        state_order: newState,
+        trackingNumber,
+      });
 
-    dispatch({ type: UPDATE_ORDER_STATE_SUCCESS, payload: data.orderDetail });
-    // Puedes manejar un mensaje de éxito o hacer otras acciones después de actualizar el estado
-  } catch (error) {
-    dispatch({ type: UPDATE_ORDER_STATE_FAILURE, payload: error.message });
-    // Manejar errores o mostrar mensajes de error al usuario si es necesario
-  }
-};
+      dispatch({ type: UPDATE_ORDER_STATE_SUCCESS, payload: data.orderDetail });
+      // Puedes manejar un mensaje de éxito o hacer otras acciones después de actualizar el estado
+    } catch (error) {
+      dispatch({ type: UPDATE_ORDER_STATE_FAILURE, payload: error.message });
+      // Manejar errores o mostrar mensajes de error al usuario si es necesario
+    }
+  };
 
-export const updateProduct = (id, productData) => async (dispatch, getState) => {
-  dispatch({ type: UPDATE_PRODUCT_REQUEST });
+// eslint-disable-next-line no-unused-vars
+export const updateProduct =
+  // eslint-disable-next-line no-unused-vars
+  (id, productData) => async (dispatch, getState) => {
+    dispatch({ type: UPDATE_PRODUCT_REQUEST });
 
-  try {
-    const response = await axios.put(`${BASE_URL}/product/updateProducts/${id}`, productData);
+    try {
+      const response = await axios.put(
+        `${BASE_URL}/product/updateProducts/${id}`,
+        productData
+      );
 
-    const updatedProduct = response.data.data.product;
+      const updatedProduct = response.data.data.product;
 
-    dispatch({
-      type: UPDATE_PRODUCT_SUCCESS,
-      payload: updatedProduct, // Producto actualizado desde el backend
-    });
+      dispatch({
+        type: UPDATE_PRODUCT_SUCCESS,
+        payload: updatedProduct, // Producto actualizado desde el backend
+      });
 
-    // Opcional: puedes usar console.log para depurar
-    console.log('Producto actualizado:', updatedProduct);
-  } catch (error) {
-    dispatch({ type: UPDATE_PRODUCT_FAILURE, payload: error.message });
-  }
-};
+      // Opcional: puedes usar console.log para depurar
+      console.log("Producto actualizado:", updatedProduct);
+    } catch (error) {
+      dispatch({ type: UPDATE_PRODUCT_FAILURE, payload: error.message });
+    }
+  };
 
 export const deleteProduct = (id_product) => async (dispatch) => {
   try {
@@ -457,27 +478,37 @@ export const createCategory = (name_category) => async (dispatch) => {
     if (categories && categories.length) {
       // Check if category already exists
       const categoryExists = categories.some(
-        (category) => category.name_category.toLowerCase() === name_category.toLowerCase()
+        (category) =>
+          category.name_category.toLowerCase() === name_category.toLowerCase()
       );
 
       if (categoryExists) {
-        dispatch({ type: CATEGORY_CREATE_FAIL, payload: 'Category already exists' });
-        return { type: CATEGORY_CREATE_FAIL, error: 'Category already exists' };
+        dispatch({
+          type: CATEGORY_CREATE_FAIL,
+          payload: "Category already exists",
+        });
+        return { type: CATEGORY_CREATE_FAIL, error: "Category already exists" };
       }
     }
 
-    const { data } = await axios.post(`${BASE_URL}/category/createCategory`, { name_category });
+    const { data } = await axios.post(`${BASE_URL}/category/createCategory`, {
+      name_category,
+    });
 
     dispatch({ type: CATEGORY_CREATE_SUCCESS, payload: data });
     return { type: CATEGORY_CREATE_SUCCESS };
   } catch (error) {
     dispatch({
       type: CATEGORY_CREATE_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
-    return { type: CATEGORY_CREATE_FAIL, error: error.response ? error.response.data.message : error.message };
+    return {
+      type: CATEGORY_CREATE_FAIL,
+      error: error.response ? error.response.data.message : error.message,
+    };
   }
 };
 
@@ -496,8 +527,8 @@ export const createSB = (name_SB) => async (dispatch) => {
       );
 
       if (subCategoryExists) {
-        dispatch({ type: SB_CREATE_FAIL, payload: 'SB already exists' });
-        return { type: SB_CREATE_FAIL, error: 'SB already exists' };
+        dispatch({ type: SB_CREATE_FAIL, payload: "SB already exists" });
+        return { type: SB_CREATE_FAIL, error: "SB already exists" };
       }
     }
 
@@ -508,11 +539,15 @@ export const createSB = (name_SB) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: SB_CREATE_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
     });
-    return { type: SB_CREATE_FAIL, error: error.response ? error.response.data.message : error.message };
+    return {
+      type: SB_CREATE_FAIL,
+      error: error.response ? error.response.data.message : error.message,
+    };
   }
 };
 
@@ -521,7 +556,10 @@ export const fetchSB = () => async (dispatch) => {
 
   try {
     const response = await axios.get(`${BASE_URL}/sb/`);
-    dispatch({ type: FETCH_SB_SUCCESS, payload: response.data.data.subCategories });
+    dispatch({
+      type: FETCH_SB_SUCCESS,
+      payload: response.data.data.subCategories,
+    });
   } catch (error) {
     dispatch({ type: FETCH_SB_FAILURE, payload: error.message });
   }
@@ -533,7 +571,7 @@ export const fetchUserByDocument = (n_document) => async (dispatch) => {
   try {
     const response = await fetch(`${BASE_URL}/user/${n_document}`);
     const data = await response.json();
-console.log(data)
+    console.log(data);
     if (data) {
       dispatch({ type: FETCH_USER_SUCCESS, payload: data });
     } else {
@@ -554,7 +592,10 @@ export const fetchSellerData = (dni) => async (dispatch) => {
     if (response.ok) {
       dispatch({ type: FETCH_SELLER_SUCCESS, payload: result.data });
     } else {
-      dispatch({ type: FETCH_SELLER_FAILURE, payload: result.message || 'Error al obtener los datos del comercio' });
+      dispatch({
+        type: FETCH_SELLER_FAILURE,
+        payload: result.message || "Error al obtener los datos del comercio",
+      });
     }
   } catch (error) {
     dispatch({ type: FETCH_SELLER_FAILURE, payload: error.message });
@@ -566,8 +607,8 @@ export const createSellerData = (sellerData) => async (dispatch) => {
 
   try {
     const response = await fetch(`${BASE_URL}/seller/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sellerData),
     });
     const data = await response.json();
@@ -575,7 +616,10 @@ export const createSellerData = (sellerData) => async (dispatch) => {
     if (response.ok) {
       dispatch({ type: CREATE_SELLER_SUCCESS, payload: data.data });
     } else {
-      dispatch({ type: CREATE_SELLER_FAILURE, payload: data.error || 'Error al crear los datos del comercio' });
+      dispatch({
+        type: CREATE_SELLER_FAILURE,
+        payload: data.error || "Error al crear los datos del comercio",
+      });
     }
   } catch (error) {
     dispatch({ type: CREATE_SELLER_FAILURE, payload: error.message });
@@ -587,8 +631,8 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
 
   try {
     const response = await fetch(`${BASE_URL}/seller/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sellerData),
     });
     const data = await response.json();
@@ -597,7 +641,10 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
       dispatch({ type: UPDATE_SELLER_SUCCESS, payload: data.data });
       return true; // Retorna éxito
     } else {
-      dispatch({ type: UPDATE_SELLER_FAILURE, payload: data.error || 'Error al actualizar los datos del comercio' });
+      dispatch({
+        type: UPDATE_SELLER_FAILURE,
+        payload: data.error || "Error al actualizar los datos del comercio",
+      });
       return false; // Retorna fallo
     }
   } catch (error) {
@@ -609,7 +656,7 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
 export const sendInvoice = (invoiceData) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   try {
-    const response = await fetch(`${BASE_URL}/taxxa/doc`, {
+    const response = await fetch(`${BASE_URL}/taxxa/invoice`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -628,5 +675,60 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
   }
 };
 
+export const createReceipt = (receipt) => async (dispatch) => {
+  dispatch({ type: CREATE_RECEIPT_REQUEST });
+
+  try {
+    const response = await fetch(`${BASE_URL}caja/createReceipt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(receipt),
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      dispatch({ type: CREATE_RECEIPT_SUCCESS, payload: data.data });
+    } else {
+      dispatch({
+        type: CREATE_RECEIPT_FAILURE,
+        payload: data.error || "Error al crear el recibo",
+      });
+    }
+  } catch (error) {
+    dispatch({ type: CREATE_RECEIPT_FAILURE, payload: error.message });
+  }
+};
+
+export const fetchLatestReceipt = () => async (dispatch) => {
+  dispatch({ type: FETCH_LATEST_RECEIPTS_REQUEST });
+  try {
+    const { receipt } = await axios.get(`${BASE_URL}/caja/lastReceipt`);
+    dispatch({ type: FETCH_LATEST_RECEIPTS_SUCCESS, payload: receipt });
+  } catch (error) {
+    dispatch({
+      type: FETCH_LATEST_RECEIPTS_FAILURE,
+      payload: error.response.data,
+    });
+  }
+};
+
+export const fetchAllReceipts = () => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_RECEIPTS_REQUEST });
+
+    const { data } = await axios.get(`${BASE_URL}/caja/receipts`);
+    console.log("API response data:", data);
+
+    dispatch({ type: FETCH_RECEIPTS_SUCCESS, payload: data.data.receipts });
+  } catch (error) {
+    dispatch({
+      type: FETCH_RECEIPTS_FAILURE,
+      payload:
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message,
+    });
+  }
+};
 
 

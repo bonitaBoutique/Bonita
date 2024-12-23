@@ -128,7 +128,7 @@ const BillingForm = () => {
  // Navegar a la ruta de facturas
       } else if (type === "91") {
         navigate("/creditN", { state: { buyer: jbuyer } });
-; // Navegar a la ruta de notas de crédito
+ // Navegar a la ruta de notas de crédito
       }
     }}
   />

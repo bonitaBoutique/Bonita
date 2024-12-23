@@ -151,7 +151,7 @@ const Invoice = () => {
         },
       });
     }
-  }, [buyer, order, orderId]);
+  }, [order]);
   
   
 

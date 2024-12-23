@@ -11,17 +11,17 @@ module.exports = (sequelize) => {
     defaultValue: DataTypes.UUIDV4,
   },
   id_product: {
-        type: DataTypes.STRING, // Debe coincidir con Product.id_product
+        type: DataTypes.STRING, 
         allowNull: false,
         references: {
-          model: "Products", // Nombre de la tabla relacionada
+          model: "Products", 
           key: "id_product",
         },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
   type: {
-    type: DataTypes.ENUM('IN', 'OUT'), // IN: incremento, OUT: decremento
+    type: DataTypes.ENUM('IN', 'OUT'), 
     allowNull: false,
   },
   quantity: {

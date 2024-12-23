@@ -1,8 +1,8 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
   sequelize.define(
-    'OrderDetail',
+    "OrderDetail",
     {
       id_orderDetail: {
         type: DataTypes.UUID,
@@ -23,26 +23,38 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       address: {
-        type: DataTypes.ENUM('Envio a domicilio', 'Retira en local'),
+        type: DataTypes.ENUM("Envio a domicilio", "Retira en local"),
         allowNull: false,
       },
       deliveryAddress: {
         type: DataTypes.STRING,
-        allowNull: true, 
+        allowNull: true,
       },
       state_order: {
-        type: DataTypes.ENUM('Pedido Realizado', 'En Preparación', 'Listo para entregar', 'Envío Realizado', 'Retirado'),
+        type: DataTypes.ENUM(
+          "Pedido Realizado",
+          "En Preparación",
+          "Listo para entregar",
+          "Envío Realizado",
+          "Retirado"
+        ),
         allowNull: false,
-        defaultValue: 'Pedido Realizado',
+        defaultValue: "Pedido Realizado",
       },
       integritySignature: {
         type: DataTypes.STRING,
         allowNull: false,
       },
       transaction_status: {
-        type: DataTypes.ENUM('Pendiente', 'Aprobado', 'Rechazado', 'Fallido', 'Cancelado'),
+        type: DataTypes.ENUM(
+          "Pendiente",
+          "Aprobado",
+          "Rechazado",
+          "Fallido",
+          "Cancelado"
+        ),
         allowNull: false,
-        defaultValue: 'Pendiente',  
+        defaultValue: "Pendiente",
       },
       trackingNumber: {
         type: DataTypes.STRING,
@@ -51,7 +63,7 @@ module.exports = (sequelize) => {
 
       isFacturable: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false, 
+        defaultValue: false,
       },
 
       deletedAt: {
@@ -70,16 +82,33 @@ module.exports = (sequelize) => {
         defaultValue: DataTypes.NOW,
       },
       status: {
-  type: DataTypes.ENUM('pendiente', 'facturada', 'cancelada'),
-  allowNull: false,
-  defaultValue: 'pendiente',
-},
-
-
+        type: DataTypes.ENUM("pendiente", "facturada", "cancelada"),
+        allowNull: false,
+        defaultValue: "pendiente",
+      },
+      pointOfSale: {
+        type: DataTypes.ENUM("Online", "Local"),
+        allowNull: false,
+        defaultValue: "Online",
+      },
+      deletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       paranoid: true,
     }
   );
 };
-

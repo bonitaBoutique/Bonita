@@ -74,12 +74,22 @@ import {
   UPDATE_SELLER_FAILURE,
   SEND_INVOICE_REQUEST,
   SEND_INVOICE_SUCCESS,
-  SEND_INVOICE_FAILURE
-  
+  SEND_INVOICE_FAILURE,
+  CREATE_RECEIPT_REQUEST,
+  CREATE_RECEIPT_SUCCESS,
+  CREATE_RECEIPT_FAILURE,
+  FETCH_LATEST_RECEIPTS_REQUEST,
+  FETCH_LATEST_RECEIPTS_SUCCESS,
+  FETCH_LATEST_RECEIPTS_FAILURE,
+  FETCH_RECEIPTS_REQUEST,
+  FETCH_RECEIPTS_SUCCESS,
+  FETCH_RECEIPTS_FAILURE,
 } from "../Actions/actions-type";
 
 const initialState = {
   searchTerm: "",
+  receipts: [],
+  latestReceipt: null,
   priceFilter: { min: null, max: null },
   categoryFilter: "",
   searchResults: [],
@@ -279,7 +289,7 @@ const rootReducer = (state = initialState, action) => {
                 : item
             ),
             totalItems: state.cart.totalItems + 1,
-            totalPrice: state.cart.totalPrice + action.payload.price,
+            totalPrice: state.cart.totalPrice + action.payload.priceSell,
           },
         };
       } else {
@@ -289,7 +299,7 @@ const rootReducer = (state = initialState, action) => {
             ...state.cart,
             items: [...state.cart.items, { ...action.payload, quantity: 1 }],
             totalItems: state.cart.totalItems + 1,
-            totalPrice: state.cart.totalPrice + action.payload.price,
+            totalPrice: state.cart.totalPrice + action.payload.priceSell,
           },
         };
       }
@@ -308,7 +318,7 @@ const rootReducer = (state = initialState, action) => {
           ),
           totalItems: state.cart.totalItems - itemToRemove.quantity,
           totalPrice:
-            state.cart.totalPrice - itemToRemove.price * itemToRemove.quantity,
+            state.cart.totalPrice - itemToRemove.priceSell * itemToRemove.quantity,
         },
       };
     case INCREMENT_QUANTITY:
@@ -325,7 +335,7 @@ const rootReducer = (state = initialState, action) => {
           totalPrice:
             state.cart.totalPrice +
             state.cart.items.find((item) => item.id_product === action.payload)
-              .price,
+              .priceSell,
         },
       };
     case DECREMENT_QUANTITY:
@@ -341,7 +351,7 @@ const rootReducer = (state = initialState, action) => {
               (item) => item.id_product !== action.payload
             ),
             totalItems: state.cart.totalItems - 1,
-            totalPrice: state.cart.totalPrice - itemToDecrement.price,
+            totalPrice: state.cart.totalPrice - itemToDecrement.priceSell,
           },
         };
       }
@@ -355,7 +365,7 @@ const rootReducer = (state = initialState, action) => {
               : item
           ),
           totalItems: state.cart.totalItems - 1,
-          totalPrice: state.cart.totalPrice - itemToDecrement.price,
+          totalPrice: state.cart.totalPrice - itemToDecrement.priceSell,
         },
       };
     case CLEAR_CART:
@@ -488,36 +498,36 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-      case FETCH_ORDERBYID_REQUEST:
-        return {
-          ...state,
-          orderById: {
-            ...state.orderById,
-            loading: true,
-            error: null,
-          },
-        };
-      
-      case FETCH_ORDERBYID_SUCCESS:
-        return {
-          ...state,
-          orderById: {
-            loading: false,
-            order: action.payload,  // Verifica que action.payload contiene el objeto esperado
-            error: null,
-          },
-        };
-      
-      case FETCH_ORDERBYID_FAILURE:
-        return {
-          ...state,
-          orderById: {
-            loading: false,
-            order: {},
-            error: action.payload,
-          },
-        };
-      
+    case FETCH_ORDERBYID_REQUEST:
+      return {
+        ...state,
+        orderById: {
+          ...state.orderById,
+          loading: true,
+          error: null,
+        },
+      };
+
+    case FETCH_ORDERBYID_SUCCESS:
+      return {
+        ...state,
+        orderById: {
+          loading: false,
+          order: action.payload, // Verifica que action.payload contiene el objeto esperado
+          error: null,
+        },
+      };
+
+    case FETCH_ORDERBYID_FAILURE:
+      return {
+        ...state,
+        orderById: {
+          loading: false,
+          order: {},
+          error: action.payload,
+        },
+      };
+
     case FETCH_ALLS_ORDERS_REQUEST:
       return {
         ...state,
@@ -575,25 +585,26 @@ const rootReducer = (state = initialState, action) => {
           loading: true,
         },
       };
-      case UPDATE_PRODUCT_SUCCESS:
-  return {
-    ...state,
-    products: state.products.map((product) =>
-      product.id_product === action.payload.id_product
-        ? { ...product, ...action.payload } // Solo actualiza el producto correspondiente
-        : product // Los demás productos permanecen iguales
-    ),
-  };
-      
-      case UPDATE_PRODUCT_FAILURE:
-        return {
-          ...state,
-          updateProduct: {
-            ...state.updateProduct,
-            loading: false,
-            error: action.payload,
-          },
-        };
+    case UPDATE_PRODUCT_SUCCESS:
+      return {
+        ...state,
+        products: state.products.map(
+          (product) =>
+            product.id_product === action.payload.id_product
+              ? { ...product, ...action.payload } // Solo actualiza el producto correspondiente
+              : product // Los demás productos permanecen iguales
+        ),
+      };
+
+    case UPDATE_PRODUCT_FAILURE:
+      return {
+        ...state,
+        updateProduct: {
+          ...state.updateProduct,
+          loading: false,
+          error: action.payload,
+        },
+      };
     case DELETE_PRODUCT_REQUEST:
       return {
         ...state,
@@ -869,37 +880,69 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-      case SEND_INVOICE_REQUEST:
-        return {
-          ...state,
-          invoice: {
-            ...state.invoice,
-            loading: true,
-            success: false,
-            error: null,
-          },
-        };
-      case SEND_INVOICE_SUCCESS:
-        return {
-          ...state,
-          invoice: {
-            ...state.invoice,
-            loading: false,
-            success: true,
-            error: null,
-          },
-        };
-      case SEND_INVOICE_FAILURE:
-        return {
-          ...state,
-          invoice: {
-            ...state.invoice,
-            loading: false,
-            success: false,
-            error: action.payload,
-          },
-        };
-  
+    case SEND_INVOICE_REQUEST:
+      return {
+        ...state,
+        invoice: {
+          ...state.invoice,
+          loading: true,
+          success: false,
+          error: null,
+        },
+      };
+    case SEND_INVOICE_SUCCESS:
+      return {
+        ...state,
+        invoice: {
+          ...state.invoice,
+          loading: false,
+          success: true,
+          error: null,
+        },
+      };
+    case SEND_INVOICE_FAILURE:
+      return {
+        ...state,
+        invoice: {
+          ...state.invoice,
+          loading: false,
+          success: false,
+          error: action.payload,
+        },
+      };
+
+    case CREATE_RECEIPT_REQUEST:
+      return { ...state, loading: true, error: null };
+
+    case CREATE_RECEIPT_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        receipts: [...state.receipts, action.payload], 
+      };
+
+    case CREATE_RECEIPT_FAILURE:
+      return { ...state, loading: false, error: action.payload };
+
+   
+    case FETCH_LATEST_RECEIPTS_REQUEST:
+      return { ...state, loading: true, error: null };
+
+    case FETCH_LATEST_RECEIPTS_SUCCESS:
+      return { ...state, loading: false, latestReceipt: action.payload };
+
+    case FETCH_LATEST_RECEIPTS_FAILURE:
+      return { ...state, loading: false, error: action.payload };
+
+   
+    case FETCH_RECEIPTS_REQUEST:
+      return { ...state, loading: true, error: null };
+
+    case FETCH_RECEIPTS_SUCCESS:
+      return { ...state, loading: false, receipts: action.payload };
+
+    case FETCH_RECEIPTS_FAILURE:
+      return { ...state, loading: false, error: action.payload };
 
     default:
       return state;

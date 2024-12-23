@@ -35,6 +35,7 @@ import Panel from "./Components/Taxxa/Panel";
 import PanelProductos from "./Components/Product/PanelProductos";
 import ListadoProductos from "./Components/stock/ListadoProductos";
 import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
+import Caja from "./Components/Caja";
 
 function App() {
   const location = useLocation();
@@ -112,6 +113,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ListadoProductos />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/panel/caja"
+            element={
+              <PrivateRoute>
+                <Caja />
               </PrivateRoute>
             }
           />

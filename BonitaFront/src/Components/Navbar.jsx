@@ -79,7 +79,7 @@ export default function Navbar() {
           </Menu.Item>
         </>
       );
-    } else if (userInfo.role === 'Admin') {
+    } else if (userInfo.role === 'Admin' || userInfo.role === 'Cajero' ) {
       return (
         <>
           <Menu.Item>

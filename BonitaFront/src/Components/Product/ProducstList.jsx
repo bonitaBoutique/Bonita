@@ -12,6 +12,7 @@ import Swal from "sweetalert2";
 const ProductsList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 8;
 

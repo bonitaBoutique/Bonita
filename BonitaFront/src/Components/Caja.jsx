@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { createOrder, fetchLatestReceipt, createReceipt, fetchProducts } from "../Redux/Actions/actions";
 import { jsPDF } from "jspdf";
+import Navbar2 from "./Navbar2";
 
 const Caja = () => {
   const dispatch = useDispatch();
@@ -127,7 +128,10 @@ const Caja = () => {
   
   
     return (
-      <form onSubmit={handleSubmitOrder} className="space-y-6">
+      <>
+      <Navbar2/>
+    
+      <form onSubmit={handleSubmitOrder} className="space-y-6 bg-gray-300">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 p-7 gap-6 mt-40">
           {/* Orden de compra */}
           <div className="flex flex-col">
@@ -224,11 +228,12 @@ const Caja = () => {
         </div>
   
         <div className="flex justify-center">
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded">
+          <button type="submit" className="bg-slate-500 text-white p-2 rounded">
             Crear Orden
           </button>
         </div>
       </form>
+      </>
     );
   };
   

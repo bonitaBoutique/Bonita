@@ -4,6 +4,7 @@ import { incrementQuantity, removeFromCart, clearCart, decrementQuantity } from 
 import { Link, useNavigate } from 'react-router-dom';
 import { SlTrash, SlMinus, SlPlus } from "react-icons/sl";
 import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
+import Navbar from './Navbar';
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -36,6 +37,9 @@ const Cart = () => {
   };
 
   return (
+    <>
+    <Navbar/>
+   
     <div className="relative min-h-screen bg-gray-800">
       <img
         src={backgroundImage}
@@ -67,14 +71,15 @@ const Cart = () => {
                           onClick={() => handleIncrementQuantity(item.id_product, item.stock)}
                           disabled={item.quantity >= item.stock}
                         >
-                          <SlPlus />
+                        <SlMinus />
                         </button>
                         <span className="text-lg text-gray-700">{item.quantity}</span>
                         <button
                           className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
                           onClick={() => handleDecrementQuantity(item.id_product)}
                         >
-                          <SlMinus />
+                            <SlPlus />
+                          
                         </button>
                         <button
                           className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
@@ -88,7 +93,7 @@ const Cart = () => {
                 </div>
               ))}
               <div className="flex justify-between items-center mt-6">
-                <p className="text-lg font-semibold font-nunito text-gray-700 bg-yellow-600 p-2 rounded">Total: ${cart.totalPrice}</p>
+                <p className="text-lg font-semibold font-nunito text-pink-200 bg-colorBeige p-2 rounded">Total: ${cart.totalPrice}</p>
               </div>
               <div className="mt-8 flex justify-between">
                 <Link to="/products" className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 font-nunito font-semibold">
@@ -106,6 +111,7 @@ const Cart = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

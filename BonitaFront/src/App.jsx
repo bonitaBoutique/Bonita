@@ -36,11 +36,13 @@ import PanelProductos from "./Components/Product/PanelProductos";
 import ListadoProductos from "./Components/stock/ListadoProductos";
 import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
 import Caja from "./Components/Caja";
+import PanelGeneral from "./Components/PanelGeneral";
 
 function App() {
   const location = useLocation();
   const adminRoutes = [
     "/panel",
+    "/panelGeneral",
     "/panel/facturacion",
     "/panel/productos",
     "/panel/seller",
@@ -59,7 +61,7 @@ function App() {
   return (
     <>
       <div>
-        <Navbar />
+        {/* <Navbar /> */}
 
         <Routes>
           <Route path="/" element={<LandingPrincipal />} />
@@ -129,6 +131,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Panel />
+              </PrivateRoute>
+            }
+          />
+            <Route
+            path="/panelGeneral"
+            element={
+              <PrivateRoute>
+                <PanelGeneral />
               </PrivateRoute>
             }
           />

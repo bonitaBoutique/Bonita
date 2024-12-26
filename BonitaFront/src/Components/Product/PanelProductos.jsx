@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-
+import Navbar2 from '../Navbar2';
 
 
 const PanelProductos = () => {
@@ -8,7 +8,9 @@ const PanelProductos = () => {
 
 
   return (
-    <div className="min-h-screen bg-colorBeige flex flex-col items-center">
+    <>
+   <Navbar2/>
+    <div className="min-h-screen bg-gray-400 flex flex-col items-center">
       <div className="relative w-full flex justify-between items-center mr-6 ml-6">
         <nav className="w-full flex justify-start items-center py-4 px-8 bg-transparent">
          
@@ -36,6 +38,7 @@ const PanelProductos = () => {
         
       </div>
     </div>
+    </>
   );
 };
 

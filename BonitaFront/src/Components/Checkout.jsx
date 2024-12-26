@@ -7,7 +7,8 @@ import {
   fetchLatestOrder,
 } from "../Redux/Actions/actions";
 import Swal from "sweetalert2";
-import imgFondo from '../assets/img/banner.png'
+import imgFondo from '../assets/img/BannerPrincipal/banner3.png'
+import Navbar from "./Navbar";
 
 const Checkout = () => {
   const currentDate = new Date().toISOString().split("T")[0];
@@ -134,6 +135,8 @@ const Checkout = () => {
   };
 
   return (
+    <>
+   <Navbar/>
     <div 
     className="min-h-screen flex justify-center items-center bg-cover bg-center px-4" 
     style={{ backgroundImage: `url(${imgFondo})`, paddingTop: '4rem' }}  // Ajustar el padding si el navbar es fijo
@@ -214,7 +217,7 @@ const Checkout = () => {
         </div>
         <button
           type="submit"
-          className="w-full bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-colorLogo"
+          className="w-full bg-slate-500 text-white py-2 px-4 rounded-md hover:bg-slate-400"
           disabled={orderCreate.loading}
         >
           {orderCreate.loading ? "Procesando..." : "Finalizar Compra"}
@@ -225,6 +228,7 @@ const Checkout = () => {
       </form>
     </div>
   </div>
+  </>
   );
 };
 

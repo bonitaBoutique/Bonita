@@ -10,9 +10,12 @@ import logoVisa from "../assets/img/pagos/logoVisa.png";
 import master from "../assets/img/pagos/master.png";
 import ZoomCard from "./ZoomCard";
 import ProductsList from "./Product/ProducstList";
+import Navbar from "./Navbar";
 
 const LandingPrincipal = () => {
   return (
+    <>
+   <Navbar/>
     <div className="min-h-screen bg-black">
     {/* Carrusel de banners */}
     <div className="h-screen w-full overflow-hidden relative">
@@ -81,6 +84,7 @@ const LandingPrincipal = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -97,7 +97,6 @@ Invoice.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 
 
 Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail",allowNull: false,});
-
 OrderDetail.hasOne(Receipt, {foreignKey: "id_orderDetail",});
 //---------------------------------------------------------------------------------//
 module.exports = {

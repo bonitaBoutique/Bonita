@@ -10,7 +10,6 @@ import ProductsList from "./Components/Product/ProducstList";
 import ProductDetails from "./Components/Product/ProductDetails";
 import Cart from "./Components/Cart";
 import Checkout from "./Components/Checkout";
-import Navbar from "./Components/Navbar";
 import Register from "./Components/Users/Register";
 import Login from "./Components/Users/Login";
 import OrdersDetails from "./Components/OrdersDetail";
@@ -36,11 +35,15 @@ import PanelProductos from "./Components/Product/PanelProductos";
 import ListadoProductos from "./Components/stock/ListadoProductos";
 import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
 import Caja from "./Components/Caja";
+import PanelGeneral from "./Components/PanelGeneral";
+import Recibo from "./Components/Recibo";
+
 
 function App() {
   const location = useLocation();
   const adminRoutes = [
     "/panel",
+    "/panelGeneral",
     "/panel/facturacion",
     "/panel/productos",
     "/panel/seller",
@@ -50,6 +53,7 @@ function App() {
     "/panel/createProducts",
     "/invoice",
     "/creditN",
+    "/caja/:idOrder"
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
@@ -59,7 +63,7 @@ function App() {
   return (
     <>
       <div>
-        <Navbar />
+       
 
         <Routes>
           <Route path="/" element={<LandingPrincipal />} />
@@ -125,10 +129,26 @@ function App() {
             }
           />
           <Route
+            path="/receipt/:idOrder"
+            element={
+              <PrivateRoute>
+                <Recibo />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/panel"
             element={
               <PrivateRoute>
                 <Panel />
+              </PrivateRoute>
+            }
+          />
+            <Route
+            path="/panelGeneral"
+            element={
+              <PrivateRoute>
+                <PanelGeneral />
               </PrivateRoute>
             }
           />

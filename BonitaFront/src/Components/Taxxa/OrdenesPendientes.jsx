@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllOrders } from "../../Redux/Actions/actions";
+import Navbar2 from "../Navbar2";
 // import Swal from 'sweetalert2';
 
 const OrdenesPendientes = () => {
@@ -50,8 +51,10 @@ const OrdenesPendientes = () => {
   }
 
   return (
-    <div className="bg-colorFooter min-h-screen pt-16 pb-16">
-      <div className="container mx-auto px-4 py-8 mt-20">
+    <>
+   <Navbar2/>
+    <div className="bg-colorFooter ">
+      <div className="container mx-auto px-4 py-8 mt-10">
         <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-300 bg-colorDetalle p-2 rounded">
           Lista de Pedidos
         </h2>
@@ -163,6 +166,7 @@ const OrdenesPendientes = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

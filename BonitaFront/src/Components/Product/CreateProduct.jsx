@@ -4,6 +4,7 @@ import { createProduct } from "../../Redux/Actions/actions";
 import { useNavigate } from "react-router-dom";
 import { openCloudinaryWidget } from "../../cloudinaryConfig";
 import Swal from "sweetalert2";
+import Navbar2 from "../Navbar2";
 
 //Cod,FECHA INICIAL,marca,COD PROV,DESCRIPCION,Talla ,Color ,CANT, PRECIO,, VENTA,,ESTATUS, codigo barras
 
@@ -107,12 +108,14 @@ const CreateProduct = () => {
   };
 
   return (
-    <div className="bg-colorFooter min-h-screen pt-16">
+    <>
+    <Navbar2/>
+    <div className="bg-gray-400 min-h-screen pt-16">
       <form
         onSubmit={handleSubmit}
         className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl grid grid-cols-2 gap-6"
       >
-        <h2 className="col-span-2 text-3xl font-bold font-nunito bg-colorBeige p-4 rounded text-center text-gray-600">
+        <h2 className="col-span-2 text-3xl font-bold font-nunito bg-pink-300 p-4 rounded text-center text-slate-500">
           Cargar nuevo Artículo
         </h2>
 
@@ -303,13 +306,14 @@ const CreateProduct = () => {
         <div className="col-span-2 text-center">
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700"
+            className="w-full py-2 px-4 bg-pink-300 text-white font-semibold rounded-lg shadow-md hover:bg-pink-700"
           >
             Crear Producto
           </button>
         </div>
       </form>
     </div>
+    </>
   );
 };
 

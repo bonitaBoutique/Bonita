@@ -1,237 +1,256 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { createOrder, fetchLatestReceipt, createReceipt, fetchProducts } from "../Redux/Actions/actions";
-import { jsPDF } from "jspdf";
-
+import { useNavigate } from "react-router-dom";
+import {
+  fetchProducts,
+  fetchFilteredProducts,
+  createOrder,
+} from "../Redux/Actions/actions";
 const Caja = () => {
   const dispatch = useDispatch();
-  const currentDate = new Date().toISOString().split('T')[0];
-  // Estado para la Orden
+  const navigate = useNavigate();
+
+  const products = useSelector((state) => state.products || []);
+  const loading = useSelector((state) => state.loading);
+  const error = useSelector((state) => state.error);
+  const searchTerm = useSelector((state) => state.searchTerm);
+
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [orderData, setOrderData] = useState({
-    date: currentDate,
+    date: new Date().toISOString(),
     amount: 0,
-    quantity: 1,
-    state_order: "Retirado",
+    quantity: 0,
+    state_order: "Pedido Realizado",
+    n_document: "",
     id_product: [],
-    address: "",
-    pointOfSale:"Local",
-    n_document: 0,
+    address: "Retira en local",
+    deliveryAddress: null,
   });
 
-  const [receiptData, setReceiptData] = useState({
-    id_orderDetail: "",
-    buyer_name: "",
-    buyer_email: "",
-    buyer_phone: "",
-    total_amount: 0,
-  });
+  const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
+  const [nDocument, setNDocument] = useState(""); // Estado para el número de documento
 
-  const [productId, setProductId] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [quantity, setQuantity] = useState(1);
-
-  const products = useSelector((state) => state.products);
-  const lastReceipt = useSelector((state) => state.lastReceipt);
-
+  // Efecto para cargar productos según el filtro o búsqueda
   useEffect(() => {
-    dispatch(fetchProducts());
-    dispatch(fetchLatestReceipt());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (lastReceipt) {
-      setOrderData((prev) => ({
-        ...prev,
-        id_receipt: lastReceipt.id_receipt + 1,
-      }));
+    if (searchTerm) {
+      dispatch(fetchFilteredProducts(searchTerm));
+    } else {
+      dispatch(fetchProducts());
     }
-  }, [lastReceipt]);
-  
+  }, [dispatch, searchTerm]);
 
-  const handleOrderChange = (e) => {
-    const { name, value } = e.target;
-    setOrderData({ ...orderData, [name]: value });
+  // Filtrar los productos disponibles (que tengan stock)
+  const filteredProducts = products.filter((product) => product.stock > 0);
+
+  // Manejar cambio de códigos de producto en el input
+  const handleProductCodesChange = (e) => {
+    const codes = e.target.value;
+    setProductCodes(codes);
   };
 
-  const handleReceiptChange = (e) => {
-    const { name, value } = e.target;
-    setReceiptData({ ...receiptData, [name]: value });
-  };
-
-  const handleProductIdChange = (e) => {
-    const value = e.target.value;
-    setProductId(value);
-   
-    const product = products.find((prod) => prod.id_product === value);
-    setSelectedProduct(product || null);
-  };
-
-  const handleQuantityChange = (e) => {
-    const value = parseInt(e.target.value, 10) || 1;
-    setQuantity(value);
-    if (selectedProduct) {
-      // Actualizar el monto total según la cantidad y el precio del producto
-      setOrderData((prev) => ({
-        ...prev,
-        amount: prev.amount + selectedProduct.priceSell * value,
-      }));
-    }
-  };
-
-  const handleAddProductById = () => {
-    if (!productId || !selectedProduct) {
-      alert("Por favor ingrese un ID de producto válido.");
+  // Verificar stock y agregar productos seleccionados
+  const handleAddProducts = () => {
+    if (!productCodes) {
+      alert("Por favor, ingresa al menos un código de producto.");
       return;
     }
-    setOrderData((prev) => ({
-      ...prev,
-      id_product: [...prev.id_product, selectedProduct.id_product],
-    }));
 
-    setProductId("");
-    setSelectedProduct(null);
-    setQuantity(1);
-  };
+    // Asegurarse de que productCodes sea una cadena de texto antes de usar split
+    const codes = productCodes.trim().split(",").map(code => code.trim().toUpperCase());
+    const productsToAdd = [];
 
-  const handleSubmitOrder = async (e) => {
-    e.preventDefault();
-    try {
-      const createdOrder = await dispatch(createOrder(orderData));
-      if (createdOrder) {
-        alert("Orden creada con éxito.");
-        setReceiptData((prev) => ({
-          ...prev,
-          id_orderDetail: createdOrder.id_orderDetail,
-          total_amount: createdOrder.amount,
-        }));
+    codes.forEach((id_product) => {
+      const product = filteredProducts.find((p) => p.id_product === id_product); // Verifica que id_product sea el correcto
+      if (product) {
+        if (product.stock > 0) {
+          // Solo agregar el producto si tiene stock disponible
+          productsToAdd.push({ ...product, quantity: 1 }); // Agrega la cantidad inicial como 1
+        } else {
+          alert(`El producto con código ${id_product} no tiene stock disponible.`);
+        }
+      } else {
+        alert(`No se encontró el producto con código ${id_product}.`);
       }
-    } catch (error) {
-      console.error("Error creando la orden:", error);
-      alert("Error al crear la orden.");
+    });
+
+    // Si hay productos para agregar, los agregamos al estado
+    if (productsToAdd.length > 0) {
+      setSelectedProducts((prevSelected) => [
+        ...prevSelected,
+        ...productsToAdd,
+      ]);
     }
+
+    setProductCodes(""); // Limpiar input después de agregar productos
   };
 
-  const handleSubmitReceipt = async (e) => {
-    e.preventDefault();
-    try {
-      const createdReceipt = await dispatch(createReceipt(receiptData));
-      if (createdReceipt) {
-        alert("Recibo creado con éxito.");
-      }
-    } catch (error) {
-      console.error("Error creando el recibo:", error);
-      alert("Error al crear el recibo.");
-    }
-  };
-
-  
-  
-    return (
-      <form onSubmit={handleSubmitOrder} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 p-7 gap-6 mt-40">
-          {/* Orden de compra */}
-          <div className="flex flex-col">
-            <label htmlFor="date" className="mb-2">Fecha</label>
-            <input
-              type="date"
-              id="date"
-              name="date"
-              value={orderData.date}
-              onChange={handleOrderChange}
-              className="p-2 border border-gray-300 rounded"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label htmlFor="product" className="mb-2">Producto</label>
-            <input
-              type="text"
-              id="product"
-              name="product"
-              value={productId}
-              onChange={handleProductIdChange}
-              className="p-2 border border-gray-300 rounded"
-              placeholder="ID del producto"
-            />
-          </div>
-  
-          <div className="flex flex-col">
-          <label htmlFor="productDescription" className="mb-2">Descripción</label>
-          <input
-            type="text"
-            id="productDescription"
-            name="productDescription"
-            value={selectedProduct ? selectedProduct.description : ""}
-            readOnly
-            className="p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        {/* Precio de Venta */}
-        <div className="flex flex-col">
-          <label htmlFor="priceSell" className="mb-2">Precio de Venta</label>
-          <input
-            type="number"
-            id="priceSell"
-            name="priceSell"
-            value={selectedProduct ? selectedProduct.priceSell : ""}
-            readOnly
-            className="p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        {/* Cantidad */}
-        <div className="flex flex-col">
-          <label htmlFor="quantity" className="mb-2">Cantidad</label>
-          <input
-            type="number"
-            id="quantity"
-            name="quantity"
-            value={quantity}
-            onChange={handleQuantityChange}
-            className="p-2 border border-gray-300 rounded"
-          />
-        </div>
-
-        {/* Monto Total */}
-        <div className="flex flex-col">
-          <label htmlFor="amount" className="mb-2">Monto Total</label>
-          <input
-            type="number"
-            id="amount"
-            name="amount"
-            value={orderData.amount}
-            readOnly
-            className="p-2 border border-gray-300 rounded"
-          />
-        </div>
-     
-  
-          {/* Estado de la orden */}
-          <div className="flex flex-col">
-            <label htmlFor="state_order" className="mb-2">Estado de la orden</label>
-            <select
-              id="state_order"
-              name="state_order"
-              value={orderData.state_order}
-              onChange={handleOrderChange}
-              className="p-2 border border-gray-300 rounded"
-            >
-              <option value="Retirado">Retirado</option>
-              <option value="Enviado">Enviado</option>
-              <option value="Pendiente">Pendiente</option>
-            </select>
-          </div>
-        </div>
-  
-        <div className="flex justify-center">
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded">
-            Crear Orden
-          </button>
-        </div>
-      </form>
+  // Actualizar la cantidad seleccionada de un producto
+  const handleQuantityChange = (id_product, quantity) => {
+    setSelectedProducts((prev) =>
+      prev.map((item) =>
+        item.id_product === id_product ? { ...item, quantity: quantity } : item
+      )
     );
   };
+
+  // Calcular el precio total y la cantidad total de los productos seleccionados
+  const calculateTotals = () => {
+    const totalPrice = selectedProducts.reduce(
+      (acc, item) => acc + item.priceSell * item.quantity, // Multiplicar priceSell por quantity
+      0
+    );
+    const totalQuantity = selectedProducts.reduce(
+      (acc, item) => acc + item.quantity,
+      0
+    );
+    return { totalPrice, totalQuantity };
+  };
+
+  // Manejar el envío del formulario
+  const handleSubmit = async (e) => {
+    e.preventDefault();
   
+    if (!nDocument) {
+      alert("Por favor, ingresa el número de documento.");
+      return;
+    }
+  
+    const { totalPrice, totalQuantity } = calculateTotals();
+  
+    const orderDataToSend = {
+      date: new Date().toISOString(),
+      amount: totalPrice,
+      quantity: totalQuantity,
+      state_order: "Pedido Realizado",
+      n_document: nDocument,
+      id_product: selectedProducts.map((item) => item.id_product),
+      address: orderData.address,
+      deliveryAddress: orderData.deliveryAddress,
+    };
+  
+    try {
+      const orderDetail = await dispatch(createOrder(orderDataToSend));
+      const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
+  
+      console.log("ID de la orden creada:", idOrder);
+  
+      navigate(`/receipt/${idOrder}`); // Redirige al recibo
+    } catch (error) {
+      console.error("Error al crear la orden:", error.message);
+      alert("No se pudo crear la orden. Inténtalo de nuevo.");
+    }
+  };
+  
+  
+  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Cargando...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Error: {error}
+      </div>
+    );
+  }
+
+  if (filteredProducts.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige py-16">
+        <p className="text-white text-lg">No hay productos disponibles.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 pt-16 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-semibold mb-6">Seleccionar Productos</h2>
+
+      {/* Input para los códigos de productos */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={productCodes}
+          onChange={handleProductCodesChange}
+          placeholder="Ingresa los códigos de los productos separados por coma"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={handleAddProducts}
+          className="mt-2 w-full p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
+        >
+          Agregar Productos
+        </button>
+      </div>
+
+      {/* Mostrar productos seleccionados */}
+      {selectedProducts.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
+          {selectedProducts.map((product) => (
+            <div
+              key={product.id_product} // Usa id_product aquí
+              className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
+            >
+              <div className="flex items-center">
+                <p className="mr-4 text-lg font-semibold">{product.description}</p>
+                <p className="text-sm text-gray-500">Precio Unitario: ${product.priceSell}</p> {/* Mostrar el precio individual */}
+              </div>
+              <div>
+                <input
+                  type="number"
+                  min="1"
+                  value={product.quantity || 1}
+                  onChange={(e) =>
+                    handleQuantityChange(product.id_product, Number(e.target.value))
+                  }
+                  className="w-16 p-2 border border-gray-300 rounded-md text-center"
+                />
+                <p className="text-sm text-gray-500">Total: ${product.priceSell * (product.quantity || 1)}</p> {/* Mostrar el monto total */}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Input para el número de documento */}
+      <div className="mb-4">
+        <label htmlFor="n_document" className="block text-lg font-medium mb-2">
+          Número de Documento
+        </label>
+        <input
+          type="text"
+          id="n_document"
+          value={nDocument}
+          onChange={(e) => setNDocument(e.target.value)}
+          placeholder="Ingresa el número de documento"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Botón para enviar la orden */}
+      <form onSubmit={handleSubmit}>
+        <button
+          type="submit"
+          className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300"
+        >
+          Confirmar Pedido
+        </button>
+      </form>
+    </div>
+  );
+};
+
+
+
+
+
 
 export default Caja;
 

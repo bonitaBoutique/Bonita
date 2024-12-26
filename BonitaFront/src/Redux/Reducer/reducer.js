@@ -89,7 +89,7 @@ import {
 const initialState = {
   searchTerm: "",
   receipts: [],
-  latestReceipt: null,
+  receiptNumber: null,
   priceFilter: { min: null, max: null },
   categoryFilter: "",
   searchResults: [],
@@ -929,7 +929,7 @@ const rootReducer = (state = initialState, action) => {
       return { ...state, loading: true, error: null };
 
     case FETCH_LATEST_RECEIPTS_SUCCESS:
-      return { ...state, loading: false, latestReceipt: action.payload };
+      return { ...state, loading: false, receiptNumber: action.payload };
 
     case FETCH_LATEST_RECEIPTS_FAILURE:
       return { ...state, loading: false, error: action.payload };

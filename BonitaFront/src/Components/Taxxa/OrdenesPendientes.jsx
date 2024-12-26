@@ -51,9 +51,10 @@ const OrdenesPendientes = () => {
   }
 
   return (
-    <>
-   <Navbar2/>
+   
+  
     <div className="bg-colorFooter ">
+    <Navbar2/>
       <div className="container mx-auto px-4 py-8 mt-10">
         <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-300 bg-colorDetalle p-2 rounded">
           Lista de Pedidos
@@ -166,7 +167,7 @@ const OrdenesPendientes = () => {
         )}
       </div>
     </div>
-    </>
+    
   );
 };
 

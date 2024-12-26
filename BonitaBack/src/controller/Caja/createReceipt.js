@@ -1,10 +1,10 @@
 const { Receipt, OrderDetail, sequelize } = require("../../data");
 
 module.exports = async (req, res) => {
-  const { id_orderDetail, buyer_name, buyer_email, buyer_phone } = req.body;
+  const { id_orderDetail, buyer_name, buyer_email, buyer_phone, total_amount, date } = req.body;
 
   // Validaciones iniciales
-  if (!id_orderDetail || !buyer_name || !buyer_email) {
+  if (!id_orderDetail || !buyer_name || !buyer_email || !total_amount || !date ) {
     return res.status(400).json({ message: "Todos los campos son obligatorios" });
   }
 
@@ -38,7 +38,15 @@ module.exports = async (req, res) => {
       return res.status(400).json({ message: "La orden está cancelada y no se puede facturar" });
     }
 
-    // Crear el recibo
+    // Buscar el último recibo para obtener el número de recibo más alto
+    const lastReceipt = await Receipt.findOne({
+      order: [['id_receipt', 'DESC']],  // Orden descendente para obtener el último recibo
+    });
+
+    // Si no existe ningún recibo, asignamos el número de recibo a 1
+    const receiptNumber = lastReceipt ? lastReceipt.id_receipt + 1 : 1001;
+
+    // Crear el nuevo recibo con el número adecuado
     const receipt = await Receipt.create(
       {
         id_orderDetail,
@@ -46,6 +54,8 @@ module.exports = async (req, res) => {
         buyer_email,
         buyer_phone,
         total_amount: order.amount,
+        date,  // El número de documento lo provee el usuario
+        receipt_number: receiptNumber, // Asignamos el número de recibo generado automáticamente
       },
       { transaction: t }
     );

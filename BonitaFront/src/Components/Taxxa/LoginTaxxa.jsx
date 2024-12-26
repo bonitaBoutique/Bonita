@@ -10,7 +10,7 @@ const LoginTaxxa = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:3001/taxxa/login`, {
+      const response = await axios.post(`/taxxa/login`, {
         email, // Directamente los campos que espera el backend
         password
       });

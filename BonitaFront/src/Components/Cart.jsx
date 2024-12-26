@@ -8,8 +8,8 @@ import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
 const Cart = () => {
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
-  const userLogin = useSelector((state) => state.userLogin);
-  const { userInfo } = userLogin;
+  
+  const { userInfo } = useSelector((state) => state.userLogin)
   const navigate = useNavigate();
 
   const handleIncrementQuantity = (productId, stock) => {
@@ -30,10 +30,13 @@ const Cart = () => {
   const handleCheckout = () => {
     if (!userInfo) {
       alert('Debes iniciar sesión o registrarte para realizar la compra.');
+      navigate('/register'); // Redirige a registro si no está autenticado
     } else {
-      navigate('/checkout');
+      console.log('Continuar con el proceso de compra');
+      navigate('/checkout'); // Redirige a la página de checkout si está autenticado
     }
   };
+  
 
   return (
     <div className="relative min-h-screen bg-gray-800">

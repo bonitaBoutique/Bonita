@@ -196,11 +196,13 @@ export const createOrder = (orderData) => async (dispatch) => {
 
     dispatch({
       type: ORDER_CREATE_SUCCESS,
-      payload: data.data.orderDetail,
+      payload: data.orderDetail, // Accede a la propiedad anidada correctamente
     });
     dispatch(clearCart());
     localStorage.removeItem("cartItems");
   } catch (error) {
+    console.error("Error al crear la orden:", error.response || error.message);
+
     dispatch({
       type: ORDER_CREATE_FAIL,
       payload:
@@ -702,12 +704,20 @@ export const createReceipt = (receipt) => async (dispatch) => {
 export const fetchLatestReceipt = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_RECEIPTS_REQUEST });
   try {
-    const { receipt } = await axios.get(`${BASE_URL}/caja/lastReceipt`);
-    dispatch({ type: FETCH_LATEST_RECEIPTS_SUCCESS, payload: receipt });
+    // Llamada al backend para obtener el último recibo
+    const { data } = await axios.get(`${BASE_URL}/caja/lastReceipt`);
+
+    // Si no hay recibos, el backend devuelve un objeto con receipt_number
+    const receiptNumber = data.receipt_number || 1001;  // Usamos 1001 si es el primer recibo
+
+    dispatch({
+      type: FETCH_LATEST_RECEIPTS_SUCCESS,
+      payload: receiptNumber,  // Guardamos el número de recibo en el estado
+    });
   } catch (error) {
     dispatch({
       type: FETCH_LATEST_RECEIPTS_FAILURE,
-      payload: error.response.data,
+      payload: error.response?.data || error.message,
     });
   }
 };

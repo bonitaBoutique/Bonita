@@ -89,6 +89,7 @@ module.exports = async (req, res) => {
       },
     });
 
+    console.log("Orden creada:", updatedOrderDetail);
     return response(res, 201, { orderDetail: updatedOrderDetail });
   } catch (error) {
     console.error("Error creating orderDetail:", error);

@@ -195,9 +195,9 @@ const Checkout = () => {
             {cart.items.map((item) => (
               <li key={item.id_product} className="py-2">
                 <div className="flex justify-between uppercase">
-                  <span>{item.name}</span>
+                  <span>{item.description}</span>
                   <span>
-                    {item.quantity} x ${item.price}
+                    {item.quantity} x ${item.priceSell}
                   </span>
                 </div>
               </li>

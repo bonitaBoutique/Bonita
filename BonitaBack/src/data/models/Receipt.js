@@ -29,6 +29,10 @@ module.exports = (sequelize) => {
         type: DataTypes.FLOAT,
         allowNull: false, // Monto total del recibo
       },
+      payMethod:{
+        type: DataTypes.ENUM( "Efectivo", "Sistecredito", "Addi", "débito", "Crédito", "Bancolombia" , "Combinado"),
+          allowNull: false,
+        },
       date: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW, // Fecha de emisión del recibo

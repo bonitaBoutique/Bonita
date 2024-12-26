@@ -36,6 +36,7 @@ import PanelProductos from "./Components/Product/PanelProductos";
 import ListadoProductos from "./Components/stock/ListadoProductos";
 import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
 import Caja from "./Components/Caja";
+import Recibo from "./Components/Recibo";
 
 function App() {
   const location = useLocation();
@@ -50,6 +51,7 @@ function App() {
     "/panel/createProducts",
     "/invoice",
     "/creditN",
+    "/caja/:idOrder"
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
@@ -121,6 +123,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Caja />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/receipt/:idOrder"
+            element={
+              <PrivateRoute>
+                <Recibo />
               </PrivateRoute>
             }
           />

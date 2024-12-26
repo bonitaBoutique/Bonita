@@ -107,43 +107,40 @@ const Caja = () => {
   };
 
   // Manejar el envío del formulario
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
   
-    // Verificar que el número de documento esté ingresado
     if (!nDocument) {
       alert("Por favor, ingresa el número de documento.");
       return;
     }
   
-    // Calcular los totales de los productos seleccionados
     const { totalPrice, totalQuantity } = calculateTotals();
   
-    // Verificar los valores calculados
-    console.log("Total Price:", totalPrice);
-    console.log("Total Quantity:", totalQuantity);
-  
-    // Crear los datos de la orden
     const orderDataToSend = {
       date: new Date().toISOString(),
       amount: totalPrice,
       quantity: totalQuantity,
-      state_order: "Pedido Realizado", // Ajusta según el estado que necesites
+      state_order: "Pedido Realizado",
       n_document: nDocument,
       id_product: selectedProducts.map((item) => item.id_product),
       address: orderData.address,
       deliveryAddress: orderData.deliveryAddress,
     };
   
-    // Verificar que los datos están correctos antes de enviarlos
-    console.log("Datos de la orden a enviar:", orderDataToSend);
+    try {
+      const orderDetail = await dispatch(createOrder(orderDataToSend));
+      const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
   
-    // Enviar la acción al backend con los datos calculados
-    dispatch(createOrder(orderDataToSend));
+      console.log("ID de la orden creada:", idOrder);
   
-    // Redirigir a una página de confirmación
-    navigate("/order-confirmation"); // Asegúrate de que esta ruta existe
+      navigate(`/receipt/${idOrder}`); // Redirige al recibo
+    } catch (error) {
+      console.error("Error al crear la orden:", error.message);
+      alert("No se pudo crear la orden. Inténtalo de nuevo.");
+    }
   };
+  
   
   
 

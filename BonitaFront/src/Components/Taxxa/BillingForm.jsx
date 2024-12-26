@@ -78,7 +78,7 @@ const BillingForm = () => {
   const closePopup = () => setShowRegistrationPopup(false);
 
   return (
-  <div className="p-6  pt-16">
+  <div className="">
 
       <OrdenesPendientes/>
     

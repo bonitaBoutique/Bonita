@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, updateProduct, deleteProduct } from "../../Redux/Actions/actions"; // Ajusta la ruta según tu estructura
 import * as XLSX from "xlsx"; // Importar SheetJS
+import Navbar2 from "../Navbar2";
 
 const ListadoProductos = () => {
   const dispatch = useDispatch();
@@ -72,6 +73,8 @@ const ListadoProductos = () => {
   if (error) return <p className="text-center text-red-500">Error: {error}</p>;
 
   return (
+    <>
+   <Navbar2/>
     <div className="p-6 mt-36">
       <input
         type="text"
@@ -158,6 +161,7 @@ const ListadoProductos = () => {
         </table>
       </div>
     </div>
+    </>
   );
 };
 

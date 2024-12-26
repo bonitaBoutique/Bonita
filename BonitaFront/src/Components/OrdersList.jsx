@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllOrders, updateOrderState } from '../Redux/Actions/actions';
 import Swal from 'sweetalert2';
+import Navbar2 from './Navbar2';
 
 const OrdersList = () => {
   const [filterState, setFilterState] = useState('');
@@ -77,9 +78,11 @@ const OrdersList = () => {
   }
 
   return (
-    <div className="bg-colorFooter min-h-screen pt-16 pb-16">
+    <>
+   <Navbar2/>
+    <div className="bg-gray-400 min-h-screen pt-16 pb-16">
       <div className="container mx-auto px-4 py-8 mt-20">
-        <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-300 bg-colorDetalle p-2 rounded">Lista de Pedidos</h2>
+        <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-700 bg-slate-300 p-2 rounded">Lista de Pedidos</h2>
         <div className="mb-4">
           <label className="mr-2 text-gray-200 font-nunito font-semibold">Filtrar por estado:</label>
           <select
@@ -140,7 +143,7 @@ const OrdersList = () => {
               )}
               <button
                 onClick={() => handleUpdateOrderState(order.id_orderDetail, selectedStates[order.id_orderDetail] || order.state_order)}
-                className="mt-2 bg-yellow-600 text-gray-800 px-4 py-2 rounded font-nunito font-semibold"
+                className="mt-2 bg-slate-600 text-gray-200 px-4 py-2 rounded font-nunito font-semibold"
                 disabled={order.state_order === 'Envío Realizado'}
               >
                 Confirmar Cambio de Estado
@@ -150,6 +153,7 @@ const OrdersList = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

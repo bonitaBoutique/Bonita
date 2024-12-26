@@ -8,6 +8,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { FiShoppingCart, FiEdit, FiTrash } from "react-icons/fi";
 import Swal from "sweetalert2";
+import Navbar from "../Navbar";
 
 const ProductsList = () => {
   const dispatch = useDispatch();
@@ -90,13 +91,18 @@ const ProductsList = () => {
 
   if (filteredProducts.length === 0) {
     return (
+      <>
+      <Navbar/>
       <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige py-16">
         <p className="text-white text-lg">No hay productos disponibles.</p>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+   <Navbar/>
     <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 uppercase font-nunito font-semibold">
@@ -181,6 +187,7 @@ const ProductsList = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -17,6 +17,7 @@ const Recibo = () => {
   const [totalAmount, setTotalAmount] = useState("");
   const [date, setDate] = useState("");
   const [receiptCreated, setReceiptCreated] = useState(false);
+  const [payMethod, setPayMethod]= useState("")
 
   useEffect(() => {
     // Carga la orden solo si no está cargada o si el id no coincide
@@ -37,6 +38,7 @@ const Recibo = () => {
       setBuyerPhone(order.buyerPhone);
       setTotalAmount(order.amount);
       setDate(order.date);
+      
     }
   }, [order]);
 
@@ -64,6 +66,7 @@ const Recibo = () => {
       id_orderDetail: order.id_orderDetail,  // ID de la orden
       buyer_name: buyerName,  // Nombre del comprador
       buyer_email: buyerEmail,  // Correo electrónico del comprador
+      payMethod:payMethod
     };
   
     // Despacha la acción para crear el recibo con los datos
@@ -110,7 +113,7 @@ const Recibo = () => {
     currentY += 20;
   
     doc.text(`Estado de venta: ${order.state_order}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
-  
+    
     // Línea de asteriscos
     currentY += 20; // Espacio antes de la línea
     doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
@@ -129,7 +132,8 @@ const Recibo = () => {
   
     doc.text(`Monto Total: $${totalAmount}`, 20, currentY);
     currentY += 20;
-  
+    doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
+    currentY += 20;
     doc.setFontSize(8); 
     doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
   
@@ -209,6 +213,23 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
+        <div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700">Método de Pago</label>
+  <select
+    value={payMethod}
+    onChange={(e) => setPayMethod(e.target.value)}
+    required
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+  >
+    <option value="" disabled>Seleccione un método</option>
+    <option value="Efectivo">Efectivo</option>
+    <option value="Débito">Tarjeta de Débito</option>
+    <option value="Tarjeta de Crédito">Crédito</option>
+    <option value="Addi">Addi</option>
+    <option value="Sistecredito">Sistecredito</option>
+    <option value="Bancolombia">Bancolombia</option>
+  </select>
+</div>
   
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Fecha</label>

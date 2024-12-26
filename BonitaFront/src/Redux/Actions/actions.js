@@ -194,12 +194,17 @@ export const createOrder = (orderData) => async (dispatch) => {
 
     const { data } = await axios.post(`${BASE_URL}/order/create/`, orderData);
 
+    const orderDetail = data.data.orderDetail; // Asegúrate de acceder correctamente a orderDetail
+
     dispatch({
       type: ORDER_CREATE_SUCCESS,
-      payload: data.orderDetail, // Accede a la propiedad anidada correctamente
+      payload: orderDetail,
     });
+
     dispatch(clearCart());
     localStorage.removeItem("cartItems");
+
+    return orderDetail; // Devuelve el detalle de la orden
   } catch (error) {
     console.error("Error al crear la orden:", error.response || error.message);
 
@@ -210,8 +215,16 @@ export const createOrder = (orderData) => async (dispatch) => {
           ? error.response.data.message
           : error.message,
     });
+
+    throw new Error(
+      error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message
+    );
   }
 };
+
+
 
 export const fetchLatestOrder = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_ORDER_REQUEST });
@@ -679,17 +692,16 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
 
 export const createReceipt = (receipt) => async (dispatch) => {
   dispatch({ type: CREATE_RECEIPT_REQUEST });
+  console.log("Dispatching createReceipt with data:", receipt); // Verificar los datos
 
   try {
-    const response = await fetch(`${BASE_URL}caja/createReceipt`, {
-      method: "POST",
+    const response = await axios.post(`${BASE_URL}/caja/createReceipt`, receipt, {
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(receipt),
     });
-    const data = await response.json();
+    const data = response.data;
 
-    if (response.ok) {
-      dispatch({ type: CREATE_RECEIPT_SUCCESS, payload: data.data });
+    if (response.status === 200) {
+      dispatch({ type: CREATE_RECEIPT_SUCCESS, payload: data });
     } else {
       dispatch({
         type: CREATE_RECEIPT_FAILURE,
@@ -697,9 +709,12 @@ export const createReceipt = (receipt) => async (dispatch) => {
       });
     }
   } catch (error) {
+    console.error("Error:", error); // Agrega más detalles para entender el error
     dispatch({ type: CREATE_RECEIPT_FAILURE, payload: error.message });
   }
 };
+
+
 
 export const fetchLatestReceipt = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_RECEIPTS_REQUEST });

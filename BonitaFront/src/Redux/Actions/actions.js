@@ -11,6 +11,9 @@ import {
   FETCH_PRODUCTS_REQUEST,
   FETCH_PRODUCTS_SUCCESS,
   FETCH_PRODUCTS_FAILURE,
+  FETCH_PRODUCTS_FILTER_REQUEST,
+  FETCH_PRODUCTS_FILTER_SUCCESS,
+  FETCH_PRODUCTS_FILTER_FAILURE,
   FETCH_PRODUCT_REQUEST,
   FETCH_PRODUCT_SUCCESS,
   FETCH_PRODUCT_FAILURE,
@@ -106,19 +109,19 @@ export const createProduct = (productData) => async (dispatch) => {
   }
 };
 
-export const fetchCategories = () => async (dispatch) => {
-  dispatch({ type: FETCH_CATEGORIES_REQUEST });
+// export const fetchCategories = () => async (dispatch) => {
+//   dispatch({ type: FETCH_CATEGORIES_REQUEST });
 
-  try {
-    const response = await axios.get(`${BASE_URL}/category/`);
-    dispatch({
-      type: FETCH_CATEGORIES_SUCCESS,
-      payload: response.data.data.categories,
-    });
-  } catch (error) {
-    dispatch({ type: FETCH_CATEGORIES_FAILURE, payload: error.message });
-  }
-};
+//   try {
+//     const response = await axios.get(`${BASE_URL}/category/`);
+//     dispatch({
+//       type: FETCH_CATEGORIES_SUCCESS,
+//       payload: response.data.data.categories,
+//     });
+//   } catch (error) {
+//     dispatch({ type: FETCH_CATEGORIES_FAILURE, payload: error.message });
+//   }
+// };
 
 export const fetchProducts = () => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCTS_REQUEST });
@@ -133,6 +136,13 @@ export const fetchProducts = () => async (dispatch) => {
         type: FETCH_PRODUCTS_SUCCESS,
         payload: response.data.data.products, // Accedemos a los productos directamente
       });
+      
+
+      // Limpiar el filtro cuando se cargan todos los productos
+      dispatch({
+        type: FETCH_PRODUCTS_FILTER_SUCCESS,
+        payload: [], // Limpiar el filtro
+      });
     } else {
       dispatch({
         type: FETCH_PRODUCTS_FAILURE,
@@ -144,6 +154,12 @@ export const fetchProducts = () => async (dispatch) => {
     dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
   }
 };
+
+
+
+
+
+
 
 export const fetchProductById = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_PRODUCT_REQUEST });
@@ -753,6 +769,46 @@ export const fetchAllReceipts = () => async (dispatch) => {
           ? error.response.data.message
           : error.message,
     });
+  }
+};
+
+export const fetchProductsFilterRequest = () => ({
+  type: FETCH_PRODUCTS_FILTER_REQUEST,
+});
+
+export const fetchProductsFilterSuccess = (productsFilter) => {
+  console.log('Acción - Productos filtrados:', productsFilter);
+  return {
+    type: FETCH_PRODUCTS_FILTER_SUCCESS,
+    payload: productsFilter,
+  };
+};
+
+
+export const fetchProductsFilterFailure = (error) => ({
+  type: FETCH_PRODUCTS_FILTER_FAILURE,
+  payload: error,
+});
+
+export const fetchProductsFilter = (searchParams) => async (dispatch) => {
+  dispatch(fetchProductsFilterRequest());
+
+  try {
+    // Construye la consulta dinámica
+    const queryString = new URLSearchParams(searchParams).toString();
+    console.log("URL generada:", queryString);
+
+    // Llama al backend con los parámetros
+    const response = await axios.get(`http://localhost:3001/product/search?${queryString}`, {
+      headers: {
+        "Cache-Control": "no-cache",
+      },
+    });
+
+    // Dispara la acción con los productos filtrados
+    dispatch(fetchProductsFilterSuccess(response.data.data.products));
+  } catch (error) {
+    dispatch(fetchProductsFilterFailure(error.message));
   }
 };
 

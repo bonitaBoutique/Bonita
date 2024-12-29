@@ -9,6 +9,9 @@ import {
   FETCH_PRODUCTS_REQUEST,
   FETCH_PRODUCTS_SUCCESS,
   FETCH_PRODUCTS_FAILURE,
+  FETCH_PRODUCTS_FILTER_REQUEST,
+  FETCH_PRODUCTS_FILTER_SUCCESS,
+  FETCH_PRODUCTS_FILTER_FAILURE,
   FETCH_PRODUCT_REQUEST,
   FETCH_PRODUCT_SUCCESS,
   FETCH_PRODUCT_FAILURE,
@@ -97,6 +100,7 @@ const initialState = {
   product: {},
   similarProducts: [],
   products: [],
+  productsFilter:[],
   data: null,
   error: null,
 
@@ -943,6 +947,15 @@ const rootReducer = (state = initialState, action) => {
 
     case FETCH_RECEIPTS_FAILURE:
       return { ...state, loading: false, error: action.payload };
+
+      case FETCH_PRODUCTS_FILTER_REQUEST:
+        return { ...state, loading: true, error: '' };
+        case FETCH_PRODUCTS_FILTER_SUCCESS:
+          console.log('Reducer - Productos filtrados:', action.payload);
+          return { ...state, loading: false, productsFilter: action.payload };
+        
+      case FETCH_PRODUCTS_FILTER_FAILURE:
+        return { ...state, loading: false, error: action.payload };
 
     default:
       return state;

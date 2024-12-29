@@ -4,7 +4,7 @@ import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from '@heroicons/react/24/outli
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/img/logoNombre.png';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSearchTerm, fetchFilteredProducts, fetchCategories, logout } from '../Redux/Actions/actions';
+import {  logout } from '../Redux/Actions/actions';
 
 const navigation = [
   { name: 'Tienda', href: '/products', current: true },
@@ -21,11 +21,11 @@ export default function Navbar() {
   const [isTransparent, setIsTransparent] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate(); 
-  const searchTerm = useSelector(state => state.searchTerm);
+  // const searchTerm = useSelector(state => state.searchTerm);
   const userInfo = useSelector(state => state.userLogin.userInfo);
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    
 
     const handleScroll = () => {
       setIsTransparent(window.scrollY <= 50);
@@ -35,10 +35,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [dispatch]);
 
-  const handleSearchChange = (event) => {
-    dispatch(setSearchTerm(event.target.value));
-    dispatch(fetchFilteredProducts(event.target.value));
-  };
+  // const handleSearchChange = (event) => {
+  //   dispatch(setSearchTerm(event.target.value));
+  //   dispatch(fetchFilteredProducts(event.target.value));
+  // };
 
   const renderMenuItems = () => {
     if (!userInfo) {
@@ -189,7 +189,7 @@ export default function Navbar() {
                     {item.name}
                   </Link>
                 ))}
-                <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="hidden lg:block px-3 py-2 border rounded-md" />
+                {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="hidden lg:block px-3 py-2 border rounded-md" /> */}
                 <Link to="/cart" className={`${isTransparent ? 'text-white' : 'text-slate-900'}`}>
                   <ShoppingBagIcon className="h-6 w-6" />
                 </Link>
@@ -216,7 +216,7 @@ export default function Navbar() {
                   {item.name}
                 </Disclosure.Button>
               ))}
-              <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="w-full px-3 py-2 border rounded-md" />
+              {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="w-full px-3 py-2 border rounded-md" /> */}
               <div className="border-t border-gray-200 pt-3">
                 <Menu as="div" className="relative">
                   <Menu.Button className="block w-full text-left px-3 py-2">Menú</Menu.Button>

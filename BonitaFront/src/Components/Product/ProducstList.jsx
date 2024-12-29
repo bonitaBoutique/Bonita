@@ -101,9 +101,10 @@ const ProductsList = () => {
   return (
     <>
       <Navbar />
+      <SearchComponent />
       <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
         {/* Barra de búsqueda */}
-        <SearchComponent />
+      
        
 
 

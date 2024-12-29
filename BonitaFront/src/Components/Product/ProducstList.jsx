@@ -101,8 +101,9 @@ const ProductsList = () => {
   return (
     <>
       <Navbar />
-      <SearchComponent />
+     
       <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
+      <SearchComponent />
   <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
     {activeProducts.length === 0 ? (
       <p className="text-white text-lg">No hay productos disponibles.</p>
@@ -112,7 +113,7 @@ const ProductsList = () => {
           {currentProducts.map((product) => (
             <div
               key={product.id_product}
-              className="group relative bg-white shadow-2xl rounded-2xl overflow-hidden flex flex-col"
+              className="group relative bg-colorBeigeClaro shadow-2xl rounded-2xl overflow-hidden flex flex-col"
             >
               {/* Contenedor de la imagen con un tamaño fijo */}
               <div className="w-full h-96 bg-gray-100 overflow-hidden">
@@ -142,9 +143,9 @@ const ProductsList = () => {
                 <div className="mt-4 mb-4 flex justify-between items-center">
                   <button
                     onClick={() => handleButtonClick(product)}
-                    className="mt-4 flex items-center justify-center w-full bg-amber-400 text-white py-2 px-4 rounded-lg hover:bg-amber-500 transition-colors duration-300"
+                    className="mt-4 flex items-center justify-center w-full bg-amber-100 opacity-85 text-slate-700 py-2 px-4 rounded-lg hover:bg-amber-200 transition-colors duration-300"
                   >
-                    <FiShoppingCart className="mr-2 text-white" /> Añadir al carrito
+                    <FiShoppingCart className="mr-2 text-slate-700" /> Añadir al carrito
                   </button>
                 </div>
               </div>

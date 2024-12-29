@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById, updateProduct } from '../../Redux/Actions/actions';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import Navbar2 from '../Navbar2';
 
 const UpdateProduct = () => {
     const { id } = useParams();
@@ -62,7 +63,8 @@ const UpdateProduct = () => {
     };
 
     return (
-      <div className="min-h-screen  pt-16 pb-16 bg-colorFooter ">
+      <div className="min-h-screen  pt-16 pb-16 bg-gray-400 ">
+        <Navbar2/>
         {/* Espaciado para el Navbar y el Footer */}
         <div className="container mx-auto px-4 py-8  rounded-lg shadow-md">
           <div className="max-w-md mx-auto bg-white p-6 rounded-lg mt-16">
@@ -143,7 +145,7 @@ const UpdateProduct = () => {
               {/* Agrega otros campos de producto aquí */}
               <button
                 type="submit"
-                className="bg-yellow-700 hover:bg-colorLogo text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                className="bg-colorBeige hover:bg-colorBeigeClaro text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
                 Actualizar
               </button>

@@ -19,7 +19,7 @@ const SearchComponent = () => {
   };
 
   return (
-    <div className="w-full bg-amber-100 opacity-65 p-4 shadow-md">
+    <div className="w-full bg-colorBeigeClaro opacity-65 p-4 shadow-md">
       <form onSubmit={handleSearch} className="flex items-center justify-center space-x-4 border-spacing-1 border-colorFooter p-3 rounded-3xl bg-rose-300 shadow-md max-w-5xl mx-auto">
         <input
           type="text"

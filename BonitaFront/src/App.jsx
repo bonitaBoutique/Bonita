@@ -53,7 +53,8 @@ function App() {
     "/panel/createProducts",
     "/invoice",
     "/creditN",
-    "/caja/:idOrder"
+    "/caja/:idOrder",
+    "/receipt/:idOrder"
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>

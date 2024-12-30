@@ -151,11 +151,11 @@ const Recibo = () => {
   
 
   return (
-    <div className="bg-gray-400">
+    <div className="bg-gray-400 p-4 h-screen">
     <Navbar2/>
    
-    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-14">
-      <h2 className="text-2xl font-semibold text-center mb-4">Formulario de Recibo</h2>
+    <div className="max-w-md mx-auto p-4 bg-white shadow-lg rounded-md mt-28">
+      <h2 className="text-2xl font-semibold text-center">Formulario de Recibo</h2>
       
       {/* Mostrar la alerta solo si se ha creado el recibo correctamente */}
       {receiptCreated && (
@@ -164,7 +164,7 @@ const Recibo = () => {
         </div>
       )}
   
-      <form className="p-2" onSubmit={handleSubmit}>
+      <form className="p-2 " onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Número de Recibo</label>
           <input

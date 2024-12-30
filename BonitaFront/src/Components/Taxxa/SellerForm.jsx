@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSellerData, updateSellerData, createSellerData } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-
+import Navbar2 from '../Navbar2';
 
 const SellerForm = ({ jseller, setSeller }) => {
   const dispatch = useDispatch();
@@ -101,6 +101,8 @@ const SellerForm = ({ jseller, setSeller }) => {
 
 
   return (
+    <div>
+    <Navbar2/>
     <form onSubmit={handleSubmit} className="p-8 max-w-7xl mx-auto bg-white shadow-lg mt-20 rounded-lg">
       <h2 className="text-2xl font-semibold mb-6 text-gray-800">Datos del Comercio</h2>
       
@@ -346,6 +348,7 @@ const SellerForm = ({ jseller, setSeller }) => {
         Guardar Cambios
       </button>
     </form>
+    </div>
   );
 };
 

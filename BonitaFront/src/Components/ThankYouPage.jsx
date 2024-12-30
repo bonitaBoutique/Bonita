@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar2 from "./Navbar2";
+import Navbar from "./Navbar";
 import { useSelector } from "react-redux"; // Importa useSelector
 
 const ThankYouPage = () => {
@@ -16,8 +16,8 @@ const ThankYouPage = () => {
 
   return (
     <>
-      <Navbar2 />
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
+      <Navbar />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-colorBeige py-12 sm:px-6 lg:px-8">
         <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
           <h1 className="text-3xl font-bold text-pink-600 text-center mb-6">
             ¡Gracias por tu compra!

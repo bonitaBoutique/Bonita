@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchProductById, addToCart } from "../../Redux/Actions/actions";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiShoppingCart } from "react-icons/fi";
-import Navbar2 from "../Navbar2";
+import Navbar from "../Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -38,7 +38,7 @@ const ProductDetails = () => {
 
   return (
     <div className="full min-h-screen pt-6  bg-colorBeige">
-      <Navbar2/>
+      <Navbar/>
       <div className="relative min-h-screen flex items-center justify-center pt-8 z-10">
         <div className="bg-gray-100 rounded-lg shadow-lg p-6 lg:p-8 w-full max-w-6xl flex flex-col">
           <div className="flex flex-col lg:flex-row">

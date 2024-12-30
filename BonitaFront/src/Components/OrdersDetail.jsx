@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { fetchOrdersByDocument } from '../Redux/Actions/actions';
-import Navbar2 from './Navbar2';
+import Navbar from './Navbar';
 import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
 
 const OrdersDetails = () => {
@@ -22,7 +22,7 @@ const OrdersDetails = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-800">
-      <Navbar2 />
+      <Navbar />
       {/* Imagen de fondo */}
       <img
         src={backgroundImage}

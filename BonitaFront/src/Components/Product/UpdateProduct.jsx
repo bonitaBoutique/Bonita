@@ -63,7 +63,7 @@ const UpdateProduct = () => {
     };
 
     return (
-      <div className="min-h-screen  pt-16 pb-16 bg-gray-400 ">
+      <div className="min-h-screen  bg-gray-400 ">
         <Navbar2/>
         {/* Espaciado para el Navbar y el Footer */}
         <div className="container mx-auto px-4 py-8  rounded-lg shadow-md">

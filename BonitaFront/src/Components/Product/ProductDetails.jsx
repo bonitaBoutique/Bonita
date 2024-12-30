@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchProductById, addToCart } from "../../Redux/Actions/actions";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiShoppingCart } from "react-icons/fi";
+import Navbar2 from "../Navbar2";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -36,7 +37,8 @@ const ProductDetails = () => {
   if (!product) return <p>No se encontró el producto.</p>;
 
   return (
-    <div className="full min-h-screen mb-36 bg-gray-900">
+    <div className="full min-h-screen pt-6  bg-colorBeige">
+      <Navbar2/>
       <div className="relative min-h-screen flex items-center justify-center pt-8 z-10">
         <div className="bg-gray-100 rounded-lg shadow-lg p-6 lg:p-8 w-full max-w-6xl flex flex-col">
           <div className="flex flex-col lg:flex-row">
@@ -48,11 +50,11 @@ const ProductDetails = () => {
                   key={index}
                   src={img}
                   alt={`Producto ${index}`}
-                  className="w-full md:w-3/4 lg:w-1/2 h-auto rounded-lg mx-auto" // Ajustamos el tamaño aquí
+                  className="w-full md:w-3/4 lg:w-1/2 h-full p-8 rounded-lg mx-auto" // Ajustamos el tamaño aquí
                 />
               ))}
             <div className="w-50% lg:w-1/2 p-4">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2 uppercase">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2 uppercase">
                 {product.description}
               </h2>
               <p className="text-lg text-gray-500 mb-4">
@@ -60,6 +62,9 @@ const ProductDetails = () => {
               </p>
               <p className="text-lg text-gray-500 mb-4">
                 Color: {product.colors}
+              </p>
+              <p className="text-lg text-gray-500 mb-4">
+                Talle: {product.sizes}
               </p>
               
               <p className="text-xl font-semibold text-gray-800">

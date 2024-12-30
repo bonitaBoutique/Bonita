@@ -133,7 +133,7 @@ const ProductsList = () => {
               {/* Contenedor de texto */}
               <div className="flex flex-col justify-between p-6 flex-grow">
                 <h3 className="text-2xl font-semibold font-nunito text-stone-700">
-                  <Link to={`/product/${product.id_product}`} className="hover:text-amber-600">
+                  <Link to={`/product/${product.id_product}`} className="hover:text-amber-100">
                     {product.marca}
                   </Link>
                 </h3>

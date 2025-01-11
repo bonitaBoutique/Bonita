@@ -3,9 +3,9 @@ const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock,section,name_SB,sizes,colors,materials, isOffer, tiendaOnLine } = req.body;
+  const { marca, description, price, priceSell, stock, sizes, colors, tiendaOnLine } = req.body;
 
-  if (!name && !description && !price && !stock && !section && !name_SB && !sizes && !colors && !materials && isOffer && tiendaOnLine === undefined) {
+  if (!marca && !description && !price && !stock && !priceSell  && !sizes && !colors   && tiendaOnLine === undefined) {
     return response(res, 400, { error: "No data to update" });
   }
 
@@ -17,17 +17,15 @@ module.exports = async (req, res) => {
     }
 
     // Actualizar los campos del producto
-    product.name = name !== undefined ? name : product.name;
+    product.marca = marca !== undefined ? marca : product.marca;
     product.description = description !== undefined ? description : product.description;
     product.price = price !== undefined ? parseFloat(price) : product.price;
     product.stock = stock !== undefined ? parseInt(stock, 10) : product.stock;
-    product.isOffer = isOffer !== undefined ? isOffer === 'true' : product.isOffer; // Asegúrate de convertir el valor a booleano
+    product.priceSell = priceSell !== undefined ? parseFloat(priceSell) : product.priceSell;
     product.tiendaOnLine = tiendaOnLine !== undefined ? JSON.parse(tiendaOnLine) : product.tiendaOnLine;
-    product.section = section !== undefined ? section : product.section;
-    product.name_SB = name_SB !== undefined ? name_SB : product.name_SB;
     product.sizes = sizes !== undefined ? sizes : product.sizes;
     product.colors = colors !== undefined ? colors : product.colors;
-    product.materials = materials !== undefined ? materials : product.materials;
+
 
     // Guardar los cambios en la base de datos
     await product.save();

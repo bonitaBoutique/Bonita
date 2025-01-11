@@ -4,13 +4,11 @@ import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from '@heroicons/react/24/outli
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/img/logoNombre.png';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSearchTerm, fetchFilteredProducts, fetchCategories, logout } from '../Redux/Actions/actions';
+import {  logout } from '../Redux/Actions/actions';
 
 const navigation = [
-  { name: 'Tienda', href: '/products', current: true },
- 
-  { name: 'Contactanos', href: '#footer', current: false },
- 
+  { name: "Tienda", href: "/products", isScroll: false },
+  { name: "Contactanos", href: "#footer", isScroll: true },
 ];
 
 function classNames(...classes) {
@@ -21,11 +19,11 @@ export default function Navbar() {
   const [isTransparent, setIsTransparent] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate(); 
-  const searchTerm = useSelector(state => state.searchTerm);
+  // const searchTerm = useSelector(state => state.searchTerm);
   const userInfo = useSelector(state => state.userLogin.userInfo);
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    
 
     const handleScroll = () => {
       setIsTransparent(window.scrollY <= 50);
@@ -35,9 +33,11 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [dispatch]);
 
-  const handleSearchChange = (event) => {
-    dispatch(setSearchTerm(event.target.value));
-    dispatch(fetchFilteredProducts(event.target.value));
+  const handleScrollToFooter = () => {
+    const footerElement = document.getElementById("footer");
+    if (footerElement) {
+      footerElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const renderMenuItems = () => {
@@ -180,16 +180,30 @@ export default function Navbar() {
               </div>
 
               <div className="hidden sm:flex sm:items-center sm:space-x-6">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`text-lg font-medium ${isTransparent ? 'text-white' : 'text-slate-900'} hover:text-slate-600`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-                <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="hidden lg:block px-3 py-2 border rounded-md" />
+              {navigation.map((item) =>
+                  item.isScroll ? (
+                    <button
+                      key={item.name}
+                      className={`text-lg font-medium ${
+                        isTransparent ? "text-white" : "text-slate-900"
+                      } hover:text-slate-600`}
+                      onClick={handleScrollToFooter}
+                    >
+                      {item.name}
+                    </button>
+                  ) : (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`text-lg font-medium ${
+                        isTransparent ? "text-white" : "text-slate-900"
+                      } hover:text-slate-600`}
+                    >
+                      {item.name}
+                    </Link>
+                  )
+                )}
+                {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="hidden lg:block px-3 py-2 border rounded-md" /> */}
                 <Link to="/cart" className={`${isTransparent ? 'text-white' : 'text-slate-900'}`}>
                   <ShoppingBagIcon className="h-6 w-6" />
                 </Link>
@@ -216,7 +230,7 @@ export default function Navbar() {
                   {item.name}
                 </Disclosure.Button>
               ))}
-              <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="w-full px-3 py-2 border rounded-md" />
+              {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="w-full px-3 py-2 border rounded-md" /> */}
               <div className="border-t border-gray-200 pt-3">
                 <Menu as="div" className="relative">
                   <Menu.Button className="block w-full text-left px-3 py-2">Menú</Menu.Button>

@@ -2,45 +2,54 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProducts,
-  fetchFilteredProducts,
+  
   deleteProduct,
 } from "../../Redux/Actions/actions";
 import { Link, useNavigate } from "react-router-dom";
 import { FiShoppingCart, FiEdit, FiTrash } from "react-icons/fi";
 import Swal from "sweetalert2";
 import Navbar from "../Navbar";
+import SearchComponent from "./SearchComponent";
 
 const ProductsList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 8;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 6;
+
+  // Selecciona los datos del estado global
   const products = useSelector((state) => state.products || []);
-  console.log(products);
+  const productsFilter = useSelector((state) => state.productsFilter || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
-
-  const searchTerm = useSelector((state) => state.searchTerm);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
+  console.log('Estado global:', { products, productsFilter });
 
   useEffect(() => {
-    if (searchTerm) {
-      dispatch(fetchFilteredProducts(searchTerm));
-    } else {
-      dispatch(fetchProducts());
-    }
-  }, [dispatch, searchTerm]);
+    console.log('Productos filtrados:', productsFilter);
+  }, [productsFilter]);
+  
+  useEffect(() => {
+    // Cargar todos los productos al inicio
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
-  // Filtrar productos con stock y solo los que tienen tiendaOnLine en true
-  const filteredProducts = products.filter(
-    (product) => product.stock > 0 && product.tiendaOnLine === true
-  );
+  // Mostrar productos filtrados si existen, de lo contrario, mostrar todos
+  const activeProducts =
+  productsFilter.length > 0 ? productsFilter : products;
+
+  useEffect(() => {
+    console.log('Productos activos:', activeProducts);
+  }, [productsFilter, products]);
+
+  
+  
+
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(
+  const currentProducts = activeProducts.slice(
     indexOfFirstProduct,
     indexOfLastProduct
   );
@@ -89,58 +98,59 @@ const ProductsList = () => {
     );
   }
 
-  if (filteredProducts.length === 0) {
-    return (
-      <>
-      <Navbar/>
-      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige py-16">
-        <p className="text-white text-lg">No hay productos disponibles.</p>
-      </div>
-      </>
-    );
-  }
-
   return (
     <>
-   <Navbar/>
-    <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 uppercase font-nunito font-semibold">
+      <Navbar />
+     
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-16">
+      <SearchComponent />
+  <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+    {activeProducts.length === 0 ? (
+      <p className="text-white text-lg">No hay productos disponibles.</p>
+    ) : (
+      <>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 uppercase font-nunito font-semibold">
           {currentProducts.map((product) => (
-            <div key={product.id_product} className="group relative max-w-xs">
-              <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden">
+            <div
+              key={product.id_product}
+              className="group relative bg-colorBeigeClaro shadow-2xl rounded-2xl overflow-hidden flex flex-col"
+            >
+              {/* Contenedor de la imagen con un tamaño fijo */}
+              <div className="w-full h-96 bg-gray-100 overflow-hidden">
                 <Link to={`/product/${product.id_product}`}>
                   <img
                     src={
                       product.Images.length > 0
                         ? product.Images[0].url
-                        : "https://via.placeholder.com/150"
+                        : "https://via.placeholder.com/300"
                     }
                     alt={product.description || "Producto sin nombre"}
-                    className="h-full w-full object-cover object-center rounded-lg"
+                    className="h-full w-full object-cover object-center transition-all duration-500 ease-in-out transform hover:scale-110"
                   />
                 </Link>
               </div>
-              <div className="mt-4 px-4">
+
+              {/* Contenedor de texto */}
+              <div className="flex flex-col justify-between p-6 flex-grow">
                 <h3 className="text-2xl font-semibold font-nunito text-stone-700">
-                  <Link to={`/product/${product.id_product}`}>
+                  <Link to={`/product/${product.id_product}`} className="hover:text-amber-100">
                     {product.marca}
                   </Link>
                 </h3>
                 <p className="text-lg font-semibold font-nunito text-gray-800">
                   ${product.priceSell}
                 </p>
-              </div>
-              <div className="mt-4 mb-4 px-4 flex justify-between items-center">
-                <button
-                  onClick={() => handleButtonClick(product)}
-                  className="mt-4 flex items-center justify-center w-full bg-amber-100 opacity-80 border-2 font-nunito font-semibold text-gray-700 py-2 px-4 rounded-lg hover:bg-amber-200 transition-colors duration-300"
-                >
-                  <FiShoppingCart className="mr-2 text-colorFooter" /> Añadir al
-                  carrito
-                </button>
+                <div className="mt-4 mb-4 flex justify-between items-center">
+                  <button
+                    onClick={() => handleButtonClick(product)}
+                    className="mt-4 flex items-center justify-center w-full bg-amber-100 opacity-85 text-slate-700 py-2 px-4 rounded-lg hover:bg-amber-200 transition-colors duration-300"
+                  >
+                    <FiShoppingCart className="mr-2 text-slate-700" /> Añadir al carrito
+                  </button>
+                </div>
               </div>
 
+              {/* Botones de administración */}
               {userInfo && userInfo.role === "Admin" && (
                 <div className="absolute top-2 right-2 flex space-x-2">
                   <button
@@ -160,13 +170,14 @@ const ProductsList = () => {
             </div>
           ))}
         </div>
-
         {/* Paginación */}
         <div className="mt-8 flex justify-center">
           <nav className="block">
             <ul className="flex pl-0 rounded list-none flex-wrap">
               {Array.from(
-                { length: Math.ceil(filteredProducts.length / productsPerPage) },
+                {
+                  length: Math.ceil(activeProducts.length / productsPerPage),
+                },
                 (_, i) => (
                   <li key={i}>
                     <button
@@ -185,11 +196,14 @@ const ProductsList = () => {
             </ul>
           </nav>
         </div>
-      </div>
-    </div>
+      </>
+    )}
+  </div>
+</div>
+
+
     </>
   );
 };
 
 export default ProductsList;
-

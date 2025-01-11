@@ -24,11 +24,11 @@ const PanelProductos = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           
             <>
-              <Link to="/createProducts" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
+              <Link to="/createProducts" className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center">
                 Cargar Articulos
               </Link>
              
-              <Link to="/panel/productos" className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center">
+              <Link to="/panel/productos" className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center">
                 Listar Articulos
               </Link>
             </>

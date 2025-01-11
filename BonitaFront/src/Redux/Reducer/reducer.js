@@ -84,6 +84,16 @@ import {
   FETCH_RECEIPTS_REQUEST,
   FETCH_RECEIPTS_SUCCESS,
   FETCH_RECEIPTS_FAILURE,
+  CREATE_EXPENSE_REQUEST,
+  CREATE_EXPENSE_SUCCESS,
+  CREATE_EXPENSE_FAILURE,
+  GET_FILTERED_EXPENSES_REQUEST,
+  GET_FILTERED_EXPENSES_SUCCESS,
+  GET_FILTERED_EXPENSES_FAILURE,
+  DELETE_EXPENSE_REQUEST,
+  DELETE_EXPENSE_SUCCESS,
+  DELETE_EXPENSE_FAILURE
+
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -95,6 +105,7 @@ const initialState = {
   searchResults: [],
   loading: false,
   product: {},
+ 
   similarProducts: [],
   products: [],
   data: null,
@@ -153,6 +164,12 @@ const initialState = {
       : 0,
   },
   invoice: {
+    loading: false,
+    success: false,
+    error: null,
+  },
+  expenses: {
+    data: [],
     loading: false,
     success: false,
     error: null,
@@ -943,6 +960,99 @@ const rootReducer = (state = initialState, action) => {
 
     case FETCH_RECEIPTS_FAILURE:
       return { ...state, loading: false, error: action.payload };
+
+      case CREATE_EXPENSE_REQUEST:
+        return {
+          ...state,
+          expenses: {
+            ...state.invoice,
+            loading: true,
+            success: false,
+            error: null,
+          },
+        };
+      case CREATE_EXPENSE_SUCCESS:
+        return {
+          ...state,
+          expenses: {
+            ...state.invoice,
+            loading: false,
+            success: true,
+            error: null,
+          },
+        };
+      case CREATE_EXPENSE_FAILURE:
+        return {
+          ...state,
+          expenses: {
+            ...state.invoice,
+            loading: false,
+            success: false,
+            error: action.payload,
+          },
+        };
+        case GET_FILTERED_EXPENSES_REQUEST:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          loading: true,
+          success: false,
+          error: null,
+        },
+      };
+    case GET_FILTERED_EXPENSES_SUCCESS:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          data: action.payload,
+          loading: false,
+          success: true,
+          error: null,
+        },
+      };
+    case GET_FILTERED_EXPENSES_FAILURE:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          loading: false,
+          success: false,
+          error: action.payload,
+        },
+      };
+      case DELETE_EXPENSE_REQUEST:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          loading: true,
+          error: null,
+        },
+      };
+    case DELETE_EXPENSE_SUCCESS:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          data: state.expenses.data.filter(expense => expense.id !== action.payload),
+          loading: false,
+          success: true,
+          error: null,
+        },
+      };
+    case DELETE_EXPENSE_FAILURE:
+      return {
+        ...state,
+        expenses: {
+          ...state.expenses,
+          loading: false,
+          success: false,
+          error: action.payload,
+        },
+      };
+  
 
     default:
       return state;

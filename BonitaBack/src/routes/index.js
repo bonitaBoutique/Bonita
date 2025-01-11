@@ -12,6 +12,7 @@ router.use("/eventos", require("./webhookRouter"))
 router.use('/seller', require("./sellerDataRouter"))
 router.use('/taxxa', require("./taxxaRouter"))
 router.use('/caja', require('./cajaRouter') )
+router.use('/expense', require('./expenseRouter') )
 
 
 

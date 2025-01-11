@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses } from '../../Redux/Actions/actions';
 import ExpenseList from './ExpenseList';
@@ -17,6 +17,11 @@ const FilterExpenses = () => {
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
     dispatch(getFilteredExpenses(filters));
+  };
+
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('en-CA', options);
   };
 
   // Calcular subtotales
@@ -82,7 +87,7 @@ const FilterExpenses = () => {
               {data.map(expense => (
                 <li key={expense.id} className="mb-2">
                   <div className="p-4 bg-white rounded-lg shadow-md">
-                    <p><strong>Fecha:</strong> {expense.date}</p>
+                    <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>
                     <p><strong>Tipo:</strong> {expense.type}</p>
                     <p><strong>Monto:</strong> {expense.amount}</p>
                   </div>

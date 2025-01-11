@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses, deleteExpense } from '../../Redux/Actions/actions';
 
@@ -23,6 +23,12 @@ const ExpenseList = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Función para formatear la fecha
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Date(dateString).toLocaleDateString('en-CA', options);
+  };
+
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6">Lista de Gastos</h2>
@@ -44,7 +50,7 @@ const ExpenseList = () => {
             <tbody>
               {currentExpenses.map(expense => (
                 <tr key={expense.id}>
-                  <td className="py-2 px-4 border-b">{expense.date}</td>
+                  <td className="py-2 px-4 border-b">{formatDate(expense.date)}</td>
                   <td className="py-2 px-4 border-b">{expense.type}</td>
                   <td className="py-2 px-4 border-b">{expense.amount}</td>
                   <td className="py-2 px-4 border-b">

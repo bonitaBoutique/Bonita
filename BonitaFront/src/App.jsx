@@ -38,8 +38,6 @@ import Caja from "./Components/Caja";
 import PanelGeneral from "./Components/PanelGeneral";
 import Recibo from "./Components/Recibo";
 import CargarGastos from "./Components/Informes/CargarGastos"
-import ListaIngresos from "./Components/Informes/ListaIngresos"
-import ListarGastos from "./Components/Informes/FilterExpenses"
 import PanelInformes from "./Components/Informes/PanelInformes"
 import FilterExpenses from "./Components/Informes/FilterExpenses";
 
@@ -206,7 +204,7 @@ function App() {
             }
           />
           <Route
-            path="/panelGastos/listaIngresos"
+            path="/panelGastos/filtroGastos"
             element={
               <PrivateRoute>
                 <FilterExpenses/>

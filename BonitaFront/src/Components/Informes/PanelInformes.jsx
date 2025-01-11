@@ -28,7 +28,7 @@ const PanelInformes = () => {
                 Cargar Gastos
               </Link>
              
-              <Link to="/panelGastos/listaIngresos" className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center">
+              <Link to="/panelGastos/filtroGastos" className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center">
                 Consultas
               </Link>
             </>

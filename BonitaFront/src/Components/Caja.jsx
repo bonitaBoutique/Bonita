@@ -6,6 +6,7 @@ import {
   fetchFilteredProducts,
   createOrder,
 } from "../Redux/Actions/actions";
+import Navbar2 from "./Navbar2";
 const Caja = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -169,7 +170,8 @@ const Caja = () => {
   }
 
   return (
-    <div className="p-6 pt-16 bg-white rounded-lg shadow-md">
+    <div className="p-6 pt-20 bg-slate-200 h-screen rounded-lg shadow-md">
+      <Navbar2/>
       <h2 className="text-2xl font-semibold mb-6">Seleccionar Productos</h2>
 
       {/* Input para los códigos de productos */}
@@ -179,11 +181,11 @@ const Caja = () => {
           value={productCodes}
           onChange={handleProductCodesChange}
           placeholder="Ingresa los códigos de los productos separados por coma"
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
         />
         <button
           onClick={handleAddProducts}
-          className="mt-2 w-full p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
+          className="mt-2 w-full p-2 bg-gray-400 text-white rounded-lg hover:bg-slate-600 transition duration-300"
         >
           Agregar Productos
         </button>
@@ -238,7 +240,7 @@ const Caja = () => {
       <form onSubmit={handleSubmit}>
         <button
           type="submit"
-          className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300"
+          className="w-full p-3 bg-gray-400 text-white rounded-lg hover:bg-slate-600 transition duration-300"
         >
           Confirmar Pedido
         </button>

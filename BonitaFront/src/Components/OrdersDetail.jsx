@@ -33,7 +33,7 @@ return (
  <p className="text-gray-600">Fecha: {order.date}</p>
  <p className="mt-2">Total: ${order.amount}</p>
  <p>Cantidad: {order.quantity}</p>
- <p>Estado de pediddo: {order.state_order}</p>
+ <p>Estado de pedido: {order.state_order}</p>
  <p>N° de envío:{order.trackingNumber}</p>
  
  

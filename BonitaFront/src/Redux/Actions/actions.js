@@ -1,6 +1,8 @@
 import { BASE_URL } from "../../Config";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
+import Swal from "sweetalert2";
+
 import {
   CREATE_PRODUCT_REQUEST,
   CREATE_PRODUCT_SUCCESS,
@@ -85,7 +87,16 @@ import {
   FETCH_LATEST_RECEIPTS_FAILURE,
   FETCH_RECEIPTS_REQUEST,
   FETCH_RECEIPTS_SUCCESS,
-  FETCH_RECEIPTS_FAILURE
+  FETCH_RECEIPTS_FAILURE,
+  CREATE_EXPENSE_REQUEST,
+  CREATE_EXPENSE_SUCCESS,
+  CREATE_EXPENSE_FAILURE,
+  GET_FILTERED_EXPENSES_REQUEST,
+  GET_FILTERED_EXPENSES_SUCCESS,
+  GET_FILTERED_EXPENSES_FAILURE,
+  DELETE_EXPENSE_REQUEST,
+  DELETE_EXPENSE_SUCCESS,
+  DELETE_EXPENSE_FAILURE
 
 } from "./actions-type";
 
@@ -756,4 +767,52 @@ export const fetchAllReceipts = () => async (dispatch) => {
   }
 };
 
+export const createExpense = (expenseData) => async (dispatch) => {
+  dispatch({ type: CREATE_EXPENSE_REQUEST });
 
+  try {
+    const response = await fetch(`${BASE_URL}/expense/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(expenseData),
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      dispatch({ type: CREATE_EXPENSE_SUCCESS, payload: data.data });
+    } else {
+      dispatch({
+        type: CREATE_EXPENSE_FAILURE,
+        payload: data.error || "Error al crear EL gasto",
+      });
+    }
+  } catch (error) {
+    dispatch({ type: CREATE_EXPENSE_FAILURE, payload: error.message });
+  }
+};
+export const getFilteredExpenses = (filters) => async (dispatch) => {
+  dispatch({ type: GET_FILTERED_EXPENSES_REQUEST });
+  try {
+    const response = await axios.get(`/expense/filter`, { params: filters });
+    dispatch({ type: GET_FILTERED_EXPENSES_SUCCESS, payload: response.data });
+  } catch (error) {
+    dispatch({ type: GET_FILTERED_EXPENSES_FAILURE, payload: error.message });
+    Swal.fire("Error", "No se pudieron filtrar los gastos", "error");
+  }}
+
+  
+  
+  export const deleteExpense = (id) => async (dispatch) => {
+    try {
+      dispatch({ type: DELETE_EXPENSE_REQUEST });
+  
+      await axios.delete(`${BASE_URL}/expense/delete/${id}`);
+  
+      dispatch({ type: DELETE_EXPENSE_SUCCESS, payload: id });
+    } catch (error) {
+      dispatch({
+        type: DELETE_EXPENSE_FAILURE,
+        payload: error.message,
+      });
+    }
+  };

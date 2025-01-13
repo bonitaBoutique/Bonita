@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
 import { fetchOrdersByIdOrder, fetchLatestReceipt, createReceipt } from "../Redux/Actions/actions";
+import Navbar2 from "./Navbar2";
 
 const Recibo = () => {
   const { idOrder } = useParams();
@@ -120,7 +121,7 @@ const Recibo = () => {
     currentY += 20; // Espacio después de la línea
   
     // Detalles del recibo
-    doc.setFontSize(10);  // Tamaño de fuente más pequeño para los detalles
+    doc.setFontSize(6);  // Tamaño de fuente más pequeño para los detalles
     doc.text(`Nombre del Comprador: ${buyerName}`, 20, currentY);
     currentY += 20;
   
@@ -150,8 +151,11 @@ const Recibo = () => {
   
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-24">
-      <h2 className="text-2xl font-semibold text-center mb-4">Formulario de Recibo</h2>
+    <div className="bg-gray-400 p-4 h-screen">
+    <Navbar2/>
+   
+    <div className="max-w-md mx-auto p-4 bg-white shadow-lg rounded-md mt-28">
+      <h2 className="text-2xl font-semibold text-center">Formulario de Recibo</h2>
       
       {/* Mostrar la alerta solo si se ha creado el recibo correctamente */}
       {receiptCreated && (
@@ -160,7 +164,7 @@ const Recibo = () => {
         </div>
       )}
   
-      <form onSubmit={handleSubmit}>
+      <form className="p-2 " onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Número de Recibo</label>
           <input
@@ -257,6 +261,7 @@ const Recibo = () => {
         Descargar Recibo como PDF
       </button>
     </div>
+     </div>
   );
 }  
 

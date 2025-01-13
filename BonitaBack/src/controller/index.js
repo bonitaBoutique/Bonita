@@ -4,7 +4,7 @@ const webhook = require("./webhook");
 const {  updateSellerData, getOrCreateSellerData } = require("./Taxxa/sellerDataControllers");
 const { getProductStock } = require("./Products");
 const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
-
+const { createExpense, filterExpenses } = require("./Informes");
 
 
 
@@ -33,5 +33,9 @@ module.exports = {
     getProductStock: catchedAsync(require("./Products/getProductStock")),
     createReceipt: catchedAsync(require("./Caja/createReceipt")),
     lastReceipt: catchedAsync(require("./Caja/lastReceipt")),
-    getReceipts: catchedAsync(require('./Caja/getReceipts'))
+    getReceipts: catchedAsync(require('./Caja/getReceipts')),
+    createExpense: catchedAsync(require('./Informes/createExpense')),
+    filterExpenses: catchedAsync(require('./Informes/filterExpenses')),
+    deleteExpense: catchedAsync(require('./Informes/deleteExpense'))
+    
 }

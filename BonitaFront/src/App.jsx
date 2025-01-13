@@ -1,5 +1,5 @@
 import {
-  BrowserRouter as Router,
+
   Route,
   Routes,
   useLocation,
@@ -37,6 +37,9 @@ import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
 import Caja from "./Components/Caja";
 import PanelGeneral from "./Components/PanelGeneral";
 import Recibo from "./Components/Recibo";
+import CargarGastos from "./Components/Informes/CargarGastos"
+import PanelInformes from "./Components/Informes/PanelInformes"
+import FilterExpenses from "./Components/Informes/FilterExpenses";
 
 
 function App() {
@@ -181,6 +184,30 @@ function App() {
             element={
               <PrivateRoute>
                 <OrdenesPendientes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/panelGastos"
+            element={
+              <PrivateRoute>
+                <PanelInformes/>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/panelGastos/createGastos"
+            element={
+              <PrivateRoute>
+                <CargarGastos/>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/panelGastos/filtroGastos"
+            element={
+              <PrivateRoute>
+                <FilterExpenses/>
               </PrivateRoute>
             }
           />

@@ -1,49 +1,69 @@
-const { Product, Image, Category } = require('../../data');
+const { Product, Image } = require('../../data');
 const response = require('../../utils/response');
 const { Op } = require('sequelize');
 
 module.exports = async (req, res) => {
   try {
-    const { search,price, priceSell, categoryId, categoryName } = req.query;
+    const { search, priceSell, colors, sizes, description, marca, sortPrice } = req.query;
+    console.log('Recibido sortPrice:', sortPrice);
 
-    let whereClause = {
-      [Op.and]: [],
-    };
+    let whereClause = {};
+    const conditions = [];
 
-    // Filtro por nombre y/o precio de Product
     if (search) {
-      whereClause[Op.and].push({
-        [Op.or]: [
-          { name: { [Op.iLike]: `%${search}%` } },
-          { priceSell: { [Op.eq]: priceSell } },
-        ],
-      });
+      if (!isNaN(search)) {
+        // Si `search` es un número, busca en `priceSell`
+        conditions.push({ priceSell: { [Op.eq]: parseFloat(search) } });
+      } else {
+        // Si `search` es texto, busca en `description` o `marca`
+        conditions.push({
+          [Op.or]: [
+            { description: { [Op.iLike]: `%${search}%` } },
+            { marca: { [Op.iLike]: `%${search}%` } },
+            { colors: { [Op.iLike]: `%${search}%` } },
+          ],
+        });
+      }
     }
 
-    // Filtro por id_category de Category
-    if (categoryId) {
-      whereClause[Op.and].push({
-        '$Category.id_category$': categoryId,
-      });
+    if (priceSell) {
+      conditions.push({ priceSell: { [Op.lte]: priceSell } });
     }
 
-    // Filtro por name_category de Category
-    if (categoryName) {
-      whereClause[Op.and].push({
-        '$Category.name_category$': { [Op.iLike]: `%${categoryName}%` },
-      });
+    if (colors) {
+      conditions.push({ colors: { [Op.iLike]: `%${colors}%` } });
     }
 
-    // Construir la consulta de productos
+    if (sizes) {
+      conditions.push({ sizes: { [Op.iLike]: `%${sizes}%` } });
+    }
+
+    if (description) {
+      conditions.push({ description: { [Op.iLike]: `%${description}%` } });
+    }
+
+    if (marca) {
+      conditions.push({ marca: { [Op.iLike]: `%${marca}%` } });
+    }
+
+    if (conditions.length > 0) {
+      whereClause[Op.and] = conditions;
+    }
+
+    let order = [];
+if (sortPrice === 'asc') {
+  order = [['priceSell', 'ASC']];
+} else if (sortPrice === 'desc') {
+  order = [['priceSell', 'DESC']];
+}
+console.log("Consulta con orden:", order);
+
+    
+
     const products = await Product.findAll({
       where: whereClause,
-      include: [
-        { model: Image },
-        {
-          model: Category,
-          attributes: ['id_category', 'name_category'],
-        },
-      ],
+      include: [{ model: Image }],
+      order: order,  // Aplicar la ordenación
     });
 
     response(res, 200, {
@@ -53,6 +73,5 @@ module.exports = async (req, res) => {
     response(res, 500, { error: error.message });
   }
 };
-
 
 

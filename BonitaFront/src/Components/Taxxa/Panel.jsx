@@ -18,19 +18,19 @@ const Panel = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Link
             to="/panel/seller"
-            className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center"
+            className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
           >
             Completar por Única Vez los datos del Comercio / Modificar Datos
           </Link>
           <Link
             to="/panel/facturacion"
-            className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center"
+            className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
           >
             Facturación
           </Link>
           <Link
             to="/panel/ordenesPendientes"
-            className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center"
+            className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
           >
             Órdenes Pendientes
           </Link>
@@ -39,7 +39,7 @@ const Panel = () => {
           {userRole === "Caja" && (
             <Link
               to="/panel/caja"
-              className="bg-blue-500 text-white px-4 py-8 rounded-lg hover:bg-blue-600 flex items-center justify-center text-center"
+              className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
             >
               Módulo de Caja
             </Link>

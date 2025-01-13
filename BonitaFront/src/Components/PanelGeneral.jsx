@@ -27,7 +27,7 @@ const PanelGeneral = () => {
   <div className="text-center space-y-2">
     <Link
       to="/panelProductos"
-      className="bg-pink-300 text-slate-600 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+      className="bg-slate-300 text-slate-600 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
     >
       Productos
     </Link>
@@ -40,7 +40,7 @@ const PanelGeneral = () => {
   <div className="text-center space-y-2">
     <Link
       to="/panel"
-      className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+      className="bg-slate-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
     >
       Facturación
     </Link>
@@ -48,6 +48,29 @@ const PanelGeneral = () => {
       Accede al módulo de Caja, Facturación, Órdenes pendientes, Datos del Comercio .
     </p>
   </div>
+  <div className="text-center space-y-2">
+    <Link
+      to="/panelGastos"
+      className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+    >
+     Gastos
+    </Link>
+    <p className="text-sm text-slate-600">
+      Accede al módulo de Caja, Facturación, Órdenes pendientes, Datos del Comercio .
+    </p>
+  </div>
+  <div className="text-center space-y-2">
+    <Link
+      to="/panelIngresos"
+      className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+    >
+     Ingresos
+    </Link>
+    <p className="text-sm text-slate-600">
+      Accede al módulo de Caja, Facturación, Órdenes pendientes, Datos del Comercio .
+    </p>
+  </div>
+  
 </>
 
         

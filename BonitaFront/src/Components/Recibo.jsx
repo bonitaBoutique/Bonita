@@ -120,7 +120,7 @@ const Recibo = () => {
     currentY += 20; // Espacio después de la línea
   
     // Detalles del recibo
-    doc.setFontSize(10);  // Tamaño de fuente más pequeño para los detalles
+    doc.setFontSize(6);  // Tamaño de fuente más pequeño para los detalles
     doc.text(`Nombre del Comprador: ${buyerName}`, 20, currentY);
     currentY += 20;
   

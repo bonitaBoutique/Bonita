@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
-          "débito",
+          "Débito",
           "Crédito",
           "Bancolombia",
           "Combinado"

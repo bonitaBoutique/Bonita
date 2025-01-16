@@ -71,7 +71,7 @@ const Checkout = () => {
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
         publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-        redirectUrl: "http://localhost:5173/pago",
+        redirectUrl: "/pago",
         integritySignature: latestOrder.data.integritySignature,
         
       });

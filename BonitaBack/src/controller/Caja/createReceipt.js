@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   }
 
   // Validar que el payMethod sea uno de los valores permitidos
-  const validPayMethods = ["Efectivo", "Sistecredito", "Addi", "débito", "Crédito", "Bancolombia", "Combinado"];
+  const validPayMethods = ["Efectivo", "Sistecredito", "Addi", "Débito", "Crédito", "Bancolombia", "Combinado"];
   if (!validPayMethods.includes(payMethod)) {
     return res.status(400).json({ message: "El método de pago no es válido" });
   }
@@ -28,9 +28,7 @@ module.exports = async (req, res) => {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
 
-    if (!order.isFacturable) {
-      return res.status(400).json({ message: "La orden no es facturable" });
-    }
+   
 
     if (order.status === "facturada") {
       return res.status(400).json({ message: "La orden ya ha sido facturada" });

@@ -5,6 +5,8 @@ const {  updateSellerData, getOrCreateSellerData } = require("./Taxxa/sellerData
 const { getProductStock } = require("./Products");
 const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
 const { createExpense, filterExpenses } = require("./Informes");
+const getSendingById = require("./MiPaquete/getSendingById");
+const generateApiKey = require("./MiPaquete/generateApiKey");
 
 
 
@@ -36,6 +38,12 @@ module.exports = {
     getReceipts: catchedAsync(require('./Caja/getReceipts')),
     createExpense: catchedAsync(require('./Informes/createExpense')),
     filterExpenses: catchedAsync(require('./Informes/filterExpenses')),
-    deleteExpense: catchedAsync(require('./Informes/deleteExpense'))
-    
+    deleteExpense: catchedAsync(require('./Informes/deleteExpense')),
+    getLocations: catchedAsync(require("./MiPaquete/getLocations")),
+    quoteShipping: catchedAsync(require("./MiPaquete/quoteShipping")),
+    createSending: catchedAsync(require("./MiPaquete/createSending")),
+    getSending: catchedAsync(require("./MiPaquete/getSending")),
+    getSendingById: catchedAsync(getSendingById),
+    generateApiKey: catchedAsync(generateApiKey),
+
 }

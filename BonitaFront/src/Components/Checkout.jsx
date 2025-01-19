@@ -71,7 +71,7 @@ const Checkout = () => {
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
         publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-        redirectUrl: "https://bonita-seven.vercel.app/pago",
+        redirectUrl: "https://bonita-lv91.onrender.com/eventos",
         integritySignature: latestOrder.data.integritySignature,
         
       });

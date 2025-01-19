@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const webhook = require("../controller/webhook");
 
-router.post('/eventos', (req, res) => {
+router.post('/', (req, res) => {
     const event = req.body.event;
     const transaction = req.body.data.transaction;
   

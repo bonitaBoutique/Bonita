@@ -63,7 +63,7 @@ const Recibo = () => {
         currency: "COP",
         amountInCents: totalAmount * 100,
         reference: String(idOrder),
-        publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
+        publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
         redirectUrl: "https://bonita-lv91.onrender.com/eventos",
         integritySignature: latestOrder.data.integritySignature,
       });
@@ -305,7 +305,7 @@ const Recibo = () => {
                 currency: "COP",
                 amountInCents: totalAmount * 100,
                 reference: String(newReceiptNumber),
-                publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
+                publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
                 redirectUrl: "https://bonita-lv91.onrender.com/eventos",
                 integritySignature: latestOrder.data.integritySignature,
               });

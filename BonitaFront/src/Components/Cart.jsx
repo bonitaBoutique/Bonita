@@ -72,16 +72,17 @@ const Cart = () => {
                         <button
                           className={`bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 ${item.quantity >= item.stock ? 'opacity-50 cursor-not-allowed' : ''}`}
                           onClick={() => handleIncrementQuantity(item.id_product, item.stock)}
+
                           disabled={item.quantity >= item.stock}
                         >
-                        <SlMinus />
+                       <SlPlus />
                         </button>
                         <span className="text-lg text-gray-700">{item.quantity}</span>
                         <button
                           className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
                           onClick={() => handleDecrementQuantity(item.id_product)}
                         >
-                            <SlPlus />
+                             <SlMinus />
                           
                         </button>
                         <button

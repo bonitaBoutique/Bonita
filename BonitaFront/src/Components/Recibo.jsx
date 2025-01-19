@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
-import { fetchOrdersByIdOrder, fetchLatestReceipt, createReceipt } from "../Redux/Actions/actions";
-import Navbar2 from "./Navbar2";
+import Swal from "sweetalert2";
+import { fetchOrdersByIdOrder, fetchLatestReceipt, createReceipt, fetchLatestOrder, fetchUserByDocument } from "../Redux/Actions/actions";
 
 const Recibo = () => {
   const { idOrder } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch();
 
   const { order, loading, error } = useSelector((state) => state.orderById);
-  const { receiptNumber } = useSelector((state) => state);
+  const { receiptNumber, latestOrder } = useSelector((state) => state);
+  const { userInfo, loading: userLoading, error: userError } = useSelector((state) => state.userTaxxa);
 
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
@@ -18,7 +20,8 @@ const Recibo = () => {
   const [totalAmount, setTotalAmount] = useState("");
   const [date, setDate] = useState("");
   const [receiptCreated, setReceiptCreated] = useState(false);
-  const [payMethod, setPayMethod]= useState("")
+  const [payMethod, setPayMethod] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     // Carga la orden solo si no está cargada o si el id no coincide
@@ -30,25 +33,58 @@ const Recibo = () => {
     if (!receiptNumber) {
       dispatch(fetchLatestReceipt());
     }
+
+    // Despacha la acción para obtener la última orden
+    dispatch(fetchLatestOrder());
   }, [dispatch, idOrder, order, receiptNumber]);
 
   useEffect(() => {
-    if (order) {
-      setBuyerName(order.buyerName);
-      setBuyerEmail(order.buyerEmail);
-      setBuyerPhone(order.buyerPhone);
+    if (order && order.id_orderDetail === idOrder) {
       setTotalAmount(order.amount);
       setDate(order.date);
-      
-    }
-  }, [order]);
 
-  if (loading) {
+      // Despacha la acción para obtener la información del usuario
+      dispatch(fetchUserByDocument(order.n_document));
+    }
+  }, [order, idOrder, dispatch]);
+
+  useEffect(() => {
+    if (userInfo && userInfo.data) {
+      const userData = userInfo.data;
+      setBuyerName(`${userData.first_name} ${userData.last_name}`);
+      setBuyerEmail(userData.email);
+      setBuyerPhone(userData.phone);
+    }
+  }, [userInfo]);
+
+  useEffect(() => {
+    if (receiptCreated && payMethod !== 'Efectivo') {
+      const checkout = new WidgetCheckout({
+        currency: "COP",
+        amountInCents: totalAmount * 100,
+        reference: String(idOrder),
+        publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
+        redirectUrl: "https://bonita-seven.vercel.app/pago",
+        integritySignature: latestOrder.data.integritySignature,
+      });
+      console.log(checkout);
+      checkout.open((result) => {
+        const transaction = result.transaction;
+        if (transaction.status === "APPROVED") {
+          Swal.fire("Success", "Payment successful", "success");
+        } else {
+          Swal.fire("Error", "Payment failed", "error");
+        }
+      });
+    }
+  }, [receiptCreated, payMethod, totalAmount, idOrder, latestOrder]);
+
+  if (loading || userLoading) {
     return <p>Cargando detalles de la orden...</p>;
   }
 
-  if (error) {
-    return <p>Error al cargar la orden: {error}</p>;
+  if (error || userError) {
+    return <p>Error al cargar la orden: {error || userError}</p>;
   }
 
   if (!order || order.id_orderDetail !== idOrder) {
@@ -57,9 +93,9 @@ const Recibo = () => {
 
   const newReceiptNumber = receiptNumber ? receiptNumber + 1 : 1001;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const receiptData = {
       receiptNumber: newReceiptNumber,  // Número de recibo calculado
       total_amount: parseFloat(totalAmount), // Monto total (asegurarse de que es un número)
@@ -67,19 +103,24 @@ const Recibo = () => {
       id_orderDetail: order.id_orderDetail,  // ID de la orden
       buyer_name: buyerName,  // Nombre del comprador
       buyer_email: buyerEmail,  // Correo electrónico del comprador
-      payMethod:payMethod
+      buyer_phone: buyerPhone,  // Teléfono del comprador
+      payMethod: payMethod
     };
-  
-    // Despacha la acción para crear el recibo con los datos
-    dispatch(createReceipt(receiptData));
-  
-    // Aquí actualizas el estado para mostrar el mensaje de éxito
-    setReceiptCreated(true);
-  
+
+    console.log("Enviando datos al backend:", receiptData);
+
+    try {
+      // Despacha la acción para crear el recibo con los datos
+      await dispatch(createReceipt(receiptData));
+      // Aquí actualizas el estado para mostrar el mensaje de éxito
+      setReceiptCreated(true);
+      setErrorMessage("");
+    } catch (err) {
+      setErrorMessage(err.message || "Error al crear el recibo");
+    }
+
     // Opcional: Puedes hacer un reset del formulario si lo deseas
-   
   };
-  
 
   const generatePDF = () => {
     // Crear un nuevo documento PDF con tamaño 80x297 mm
@@ -87,84 +128,86 @@ const Recibo = () => {
       unit: "pt",  // Establecer la unidad a puntos
       format: [226.77, 839.28],  // Definir el tamaño del recibo en puntos (80 x 297 mm)
     });
-  
+
     // Título centrado en la parte superior
     doc.setFontSize(18);
     doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, { align: "center" });
-  
+
     // Información adicional centrada y más pequeña
     doc.setFontSize(10);
     let currentY = 50; // Posición inicial
-  
+
     doc.text("Bonita Boutique  S.A.S NIT:", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;  // Espacio mayor entre líneas
-  
+
     doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-  
+
     doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 30; // Más espacio antes de la sección siguiente
-  
+
     // Número de recibo centrado
     doc.text(`RECIBO # ${newReceiptNumber}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-  
+
     // Fecha y estado de la venta
     doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-  
+
     doc.text(`Estado de venta: ${order.state_order}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
-    
+
     // Línea de asteriscos
     currentY += 20; // Espacio antes de la línea
     doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20; // Espacio después de la línea
-  
+
     // Detalles del recibo
-    doc.setFontSize(6);  // Tamaño de fuente más pequeño para los detalles
+    doc.setFontSize(10);  // Tamaño de fuente más pequeño para los detalles
     doc.text(`Nombre del Comprador: ${buyerName}`, 20, currentY);
     currentY += 20;
-  
+
     doc.text(`Correo Electrónico: ${buyerEmail}`, 20, currentY);
     currentY += 20;
-  
+
     doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
     currentY += 20;
-  
+
     doc.text(`Monto Total: $${totalAmount}`, 20, currentY);
     currentY += 20;
     doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
     currentY += 20;
-    doc.setFontSize(8); 
+    doc.setFontSize(8);
     doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
-  
+
     // Agregar texto final centrado
     currentY += 40; // Espacio mayor antes del mensaje final
     doc.setFontSize(12);
     doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, { align: "center" });
-  
+
     // Guardar el PDF con un nombre personalizado que incluye el número de recibo
     const fileName = `Recibo_${newReceiptNumber}.pdf`;  // Nombre del archivo
     doc.save(fileName);
   };
-  
-  
 
   return (
-    <div className="bg-gray-400 p-4 h-screen">
-    <Navbar2/>
-   
-    <div className="max-w-md mx-auto p-4 bg-white shadow-lg rounded-md mt-28">
-      <h2 className="text-2xl font-semibold text-center">Formulario de Recibo</h2>
-      
+    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-24">
+      <h2 className="text-2xl font-semibold text-center mb-4">Formulario de Recibo</h2>
+
       {/* Mostrar la alerta solo si se ha creado el recibo correctamente */}
       {receiptCreated && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 border border-green-400 rounded-md">
           ¡Recibo creado correctamente!
         </div>
       )}
-  
-      <form className="p-2 " onSubmit={handleSubmit}>
+
+      {/* Mostrar mensaje de error si hay un error */}
+      {errorMessage && (
+        <div className="mb-4 p-4 bg-red-100 text-red-700 border border-red-400 rounded-md">
+          {errorMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Número de Recibo</label>
           <input
@@ -174,7 +217,7 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-  
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Nombre del Comprador</label>
           <input
@@ -185,7 +228,7 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-  
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
           <input
@@ -196,7 +239,7 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-  
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Teléfono</label>
           <input
@@ -206,7 +249,7 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-  
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Monto Total</label>
           <input
@@ -218,23 +261,23 @@ const Recibo = () => {
           />
         </div>
         <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">Método de Pago</label>
-  <select
-    value={payMethod}
-    onChange={(e) => setPayMethod(e.target.value)}
-    required
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-  >
-    <option value="" disabled>Seleccione un método</option>
-    <option value="Efectivo">Efectivo</option>
-    <option value="Débito">Tarjeta de Débito</option>
-    <option value="Tarjeta de Crédito">Crédito</option>
-    <option value="Addi">Addi</option>
-    <option value="Sistecredito">Sistecredito</option>
-    <option value="Bancolombia">Bancolombia</option>
-  </select>
-</div>
-  
+          <label className="block text-sm font-medium text-gray-700">Método de Pago</label>
+          <select
+            value={payMethod}
+            onChange={(e) => setPayMethod(e.target.value)}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          >
+            <option value="" disabled>Seleccione un método</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Débito">Tarjeta de Débito</option>
+            <option value="Tarjeta de Crédito">Crédito</option>
+            <option value="Addi">Addi</option>
+            <option value="Sistecredito">Sistecredito</option>
+            <option value="Bancolombia">Bancolombia</option>
+          </select>
+        </div>
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Fecha</label>
           <input
@@ -245,7 +288,7 @@ const Recibo = () => {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-  
+
         <button
           type="submit"
           className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
@@ -253,7 +296,35 @@ const Recibo = () => {
           Crear Recibo
         </button>
       </form>
-  
+
+      {payMethod !== 'Efectivo' && (
+        <div className="mt-4">
+          <button
+            onClick={() => {
+              const checkout = new WidgetCheckout({
+                currency: "COP",
+                amountInCents: totalAmount * 100,
+                reference: String(newReceiptNumber),
+                publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
+                redirectUrl: "https://bonita-seven.vercel.app/pago",
+                integritySignature: latestOrder.data.integritySignature,
+              });
+              checkout.open((result) => {
+                const transaction = result.transaction;
+                if (transaction.status === "APPROVED") {
+                  Swal.fire("Success", "Payment successful", "success");
+                } else {
+                  Swal.fire("Error", "Payment failed", "error");
+                }
+              });
+            }}
+            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Pagar con Wompi
+          </button>
+        </div>
+      )}
+
       <button
         onClick={generatePDF}
         className="mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700"
@@ -261,10 +332,7 @@ const Recibo = () => {
         Descargar Recibo como PDF
       </button>
     </div>
-     </div>
   );
-}  
+};
 
 export default Recibo;
-
-

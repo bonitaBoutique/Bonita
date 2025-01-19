@@ -56,16 +56,26 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Pendiente",
       },
-      trackingNumber: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
+     shipping_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    tracking_number: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shipping_company: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    estimated_delivery_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
       isFacturable: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-
       deletedAt: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -91,21 +101,7 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Online",
       },
-      deletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: null,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
+      
     },
     {
       paranoid: true,

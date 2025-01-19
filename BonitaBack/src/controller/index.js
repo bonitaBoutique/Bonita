@@ -7,8 +7,9 @@ const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
 const generateApiKey = require("./MiPaquete/generateApiKey");
-
-
+const getSendingTracking = require("./MiPaquete/getSendingTracking");
+const cancelSending = require("./MiPaquete/cancelSending");
+const {createDirection, updateDirection,     deleteDirection} = require("./MiPaquete/createDirection");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -45,5 +46,10 @@ module.exports = {
     getSending: catchedAsync(require("./MiPaquete/getSending")),
     getSendingById: catchedAsync(getSendingById),
     generateApiKey: catchedAsync(generateApiKey),
+    getSendingTracking: catchedAsync(getSendingTracking),
+    cancelSending: catchedAsync(cancelSending),
+    createDirection: catchedAsync(createDirection),
+    updateDirection: catchedAsync(updateDirection),
+    deleteDirection: catchedAsync(deleteDirection)
 
 }

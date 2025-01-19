@@ -305,6 +305,7 @@ const Recibo = () => {
                 currency: "COP",
                 amountInCents: totalAmount * 100,
                 reference: String(newReceiptNumber),
+
                 publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
                 redirectUrl: "https://bonita-seven.vercel.app/pago",
                 integritySignature: latestOrder.data.integritySignature,

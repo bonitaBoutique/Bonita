@@ -28,10 +28,11 @@ const LandingPrincipal = () => {
         
         {/* Frase sobre la imagen */}
         <div className="absolute top-1/2 left-8 transform -translate-y-1/2 text-rose-200">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight font-nunito">
-            ENCONTRÁ TODO <br /> EN EL MISMO LUGAR
-          </h1>
-        </div>
+  <h1 className="text-4xl sm:text-5xl md:text-5xl font-extrabold leading-tight font-nunito">
+    ENCUENTRA EL MEJOR OUTFIT EN <br />
+    <span className="text-5xl sm:text-6xl md:text-8xl">BONITA BOUTIQUE</span>
+  </h1>
+</div>
 
       </div>
       </div>

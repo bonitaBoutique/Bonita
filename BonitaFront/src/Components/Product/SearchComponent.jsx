@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { fetchProductsFilter, fetchProducts } from '../../Redux/Actions/actions';
-import { FaSearch } from 'react-icons/fa'; // Importa el ícono de la lupa
+import { fetchFilteredProducts, fetchProducts } from '../../Redux/Actions/actions';
+import { FaSearch } from 'react-icons/fa';
 
 const SearchComponent = () => {
   const [search, setSearch] = useState('');
@@ -10,12 +10,12 @@ const SearchComponent = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     const filters = { search };
-    dispatch(fetchProductsFilter(filters));
+    dispatch(fetchFilteredProducts(filters));
   };
 
   const handleShowAll = () => {
     setSearch('');
-    dispatch(fetchProducts()); 
+    dispatch(fetchProducts());
   };
 
   return (
@@ -46,4 +46,3 @@ const SearchComponent = () => {
 };
 
 export default SearchComponent;
-

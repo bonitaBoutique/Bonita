@@ -70,8 +70,11 @@ const Checkout = () => {
         currency: "COP",
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
+
         publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
         redirectUrl: "https://bonita-seven.vercel.app/pago",
+
+
         integritySignature: latestOrder.data.integritySignature,
         
       });

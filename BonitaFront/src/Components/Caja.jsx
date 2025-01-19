@@ -197,11 +197,11 @@ const Caja = () => {
           value={productCodes}
           onChange={handleProductCodesChange}
           placeholder="Ingresa los códigos de los productos separados por coma"
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
         />
         <button
           onClick={handleAddProducts}
-          className="mt-2 w-full p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
+          className="mt-2 w-full p-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition duration-300"
         >
           Agregar Productos
         </button>
@@ -245,7 +245,7 @@ const Caja = () => {
           value={nDocument}
           onChange={handleDocumentChange}
           placeholder="Ingresa el número de documento"
-          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
         />
          {nDocument && (
         <>
@@ -253,7 +253,7 @@ const Caja = () => {
             <form onSubmit={handleSubmit}>
               <button
                 type="submit"
-                className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                className="w-full p-3 bg-pink-300 text-white rounded-lg hover:bg-green-600"
               >
                 Confirmar Pedido
               </button>
@@ -264,7 +264,7 @@ const Caja = () => {
               <button
                 type="button"
                 onClick={() => navigate('/register')}
-                className="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="w-full p-3 bg-pink-300 text-white rounded-lg hover:bg-pink-600"
               >
                 Registrar Usuario
               </button>

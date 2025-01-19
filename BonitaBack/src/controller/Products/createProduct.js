@@ -19,9 +19,9 @@ const generateNextId = async () => {
 };
 
 // Función para generar el código de barras
-const generateBarcode = (fecha, sizes, colors, priceSell, id_product) => {
+const generateBarcode = (fecha, sizes, colors, price, id_product) => {
   // Toma la parte entera del precio y extrae los miles o decenas de miles.
-  const pricePart = Math.floor(priceSell).toString();
+  const pricePart = Math.floor(price).toString();
   const significantPrice = pricePart.slice(0, pricePart.length - 3); // Extrae los miles.
 
   // Validamos que sizes y colors sean cadenas y les aplicamos toUpperCase solo si lo son.

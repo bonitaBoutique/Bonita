@@ -64,7 +64,7 @@ const Recibo = () => {
         amountInCents: totalAmount * 100,
         reference: String(idOrder),
         publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-        redirectUrl: "/pago",
+        redirectUrl: "http://localhost:5173/pago",
         integritySignature: latestOrder.data.integritySignature,
       });
       console.log(checkout);
@@ -306,7 +306,7 @@ const Recibo = () => {
                 amountInCents: totalAmount * 100,
                 reference: String(newReceiptNumber),
                 publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-                redirectUrl: "/pago",
+                redirectUrl: "http://localhost:5173/pago",
                 integritySignature: latestOrder.data.integritySignature,
               });
               checkout.open((result) => {

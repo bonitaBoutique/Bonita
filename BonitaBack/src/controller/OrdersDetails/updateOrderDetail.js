@@ -3,7 +3,7 @@ const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
   const { id_orderDetail } = req.params;
-  const { state_order, trackingNumber, transaction_status } = req.body;
+  const { state_order, trackingNumber, transaction_status, shipping_status } = req.body;
 
   try {
     const orderDetail = await OrderDetail.findByPk(id_orderDetail);
@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
       return response(res, 404, { error: "Order Detail not found" });
     }
 
-    // Verificar si el valor del estado de la orden es válido
+    // Order state validation
     const validStatesOrder = [
       "Pedido Realizado",
       "En Preparación",
@@ -24,6 +24,7 @@ module.exports = async (req, res) => {
       return response(res, 400, { error: "Invalid state_order value" });
     }
 
+    // Wompi transaction state validation
     const validTransactionStates = [
       "Pendiente",
       "Aprobado",
@@ -31,35 +32,33 @@ module.exports = async (req, res) => {
       "Fallido",
       "Cancelado",
     ];
-    if (
-      transaction_status &&
-      !validTransactionStates.includes(transaction_status)
-    ) {
+    if (transaction_status && !validTransactionStates.includes(transaction_status)) {
       return response(res, 400, { error: "Invalid transaction_status value" });
     }
 
-    
-    if (state_order) {
-      orderDetail.state_order = state_order;
+    // Mipaquete shipping state validation
+    const validShippingStates = [
+      "Envío pendiente por pago",
+      "Procesando tu envío",
+      "Envío programado",
+      "En ruta",
+      "Entregado",
+      "Cancelado"
+    ];
+    if (shipping_status && !validShippingStates.includes(shipping_status)) {
+      return response(res, 400, { error: "Invalid shipping_status value" });
     }
 
-   
-    if (trackingNumber) {
-      orderDetail.trackingNumber = trackingNumber;
-    }
+    // Update order details
+    if (state_order) orderDetail.state_order = state_order;
+    if (transaction_status) orderDetail.transaction_status = transaction_status;
+    if (shipping_status) orderDetail.shipping_status = shipping_status;
+    if (trackingNumber) orderDetail.tracking_number = trackingNumber;
 
-    
-    if (transaction_status) {
-      orderDetail.transaction_status = transaction_status;
-    }
-
-    
     await orderDetail.save();
 
     return response(res, 200, { orderDetail });
   } catch (error) {
-    console.error("Error updating order detail:", error);
     return response(res, 500, { error: error.message });
   }
 };
-

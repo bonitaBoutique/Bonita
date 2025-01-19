@@ -6,9 +6,11 @@ import {
   fetchFilteredProducts,
   createOrder,
 } from "../Redux/Actions/actions";
+
 const Caja = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { userInfo } = useSelector((state) => state.userTaxxa);
 
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
@@ -16,6 +18,7 @@ const Caja = () => {
   const searchTerm = useSelector((state) => state.searchTerm);
 
   const [selectedProducts, setSelectedProducts] = useState([]);
+  
   const [orderData, setOrderData] = useState({
     date: new Date().toISOString(),
     amount: 0,
@@ -27,7 +30,9 @@ const Caja = () => {
     deliveryAddress: null,
   });
 
-  const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
+  const [productCodes, setProductCodes] = useState(""); 
+ 
+
   const [nDocument, setNDocument] = useState(""); // Estado para el número de documento
 
   // Efecto para cargar productos según el filtro o búsqueda
@@ -106,6 +111,12 @@ const Caja = () => {
     return { totalPrice, totalQuantity };
   };
 
+  const handleDocumentChange = (e) => {
+    const value = e.target.value;
+    setNDocument(value);
+    console.log("Document entered:", value);
+    console.log("UserInfo data:", userInfo?.data);
+  };
   // Manejar el envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,6 +125,7 @@ const Caja = () => {
       alert("Por favor, ingresa el número de documento.");
       return;
     }
+ 
   
     const { totalPrice, totalQuantity } = calculateTotals();
   
@@ -170,6 +182,12 @@ const Caja = () => {
 
   return (
     <div className="p-6 pt-16 bg-white rounded-lg shadow-md">
+    <button
+        onClick={() => navigate(-1)}
+        className="mb-4 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-300"
+      >
+        ← Volver
+      </button>
       <h2 className="text-2xl font-semibold mb-6">Seleccionar Productos</h2>
 
       {/* Input para los códigos de productos */}
@@ -221,31 +239,47 @@ const Caja = () => {
 
       {/* Input para el número de documento */}
       <div className="mb-4">
-        <label htmlFor="n_document" className="block text-lg font-medium mb-2">
-          Número de Documento
-        </label>
         <input
           type="text"
           id="n_document"
           value={nDocument}
-          onChange={(e) => setNDocument(e.target.value)}
+          onChange={handleDocumentChange}
           placeholder="Ingresa el número de documento"
           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-      </div>
+         {nDocument && (
+        <>
+          {userInfo?.data?.n_document === nDocument ? (
+            <form onSubmit={handleSubmit}>
+              <button
+                type="submit"
+                className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Confirmar Pedido
+              </button>
+            </form>
+          ) : (
+            <div className="mt-4">
+              <p className="text-red-500 mb-2">Usuario no registrado</p>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Registrar Usuario
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
-      {/* Botón para enviar la orden */}
-      <form onSubmit={handleSubmit}>
-        <button
-          type="submit"
-          className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300"
-        >
-          Confirmar Pedido
-        </button>
-      </form>
+       
+
+     
+    </div>
     </div>
   );
-};
+}
 
 
 

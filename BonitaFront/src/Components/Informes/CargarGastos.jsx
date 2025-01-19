@@ -2,6 +2,9 @@ import  { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createExpense } from '../../Redux/Actions/actions'; // Asegúrate de tener esta acción definida
 
+//crear descripcion de gasto. 
+//agregar en el select pago seguridad social
+// agregar select Nequi bancolombia efectivo y otro
 const CargarGastos = () => {
   const [date, setDate] = useState('');
   const [type, setType] = useState('');

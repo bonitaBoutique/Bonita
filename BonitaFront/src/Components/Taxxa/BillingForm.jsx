@@ -7,6 +7,8 @@ import DocumentTypePopup from "./DocumentTypePopup"; // Importa el popup
 import { useNavigate } from "react-router-dom";
 import OrdenesPendientes from "./OrdenesPendientes";
 
+
+
 const BillingForm = () => {
   const navigate = useNavigate();
   const [n_document, setNDocument] = useState("");

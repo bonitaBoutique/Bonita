@@ -60,7 +60,7 @@ module.exports = (sequelize) => {
       },
       tiendaOnLine: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false,
+        defaultValue: true,
       },
 
       tax: {

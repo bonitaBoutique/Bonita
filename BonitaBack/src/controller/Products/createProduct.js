@@ -7,7 +7,7 @@ const generateNextId = async () => {
     order: [['createdAt', 'DESC']],
   });
 
-  let nextId = 'B001'; // Valor por defecto si no hay productos.
+  let nextId = 'B001'; 
 
   if (lastProduct) {
     const lastIdNum = parseInt(lastProduct.id_product.substring(1), 10); // Extrae el número y convierte a entero.
@@ -57,7 +57,7 @@ module.exports = async (req, res) => {
     const id_product = await generateNextId();
 
     // Genera el código de barras
-    const codigoBarra = generateBarcode(fecha, sizes, colors, priceSell, id_product);
+    const codigoBarra = generateBarcode(fecha, sizes, colors, price, id_product);
 
     // Crea el producto con las imágenes como array
     const product = await Product.create({

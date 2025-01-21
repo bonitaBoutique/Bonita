@@ -92,7 +92,10 @@ import {
   GET_FILTERED_EXPENSES_FAILURE,
   DELETE_EXPENSE_REQUEST,
   DELETE_EXPENSE_SUCCESS,
-  DELETE_EXPENSE_FAILURE
+  DELETE_EXPENSE_FAILURE,
+  CREATE_RESERVATION_REQUEST,
+  CREATE_RESERVATION_SUCCESS,
+  CREATE_RESERVATION_FAILURE,
 
 } from "../Actions/actions-type";
 
@@ -105,7 +108,7 @@ const initialState = {
   searchResults: [],
   loading: false,
   product: {},
- 
+  reservation: null,
   similarProducts: [],
   products: [],
   data: null,
@@ -1052,7 +1055,12 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-  
+      case CREATE_RESERVATION_REQUEST:
+        return { ...state, loading: true };
+      case CREATE_RESERVATION_SUCCESS:
+        return { ...state, loading: false, reservation: action.payload };
+      case CREATE_RESERVATION_FAILURE:
+        return { ...state, loading: false, error: action.payload };
 
     default:
       return state;

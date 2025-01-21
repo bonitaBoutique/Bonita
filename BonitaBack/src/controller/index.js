@@ -2,7 +2,7 @@ const SellerData = require("../data/models/SellerData");
 const {catchedAsync} = require("../utils");
 const webhook = require("./webhook");
 const {  updateSellerData, getOrCreateSellerData } = require("./Taxxa/sellerDataControllers");
-const { getProductStock } = require("./Products");
+const { getProductStock, createProduct } = require("./Products");
 const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
@@ -10,6 +10,8 @@ const generateApiKey = require("./MiPaquete/generateApiKey");
 const getSendingTracking = require("./MiPaquete/getSendingTracking");
 const cancelSending = require("./MiPaquete/cancelSending");
 const {createDirection, updateDirection,     deleteDirection} = require("./MiPaquete/createDirection");
+const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
+const updateReservation = require("./OrdersDetails/updateReservation");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -25,6 +27,7 @@ module.exports = {
     getSB:catchedAsync(require("./SubCategory/getSB")),
     createOrderDetail:catchedAsync(require("./OrdersDetails/createOrderDetail")),
     getOrdersDetails:catchedAsync(require("./OrdersDetails/getOrdersDetails")),
+    createOrderWithReservation:catchedAsync(require("./OrdersDetails/createOrderWithReservation")),
     createUsers:catchedAsync(require("./Users/createUsers")),
     getOrderDetailID:catchedAsync(require("./OrdersDetails/getOrderDetailID")),
     getOrderByOrderId:catchedAsync(require("./OrdersDetails/getOrderByOrderId")),
@@ -50,6 +53,7 @@ module.exports = {
     cancelSending: catchedAsync(cancelSending),
     createDirection: catchedAsync(createDirection),
     updateDirection: catchedAsync(updateDirection),
-    deleteDirection: catchedAsync(deleteDirection)
-
+    deleteDirection: catchedAsync(deleteDirection),
+    updateReservation: catchedAsync(require("./OrdersDetails/updateReservation")),
+    getAllReservations: catchedAsync(require("./OrdersDetails/getAllReservations")),
 }

@@ -36,7 +36,8 @@ module.exports = (sequelize) => {
           "En Preparación",
           "Listo para entregar",
           "Envío Realizado",
-          "Retirado"
+          "Retirado",
+          "Reserva a Crédito" 
         ),
         allowNull: false,
         defaultValue: "Pedido Realizado",

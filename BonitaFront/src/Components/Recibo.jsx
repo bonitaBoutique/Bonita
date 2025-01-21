@@ -270,8 +270,8 @@ const Recibo = () => {
           >
             <option value="" disabled>Seleccione un método</option>
             <option value="Efectivo">Efectivo</option>
-            <option value="Débito">Tarjeta de Débito</option>
-            <option value="Tarjeta de Crédito">Crédito</option>
+            <option value="Tarjeta">Tarjeta de Débito</option>
+            <option value="Reserva">Crédito</option>
             <option value="Addi">Addi</option>
             <option value="Sistecredito">Sistecredito</option>
             <option value="Bancolombia">Bancolombia</option>

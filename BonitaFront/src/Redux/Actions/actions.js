@@ -96,7 +96,10 @@ import {
   GET_FILTERED_EXPENSES_FAILURE,
   DELETE_EXPENSE_REQUEST,
   DELETE_EXPENSE_SUCCESS,
-  DELETE_EXPENSE_FAILURE
+  DELETE_EXPENSE_FAILURE,
+  CREATE_RESERVATION_REQUEST,
+  CREATE_RESERVATION_SUCCESS,
+  CREATE_RESERVATION_FAILURE,
 
 } from "./actions-type";
 
@@ -814,5 +817,22 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
         type: DELETE_EXPENSE_FAILURE,
         payload: error.message,
       });
+    }
+  };
+
+  export const createReservation = (orderData, reservationData) => async (dispatch) => {
+    try {
+      dispatch({ type: CREATE_RESERVATION_REQUEST });
+  
+      const { data } = await axios.post(`${BASE_URL}/orders`, {
+        orderData,
+        reservationData,
+      });
+  
+      dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
+      Swal.fire('Success', 'Reservation created successfully', 'success');
+    } catch (error) {
+      dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
+      Swal.fire('Error', 'Failed to create reservation', 'error');
     }
   };

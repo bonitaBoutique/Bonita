@@ -15,6 +15,7 @@ const ListadoProductos = () => {
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const [filtro, setFiltro] = useState("");
+
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   const handleImageUpload = (productId) => {

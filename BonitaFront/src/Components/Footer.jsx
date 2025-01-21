@@ -1,6 +1,8 @@
 import React from 'react';
 import { FaInstagram, FaEnvelope } from 'react-icons/fa';
 
+
+//AGREAGR MAPA / SISTECREDITO ADDY/ PAGOS CONTRAENTREGA Y LOS QUE ESTAN PERO MOVIENDSE
 const Footer = () => {
   return (
     <footer id='footer' className="bg-gray-200 text-gray-800 py-6">

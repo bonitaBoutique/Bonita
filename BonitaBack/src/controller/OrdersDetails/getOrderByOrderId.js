@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
       include: {
         model: Product,
         as: 'products',
-        attributes: ['id_product'], // Trae solo los IDs de productos
+        attributes: ['id_product', 'codigoBarra', 'priceSell', 'price','description'], // Trae solo los IDs de productos
       },
     });
     if (!order) {
@@ -28,6 +28,12 @@ module.exports = async (req, res) => {
       n_document: order.n_document,
       products: order.products.map(product => ({
         id_product: product.id_product,
+        codigoBarra:product.codigoBarra,
+        description:product.description,
+        priceSell:product.priceSell,
+        price:product.price
+        
+
       })),
       integritySignature: order.integritySignature,
       trackingNumber: order.trackingNumber,

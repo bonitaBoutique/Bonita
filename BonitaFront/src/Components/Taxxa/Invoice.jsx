@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
-import { fetchOrdersByIdOrder, sendInvoice } from "../../Redux/Actions/actions"; // Ajusta la ruta según tu estructura
+import { fetchOrdersByIdOrder, sendInvoice } from "../../Redux/Actions/actions";
 import numeroALetrasConDecimales from '../Taxxa/options/numeroALetras';
 import paymentMethods from "./options/paymentMethods";
 import OrdenesPendientes from "./OrdenesPendientes";
@@ -17,11 +17,10 @@ const Invoice = () => {
   const getCurrentDateTime = () => new Date().toISOString().slice(0, 16);
   const getCurrentDate = () => new Date().toISOString().slice(0, 10);
 
-  const [orderId, setOrderId] = useState(""); // Para capturar el número de orden
+  const [orderId, setOrderId] = useState("");
   const { loading, success, error } = useSelector((state) => state.invoice);
-  
+
   const [invoiceData, setInvoiceData] = useState({
-    // Datos iniciales de la factura
     wVersionUBL: "2.1",
     wenvironment: "test",
     jDocument: {
@@ -31,28 +30,91 @@ const Invoice = () => {
       wcurrency: "COP",
       sdocumentprefix: "",
       sdocumentsuffix: null,
-      tissuedate: getCurrentDateTime(),
-      tduedate: getCurrentDate(),
+      tissuedate: new Date().toISOString(),
+      tduedate: new Date().toISOString().split("T")[0],
       wpaymentmeans: 1,
       wpaymentmethod: "10",
-      nlineextensionamount: "", //Valor Bruto antes de tributos
-      ntaxexclusiveamount: "", //Total de Valor Bruto más tributos
-      ntaxinclusiveamount: "",
-      npayableamount: "",
+      nlineextensionamount: 0,
+      ntaxexclusiveamount: 0,
+      ntaxinclusiveamount: 0,
+      npayableamount: 0,
+      sorderreference: "",
       snotes: "",
       snotetop: "",
-      sorderreference: "",
       jextrainfo: {
-        ntotalinvoicepayment: "",
+        ntotalinvoicepayment: 0,
         stotalinvoicewords: "",
-        iitemscount: "",
+        iitemscount: "0"
       },
       jdocumentitems: [],
-      
-    },
+      jbuyer: buyer,
+    }
   });
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+
+  useEffect(() => {
+    if (order && order.amount) {
+      const totalAmount = Number(order.amount);
+      const amountWithoutTax = Number((totalAmount / 1.19).toFixed(2));
+      const taxAmount = Number((totalAmount - amountWithoutTax).toFixed(2));
+
+      const productsData = order.products.map(product => {
+        const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2));
+        const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
+
+        return {
+          jextrainfo: {
+            sbarcode: product.codigoBarra,
+          },
+          sdescription: product.description,
+          wunitcode: "und",
+          sstandarditemidentification: product.codigoBarra,
+          sstandardidentificationcode: "999",
+          nunitprice: priceWithoutTax,
+          nusertotal: parseFloat((priceWithoutTax * order.quantity).toFixed(2)),
+          nquantity: parseFloat(order.quantity.toFixed(2)),
+          jtax: {
+            jiva: {
+              nrate: 19,
+              sname: "IVA",
+              namount: parseFloat((taxAmount * order.quantity).toFixed(2)),
+              nbaseamount: parseFloat((priceWithoutTax * order.quantity).toFixed(2)),
+            },
+          },
+        };
+      });
+
+      setInvoiceData({
+        wVersionUBL: "2.1",
+        wenvironment: "test",
+        jDocument: {
+          wdocumenttype: "Invoice",
+          wdocumenttypecode: "01",
+          scustomizationid: "10",
+          wcurrency: "COP",
+          sdocumentprefix: "",
+          sdocumentsuffix: null,
+          tissuedate: new Date().toISOString().split("T")[0],
+          tduedate: new Date().toISOString().split("T")[0],
+          wpaymentmeans: 1,
+          wpaymentmethod: "10",
+          nlineextensionamount: parseFloat(amountWithoutTax.toFixed(2)),
+          ntaxexclusiveamount: parseFloat(amountWithoutTax.toFixed(2)),
+          ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
+          npayableamount: parseFloat(totalAmount.toFixed(2)),
+          sorderreference: order.id_orderDetail,
+          snotes: "",
+          snotetop: "",
+          jextrainfo: {
+            ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
+            stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
+            iitemscount: order.products.length.toString(),
+          },
+          jdocumentitems: productsData,
+          jbuyer: buyer,
+        },
+      });
+    }
+  }, [order, buyer]);
 
   const handleChange = (e, path) => {
     const keys = path.split(".");
@@ -68,98 +130,25 @@ const Invoice = () => {
     });
   };
 
-  const handleFetchOrder = () => {
-    if (orderId) {
-      dispatch(fetchOrdersByIdOrder(orderId));
+  const handleFetchOrder = async () => {
+    if (!orderId) return;
+    try {
+      await dispatch(fetchOrdersByIdOrder(orderId));
+    } catch (err) {
+      console.error("Error fetching order:", err);
     }
   };
 
-  useEffect(() => {
-    if (order && Array.isArray(order.products)) {
-      console.log("Datos de la orden recibidos:", order);
-  
-      const products = order.products.reduce((acc, product, index) => {
-        const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2)); // Convertimos a número
-        const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
-  
-        acc[index] = {
-          jextrainfo: {
-            sbarcode: product.codigoBarra,
-          },
-          sdescription: product.description,
-          wunitcode: "und",
-          sstandarditemidentification: product.codigoBarra,
-          sstandardidentificationcode: "999",
-          nunitprice: priceWithoutTax, // Valor numérico
-          nusertotal: parseFloat((priceWithoutTax * order.quantity).toFixed(2)), // Valor numérico
-          nquantity: parseFloat(order.quantity.toFixed(2)), // Valor numérico
-          jtax: {
-            jiva: {
-              nrate: 19,
-              sname: "IVA",
-              namount: parseFloat((taxAmount * order.quantity).toFixed(2)), // Valor numérico
-              nbaseamount: parseFloat((priceWithoutTax * order.quantity).toFixed(2)), // Valor numérico
-            },
-          },
-        };
-  
-        return acc;
-      }, {});
-  
-      const totalAmountWithoutTax = order.products.reduce((total, product) => {
-        const priceWithoutTax = product.priceSell / 1.19;
-        return total + priceWithoutTax * order.quantity;
-      }, 0);
-  
-      const totalTaxAmount = order.products.reduce((total, product) => {
-        const priceWithoutTax = product.priceSell / 1.19;
-        const taxAmount = product.priceSell - priceWithoutTax;
-        return total + taxAmount * order.quantity;
-      }, 0);
-  
-      const totalPayableAmount = totalAmountWithoutTax + totalTaxAmount;
-      const stotalinvoicewords = numeroALetrasConDecimales(totalPayableAmount); // Generar el texto en letras
-  
-      setInvoiceData({
-        wVersionUBL: "2.1",
-        wenvironment: "test",
-        jDocument: {
-          wdocumenttype: "Invoice",
-          wdocumenttypecode: "01",
-          scustomizationid: "10",
-          wcurrency: "COP",
-          sdocumentprefix: "",
-          sdocumentsuffix: null,
-          tissuedate: new Date().toISOString(), // Fecha actual
-          tduedate: new Date().toISOString().split("T")[0], // Solo la fecha
-          wpaymentmeans: 1,
-          wpaymentmethod: "10",
-          nlineextensionamount: parseFloat(totalAmountWithoutTax.toFixed(2)), // Valor numérico
-          ntaxexclusiveamount: parseFloat(totalAmountWithoutTax.toFixed(2)), // Valor numérico
-          ntaxinclusiveamount: parseFloat(totalPayableAmount.toFixed(2)), // Valor numérico
-          npayableamount: parseFloat(totalPayableAmount.toFixed(2)), // Valor numérico
-          sorderreference: orderId,
-          snotes: "",
-          snotetop: "",
-          jextrainfo: {
-            ntotalinvoicepayment: parseFloat(totalPayableAmount.toFixed(2)), // Valor numérico
-            stotalinvoicewords, // Texto en letras
-            iitemscount: order.products.length.toString(), // Enviamos como string si es necesario
-          },
-          jdocumentitems: products, // Productos en formato objeto
-          jbuyer: buyer,
-        },
-      });
-    }
-  }, [order]);
-  
-  
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(sendInvoice(invoiceData));
-    console.log("Factura enviada:", invoiceData);
-    // Aquí puedes llamar al método `sendInvoice` del `TaxxaService`
+    try {
+      await dispatch(sendInvoice(invoiceData));
+      if (!error) {
+        console.log("Factura enviada con éxito");
+      }
+    } catch (err) {
+      console.error("Error al enviar la factura:", err);
+    }
   };
 
   return (
@@ -204,7 +193,7 @@ const Invoice = () => {
           <div>
             <label className="block mb-2">Fecha de emisión:</label>
             <input
-              type="datetime-local"
+              type="date"
               value={invoiceData.jDocument.tissuedate}
               onChange={(e) => handleChange(e, "jDocument.tissuedate")}
               className="border p-2 w-full"

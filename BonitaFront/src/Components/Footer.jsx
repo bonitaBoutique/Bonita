@@ -1,57 +1,52 @@
 import React from 'react';
-import { FaInstagram, FaEnvelope } from 'react-icons/fa';
-
+import { FaInstagram, FaEnvelope, FaFacebook } from 'react-icons/fa';
+import { FaTiktok } from 'react-icons/fa';
 
 //AGREAGR MAPA / SISTECREDITO ADDY/ PAGOS CONTRAENTREGA Y LOS QUE ESTAN PERO MOVIENDSE
 const Footer = () => {
   return (
-    <footer id='footer' className="bg-gray-200 text-gray-800 py-6">
-      {/* Sección de links */}
+    <footer className="bg-gray-800 text-white py-4">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0 text-center sm:text-left">
-          {/* Navegación */}
-          <div className="flex flex-col sm:flex-row sm:space-x-8 space-y-4 sm:space-y-0">
-            <a href="#" className="hover:underline font-nunito text-sm">
-              Lo nuevo
-            </a>
-            <a href="#" className="hover:underline font-nunito text-sm">
-              Colecciones
-            </a>
-            <a href="#" className="hover:underline font-nunito text-sm">
-              Categorías
-            </a>
-            
-            <a href="#" className="hover:underline font-nunito text-sm">
-              Términos y Condiciones
-            </a>
-          </div>
-
-          {/* Íconos sociales */}
-          <div className="flex justify-center sm:justify-start space-x-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center">
+        <div className="flex justify-center sm:justify-start space-x-4">
             <a
               href="https://www.instagram.com/bonitaboutiquecumaral/"
               target="_blank"
               rel="noopener noreferrer"
+              className="transform transition hover:scale-110"
             >
-              <FaInstagram className="h-6 w-6 sm:h-8 sm:w-8 hover:text-gray-500" />
+              <FaInstagram className="h-8 w-8 sm:h-10 sm:w-10 text-pink-500 hover:text-pink-400" />
             </a>
-            <a href="mailto:contact@example.com">
-              <FaEnvelope className="h-6 w-6 sm:h-8 sm:w-8 hover:text-gray-500" />
+            <a
+              href="https://www.facebook.com/bonitaboutique"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transform transition hover:scale-110"
+            >
+              <FaFacebook className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 hover:text-blue-500" />
+            </a>
+            <a
+              href="https://www.tiktok.com/@bonitaboutique"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transform transition hover:scale-110"
+            >
+              <FaTiktok className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:text-gray-300" />
+            </a>
+            <a 
+              href="mailto:contact@example.com"
+              className="transform transition hover:scale-110"
+            >
+              <FaEnvelope className="h-8 w-8 sm:h-10 sm:w-10 text-red-500 hover:text-red-400" />
             </a>
           </div>
         </div>
-      </div>
-
-    
-      <div className="bg-gray-300 text-gray-600 text-sm text-center py-3 mt-6">
-        © {new Date().getFullYear()} Bonita. Todos los derechos reservados.
       </div>
     </footer>
   );
 };
 
 export default Footer;
-
 
 
 

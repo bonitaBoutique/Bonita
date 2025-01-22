@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBalance } from '../../Redux/Actions/actions';
 import * as XLSX from 'xlsx';
+import { useNavigate } from 'react-router-dom';
+
 
 const Balance = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const {
     balance = 0,
     totalIncome = 0,
@@ -83,7 +86,7 @@ const Balance = () => {
   if (loading) return <div>Cargando...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
       {/* Filters */}
       <div className="mb-6 grid grid-cols-3 gap-4">
         <input
@@ -159,6 +162,14 @@ const Balance = () => {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="mt-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-gray-600 text-white p-4 rounded hover:bg-gray-700"
+        >
+          Volver
+        </button>
       </div>
     </div>
   );

@@ -56,7 +56,9 @@ function App() {
     "/panel/createProducts",
     "/invoice",
     "/creditN",
-    "/caja/:idOrder"
+    "/caja/:idOrder",
+    "/informes",
+    "/createProducts"
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
@@ -262,6 +264,7 @@ function App() {
           <WhatsappButton />
         </>
       )}
+      
     </>
   );
 }

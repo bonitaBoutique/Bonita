@@ -244,15 +244,42 @@ const CreateProduct = () => {
 
           {/* Muestra las imágenes seleccionadas */}
           <div className="mt-4 grid grid-cols-3 gap-4">
-            {images.map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt={`Imagen ${index + 1}`}
-                className="w-full h-32 object-cover rounded-md"
-              />
-            ))}
-          </div>
+  {images.map((img, index) => (
+    <div key={index} className="relative group">
+      <img
+        src={img}
+        alt={`Imagen ${index + 1}`}
+        className="w-full h-32 object-cover rounded-md"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const newImages = images.filter((_, i) => i !== index);
+          setImages(newImages);
+          // eslint-disable-next-line no-undef
+          setFormData(prev => ({
+            ...prev,
+            images: newImages
+          }));
+        }}
+        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fillRule="evenodd" 
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" 
+            clipRule="evenodd" 
+          />
+        </svg>
+      </button>
+    </div>
+  ))}
+</div>
         </div>
 
         <div>

@@ -134,7 +134,7 @@ const ProductsList = () => {
               <div className="flex flex-col justify-between p-6 flex-grow">
                 <h3 className="text-2xl font-semibold font-nunito text-stone-700">
                   <Link to={`/product/${product.id_product}`} className="hover:text-amber-100">
-                    {product.marca}
+                    {product.description}
                   </Link>
                 </h3>
                 <p className="text-lg font-semibold font-nunito text-gray-800">

@@ -10,7 +10,7 @@ const PanelInformes = () => {
   return (
     <>
    <Navbar2/>
-    <div className="min-h-screen bg-pink-300 flex flex-col items-center mt-20">
+    <div className="min-h-screen bg-white-300 flex flex-col items-center mt-20">
       <div className="relative w-full flex justify-between items-center mr-6 ml-6">
         <nav className="w-full flex justify-start items-center py-4 px-8 bg-transparent">
          

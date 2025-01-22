@@ -28,19 +28,14 @@ const Footer = () => {
               <FaFacebook className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600 hover:text-blue-500" />
             </a>
             <a
-              href="https://www.tiktok.com/@bonitaboutique"
+              href="https://www.tiktok.com/@bonitaboutiquecumaral"
               target="_blank"
               rel="noopener noreferrer"
               className="transform transition hover:scale-110"
             >
               <FaTiktok className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:text-gray-300" />
             </a>
-            <a 
-              href="mailto:contact@example.com"
-              className="transform transition hover:scale-110"
-            >
-              <FaEnvelope className="h-8 w-8 sm:h-10 sm:w-10 text-red-500 hover:text-red-400" />
-            </a>
+          
           </div>
 
           {/* Map Image */}

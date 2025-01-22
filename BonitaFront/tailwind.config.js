@@ -3,18 +3,24 @@ export default {
   darkMode: false, // or 'media' or 'class'
   theme: {
     extend: {
-      colors:{
-        colorFooter:"#2B2B2B",
-        colorPreguntas:"#cccccc",
-        colorLogo:"#ffb422",
-        colorDetalle:"#2e5059",
-        colorBeige:"#8F8074",
-        colorBeigeClaro:"#95867b",
+      colors: {
+        colorLogo: "#ffb422",
+        colorDetalle: "#2e5059",
+        colorBeige: "#8F8074",
+        colorBeigeClaro: "#95867b",
       },
       fontFamily: {
         nunito: ['Nunito', 'sans-serif'], 
-
       },
+      animation: {
+        'infinite-scroll': 'scroll 40s linear infinite',
+      },
+      keyframes: {
+        scroll: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-100%)' }
+        }
+      }
     },
   },
   variants: {
@@ -22,4 +28,3 @@ export default {
   },
   plugins: [],
 }
-

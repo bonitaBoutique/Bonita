@@ -17,6 +17,7 @@
     "@heroicons/react": "^2.1.4",
     "@react-google-maps/api": "^2.20.5",
     "@reduxjs/toolkit": "^2.2.6",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
     "axios": "^1.7.2",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.3.31",

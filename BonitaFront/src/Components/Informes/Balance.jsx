@@ -62,14 +62,16 @@ const Balance = () => {
         paymentMethod: expense.paymentMethods
       }))
     ];
-
-  if (filters.expenseType) {
-      movements = movements.filter(movement => 
+  
+    let filteredMovements = movements;
+  
+    if (filters.expenseType) {
+      filteredMovements = filteredMovements.filter(movement => 
         movement.type === `Gasto - ${filters.expenseType}`
       );
     }
-
-    return movements.sort((a, b) => b.date - a.date);
+  
+    return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
   const handleExportExcel = () => {

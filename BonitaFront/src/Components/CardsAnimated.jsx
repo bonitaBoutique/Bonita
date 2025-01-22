@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import manitoDiamante from '../assets/img/manitoDiamante.png';
 import pesos from '../assets/img/pesos.png';
-import card1 from '../assets/img/an1.png';
-import card2 from '../assets/img/an2.png';
-import card3 from '../assets/img/an3.png';
-import card4 from '../assets/img/an4.png';
+
 
 const CardsAnimated = () => {
   const [isInView, setIsInView] = useState(false);

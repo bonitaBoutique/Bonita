@@ -100,6 +100,9 @@ import {
   CREATE_RESERVATION_REQUEST,
   CREATE_RESERVATION_SUCCESS,
   CREATE_RESERVATION_FAILURE,
+  FETCH_BALANCE_REQUEST,
+  FETCH_BALANCE_SUCCESS,
+  FETCH_BALANCE_FAILURE
 
 } from "./actions-type";
 
@@ -834,5 +837,31 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     } catch (error) {
       dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
       Swal.fire('Error', 'Failed to create reservation', 'error');
+    }
+  };
+
+  export const fetchBalance = (filters) => async (dispatch) => {
+    try {
+      dispatch({ type: FETCH_BALANCE_REQUEST });
+  
+      const { startDate, endDate, paymentMethod, pointOfSale } = filters;
+      const queryParams = new URLSearchParams({
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        ...(paymentMethod && { paymentMethod }),
+        ...(pointOfSale && { pointOfSale })
+      }).toString();
+  
+      const { data } = await axios.get(`${BASE_URL}/balance?${queryParams}`);
+      
+      dispatch({ 
+        type: FETCH_BALANCE_SUCCESS, 
+        payload: data 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: FETCH_BALANCE_FAILURE, 
+        payload: error.message 
+      });
     }
   };

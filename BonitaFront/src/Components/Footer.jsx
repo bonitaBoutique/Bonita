@@ -42,7 +42,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Copyright */}
+    
       <div className="bg-gray-300 text-gray-600 text-sm text-center py-3 mt-6">
         © {new Date().getFullYear()} Bonita. Todos los derechos reservados.
       </div>

@@ -96,7 +96,9 @@ import {
   CREATE_RESERVATION_REQUEST,
   CREATE_RESERVATION_SUCCESS,
   CREATE_RESERVATION_FAILURE,
-
+  FETCH_BALANCE_REQUEST,
+  FETCH_BALANCE_SUCCESS,
+  FETCH_BALANCE_FAILURE,
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -171,12 +173,16 @@ const initialState = {
     success: false,
     error: null,
   },
-  expenses: {
-    data: [],
-    loading: false,
-    success: false,
-    error: null,
+  balance: 0,
+  totalIncome: 0,
+  totalOnlineSales: 0,
+  totalLocalSales: 0,
+  totalExpenses: 0,
+  income: {
+    online: [],
+    local: []
   },
+  expenses: [],
 
   order: {
     loading: false,
@@ -338,7 +344,8 @@ const rootReducer = (state = initialState, action) => {
           ),
           totalItems: state.cart.totalItems - itemToRemove.quantity,
           totalPrice:
-            state.cart.totalPrice - itemToRemove.priceSell * itemToRemove.quantity,
+            state.cart.totalPrice -
+            itemToRemove.priceSell * itemToRemove.quantity,
         },
       };
     case INCREMENT_QUANTITY:
@@ -938,13 +945,12 @@ const rootReducer = (state = initialState, action) => {
       return {
         ...state,
         loading: false,
-        receipts: [...state.receipts, action.payload], 
+        receipts: [...state.receipts, action.payload],
       };
 
     case CREATE_RECEIPT_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
-   
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };
 
@@ -954,7 +960,6 @@ const rootReducer = (state = initialState, action) => {
     case FETCH_LATEST_RECEIPTS_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
-   
     case FETCH_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };
 
@@ -964,37 +969,37 @@ const rootReducer = (state = initialState, action) => {
     case FETCH_RECEIPTS_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
-      case CREATE_EXPENSE_REQUEST:
-        return {
-          ...state,
-          expenses: {
-            ...state.invoice,
-            loading: true,
-            success: false,
-            error: null,
-          },
-        };
-      case CREATE_EXPENSE_SUCCESS:
-        return {
-          ...state,
-          expenses: {
-            ...state.invoice,
-            loading: false,
-            success: true,
-            error: null,
-          },
-        };
-      case CREATE_EXPENSE_FAILURE:
-        return {
-          ...state,
-          expenses: {
-            ...state.invoice,
-            loading: false,
-            success: false,
-            error: action.payload,
-          },
-        };
-        case GET_FILTERED_EXPENSES_REQUEST:
+    case CREATE_EXPENSE_REQUEST:
+      return {
+        ...state,
+        expenses: {
+          ...state.invoice,
+          loading: true,
+          success: false,
+          error: null,
+        },
+      };
+    case CREATE_EXPENSE_SUCCESS:
+      return {
+        ...state,
+        expenses: {
+          ...state.invoice,
+          loading: false,
+          success: true,
+          error: null,
+        },
+      };
+    case CREATE_EXPENSE_FAILURE:
+      return {
+        ...state,
+        expenses: {
+          ...state.invoice,
+          loading: false,
+          success: false,
+          error: action.payload,
+        },
+      };
+    case GET_FILTERED_EXPENSES_REQUEST:
       return {
         ...state,
         expenses: {
@@ -1025,7 +1030,7 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-      case DELETE_EXPENSE_REQUEST:
+    case DELETE_EXPENSE_REQUEST:
       return {
         ...state,
         expenses: {
@@ -1039,7 +1044,9 @@ const rootReducer = (state = initialState, action) => {
         ...state,
         expenses: {
           ...state.expenses,
-          data: state.expenses.data.filter(expense => expense.id !== action.payload),
+          data: state.expenses.data.filter(
+            (expense) => expense.id !== action.payload
+          ),
           loading: false,
           success: true,
           error: null,
@@ -1055,12 +1062,37 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-      case CREATE_RESERVATION_REQUEST:
-        return { ...state, loading: true };
-      case CREATE_RESERVATION_SUCCESS:
-        return { ...state, loading: false, reservation: action.payload };
-      case CREATE_RESERVATION_FAILURE:
-        return { ...state, loading: false, error: action.payload };
+    case CREATE_RESERVATION_REQUEST:
+      return { ...state, loading: true };
+    case CREATE_RESERVATION_SUCCESS:
+      return { ...state, loading: false, reservation: action.payload };
+    case CREATE_RESERVATION_FAILURE:
+      return { ...state, loading: false, error: action.payload };
+
+      case FETCH_BALANCE_REQUEST:
+        return {
+          ...state,
+          loading: true,
+          error: null
+        };
+      case FETCH_BALANCE_SUCCESS:
+        return {
+          ...state,
+          loading: false,
+          balance: action.payload.balance,
+          totalIncome: action.payload.totalIncome,
+          totalOnlineSales: action.payload.totalOnlineSales,
+          totalLocalSales: action.payload.totalLocalSales,
+          totalExpenses: action.payload.totalExpenses,
+          income: action.payload.income,
+          expenses: action.payload.expenses
+        };
+      case FETCH_BALANCE_FAILURE:
+        return {
+          ...state,
+          loading: false,
+          error: action.payload
+        };
 
     default:
       return state;

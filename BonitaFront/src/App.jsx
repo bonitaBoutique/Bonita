@@ -40,7 +40,7 @@ import Recibo from "./Components/Recibo";
 import CargarGastos from "./Components/Informes/CargarGastos"
 import PanelInformes from "./Components/Informes/PanelInformes"
 import FilterExpenses from "./Components/Informes/FilterExpenses";
-
+import Balance from "./Components/Informes/Balance"
 
 function App() {
   const location = useLocation();
@@ -208,6 +208,14 @@ function App() {
             element={
               <PrivateRoute>
                 <FilterExpenses/>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/informes"
+            element={
+              <PrivateRoute>
+                <Balance/>
               </PrivateRoute>
             }
           />

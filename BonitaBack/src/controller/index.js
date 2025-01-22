@@ -12,6 +12,7 @@ const cancelSending = require("./MiPaquete/cancelSending");
 const {createDirection, updateDirection,     deleteDirection} = require("./MiPaquete/createDirection");
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
 const updateReservation = require("./OrdersDetails/updateReservation");
+const getBalance = require("./Informes/getBalance");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -56,4 +57,5 @@ module.exports = {
     deleteDirection: catchedAsync(deleteDirection),
     updateReservation: catchedAsync(require("./OrdersDetails/updateReservation")),
     getAllReservations: catchedAsync(require("./OrdersDetails/getAllReservations")),
+    getBalance: catchedAsync(getBalance),
 }

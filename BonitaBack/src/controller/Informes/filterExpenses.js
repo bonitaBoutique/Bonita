@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 
 const filterExpenses = async (req, res) => {
   try {
-    const { startDate, endDate, minAmount, maxAmount, type } = req.query;
+    const { startDate, endDate, minAmount, maxAmount, type, paymentMethods } = req.query;
     const where = {};
 
     if (startDate || endDate) {
@@ -29,6 +29,11 @@ const filterExpenses = async (req, res) => {
     if (type) {
       where.type = type;
     }
+    if (paymentMethods) {
+      where.paymentMethods = paymentMethods;
+     
+    }
+
 
     const expenses = await Expense.findAll({ where });
     res.status(200).json(expenses);

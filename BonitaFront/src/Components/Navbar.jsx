@@ -172,10 +172,10 @@ export default function Navbar() {
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
+            <div className="flex h-40 items-center justify-between py-4">
               <div className="flex-shrink-0">
                 <Link to="/">
-                  <img className={`object-contain ${open ? 'h-16' : 'h-14'} transition-all`} src={logo} alt="Logo" />
+                  <img className={`object-contain ${open ? 'h-80' : 'h-40'} transition-all`} src={logo} alt="Logo" />
                 </Link>
               </div>
 

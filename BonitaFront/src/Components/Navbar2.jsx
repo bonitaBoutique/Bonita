@@ -190,7 +190,7 @@ export default function Navbar2() {
               {/* Logo */}
               <div className="flex-shrink-0">
                 <Link to="/">
-                  <img className="h-2 object-contain" src={logo} alt="Logo" />
+                  <img className="h-8 object-contain" src={logo} alt="Logo" />
                 </Link>
               </div>
 

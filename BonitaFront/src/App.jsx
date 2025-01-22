@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
 
   Route,
@@ -41,8 +42,21 @@ import CargarGastos from "./Components/Informes/CargarGastos"
 import PanelInformes from "./Components/Informes/PanelInformes"
 import FilterExpenses from "./Components/Informes/FilterExpenses";
 import Balance from "./Components/Informes/Balance"
+import Loading from "./Components/Loading";
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    // Simular tiempo de carga
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+  }, []);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const location = useLocation();
   const adminRoutes = [
     "/panel",

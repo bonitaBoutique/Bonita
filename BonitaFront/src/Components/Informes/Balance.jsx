@@ -32,7 +32,8 @@ const Balance = () => {
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
-    paymentMethod: ''
+    paymentMethod: '',
+    expenseType:''
   });
 
   useEffect(() => {
@@ -61,10 +62,16 @@ const Balance = () => {
         paymentMethod: expense.paymentMethods
       }))
     ];
-  
-    console.log('Movements:', movements);
+
+  if (filters.expenseType) {
+      movements = movements.filter(movement => 
+        movement.type === `Gasto - ${filters.expenseType}`
+      );
+    }
+
     return movements.sort((a, b) => b.date - a.date);
   };
+
   const handleExportExcel = () => {
     const movements = getAllMovements();
     const ws = XLSX.utils.json_to_sheet(movements.map(m => ({
@@ -86,7 +93,7 @@ const Balance = () => {
   if (loading) return <div>Cargando...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       {/* Filters */}
       <div className="mb-6 grid grid-cols-3 gap-4">
         <input
@@ -111,6 +118,18 @@ const Balance = () => {
           <option value="Tarjeta">Tarjeta</option>
           <option value="Nequi">Nequi</option>
           <option value="Bancolombia">Bancolombia</option>
+        </select>
+        <select
+          value={filters.expenseType}
+          onChange={e => setFilters({...filters, expenseType: e.target.value})}
+          className="border rounded p-2"
+        >
+          <option value="">Todos los tipos de gasto</option>
+          <option value="Nomina Colaboradores">Nómina Colaboradores</option>
+          <option value="Servicios">Servicios</option>
+          <option value="Arriendo">Arriendo</option>
+          <option value="Proveedores">Proveedores</option>
+          <option value="Otros">Otros</option>
         </select>
       </div>
 

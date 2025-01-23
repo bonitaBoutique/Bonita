@@ -1,11 +1,11 @@
-require('dotenv').config();
+require("dotenv").config();
 
 module.exports = {
-    DB_USER : process.env.DB_USER,
-    DB_PASSWORD : process.env.DB_PASSWORD,
-    DB_NAME : process.env.DB_NAME,
-    DB_HOST : process.env.DB_HOST,
-    DB_PORT : process.env.DB_PORT,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_NAME: process.env.DB_NAME,
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
   DB_DEPLOY: process.env.DB_DEPLOY,
   JWT_SECRET_KEY: process.env.JWT_SECRET_KEY,
   WOMPI_EVENT_KEY: process.env.EVENTS_SECRET_KEY,
@@ -25,4 +25,11 @@ module.exports = {
   MI_PAQUETE_API_KEY: process.env.MI_PAQUETE_API_KEY,
   MI_PAQUETE_URL: process.env.MI_PAQUETE_URL,
   MI_PAQUETE_SESSION_TRACKER: process.env.MI_PAQUETE_SESSION_TRACKER,
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_SECURE: process.env.SMTP_SECURE,
+  SMTP_USER: process.env.SMTP_USER,
 };

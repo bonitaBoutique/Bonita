@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/BannerPrincipal/banner6.png'
+import imgFondo from '../../assets/img/BannerPrincipal/banner6.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -72,10 +72,25 @@ const Login = () => {
             {loading ? 'Cargando...' : 'Iniciar Sesión'}
           </button>
         </div>
+        <div className="mt-4 flex justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/register')}
+            className="text-sm text-indigo-600 hover:text-indigo-500"
+          >
+            ¿No tienes cuenta? Regístrate
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/recuperar')}
+            className="text-sm text-indigo-600 hover:text-indigo-500"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
       </form>
     </div>
   );
 };
 
 export default Login;
-

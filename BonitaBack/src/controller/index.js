@@ -13,6 +13,9 @@ const {createDirection, updateDirection,     deleteDirection} = require("./MiPaq
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
 const updateReservation = require("./OrdersDetails/updateReservation");
 const getBalance = require("./Informes/getBalance");
+const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
+const { resetPassword } = require("./nodemailerController/resetPassword.js");
+const { sendEmail } = require("./nodemailerController/index.js");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -58,4 +61,7 @@ module.exports = {
     updateReservation: catchedAsync(require("./OrdersDetails/updateReservation")),
     getAllReservations: catchedAsync(require("./OrdersDetails/getAllReservations")),
     getBalance: catchedAsync(getBalance),
+    forgotPassword: catchedAsync(forgotPassword),
+    resetPassword: catchedAsync(resetPassword),
+    sendEmail: catchedAsync(sendEmail),
 }

@@ -1,185 +1,133 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
-import imgFondo from '../../assets/img/BannerPrincipal/banner6.png'
-import Navbar2 from '../Navbar2';
+import imgFondo from '../../assets/img/BannerPrincipal/banner6.png';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
-    n_document: '',
-    phone: '',
-    city: '',
-    role: 'User', 
-    gender: '' 
+    confirmPassword: '',
   });
 
   const dispatch = useDispatch();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const userRegister = useSelector((state) => state.userRegister);
   const { loading, error, userInfo } = userRegister;
 
-  
-  const loggedInUserInfo = useSelector((state) => state.userLogin.userInfo);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleSubmit = (e) => {
+  const submitHandler = (e) => {
     e.preventDefault();
-    console.log('Form Data:', formData); 
-    dispatch(registerUser(formData)).then(() => {
-      if (loggedInUserInfo && loggedInUserInfo.role === 'Admin') {
-        navigate('/');
-      } else {
-        navigate('/login');
-      }
-    });
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    dispatch(registerUser(formData));
   };
+
+  // Redirect if user is logged in
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/');
+    }
+  }, [userInfo, navigate]);
 
   return (
-    <>
-   <Navbar2/>
     <div 
-    className="min-h-screen flex justify-center items-center bg-colorBeige  bg-cover bg-center p-4" 
-    style={{ backgroundImage: `url(${imgFondo})` }}
-  >
-    <div 
-      className="w-full max-w-sm p-6 bg-white bg-opacity-80 rounded-md shadow-lg space-y-4"
+      className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center" 
+      style={{ backgroundImage: `url(${imgFondo})` }}
     >
-      <h2 className="text-xl font-semibold text-center">Registro de Cliente</h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-sm font-medium">Nombre</label>
-            <input
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              className="mt-1 block w-full p-2 border rounded-md text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Apellido</label>
-            <input
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              className="mt-1 block w-full p-2 border rounded-md text-sm"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="mt-1 block w-full p-2 border rounded-md text-sm"
-            required
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Contraseña</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="mt-1 block w-full p-2 border rounded-md text-sm"
-            required
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-sm font-medium">Documento</label>
-            <input
-              type="text"
-              name="n_document"
-              value={formData.n_document}
-              onChange={handleChange}
-              className="mt-1 block w-full p-2 border rounded-md text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Teléfono</label>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="mt-1 block w-full p-2 border rounded-md text-sm"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-sm font-medium">Ciudad</label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            className="mt-1 block w-full p-2 border rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Género</label>
-          <select
-            name="gender"
-            value={formData.gender}
-            onChange={handleChange}
-            className="mt-1 block w-full p-2 border rounded-md text-sm"
-          >
-            <option value="">Seleccione</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="O">Otro</option>
-          </select>
-        </div>
-        </div>
-        {loggedInUserInfo && loggedInUserInfo.role === 'Admin' && (
-          <div>
-            <label className="text-sm font-medium">Rol</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="mt-1 block w-full p-2 border rounded-md text-sm"
-            >
-              <option value="User">Usuario</option>
-              <option value="Admin">Administrador</option>
-            </select>
+      <form 
+        onSubmit={submitHandler} 
+        className="max-w-lg w-full bg-white bg-opacity-80 p-8 rounded-lg shadow-md"
+      >
+        <h2 className="text-2xl mb-6 text-center">Registrarse</h2>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            {error}
           </div>
         )}
-        <button
-          type="submit"
-          className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-900 text-sm"
-          disabled={loading}
-        >
-          {loading ? 'Registrando...' : 'Registrar'}
-        </button>
-        {error && <div className="text-red-500 text-xs mt-2">{error}</div>}
+        <div className="mb-4">
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+            Nombre
+          </label>
+          <input
+            type="text"
+            id="firstName"
+            value={formData.firstName}
+            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+            Apellido
+          </label>
+          <input
+            type="text"
+            id="lastName"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Contraseña
+          </label>
+          <input
+            type="password"
+            id="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div className="mb-4">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            Confirmar Contraseña
+          </label>
+          <input
+            type="password"
+            id="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+        </div>
+        <div>
+          <button
+            type="submit"
+            className="w-full bg-colorFooter text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {loading ? 'Cargando...' : 'Registrarse'}
+          </button>
+        </div>
+        <div className="mt-4 flex justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="text-sm text-indigo-600 hover:text-indigo-500"
+          >
+            ¿Ya tienes cuenta? Inicia sesión aquí
+          </button>
+        </div>
       </form>
-      
     </div>
-  </div>
-  </>
   );
 };
 

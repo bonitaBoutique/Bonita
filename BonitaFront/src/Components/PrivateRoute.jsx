@@ -1,18 +1,18 @@
-import React from 'react';
+
+import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
 const PrivateRoute = ({ children }) => {
   const userInfo = useSelector(state => state.userLogin.userInfo);
 
-  // Si no hay usuario logueado, redirige al login
-  if (!userInfo) {
-    return <Navigate to="/login" />;
-  }
-
-  return children;
+  return userInfo ? children : <Navigate to="/login" />;
+};
+PrivateRoute.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default PrivateRoute;
+
 
 

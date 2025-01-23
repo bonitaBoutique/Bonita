@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SlTrash, SlMinus, SlPlus } from "react-icons/sl";
 import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
 import Navbar from './Navbar';
+import Swal from 'sweetalert2';
+
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -30,8 +32,17 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (!userInfo) {
-      alert('Debes iniciar sesión o registrarte para realizar la compra.');
-      navigate('/register'); // Redirige a registro si no está autenticado
+      Swal.fire({
+        title: 'Debes iniciar sesión o registrarte para realizar la compra.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Iniciar sesión',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login'); // Redirige a registro si no está autenticado
+        }
+      });
     } else {
       console.log('Continuar con el proceso de compra');
       navigate('/checkout'); // Redirige a la página de checkout si está autenticado

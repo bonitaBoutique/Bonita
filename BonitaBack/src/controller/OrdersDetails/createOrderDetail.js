@@ -13,7 +13,7 @@ function generarFirmaIntegridad(id_orderDetail, monto, moneda, secretoIntegridad
 
 module.exports = async (req, res) => {
   try {
-    const { date, amount, quantity, state_order, id_product, address, deliveryAddress, n_document } = req.body;
+    const { date, amount, quantity, state_order, id_product, address, deliveryAddress, n_document, pointOfSale } = req.body;
 
     if (!date || !amount || !quantity || !state_order || !id_product || !address) {
       return response(res, 400, { error: "Missing Ordering Data" });
@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
       amount,
       quantity,
       state_order,
+      pointOfSale,
       address,
       deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
       n_document,

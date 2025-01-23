@@ -43,7 +43,6 @@ module.exports = async (req, res) => {
           id_product: product.id_product,
           description: product.description,
           price: product.price,
-          priceSell:product.priceSell,
           isDian: product.isDian,
           tiendaOnLine:product.tiendaOnLine,
           codigoBarra:product.codigoBarra
@@ -67,7 +66,7 @@ module.exports = async (req, res) => {
       products: order.products.map(product => ({
         id_product: product.id_product,
         description: product.description,
-        priceSell: product.priceSell,
+        price: product.price,
         isDian: product.isDian,
         tiendaOnLine:product.tiendaOnLine,
         codigoBarra:product.codigoBarra

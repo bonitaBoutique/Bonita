@@ -16,6 +16,7 @@ const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
+const { getClientAccountBalance } = require("./AccountBalance/index.js");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -64,4 +65,5 @@ module.exports = {
     forgotPassword: catchedAsync(forgotPassword),
     resetPassword: catchedAsync(resetPassword),
     sendEmail: catchedAsync(sendEmail),
+    getClientAccountBalance: catchedAsync(getClientAccountBalance)
 }

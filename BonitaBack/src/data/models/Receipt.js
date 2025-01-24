@@ -34,12 +34,12 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
-          "Débito",
+          "Tarjeta",
           "Crédito",
           "Bancolombia",
-          "Combinado"
-        ),
-        allowNull: false,
+          "Otro"
+        ),         
+        
       },
       date: {
         type: DataTypes.DATE,

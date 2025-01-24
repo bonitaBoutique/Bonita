@@ -27,6 +27,7 @@ const Caja = () => {
     id_product: [],
     address: "Retira en local",
     deliveryAddress: null,
+    pointOfSale:"Local"
   });
 
   const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
@@ -128,6 +129,7 @@ const Caja = () => {
       id_product: selectedProducts.map((item) => item.id_product),
       address: orderData.address,
       deliveryAddress: orderData.deliveryAddress,
+      pointOfSale:"Local"
     };
   
     try {

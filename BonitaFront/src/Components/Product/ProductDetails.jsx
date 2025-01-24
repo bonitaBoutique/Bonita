@@ -7,6 +7,7 @@ import Navbar from "../Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const [selectedImage, setSelectedImage] = useState(0);
 
   console.log("useParams:", useParams());
   const dispatch = useDispatch();
@@ -35,53 +36,69 @@ const ProductDetails = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
   if (!product) return <p>No se encontró el producto.</p>;
-
   return (
-    <div className="full min-h-screen pt-6  bg-colorBeige">
-      <Navbar/>
-      <div className="relative min-h-screen flex items-center justify-center pt-8 z-10">
-        <div className="bg-gray-100 rounded-lg shadow-lg p-6 lg:p-8 w-full max-w-6xl flex flex-col">
-          <div className="flex flex-col lg:flex-row">
-            <div className="w-full lg:w-1/2 p-4 flex flex-col"></div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Imagen principal y miniaturas */}
+          <div className="flex flex-col gap-4">
+            <div className="aspect-square rounded-lg overflow-hidden">
+              <img
+                src={product.images[selectedImage]}
+                alt={product.description}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            {product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto py-2">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 
+                      ${selectedImage === index ? 'border-blue-500' : 'border-transparent'}`}
+                  >
+                    <img
+                      src={image}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {product.images &&
-              product.images.map((img, index) => (
-                <img
-                  key={index}
-                  src={img}
-                  alt={`Producto ${index}`}
-                  className="w-full md:w-3/4 lg:w-1/2 h-full p-8 rounded-lg mx-auto" // Ajustamos el tamaño aquí
-                />
-              ))}
-            <div className="w-50% lg:w-1/2 p-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2 uppercase">
+          {/* Detalles del producto */}
+          <div className="flex flex-col h-full">
+            <h2 className="text-2xl font-bold mb-4">{product.name}</h2>
+            
+            {/* Descripción con scroll y altura ajustada */}
+            <div className="flex-grow mb-4 overflow-y-auto max-h-[calc(100vh-400px)]">
+              <h2 className="text-2xl font-bold mb-4">
                 {product.description}
               </h2>
-              <p className="text-lg text-gray-500 mb-4">
+              <p className="text-lg text-gray-500 mt-4">
                 Marca: {product.marca}
               </p>
-              <p className="text-lg text-gray-500 mb-4">
+              <p className="text-lg text-gray-500 mt-2">
                 Color: {product.colors}
               </p>
-              <p className="text-lg text-gray-500 mb-4">
-                Talle: {product.sizes}
-              </p>
-              
-              <p className="text-xl font-semibold text-gray-800">
-                Precio: ${product.priceSell}
-              </p>
+            </div>
 
+            <div className="mt-auto space-y-4">
+              <p className="text-xl font-semibold mb-80">Precio: ${product.priceSell}</p>
               <button
-                className="mt-4 bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition"
                 onClick={handleAddToCart}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 
+                  transition duration-200 flex items-center justify-center"
               >
                 <FiShoppingCart className="inline-block mr-2" />
                 Agregar al carrito
               </button>
             </div>
           </div>
-
-          {/* Productos relacionados */}
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ router.use('/envio', require('./miPaqueteWebhook') )
 router.use('/mipaquete', require('./MiPaqueteRouter') )
 router.use('/balance', require('./balanceRouter') )
 router.use('/correo', require('./nodemailerRouter') )
+router.use('/userAccount', require('./userAccountRouter') )
 
 
                                                                                                                                                            

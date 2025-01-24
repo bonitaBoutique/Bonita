@@ -116,72 +116,69 @@ const ListadoProductos = () => {
 
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 border border-gray-300 text-left text-gray-600">
-                  Seleccionar
-                </th>
-                {[
-                  "Código Barra",
-                  "Marca",
-                  "Código Proveedor",
-                  "Descripción",
-                  "Costo",
-                  "Precio Venta",
-                  "Stock",
-                  "Tamaños",
-                  "Colores",
-                  "Imágenes",
-                  "Tienda Online",
-                  "Acciones",
-                ].map((header) => (
-                  <th
-                    key={header}
-                    className="px-4 py-2 border border-gray-300 text-left text-gray-600"
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {productosFiltrados.map((producto) => (
-                <tr key={producto.id_product} className="hover:bg-gray-50">
-                <td className="px-4 py-2 border border-gray-300">
-            {producto.image ? (
-              <div className="flex flex-col items-center gap-2">
-                <img src={producto.image} alt={producto.description} className="w-20 h-20 object-cover" />
-                <button
-                  onClick={() => handleImageUpload(producto.id_product)}
-                  className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
-                >
-                  Modificar
-                </button>
-                <button
-                  onClick={() => handleDeleteImage(producto.id_product)}
-                  className="px-2 py-1 bg-red-500 text-white text-sm rounded"
-                >
-                  Eliminar
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => handleImageUpload(producto.id_product)}
-                className="px-4 py-2 bg-green-500 text-white rounded"
-              >
-                Agregar Imagen
-              </button>
-            )}
-          </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.includes(producto.id_product)}
-                      onChange={() =>
-                        toggleProductSelection(producto.id_product)
-                      }
-                    />
-                  </td>
+          <thead className="bg-gray-100">
+  <tr>
+    {[
+      "Imágenes",          // Moved Imágenes first
+      "Seleccionar",       // Moved Seleccionar second
+      "Código Barra",
+      "Marca",
+      "Código Proveedor",
+      "Descripción",
+      "Costo",
+      "Precio Venta",
+      "Stock",
+      "Tamaños",
+      "Colores",
+      "Tienda Online",
+      "Acciones",
+    ].map((header) => (
+      <th
+        key={header}
+        className="px-4 py-2 border border-gray-300 text-left text-gray-600"
+      >
+        {header}
+      </th>
+    ))}
+  </tr>
+</thead>
+<tbody>
+  {productosFiltrados.map((producto) => (
+    <tr key={producto.id_product} className="hover:bg-gray-50">
+      <td className="px-4 py-2 border border-gray-300">
+        {producto.image ? (
+          <div className="flex flex-col items-center gap-2">
+            <img src={producto.image} alt={producto.description} className="w-20 h-20 object-cover" />
+            <button
+              onClick={() => handleImageUpload(producto.id_product)}
+              className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
+            >
+              Modificar
+            </button>
+            <button
+              onClick={() => handleDeleteImage(producto.id_product)}
+              className="px-2 py-1 bg-red-500 text-white text-sm rounded"
+            >
+              Eliminar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => handleImageUpload(producto.id_product)}
+            className="px-4 py-2 bg-green-500 text-white rounded"
+          >
+            Agregar Imagen
+          </button>
+        )}
+      </td>
+      <td className="px-4 py-2 border border-gray-300">
+        <input
+          type="checkbox"
+          checked={selectedProducts.includes(producto.id_product)}
+          onChange={() => toggleProductSelection(producto.id_product)}
+        />
+      </td>
+                  
                   <td className="px-4 py-2 border border-gray-300">
                     {producto.codigoBarra}
                   </td>

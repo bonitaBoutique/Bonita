@@ -40,7 +40,7 @@ const Cart = () => {
         cancelButtonText: 'Cancelar'
       }).then((result) => {
         if (result.isConfirmed) {
-          navigate('/login'); // Redirige a registro si no está autenticado
+          navigate('/login'); 
         }
       });
     } else {

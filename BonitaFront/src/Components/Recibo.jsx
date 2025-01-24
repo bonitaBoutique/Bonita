@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import  { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
@@ -7,9 +7,9 @@ import { fetchOrdersByIdOrder, fetchLatestReceipt, createReceipt, fetchLatestOrd
 
 const Recibo = () => {
   const { idOrder } = useParams();
-  const location = useLocation();
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const dispatch = useDispatch();
-
+const navigate = useNavigate();
   const { order, loading, error } = useSelector((state) => state.orderById);
   const { receiptNumber, latestOrder } = useSelector((state) => state);
   const { userInfo, loading: userLoading, error: userError } = useSelector((state) => state.userTaxxa);
@@ -23,18 +23,33 @@ const Recibo = () => {
   const [payMethod, setPayMethod] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const initialFormState = {
+    payMethod: "Efectivo",
+    buyerName: "",
+    buyerEmail: "",
+    buyerPhone: "",
+    totalAmount: "",
+    date: "",
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setPayMethod("Efectivo");
+  };
+
   useEffect(() => {
-    // Carga la orden solo si no está cargada o si el id no coincide
+    
     if (!order || order.id_orderDetail !== idOrder) {
       dispatch(fetchOrdersByIdOrder(idOrder));
     }
 
-    // Despacha la acción para obtener el último número de recibo si no se ha cargado
+    
     if (!receiptNumber) {
       dispatch(fetchLatestReceipt());
     }
 
-    // Despacha la acción para obtener la última orden
     dispatch(fetchLatestOrder());
   }, [dispatch, idOrder, order, receiptNumber]);
 
@@ -48,6 +63,8 @@ const Recibo = () => {
     }
   }, [order, idOrder, dispatch]);
 
+  console.log(order)
+
   useEffect(() => {
     if (userInfo && userInfo.data) {
       const userData = userInfo.data;
@@ -57,27 +74,7 @@ const Recibo = () => {
     }
   }, [userInfo]);
 
-  useEffect(() => {
-    if (receiptCreated && payMethod !== 'Efectivo') {
-      const checkout = new WidgetCheckout({
-        currency: "COP",
-        amountInCents: totalAmount * 100,
-        reference: String(idOrder),
-        publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-        redirectUrl: "https://bonita-seven.vercel.app/pago",
-        integritySignature: latestOrder.data.integritySignature,
-      });
-      console.log(checkout);
-      checkout.open((result) => {
-        const transaction = result.transaction;
-        if (transaction.status === "APPROVED") {
-          Swal.fire("Success", "Payment successful", "success");
-        } else {
-          Swal.fire("Error", "Payment failed", "error");
-        }
-      });
-    }
-  }, [receiptCreated, payMethod, totalAmount, idOrder, latestOrder]);
+ 
 
   if (loading || userLoading) {
     return <p>Cargando detalles de la orden...</p>;
@@ -96,6 +93,11 @@ const Recibo = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!userInfo || !order) {
+      Swal.fire('Error', 'Faltan datos necesarios', 'error');
+      return;
+    }
+
     const receiptData = {
       receiptNumber: newReceiptNumber,  // Número de recibo calculado
       total_amount: parseFloat(totalAmount), // Monto total (asegurarse de que es un número)
@@ -108,19 +110,17 @@ const Recibo = () => {
     };
 
     console.log("Enviando datos al backend:", receiptData);
-
     try {
-      // Despacha la acción para crear el recibo con los datos
       await dispatch(createReceipt(receiptData));
-      // Aquí actualizas el estado para mostrar el mensaje de éxito
       setReceiptCreated(true);
-      setErrorMessage("");
-    } catch (err) {
-      setErrorMessage(err.message || "Error al crear el recibo");
+      setIsSubmitted(true);
+      resetForm(); // Reset all form data
+      Swal.fire('Éxito', 'Recibo generado correctamente', 'success');
+    } catch (error) {
+      Swal.fire('Error', 'Error al generar el recibo', 'error');
     }
-
-    // Opcional: Puedes hacer un reset del formulario si lo deseas
   };
+
 
   const generatePDF = () => {
     // Crear un nuevo documento PDF con tamaño 80x297 mm
@@ -190,7 +190,19 @@ const Recibo = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-24">
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-gray-500 text-white px-4 py-2 rounded mt-8 ml-40 hover:bg-gray-600"
+        >
+          ← Volver
+        </button>
+        
+      </div>
+      
+    <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-16">
+    
       <h2 className="text-2xl font-semibold text-center mb-4">Formulario de Recibo</h2>
 
       {/* Mostrar la alerta solo si se ha creado el recibo correctamente */}
@@ -207,7 +219,9 @@ const Recibo = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Número de Recibo</label>
           <input
@@ -270,11 +284,13 @@ const Recibo = () => {
           >
             <option value="" disabled>Seleccione un método</option>
             <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta de Débito</option>
-            <option value="Reserva">Crédito</option>
+            <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+            <option value="Crédito">Reserva Crédito</option>
             <option value="Addi">Addi</option>
             <option value="Sistecredito">Sistecredito</option>
             <option value="Bancolombia">Bancolombia</option>
+            <option value="Otro">Otro</option>
+            
           </select>
         </div>
 
@@ -289,50 +305,34 @@ const Recibo = () => {
           />
         </div>
 
-        <button
-          type="submit"
-          className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-        >
-          Crear Recibo
-        </button>
-      </form>
-
-      {payMethod !== 'Efectivo' && (
-        <div className="mt-4">
-          <button
-            onClick={() => {
-              const checkout = new WidgetCheckout({
-                currency: "COP",
-                amountInCents: totalAmount * 100,
-                reference: String(newReceiptNumber),
-
-                publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-                redirectUrl: "https://bonita-seven.vercel.app/pago",
-                integritySignature: latestOrder.data.integritySignature,
-              });
-              checkout.open((result) => {
-                const transaction = result.transaction;
-                if (transaction.status === "APPROVED") {
-                  Swal.fire("Success", "Payment successful", "success");
-                } else {
-                  Swal.fire("Error", "Payment failed", "error");
-                }
-              });
-            }}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        <div className="flex gap-4">
+          <button 
+            type="submit" 
+            className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+            disabled={isSubmitted}
           >
-            Pagar con Wompi
+            Generar Recibo
           </button>
-        </div>
-      )}
 
-      <button
-        onClick={generatePDF}
-        className="mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700"
-      >
-        Descargar Recibo como PDF
-      </button>
-    </div>
+          {isSubmitted && (
+            <button 
+              type="button"
+              onClick={generatePDF}
+              className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            >
+              Descargar Recibo
+            </button>
+          )}
+        </div>
+        </form>
+
+{receiptCreated && (
+  <div className="mt-4 p-2 bg-green-100 text-green-700 rounded">
+    Recibo generado exitosamente
+  </div>
+)}
+</div>
+</div>
   );
 };
 

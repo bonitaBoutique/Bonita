@@ -117,7 +117,7 @@ function App() {
 
           <Route exact path="/cart" element={<Cart />} />
           <Route exact path="/checkout" element={<Checkout />} />
-          <Route exact path="/gracias" element={<ThankYouPage />} />
+        
           <Route
             path="/updateProduct/:id"
             element={

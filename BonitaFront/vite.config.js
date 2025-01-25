@@ -20,5 +20,11 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['crypto-js'],
+    },
+  },
 });
+
 

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../Config/config";
+import CryptoJS from "crypto-js";
 import axios from "axios";
 import {
   createOrder,
@@ -49,7 +51,7 @@ const Checkout = () => {
     const fetchLatestOrder = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:3001/order?latest=true');
+        const response = await axios.get(`${BASE_URL}/order?latest=true`);
         setLatestOrder(response.data.data.orders[0]);
         setLoading(false);
       } catch (error) {
@@ -65,18 +67,33 @@ const Checkout = () => {
     console.log('Latest Order:', latestOrder);
   }, [latestOrder]);
 
+  const generateIntegritySignature = (reference, amountInCents, currency, integritySecret, expirationTime) => {
+    const data = expirationTime
+      ? `${reference}${amountInCents}${currency}${expirationTime}${integritySecret}`
+      : `${reference}${amountInCents}${currency}${integritySecret}`;
+    return CryptoJS.SHA256(data).toString(CryptoJS.enc.Hex);
+  };
+
   useEffect(() => {
     if (latestOrder && !loading && !error) {
-      const { amount, id_orderDetail, integritySignature } = latestOrder;
+      const { amount, id_orderDetail } = latestOrder;
+      const amountInCents = amount * 100;
+      const currency = "COP";
+      const integritySecret = "ptest_integrity_A72xJJDM3dnfu9hrZJ7WmfdcXRexp5RO"; // Replace with your actual integrity secret
+      const expirationTime = null;
+
+      const integritySignature = generateIntegritySignature(id_orderDetail, amountInCents, currency, integritySecret, expirationTime);
+
       const widgetData = {
-        currency: "COP",
-        amountInCents: amount * 100,
+        currency,
+        amountInCents,
         reference: String(id_orderDetail),
         publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
         redirectUrl: `https://bonita-seven.vercel.app/eventos/respuesta?id=${id_orderDetail}`, // Updated redirect URL
-        integritySignature: integritySignature,
+        integritySignature,
       };
-      console.log('Widget Data:', widgetData); // Log the data being sent to the widget
+      console.log('Widget Data:', widgetData); 
+
       const checkout = new WidgetCheckout(widgetData);
       checkout.open((result) => {
         const transaction = result.transaction;

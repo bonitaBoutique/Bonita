@@ -23,6 +23,13 @@ const ProductDetails = () => {
     loadProduct();
   }, [dispatch, id]);
 
+  const handleAddToCart = () => {
+    if (product) {
+      dispatch(addToCart(product));
+      navigate("/cart");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -55,13 +62,6 @@ const ProductDetails = () => {
   }
 
   const images = product.images || [product.image || '/default-product.png'];
-
-  const handleAddToCart = () => {
-    if (product) {
-      dispatch(addToCart(product));
-      navigate("/cart");
-    }
-  };
 
   return (
     <>

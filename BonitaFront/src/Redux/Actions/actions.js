@@ -246,15 +246,20 @@ export const createOrder = (orderData) => async (dispatch) => {
 export const fetchLatestOrder = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_ORDER_REQUEST });
   try {
-    const { data } = await axios.get(`${BASE_URL}/order?latest=true`);
-    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data });
+    const response = await fetch('http://localhost:3001/order?latest=true'); // Adjust the API endpoint as needed
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.message || 'Error fetching latest order');
+    }
+    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data.data.orders[0] });
   } catch (error) {
-    dispatch({
-      type: FETCH_LATEST_ORDER_FAILURE,
-      payload: error.response.data,
-    });
+    dispatch({ type: FETCH_LATEST_ORDER_FAILURE, payload: error.message });
   }
 };
+
 
 export const clearOrderState = () => ({
   type: CLEAR_ORDER_STATE,
@@ -865,3 +870,18 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       });
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

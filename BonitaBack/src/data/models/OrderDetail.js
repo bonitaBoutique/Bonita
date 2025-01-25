@@ -57,22 +57,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Pendiente",
       },
-     shipping_status: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    tracking_number: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    shipping_company: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    estimated_delivery_date: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
+      shipping_status: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      tracking_number: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      shipping_company: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      estimated_delivery_date: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       isFacturable: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -102,7 +102,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Online",
       },
-      
     },
     {
       paranoid: true,

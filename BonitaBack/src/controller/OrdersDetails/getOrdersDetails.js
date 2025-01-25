@@ -3,35 +3,75 @@ const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   try {
-    const orders = await OrderDetail.findAll({
-      include: [
-        {
-          model: Product,
-          as: 'products',
-          attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'],
-          through: { attributes: [] }
-        }
-      ],
-      attributes: [
-        'id_orderDetail',
-        'date',
-        'quantity',
-        'amount',
-        'address',
-        'deliveryAddress',
-        'state_order',
-        'integritySignature',
-        'transaction_status',
-        'shipping_status',
-        'tracking_number',
-        'shipping_company',
-        'estimated_delivery_date',
-        'isFacturable',
-        'status',
-        'pointOfSale',
-        'n_document'
-      ]
-    });
+    const { latest } = req.query;
+
+    let orders;
+    if (latest === 'true') {
+      orders = await OrderDetail.findAll({
+        include: [
+          {
+            model: Product,
+            as: 'products',
+            attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'],
+            through: { attributes: [] }
+          }
+        ],
+        attributes: [
+          'id_orderDetail',
+          'date',
+          'quantity',
+          'amount',
+          'address',
+          'deliveryAddress',
+          'state_order',
+          'integritySignature',
+          'transaction_status',
+          'shipping_status',
+          'tracking_number',
+          'shipping_company',
+          'estimated_delivery_date',
+          'isFacturable',
+          'status',
+          'pointOfSale',
+          'n_document',
+          'createdAt' // Ensure createdAt is included
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: 1
+      });
+    } else {
+      orders = await OrderDetail.findAll({
+        include: [
+          {
+            model: Product,
+            as: 'products',
+            attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'],
+            through: { attributes: [] }
+          }
+        ],
+        attributes: [
+          'id_orderDetail',
+          'date',
+          'quantity',
+          'amount',
+          'address',
+          'deliveryAddress',
+          'state_order',
+          'integritySignature',
+          'transaction_status',
+          'shipping_status',
+          'tracking_number',
+          'shipping_company',
+          'estimated_delivery_date',
+          'isFacturable',
+          'status',
+          'pointOfSale',
+          'n_document',
+          'createdAt' // Ensure createdAt is included
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+    }
 
     if (!orders || orders.length === 0) {
       return response(res, 404, { error: 'No se encontraron órdenes' });
@@ -55,6 +95,5 @@ module.exports = async (req, res) => {
     return response(res, 500, { error: error.message });
   }
 };
-
 
 

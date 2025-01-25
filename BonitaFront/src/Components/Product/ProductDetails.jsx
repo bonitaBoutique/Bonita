@@ -57,8 +57,10 @@ const ProductDetails = () => {
   const images = product.images || [product.image || '/default-product.png'];
 
   const handleAddToCart = () => {
-    dispatch(addToCart(product));
-    // Opcional: mostrar mensaje de éxito
+    if (product) {
+      dispatch(addToCart(product));
+      navigate("/cart");
+    }
   };
 
   return (

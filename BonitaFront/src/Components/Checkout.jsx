@@ -79,7 +79,7 @@ const Checkout = () => {
       const { amount, id_orderDetail } = latestOrder;
       const amountInCents = amount * 100;
       const currency = "COP";
-      const integritySecret = "ptest_integrity_A72xJJDM3dnfu9hrZJ7WmfdcXRexp5RO"; // Replace with your actual integrity secret
+      const integritySecret = "test_integrity_A72xJJDM3dnfu9hrZJ7WmfdcXRexp5RO"; // Replace with your actual integrity secret
       const expirationTime = null;
 
       const integritySignature = generateIntegritySignature(id_orderDetail, amountInCents, currency, integritySecret, expirationTime);

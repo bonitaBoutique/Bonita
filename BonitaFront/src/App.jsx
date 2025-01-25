@@ -95,6 +95,7 @@ function App() {
             <Route path="/resetPassword/:token" element={<ResetPassword />} />
           <Route exact path="/products" element={<ProductsList />} />
           <Route exact path="/product/:id" element={<ProductDetails />} />
+          <Route exact path="/gracias" element={<ThankYouPage />} />
           <Route
             exact
             path="/myOrders/:n_document"

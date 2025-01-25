@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { BASE_URL } from "../Config/config";
+import { BASE_URL } from "../Config";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import {

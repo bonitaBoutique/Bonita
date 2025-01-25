@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   createOrder,
   clearOrderState,
@@ -21,7 +22,9 @@ const Checkout = () => {
   const { userInfo } = userLogin;
   const cart = useSelector((state) => state.cart);
   const orderCreate = useSelector((state) => state.order);
-  const latestOrder = useSelector((state) => state.latestOrder);
+  const [latestOrder, setLatestOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [orderData, setOrderData] = useState({
     date: currentDate,
@@ -36,51 +39,45 @@ const Checkout = () => {
 
   // Manejar creación de orden exitosa
   useEffect(() => {
-    if (orderCreate.success && !orderCreate.loading && !orderCreate.error) {
-      dispatch(fetchLatestOrder());
-      Swal.fire({
-        title: "Success",
-        text: "¡Compra exitosa!",
-        icon: "success",
-        confirmButtonText: "OK",
-      }).then(() => {
-        dispatch(clearOrderState());
-        // Restablecer datos de la orden
-        setOrderData({
-          date: currentDate,
-          amount: 0,
-          quantity: 0,
-          state_order: "Pedido Realizado",
-          n_document: "",
-          id_product: [],
-          address: "Retira en local",
-          deliveryAddress: null,
-        });
-       
-        navigate("/gracias"); //deberiamos hacer un componente explicando los pasos siguientes, como que va a recibir un mail y que luego puede revisar en el perfil y bla bla bla
-      });
+    if (orderCreate && orderCreate.success) {
+      navigate("/gracias"); // Navigate to thank you page with instructions
     }
-  }, [orderCreate.success, dispatch, navigate]);
+  }, [orderCreate, navigate]);
 
   // Manejar el widget de Wompi después de la creación de la orden
   useEffect(() => {
-    if (latestOrder.success && !latestOrder.loading && !latestOrder.error) {
-      const { amount, id_orderDetail } = latestOrder.data.orderDetail;
-      const checkout = new WidgetCheckout({
+    const fetchLatestOrder = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get('http://localhost:3001/order?latest=true');
+        setLatestOrder(response.data.data.orders[0]);
+        setLoading(false);
+      } catch (error) {
+        setError(error.message);
+        setLoading(false);
+      }
+    };
+
+    fetchLatestOrder();
+  }, []);
+
+     useEffect(() => {
+    console.log('Latest Order:', latestOrder);
+  }, [latestOrder]);
+
+  useEffect(() => {
+    if (latestOrder && !loading && !error) {
+      const { amount, id_orderDetail, integritySignature } = latestOrder;
+      const widgetData = {
         currency: "COP",
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
-
-        publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
-        redirectUrl: "https://bonita-seven.vercel.app/pagos",
-
-
-        integritySignature: latestOrder.data.integritySignature,
-        
-      });
-      console.log(checkout)
-
-      
+        publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
+        redirectUrl: `https://bonita-seven.vercel.app/eventos/respuesta?id=${id_orderDetail}`, // Updated redirect URL
+        integritySignature: integritySignature,
+      };
+      console.log('Widget Data:', widgetData); // Log the data being sent to the widget
+      const checkout = new WidgetCheckout(widgetData);
       checkout.open((result) => {
         const transaction = result.transaction;
         if (transaction.status === "APPROVED") {
@@ -90,7 +87,8 @@ const Checkout = () => {
         }
       });
     }
-  }, [latestOrder]);
+  }, [latestOrder, loading, error]);
+  
 
   // Actualizar datos de la orden cuando cambian los artículos del carrito
   useEffect(() => {
@@ -141,6 +139,8 @@ const Checkout = () => {
     
     <>
    <Navbar/>
+   {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
     <div 
     className="min-h-screen flex justify-center items-center bg-cover bg-center px-4" 
     style={{ backgroundImage: `url(${imgFondo})`, paddingTop: '4rem' }}  // Ajustar el padding si el navbar es fijo
@@ -237,5 +237,4 @@ const Checkout = () => {
 };
 
 export default Checkout;
-
 

@@ -705,7 +705,7 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-    case FETCH_LATEST_ORDER_REQUEST:
+      case FETCH_LATEST_ORDER_REQUEST:
       return {
         ...state,
         latestOrder: {
@@ -718,19 +718,20 @@ const rootReducer = (state = initialState, action) => {
       return {
         ...state,
         latestOrder: {
-          ...state.latestOrder,
           loading: false,
           success: true,
-          data: action.payload.data,
+          error: null,
+          data: action.payload,
         },
       };
     case FETCH_LATEST_ORDER_FAILURE:
       return {
         ...state,
         latestOrder: {
-          ...state.latestOrder,
           loading: false,
+          success: false,
           error: action.payload,
+          data: {},
         },
       };
 

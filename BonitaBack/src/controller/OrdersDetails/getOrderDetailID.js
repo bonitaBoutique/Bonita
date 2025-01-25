@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
       include: {
         model: Product,
         as: 'products',
-        attributes: ['id_product'],
+        attributes: ['id_product', 'description',  'codigoBarra', 'images'],
       }
     });
 
@@ -25,9 +25,14 @@ module.exports = async (req, res) => {
       quantity: order.quantity,
       state_order: order.state_order,
       trackingNumber:order.trackingNumber,
-      product_ids: order.products.map(product => product.id_product),
+      products: order.products.map(product => ({
+        id_product: product.id_product,
+        description: product.description,
+        codigoBarra: product.codigoBarra,
+        firstImage: product.images ? product.images[0] : null,
+      })),
     }));
-
+    
     return response(res, 200, { orders: formattedOrders });
   } catch (error) {
     console.error('Error fetching orders:', error);

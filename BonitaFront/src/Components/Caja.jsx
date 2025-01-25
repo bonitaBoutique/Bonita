@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import {
   fetchProducts,
   fetchFilteredProducts,
@@ -8,6 +9,8 @@ import {
   updateOrderState
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
+
+
 const Caja = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -66,16 +69,18 @@ const Caja = () => {
       const product = filteredProducts.find((p) => p.id_product === id_product); // Verifica que id_product sea el correcto
       if (product) {
         if (product.stock > 0) {
+          if (product.stock === 1) {
+            Swal.fire("Advertencia", "Último en stock", "warning");
+          }
           // Solo agregar el producto si tiene stock disponible
           productsToAdd.push({ ...product, quantity: 1 }); // Agrega la cantidad inicial como 1
         } else {
-          alert(`El producto con código ${id_product} no tiene stock disponible.`);
+          Swal.fire("Error", `El producto con código ${id_product} no tiene stock disponible.`, "error");
         }
       } else {
-        alert(`No se encontró el producto con código ${id_product}.`);
+        Swal.fire("Error", `No se encontró el producto con código ${id_product}.`, "error");
       }
     });
-
     // Si hay productos para agregar, los agregamos al estado
     if (productsToAdd.length > 0) {
       setSelectedProducts((prevSelected) => [
@@ -141,7 +146,7 @@ const Caja = () => {
       navigate(`/receipt/${idOrder}`); // Redirige al recibo
     } catch (error) {
       console.error("Error al crear la orden:", error.message);
-      alert("No se pudo crear la orden. Inténtalo de nuevo.");
+      Swal.fire("Error", "No se pudo crear la orden. Inténtalo de nuevo.", "error");
     }
   };
   
@@ -251,10 +256,6 @@ const Caja = () => {
     </div>
   );
 };
-
-
-
-
 
 
 export default Caja;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorBoundary from './ErrorBoundary';
 import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import CreateProduct from "./Components/Product/CreateProduct";
@@ -85,7 +86,7 @@ function App() {
     <>
       <div>
        
-
+      <ErrorBoundary>
         <Routes>
           <Route path="/" element={<LandingPrincipal />} />
           <Route exact path="/register" element={<Register />} />
@@ -265,6 +266,7 @@ function App() {
             }
           />
         </Routes>
+        </ErrorBoundary>
       </div>
 
       {/* Renderiza estos componentes solo si no estás en una ruta de admin */}

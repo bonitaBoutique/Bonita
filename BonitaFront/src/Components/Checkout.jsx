@@ -71,8 +71,8 @@ const Checkout = () => {
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
 
-        publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-        redirectUrl: "https://bonita-seven.vercel.app/pago",
+        publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
+        redirectUrl: "https://bonita-seven.vercel.app/pagos",
 
 
         integritySignature: latestOrder.data.integritySignature,
@@ -236,4 +236,5 @@ const Checkout = () => {
 };
 
 export default Checkout;
+
 

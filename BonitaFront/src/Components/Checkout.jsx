@@ -71,7 +71,7 @@ const Checkout = () => {
         amountInCents: amount * 100,
         reference: String(id_orderDetail),
         publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
-        redirectUrl: "https://bonita-lv91.onrender.com/eventos",
+        redirectUrl: "/eventos",
         integritySignature: latestOrder.data.integritySignature,
         
       });

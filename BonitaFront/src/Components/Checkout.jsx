@@ -65,26 +65,32 @@ const Checkout = () => {
   // Manejar el widget de Wompi después de la creación de la orden
   useEffect(() => {
     if (latestOrder.success && !latestOrder.loading && !latestOrder.error) {
-      const orderDetail = latestOrder.data?.orderDetail;
-      if (orderDetail) {
-        const { amount, id_orderDetail } = orderDetail;
-        const checkout = new WidgetCheckout({
-          currency: "COP",
-          amountInCents: amount * 100,
-          reference: String(id_orderDetail),
-          publicKey: "pub_test_udFLMPgs8mDyKqs5bRCWhpwDhj2rGgFw",
-          redirectUrl: "https://bonita-seven.vercel.app/pagos", // Front-end URL to handle payment result
-          integritySignature: latestOrder.data.integritySignature,
-        });
-        checkout.open(function (result) {
-          console.log(result);
-        });
-      } else {
-        console.error("Order detail is undefined");
-      }
+      const { amount, id_orderDetail } = latestOrder.data.orderDetail;
+      const checkout = new WidgetCheckout({
+        currency: "COP",
+        amountInCents: amount * 100,
+        reference: String(id_orderDetail),
+
+        publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
+        redirectUrl: "https://bonita-seven.vercel.app/pagos",
+
+
+        integritySignature: latestOrder.data.integritySignature,
+        
+      });
+      console.log(checkout)
+
+      
+      checkout.open((result) => {
+        const transaction = result.transaction;
+        if (transaction.status === "APPROVED") {
+          Swal.fire("Success", "Payment successful", "success");
+        } else {
+          Swal.fire("Error", "Payment failed", "error");
+        }
+      });
     }
   }, [latestOrder]);
-
 
   // Actualizar datos de la orden cuando cambian los artículos del carrito
   useEffect(() => {
@@ -132,9 +138,6 @@ const Checkout = () => {
   };
 
   return (
-    <div>
-      <h1>Checkout</h1>
-      {/* Add any additional UI elements here */}
     
     <>
    <Navbar/>
@@ -229,9 +232,7 @@ const Checkout = () => {
       </form>
     </div>
   </div>
-  
   </>
-  </div>
   );
 };
 

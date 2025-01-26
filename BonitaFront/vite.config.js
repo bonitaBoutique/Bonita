@@ -12,7 +12,7 @@ export default defineConfig({
         configure: (proxy) => {
           proxy.on('proxyRes', (proxyRes) => {
             delete proxyRes.headers['access-control-allow-origin'];
-            proxyRes.headers['access-control-allow-origin'] = 'http://localhost:5173';
+            proxyRes.headers['access-control-allow-origin'] = 'https://bonita-seven.vercel.app/';
           });
         },
       },

@@ -15,6 +15,7 @@ module.exports = async (req, res) => {
     // Create new reservation
     const reservation = await Reservation.create({
       id_orderDetail,
+      n_document: order.n_document, // Include n_document from order
       partialPayment,
       totalPaid: partialPayment,
       dueDate,

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { createExpense } from "../../Redux/Actions/actions"; // Asegúrate de tener esta acción definida
 
@@ -12,7 +13,12 @@ const CargarGastos = () => {
   const [description, setDescription] = useState("");
   const [paymentMethods, setPaymentMethods] = useState("");
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, success, error } = useSelector((state) => state.expenses);
+
+  const handleBack = () => {
+    navigate(-1); // Navigate back to the previous page
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -112,6 +118,13 @@ const CargarGastos = () => {
             disabled={loading}
           >
             {loading ? "Cargando..." : "Crear Gasto"}
+          </button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 mt-4 hover:bg-pink-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Volver
           </button>
         </div>
         {success && (

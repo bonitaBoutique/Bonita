@@ -102,7 +102,10 @@ import {
   CREATE_RESERVATION_FAILURE,
   FETCH_BALANCE_REQUEST,
   FETCH_BALANCE_SUCCESS,
-  FETCH_BALANCE_FAILURE
+  FETCH_BALANCE_FAILURE,
+  UPDATE_RESERVATION_REQUEST,
+  UPDATE_RESERVATION_SUCCESS,
+  UPDATE_RESERVATION_FAILURE,
 
 } from "./actions-type";
 
@@ -828,14 +831,16 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     }
   };
 
-  export const createReservation = (orderData, reservationData) => async (dispatch) => {
+  export const createReservation = (id_orderDetail, reservationData) => async (dispatch) => {
     try {
       dispatch({ type: CREATE_RESERVATION_REQUEST });
-  
-      const { data } = await axios.post(`${BASE_URL}/orders`, {
-        orderData,
-        reservationData,
-      });
+      
+      // Extract just the ID string if an object was passed
+      const orderId = typeof id_orderDetail === 'object' ? id_orderDetail.id_orderDetail : id_orderDetail;
+      
+      console.log('Sending reservation request with ID:', orderId);
+      
+      const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
   
       dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
       Swal.fire('Success', 'Reservation created successfully', 'success');
@@ -868,6 +873,24 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
         type: FETCH_BALANCE_FAILURE, 
         payload: error.message 
       });
+    }
+  };
+
+  export const updateReservation = (id_reservation, updateData) => async (dispatch) => {
+    try {
+      dispatch({ type: UPDATE_RESERVATION_REQUEST });
+      
+      console.log('Updating reservation:', id_reservation, updateData);
+      
+      const { data } = await axios.put(`${BASE_URL}/order/reservations/${id_reservation}`, updateData);
+  
+      dispatch({ type: UPDATE_RESERVATION_SUCCESS, payload: data });
+      Swal.fire('Success', 'Reservation updated successfully', 'success');
+      return data;
+    } catch (error) {
+      dispatch({ type: UPDATE_RESERVATION_FAILURE, payload: error.message });
+      Swal.fire('Error', 'Failed to update reservation', 'error');
+      throw error;
     }
   };
 

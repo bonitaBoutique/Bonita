@@ -31,6 +31,17 @@ const ExpenseList = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
+     <div>
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      <ul>
+        {currentExpenses.map(expense => (
+          <li key={expense.id}>
+            {expense.description} - {expense.amount}
+            <button onClick={() => handleDelete(expense.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
       <h2 className="text-2xl font-bold mb-6">Lista de Gastos</h2>
       {loading ? (
         <p>Cargando...</p>
@@ -78,6 +89,7 @@ const ExpenseList = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

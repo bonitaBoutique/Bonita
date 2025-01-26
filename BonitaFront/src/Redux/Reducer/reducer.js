@@ -96,6 +96,9 @@ import {
   CREATE_RESERVATION_REQUEST,
   CREATE_RESERVATION_SUCCESS,
   CREATE_RESERVATION_FAILURE,
+  UPDATE_RESERVATION_REQUEST,
+  UPDATE_RESERVATION_SUCCESS,
+  UPDATE_RESERVATION_FAILURE,
   FETCH_BALANCE_REQUEST,
   FETCH_BALANCE_SUCCESS,
   FETCH_BALANCE_FAILURE,
@@ -110,7 +113,18 @@ const initialState = {
   searchResults: [],
   loading: false,
   product: {},
-  reservation: null,
+  reservation: {
+    data: null,
+    loading: false,
+    error: null,
+    list: [], // For listing all reservations
+    currentReservation: null, // For single reservation view/edit
+    updateStatus: {
+      loading: false,
+      error: null,
+      success: false
+    }
+  },
   similarProducts: [],
   products: [],
   data: null,
@@ -1076,6 +1090,46 @@ const rootReducer = (state = initialState, action) => {
           loading: true,
           error: null
         };
+
+        case UPDATE_RESERVATION_REQUEST:
+      return {
+        ...state,
+        reservation: {
+          ...state.reservation,
+          updateStatus: {
+            loading: true,
+            error: null,
+            success: false
+          }
+        }
+      };
+
+    case UPDATE_RESERVATION_SUCCESS:
+      return {
+        ...state,
+        reservation: {
+          ...state.reservation,
+          currentReservation: action.payload.reservation,
+          updateStatus: {
+            loading: false,
+            error: null,
+            success: true
+          }
+        }
+      };
+
+    case UPDATE_RESERVATION_FAILURE:
+      return {
+        ...state,
+        reservation: {
+          ...state.reservation,
+          updateStatus: {
+            loading: false,
+            error: action.payload,
+            success: false
+          }
+        }
+      };
       case FETCH_BALANCE_SUCCESS:
         return {
           ...state,

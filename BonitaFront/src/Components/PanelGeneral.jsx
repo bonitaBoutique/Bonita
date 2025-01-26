@@ -42,6 +42,17 @@ const PanelGeneral = () => {
               </div>
               <div className="text-center space-y-2">
                 <Link
+                  to="/panel"
+                  className="bg-slate-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
+                >
+                  Clientes
+                </Link>
+                <p className="text-sm text-slate-600">
+                 Listado de clientes y saldos
+                </p>
+              </div>
+              <div className="text-center space-y-2">
+                <Link
                   to="/panelGastos"
                   className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
                 >

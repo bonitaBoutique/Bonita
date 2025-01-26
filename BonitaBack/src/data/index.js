@@ -70,9 +70,8 @@ OrderDetail.hasOne(Delivery, { foreignKey: 'id_orderDetail' });
 Delivery.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 
 
-// //OrderDetail ---> Product
-// OrderDetail.belongsTo(Product, { foreignKey: 'id_product' });
-// Product.hasMany(OrderDetail, { foreignKey: 'id_product' });
+OrderDetail.hasMany(Reservation, { foreignKey: 'id_orderDetail' });
+Reservation.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 
 //Order ---> Payment
 Payment.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
@@ -100,8 +99,8 @@ Reservation.belongsTo(OrderDetail, { foreignKey: "id_orderDetail" });
 Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail",allowNull: false,});
 OrderDetail.hasOne(Receipt, {foreignKey: "id_orderDetail",});
 
-User.hasMany(OrderDetail, { foreignKey: 'userId' });
-OrderDetail.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(OrderDetail, { foreignKey: 'n_document' });
+OrderDetail.belongsTo(User, { foreignKey: 'n_document' });
 
 OrderDetail.hasMany(Receipt, { foreignKey: 'id_orderDetail' });
 Receipt.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });

@@ -14,6 +14,10 @@ module.exports = (sequelize) => {
         type: DataTypes.UUID,
         allowNull: false,
       },
+      n_document: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       partialPayment: {
         type: DataTypes.FLOAT,
         allowNull: false,

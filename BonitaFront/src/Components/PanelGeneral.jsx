@@ -31,7 +31,7 @@ const PanelGeneral = () => {
               <div className="text-center space-y-2">
                 <Link
                   to="/panel"
-                  className="bg-slate-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
+                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
                 >
                   Facturación
                 </Link>
@@ -65,12 +65,23 @@ const PanelGeneral = () => {
               <div className="text-center space-y-2">
                 <Link
                   to="/informes"
-                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                  className="bg-slate-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
                 >
                   Informes
                 </Link>
                 <p className="text-sm text-slate-600">
                   Informes de Ingresos y Egresos
+                </p>
+              </div>
+              <div className="text-center space-y-2">
+                <Link
+                  to="/reservas"
+                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                >
+                  Reservas
+                </Link>
+                <p className="text-sm text-slate-600">
+                  Listado de Reservas 
                 </p>
               </div>
             </>

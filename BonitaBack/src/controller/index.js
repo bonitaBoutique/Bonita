@@ -11,12 +11,15 @@ const getSendingTracking = require("./MiPaquete/getSendingTracking");
 const cancelSending = require("./MiPaquete/cancelSending");
 const {createDirection, updateDirection,     deleteDirection} = require("./MiPaquete/createDirection");
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
-const updateReservation = require("./OrdersDetails/updateReservation");
+
 const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
 const { getClientAccountBalance } = require("./AccountBalance/index.js");
+const getAllReservations = require("./ReservationController/GetAllReservations");
+const updateReservation = require("./ReservationController/updateReservation");
+const reservationByDocument = require("./ReservationController/reservationByDocument");
 
 module.exports = {
     createProduct:catchedAsync(require("./Products/createProduct")),
@@ -32,7 +35,7 @@ module.exports = {
     getSB:catchedAsync(require("./SubCategory/getSB")),
     createOrderDetail:catchedAsync(require("./OrdersDetails/createOrderDetail")),
     getOrdersDetails:catchedAsync(require("./OrdersDetails/getOrdersDetails")),
-    createOrderWithReservation:catchedAsync(require("./OrdersDetails/createOrderWithReservation")),
+    createOrderWithReservation:catchedAsync(createOrderWithReservation),
     createUsers:catchedAsync(require("./Users/createUsers")),
     getOrderDetailID:catchedAsync(require("./OrdersDetails/getOrderDetailID")),
     getOrderByOrderId:catchedAsync(require("./OrdersDetails/getOrderByOrderId")),
@@ -59,11 +62,13 @@ module.exports = {
     createDirection: catchedAsync(createDirection),
     updateDirection: catchedAsync(updateDirection),
     deleteDirection: catchedAsync(deleteDirection),
-    updateReservation: catchedAsync(require("./OrdersDetails/updateReservation")),
-    getAllReservations: catchedAsync(require("./OrdersDetails/getAllReservations")),
+    updateReservation: catchedAsync(require("./ReservationController/updateReservation.js")),
     getBalance: catchedAsync(getBalance),
     forgotPassword: catchedAsync(forgotPassword),
     resetPassword: catchedAsync(resetPassword),
     sendEmail: catchedAsync(sendEmail),
-    getClientAccountBalance: catchedAsync(getClientAccountBalance)
+    getClientAccountBalance: catchedAsync(getClientAccountBalance),
+    getAllReservations : catchedAsync(getAllReservations),
+    updateReservation : catchedAsync(updateReservation),
+    reservationByDocument : catchedAsync(reservationByDocument),
 }

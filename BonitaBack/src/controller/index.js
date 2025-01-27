@@ -71,9 +71,7 @@ module.exports = {
   createDirection: catchedAsync(createDirection),
   updateDirection: catchedAsync(updateDirection),
   deleteDirection: catchedAsync(deleteDirection),
-  updateReservation: catchedAsync(
-    require("./ReservationController/updateReservation.js")
-  ),
+  updateReservation: catchedAsync(updateReservation),
   getBalance: catchedAsync(getBalance),
   forgotPassword: catchedAsync(forgotPassword),
   resetPassword: catchedAsync(resetPassword),

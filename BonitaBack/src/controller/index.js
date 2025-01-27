@@ -25,11 +25,11 @@ const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
 const { getClientAccountBalance } = require("./AccountBalance/index.js");
 const { getAllClientAccounts } = require("./AccountBalance/index.js");
-const getAllReservations = require("./ReservationController/GetAllReservations");
-const updateReservation = require("./ReservationController/updateReservation");
-const reservationByDocument = require("./ReservationController/reservationByDocument");
-const applyingPayments = require("./ReservationController/applyingPayments.js");
-
+const {getAllReservations} = require("./ReservationController/getAllReservations");
+const {updateReservation} = require("./ReservationController/updateReservation");
+const {reservationByDocument} = require("./ReservationController/reservationByDocument");
+const {applyingPayments} = require("./ReservationController/applyingPayments.js");
+// const { getAllReservations } = require("./ReservationController/getAllReservations");
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
   createCategory: catchedAsync(require("./Category/createCategory")),
@@ -85,3 +85,4 @@ module.exports = {
   reservationByDocument: catchedAsync(reservationByDocument),
   applyingPayments: catchedAsync(applyingPayments),
 };
+//cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

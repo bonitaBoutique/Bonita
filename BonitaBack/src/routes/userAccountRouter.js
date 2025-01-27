@@ -1,10 +1,12 @@
 const  Router  = require('express');
 const { getClientAccountBalance } = require('../controller/AccountBalance/getClientAccountBalance')
+const {getAllClientAccounts} = require('../controller/AccountBalance/getAllClientAccounts')
+
 
 const router = Router();
 
-router.post('/n:document', getClientAccountBalance);
-
+router.get('/:n_document', getClientAccountBalance);
+router.get('/', getAllClientAccounts);
  
 
 

@@ -51,7 +51,7 @@ sequelize.models = Object.fromEntries(capsEntries);
 
 // En sequelize.models están todos los modelos importados como propiedades
 // Para relacionarlos hacemos un destructuring
-const { User, Receipt, Product, StockMovement, Expense, Reservation,  Category, Delivery,  OrderDetail, Payment, Image, OrderProduct, SubCategory, Invoice } = sequelize.models;
+const { User, Receipt, Product, StockMovement, CreditPayment , Expense, Reservation,  Category, Delivery,  OrderDetail, Payment, Image, OrderProduct, SubCategory, Invoice } = sequelize.models;
 
 OrderDetail.belongsToMany(Product, { through: 'OrderProduct', as: 'products', foreignKey: 'id_orderDetail' });
 
@@ -99,11 +99,14 @@ Reservation.belongsTo(OrderDetail, { foreignKey: "id_orderDetail" });
 Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail",allowNull: false,});
 OrderDetail.hasOne(Receipt, {foreignKey: "id_orderDetail",});
 
-User.hasMany(OrderDetail, { foreignKey: 'n_document' });
-OrderDetail.belongsTo(User, { foreignKey: 'n_document' });
+User.hasMany(OrderDetail, { foreignKey: 'n_document', sourceKey: 'n_document' });
+OrderDetail.belongsTo(User, { foreignKey: 'n_document', targetKey: 'n_document' });
 
-OrderDetail.hasMany(Receipt, { foreignKey: 'id_orderDetail' });
-Receipt.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
+OrderDetail.hasMany(Receipt, { foreignKey: "id_orderDetail" });
+Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail", allowNull: false });
+
+Reservation.hasMany(CreditPayment, { foreignKey: 'id_reservation' });
+CreditPayment.belongsTo(Reservation, { foreignKey: 'id_reservation' });
 
 //---------------------------------------------------------------------------------//
 module.exports = {

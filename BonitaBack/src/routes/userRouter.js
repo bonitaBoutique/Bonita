@@ -19,7 +19,7 @@ router.put("/:n_document", authenticate, authorize(['Admin', 'User']), putUser);
 router.delete("/:n_document", authenticate, authorize(['Admin']), deleteUser);
 
 // Ruta para obtener todos los usuarios
-router.get("/", authenticate, authorize(['Admin']), getAllUsers);
+router.get("/", getAllUsers);
 
 // Ruta para obtener un usuario por documento
 router.get("/:n_document", getUserByDocument);

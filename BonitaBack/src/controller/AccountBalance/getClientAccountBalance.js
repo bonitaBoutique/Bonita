@@ -1,4 +1,4 @@
-const { User, OrderDetail, Receipt } = require('../../data');
+const { User, OrderDetail, Receipt, Reservation } = require('../../data');
 const response = require('../../utils/response');
 
 exports.getClientAccountBalance = async (req, res) => {
@@ -12,8 +12,17 @@ exports.getClientAccountBalance = async (req, res) => {
     }
 
     const orderDetails = await OrderDetail.findAll({
-      where: { userId: user.id, pointOfSale: 'Local' },
-      include: [Receipt],
+      where: { n_document: user.n_document },
+      include: [
+        {
+          model: Receipt,
+          attributes: ['id_receipt', 'total_amount', 'date'],
+        },
+        {
+          model: Reservation,
+          attributes: ['id_reservation', 'totalPaid', 'dueDate', 'status'],
+        },
+      ],
     });
 
     response(res, 200, { user, orderDetails });

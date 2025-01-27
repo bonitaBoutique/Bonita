@@ -3,7 +3,7 @@ const { createOrderDetail } = require("./createOrderDetail");
 const {getOrderDetailID} =  require("./getOrderDetailID");
 const {getOrderByOrderId} =  require("./getOrderByOrderId");
 const {createOrderWithReservation} = require("./createOrderWithReservation");
-const {updateReservation} = require("./updateReservation");
+const {updateReservation} = require("../ReservationController/updateReservation");
 
 
 

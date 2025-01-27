@@ -102,6 +102,23 @@ import {
   FETCH_BALANCE_REQUEST,
   FETCH_BALANCE_SUCCESS,
   FETCH_BALANCE_FAILURE,
+  GET_ALL_RESERVATIONS_REQUEST,
+  GET_ALL_RESERVATIONS_SUCCESS,
+  GET_ALL_RESERVATIONS_FAILURE,
+  APPLY_PAYMENT_REQUEST,
+  APPLY_PAYMENT_SUCCESS,
+  APPLY_PAYMENT_FAILURE,
+  DELETE_RESERVATION_REQUEST,
+  DELETE_RESERVATION_SUCCESS,
+  DELETE_RESERVATION_FAILURE,
+  GET_CLIENT_ACCOUNT_BALANCE_REQUEST,
+  GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
+  GET_CLIENT_ACCOUNT_BALANCE_FAILURE,
+  GET_ALL_CLIENT_ACCOUNTS_REQUEST,
+  GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
+  GET_ALL_CLIENT_ACCOUNTS_FAILURE,
+
+
 } from "../Actions/actions-type";
 
 const initialState = {
@@ -124,6 +141,17 @@ const initialState = {
       error: null,
       success: false
     }
+  },
+ clientAccountBalance: {
+    user: null,
+    orderDetails: [],
+    loading: false,
+    error: null,
+  },
+  allClientAccounts: {
+    data: [],
+    loading: false,
+    error: null,
   },
   similarProducts: [],
   products: [],
@@ -1148,7 +1176,164 @@ const rootReducer = (state = initialState, action) => {
           loading: false,
           error: action.payload
         };
+        case GET_ALL_RESERVATIONS_REQUEST:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              loading: true,
+              error: null,
+            },
+          };
+        case GET_ALL_RESERVATIONS_SUCCESS:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              list: action.payload,
+              loading: false,
+              error: null,
+            },
+          };
+        case GET_ALL_RESERVATIONS_FAILURE:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              loading: false,
+              error: action.payload,
+            },
+          };
+    
+        case APPLY_PAYMENT_REQUEST:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              updateStatus: {
+                loading: true,
+                error: null,
+                success: false,
+              },
+            },
+          };
+        case APPLY_PAYMENT_SUCCESS:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              list: state.reservation.list.map((reservation) =>
+                reservation.id_reservation === action.payload.id_reservation
+                  ? action.payload
+                  : reservation
+              ),
+              updateStatus: {
+                loading: false,
+                error: null,
+                success: true,
+              },
+            },
+          };
+        case APPLY_PAYMENT_FAILURE:
+          return {
+            ...state,
+            reservation: {
+              ...state.reservation,
+              updateStatus: {
+                loading: false,
+                error: action.payload,
+                success: false,
+              },
+            },
+          };
 
+          case DELETE_RESERVATION_REQUEST:
+            return {
+              ...state,
+              reservation: {
+                ...state.reservation,
+                loading: true,
+                error: null,
+              },
+            };
+          case DELETE_RESERVATION_SUCCESS:
+            return {
+              ...state,
+              reservation: {
+                ...state.reservation,
+                list: state.reservation.list.filter((reservation) => reservation.id_reservation !== action.payload),
+                loading: false,
+                error: null,
+              },
+            };
+          case DELETE_RESERVATION_FAILURE:
+            return {
+              ...state,
+              reservation: {
+                ...state.reservation,
+                loading: false,
+                error: action.payload,
+              },
+            };
+            case GET_CLIENT_ACCOUNT_BALANCE_REQUEST:
+              return {
+                ...state,
+                clientAccountBalance: {
+                  ...state.clientAccountBalance,
+                  loading: true,
+                  error: null,
+                },
+              };
+            case GET_CLIENT_ACCOUNT_BALANCE_SUCCESS:
+              return {
+                ...state,
+                clientAccountBalance: {
+                  ...state.clientAccountBalance,
+                  user: action.payload.user,
+                  orderDetails: action.payload.orderDetails,
+                  loading: false,
+                  error: null,
+                },
+              };
+            case GET_CLIENT_ACCOUNT_BALANCE_FAILURE:
+              return {
+                ...state,
+                clientAccountBalance: {
+                  ...state.clientAccountBalance,
+                  loading: false,
+                  error: action.payload,
+                },
+              };
+              case GET_ALL_CLIENT_ACCOUNTS_REQUEST:
+                return {
+                  ...state,
+                  allClientAccounts: {
+                    ...state.allClientAccounts,
+                    loading: true,
+                    error: null,
+                  },
+                };
+              case GET_ALL_CLIENT_ACCOUNTS_SUCCESS:
+                return {
+                  ...state,
+                  allClientAccounts: {
+                    ...state.allClientAccounts,
+                    data: action.payload,
+                    loading: false,
+                    error: null,
+                  },
+                };
+              case GET_ALL_CLIENT_ACCOUNTS_FAILURE:
+                return {
+                  ...state,
+                  allClientAccounts: {
+                    ...state.allClientAccounts,
+                    loading: false,
+                    error: action.payload,
+                  },
+                };
+
+          
     default:
       return state;
   }

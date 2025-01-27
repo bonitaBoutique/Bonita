@@ -213,7 +213,7 @@ const Recibo = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/panel")}
           className="bg-gray-500 text-white px-4 py-2 rounded mt-8 ml-40 hover:bg-gray-600"
         >
           ← Volver

@@ -106,6 +106,21 @@ import {
   UPDATE_RESERVATION_REQUEST,
   UPDATE_RESERVATION_SUCCESS,
   UPDATE_RESERVATION_FAILURE,
+  GET_ALL_RESERVATIONS_REQUEST,
+  GET_ALL_RESERVATIONS_SUCCESS,
+  GET_ALL_RESERVATIONS_FAILURE,
+  DELETE_RESERVATION_REQUEST,
+  DELETE_RESERVATION_SUCCESS,
+  DELETE_RESERVATION_FAILURE,
+  APPLY_PAYMENT_REQUEST,
+  APPLY_PAYMENT_SUCCESS,
+  APPLY_PAYMENT_FAILURE,
+  GET_CLIENT_ACCOUNT_BALANCE_REQUEST,
+  GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
+  GET_CLIENT_ACCOUNT_BALANCE_FAILURE,
+  GET_ALL_CLIENT_ACCOUNTS_REQUEST,
+  GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
+  GET_ALL_CLIENT_ACCOUNTS_FAILURE,
 
 } from "./actions-type";
 
@@ -893,6 +908,92 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       throw error;
     }
   };
+
+  export const getAllReservations = () => async (dispatch) => {
+    dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
+    try {
+      const res = await axios.get(`${BASE_URL}/reservation/all`);
+      dispatch({
+        type: GET_ALL_RESERVATIONS_SUCCESS,
+        payload: res.data.data.reservations, // Access the nested data object
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_ALL_RESERVATIONS_FAILURE,
+        payload: error.message,
+      });
+    }
+  };
+  
+  export const applyPayment = (id_reservation, amount) => async (dispatch) => {
+    dispatch({ type: APPLY_PAYMENT_REQUEST });
+    try {
+      const res = await axios.post(`${BASE_URL}/reservation/applyPayment/${id_reservation}`, { amount });
+      dispatch({
+        type: APPLY_PAYMENT_SUCCESS,
+        payload: res.data.reservation,
+      });
+    } catch (error) {
+      dispatch({
+        type: APPLY_PAYMENT_FAILURE,
+        payload: error.message,
+      });
+    }
+  };
+
+  export const deleteReservation = (id_reservation) => async (dispatch) => {
+    dispatch({ type: DELETE_RESERVATION_REQUEST });
+    try {
+      await axios.delete(`${BASE_URL}/reservation/${id_reservation}`);
+      dispatch({
+        type: DELETE_RESERVATION_SUCCESS,
+        payload: id_reservation,
+      });
+      Swal.fire('Success', 'Reservation deleted successfully', 'success');
+    } catch (error) {
+      dispatch({
+        type: DELETE_RESERVATION_FAILURE,
+        payload: error.message,
+      });
+      Swal.fire('Error', 'Failed to delete reservation', 'error');
+    }
+  };
+
+  export const getClientAccountBalance = (n_document) => async (dispatch) => {
+    dispatch({ type: GET_CLIENT_ACCOUNT_BALANCE_REQUEST });
+    try {
+      const res = await axios.get(`${BASE_URL}/userAccount/${n_document}`);
+      dispatch({
+        type: GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
+        payload: res.data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_CLIENT_ACCOUNT_BALANCE_FAILURE,
+        payload: error.message,
+      });
+      Swal.fire('Error', 'Failed to fetch client account balance', 'error');
+    }
+  };
+
+  export const getAllClientAccounts = () => async (dispatch) => {
+    dispatch({ type: GET_ALL_CLIENT_ACCOUNTS_REQUEST });
+    try {
+      const res = await axios.get(`${BASE_URL}/userAccount`);
+      dispatch({
+        type: GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
+        payload: res.data.data,
+      });
+    } catch (error) {
+      dispatch({
+        type: GET_ALL_CLIENT_ACCOUNTS_FAILURE,
+        payload: error.message,
+      });
+      Swal.fire('Error', 'Failed to fetch all client accounts', 'error');
+    }
+  };
+
+
 
 
 

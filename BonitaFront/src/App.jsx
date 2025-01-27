@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import ErrorBoundary from './ErrorBoundary';
-import { useSelector } from 'react-redux';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import ErrorBoundary from "./ErrorBoundary";
+import { useSelector } from "react-redux";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import CreateProduct from "./Components/Product/CreateProduct";
 import PrivateRoute from "./Components/PrivateRoute";
 
@@ -18,7 +23,6 @@ import UpdateProduct from "./Components/Product/UpdateProduct";
 import Footer from "./Components/Footer";
 import CartButton from "./Components/CartButton";
 
-
 import ThankYouPage from "./Components/ThankYouPage";
 //import FilteredProducts from "./Components/Product/FilteredProducts";
 import LandingPrincipal from "./Components/LandingPrincipal";
@@ -34,20 +38,21 @@ import OrdenesPendientes from "./Components/Taxxa/OrdenesPendientes";
 import Caja from "./Components/Caja";
 import PanelGeneral from "./Components/PanelGeneral";
 import Recibo from "./Components/Recibo";
-import CargarGastos from "./Components/Informes/CargarGastos"
-import PanelInformes from "./Components/Informes/PanelInformes"
+import CargarGastos from "./Components/Informes/CargarGastos";
+import PanelInformes from "./Components/Informes/PanelInformes";
 import FilterExpenses from "./Components/Informes/FilterExpenses";
-import Balance from "./Components/Informes/Balance"
+import Balance from "./Components/Informes/Balance";
 import Loading from "./Components/Loading";
 
 import RequestPasswordReset from "./Components/Users/RequestPasswordReset";
 import ResetPassword from "./Components/Users/ResetPassword";
-import AdminRoute from './Components/AdminRoute';
+import AdminRoute from "./Components/AdminRoute";
 
-import AdminCajeroRoute from './Components/AdminCajeroRoute';
+import AdminCajeroRoute from "./Components/AdminCajeroRoute";
+import ReservationList from "./Components/ReservationsList";
+import ClientAccountBalance from "./Components/ClientAccountBalance";
 
 function App() {
-
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     // Simular tiempo de carga
@@ -75,7 +80,9 @@ function App() {
     "/creditN",
     "/caja/:idOrder",
     "/informes",
-    "/createProducts"
+    "/createProducts",
+    "/reservas",
+    "/accountClient",
   ];
 
   const isAdminRoute = adminRoutes.some((route) =>
@@ -85,188 +92,202 @@ function App() {
   return (
     <>
       <div>
-       
-      <ErrorBoundary>
-        <Routes>
-          <Route path="/" element={<LandingPrincipal />} />
-          <Route exact path="/register" element={<Register />} />
-          <Route exact path="/login" element={<Login />} />
-          <Route path="/recuperar" element={<RequestPasswordReset />} />
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<LandingPrincipal />} />
+            <Route exact path="/register" element={<Register />} />
+            <Route exact path="/login" element={<Login />} />
+            <Route path="/recuperar" element={<RequestPasswordReset />} />
             <Route path="/resetPassword/:token" element={<ResetPassword />} />
-          <Route exact path="/products" element={<ProductsList />} />
-          <Route exact path="/product/:id" element={<ProductDetails />} />
-          <Route exact path="/gracias" element={<ThankYouPage />} />
-          <Route
-            exact
-            path="/myOrders/:n_document"
-            element={
-              <PrivateRoute>
-                <OrdersDetails />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            exact
-            path="/allOrders"
-            element={
-              <PrivateRoute>
-                <OrdersList />
-              </PrivateRoute>
-            }
-          />
-
-          <Route exact path="/cart" element={<Cart />} />
-          <Route exact path="/checkout" element={<Checkout />} />
-        
-          <Route
-            path="/updateProduct/:id"
-            element={
-              <PrivateRoute>
-                <UpdateProduct />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/panel/facturacion"
-            element={
-              <AdminRoute>
-                <BillingForm />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panel/productos"
-            element={
-              <AdminRoute>
-                <ListadoProductos />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panel/caja"
-            element={
-              <AdminCajeroRoute>
-                <Caja />
-              </AdminCajeroRoute>
-            }
-          />
-          <Route
-            path="/receipt/:idOrder"
-            element={
-              <AdminCajeroRoute>
-                <Recibo />
-              </AdminCajeroRoute>
-            }
-          />
-          <Route
-            path="/panel"
-            element={
-              <AdminRoute>
-                <Panel />
-              </AdminRoute>
-            }
-          />
+            <Route exact path="/products" element={<ProductsList />} />
+            <Route exact path="/product/:id" element={<ProductDetails />} />
             <Route
-            path="/panelGeneral"
-            element={
-              <AdminRoute>
-                <PanelGeneral />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panelProductos"
-            element={
-              <AdminRoute>
-                <PanelProductos />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/createProducts"
-            element={
-              <AdminRoute>
-                <CreateProduct />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panel/seller"
-            element={
-              <AdminRoute>
-                <SellerForm />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panel/ordenesPendientes"
-            element={
-              <AdminRoute>
-                <OrdenesPendientes />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panelGastos"
-            element={
-              <AdminRoute>
-                <PanelInformes/>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panelGastos/createGastos"
-            element={
-              <AdminRoute>
-                <CargarGastos/>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/panelGastos/filtroGastos"
-            element={
-              <AdminRoute>
-                <FilterExpenses/>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/informes"
-            element={
-              <AdminRoute>
-                <Balance/>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/invoice"
-            element={
-              <AdminRoute>
-                <Invoice />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/creditN"
-            element={
-              <AdminRoute>
-                <CreditN />
-              </AdminRoute>
-            }
-          />
+              exact
+              path="/myOrders/:n_document"
+              element={
+                <PrivateRoute>
+                  <OrdersDetails />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              exact
+              path="/allOrders"
+              element={
+                <PrivateRoute>
+                  <OrdersList />
+                </PrivateRoute>
+              }
+            />
 
-         
-         
-          <Route
-            exact
-            path="/panel/createProducts"
-            element={
-              <AdminRoute>
-                <CreateProduct />
-              </AdminRoute>
-            }
-          />
-        </Routes>
+            <Route exact path="/cart" element={<Cart />} />
+            <Route exact path="/checkout" element={<Checkout />} />
+            <Route exact path="/gracias" element={<ThankYouPage />} />
+            <Route
+              path="/updateProduct/:id"
+              element={
+                <PrivateRoute>
+                  <UpdateProduct />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/panel/facturacion"
+              element={
+                <AdminRoute>
+                  <BillingForm />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panel/productos"
+              element={
+                <AdminRoute>
+                  <ListadoProductos />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panel/caja"
+              element={
+                <AdminCajeroRoute>
+                  <Caja />
+                </AdminCajeroRoute>
+              }
+            />
+            <Route
+              path="/receipt/:idOrder"
+              element={
+                <AdminCajeroRoute>
+                  <Recibo />
+                </AdminCajeroRoute>
+              }
+            />
+            <Route
+              path="/panel"
+              element={
+                <AdminRoute>
+                  <Panel />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panelGeneral"
+              element={
+                <AdminRoute>
+                  <PanelGeneral />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panelProductos"
+              element={
+                <AdminRoute>
+                  <PanelProductos />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/createProducts"
+              element={
+                <AdminRoute>
+                  <CreateProduct />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panel/seller"
+              element={
+                <AdminRoute>
+                  <SellerForm />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panel/ordenesPendientes"
+              element={
+                <AdminRoute>
+                  <OrdenesPendientes />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panelGastos"
+              element={
+                <AdminRoute>
+                  <PanelInformes />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panelGastos/createGastos"
+              element={
+                <AdminRoute>
+                  <CargarGastos />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/panelGastos/filtroGastos"
+              element={
+                <AdminRoute>
+                  <FilterExpenses />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/informes"
+              element={
+                <AdminRoute>
+                  <Balance />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/reservas"
+              element={
+                <AdminRoute>
+                  <ReservationList />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/accountClient"
+              element={
+                <AdminRoute>
+                  <ClientAccountBalance />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/invoice"
+              element={
+                <AdminRoute>
+                  <Invoice />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/creditN"
+              element={
+                <AdminRoute>
+                  <CreditN />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              exact
+              path="/panel/createProducts"
+              element={
+                <AdminRoute>
+                  <CreateProduct />
+                </AdminRoute>
+              }
+            />
+          </Routes>
         </ErrorBoundary>
       </div>
 
@@ -278,8 +299,7 @@ function App() {
           <WhatsappButton />
         </>
       )}
-      
-      </>
+    </>
   );
 }
 export default App;

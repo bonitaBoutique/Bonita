@@ -25,10 +25,10 @@ const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
 const { getClientAccountBalance } = require("./AccountBalance/index.js");
 const { getAllClientAccounts } = require("./AccountBalance/index.js");
-const getAllReservations = require("./ReservationController/GetAllReservations");
-const updateReservation = require("./ReservationController/updateReservation");
-const reservationByDocument = require("./ReservationController/reservationByDocument");
-const applyingPayments = require("./ReservationController/applyingPayments.js");
+const {getAllReservations} = require("./ReservationController/GetAllReservations");
+const {updateReservation} = require("./ReservationController/updateReservation");
+const {reservationByDocument} = require("./ReservationController/reservationByDocument");
+const {applyingPayments} = require("./ReservationController/applyingPayments.js");
 
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),

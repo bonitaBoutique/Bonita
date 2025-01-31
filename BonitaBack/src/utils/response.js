@@ -1,8 +1,7 @@
-module.exports = (res, statusCode, data) => {
-  const isError = statusCode >= 400;
+module.exports = (res, statusCode, message, data = null) => {
   res.status(statusCode).json({
-    error: isError,
-    message: isError ? data : null,
-    data: !isError ? data : null
+    status: statusCode < 400 ? 'success' : 'error',
+    message,
+    data,
   });
 };

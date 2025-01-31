@@ -450,18 +450,20 @@ export const fetchAllOrders = () => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ALLS_ORDERS_REQUEST });
 
-    const { data } = await axios.get(`${BASE_URL}/order`);
-    console.log("API response data:", data);
+    const res = await axios.get(`${BASE_URL}/order`);
+    console.log("API response data:", res.data);
 
-    dispatch({ type: FETCH_ALLS_ORDERS_SUCCESS, payload: data.data.orders });
+    dispatch({ 
+      type: FETCH_ALLS_ORDERS_SUCCESS, 
+      payload: res.data.message.orders 
+    });
   } catch (error) {
+    console.error('Error fetching orders:', error);
     dispatch({
       type: FETCH_ALLS_ORDERS_FAILURE,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.message,
     });
+    Swal.fire('Error', 'Error al obtener las órdenes', 'error');
   }
 };
 

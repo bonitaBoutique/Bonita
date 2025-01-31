@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Disclosure, Menu } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../assets/img/logoNombre.png';
+//import logo from '../assets/img/logoNombre.png';
+import FixedLogo from './FixedLogo';
 import { useDispatch, useSelector } from 'react-redux';
 import {  logout } from '../Redux/Actions/actions';
 
@@ -172,11 +173,11 @@ export default function Navbar() {
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex h-40 items-center justify-between py-4">
-              <div className="flex-shrink-0">
-                <Link to="/">
-                  <img className={`object-contain ${open ? 'h-80' : 'h-40'} transition-all`} src={logo} alt="Logo" />
-                </Link>
+            <div className="flex h-16 items-center justify-between">
+              <div >
+                
+                  <FixedLogo/>
+            
               </div>
 
               <div className="hidden sm:flex sm:items-center sm:space-x-6">

@@ -965,33 +965,41 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     dispatch({ type: GET_CLIENT_ACCOUNT_BALANCE_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/userAccount/${n_document}`);
+      console.log('Client Account Balance Response:', res.data);
       dispatch({
         type: GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
-        payload: res.data.data,
+        payload: {
+          user: res.data.message.user,
+          orderDetails: res.data.message.orderDetails
+        },
       });
     } catch (error) {
+      console.error('Error fetching client account balance:', error);
       dispatch({
         type: GET_CLIENT_ACCOUNT_BALANCE_FAILURE,
         payload: error.message,
       });
-      Swal.fire('Error', 'Failed to fetch client account balance', 'error');
+      Swal.fire('Error', 'Error al obtener el saldo del cliente', 'error');
     }
   };
 
+  
   export const getAllClientAccounts = () => async (dispatch) => {
     dispatch({ type: GET_ALL_CLIENT_ACCOUNTS_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/userAccount`);
+      console.log('All Client Accounts Response:', res.data);
       dispatch({
         type: GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
-        payload: res.data.data,
+        payload: res.data.message.users, // Update path to match API response
       });
     } catch (error) {
+      console.error('Error fetching all client accounts:', error);
       dispatch({
         type: GET_ALL_CLIENT_ACCOUNTS_FAILURE,
         payload: error.message,
       });
-      Swal.fire('Error', 'Failed to fetch all client accounts', 'error');
+      Swal.fire('Error', 'Error al obtener las cuentas de clientes', 'error');
     }
   };
 

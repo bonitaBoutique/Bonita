@@ -41,29 +41,26 @@ const Checkout = () => {
 
   // Manejar creación de orden exitosa
   useEffect(() => {
-    if (orderCreate && orderCreate.success) {
-      navigate("/gracias"); // Navigate to thank you page with instructions
-    }
-  }, [orderCreate, navigate]);
-
-  // Manejar el widget de Wompi después de la creación de la orden
-  useEffect(() => {
     const fetchLatestOrder = async () => {
       setLoading(true);
       try {
         const response = await axios.get(`${BASE_URL}/order?latest=true`);
-        setLatestOrder(response.data.data.orders[0]);
-        setLoading(false);
+        if (!response.data?.message?.orders?.length) {
+          throw new Error('No se encontró la orden');
+        }
+        setLatestOrder(response.data.message.orders[0]);
       } catch (error) {
+        console.error('Error fetching latest order:', error);
         setError(error.message);
+      } finally {
         setLoading(false);
       }
     };
-
+  
     fetchLatestOrder();
   }, []);
-
-     useEffect(() => {
+  
+  useEffect(() => {
     console.log('Latest Order:', latestOrder);
   }, [latestOrder]);
 

@@ -160,23 +160,23 @@ export const fetchProducts = () => async (dispatch) => {
 
   try {
     const response = await axios.get(`${BASE_URL}/product/`);
-    console.log("Respuesta de la API:", response); // Muestra toda la respuesta
+    console.log("Respuesta de la API:", response.data);
 
-    // Verifica si la respuesta contiene productos y envía solo los productos
-    if (response.data && response.data.data && response.data.data.products) {
-      dispatch({
-        type: FETCH_PRODUCTS_SUCCESS,
-        payload: response.data.data.products, // Accedemos a los productos directamente
-      });
-    } else {
-      dispatch({
-        type: FETCH_PRODUCTS_FAILURE,
-        payload: "No se encontraron productos.",
-      });
+    if (!response.data?.message?.products) {
+      throw new Error('No se encontraron productos');
     }
+
+    dispatch({
+      type: FETCH_PRODUCTS_SUCCESS,
+      payload: response.data.message.products,
+    });
   } catch (error) {
-    console.log("Error de la API:", error);
-    dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
+    console.error("Error al obtener productos:", error);
+    dispatch({
+      type: FETCH_PRODUCTS_FAILURE,
+      payload: error.message || "Error al cargar los productos",
+    });
+    Swal.fire('Error', 'Error al cargar los productos', 'error');
   }
 };
 
@@ -187,7 +187,7 @@ export const fetchProductById = (id_product) => async (dispatch) => {
     const response = await axios.get(`${BASE_URL}/product/${id_product}`);
 
     // Acceso correcto a "product"
-    const product = response.data.data.product;
+    const product = response.data.message.product;
 
     dispatch({
       type: FETCH_PRODUCT_SUCCESS,
@@ -264,7 +264,7 @@ export const createOrder = (orderData) => async (dispatch) => {
 export const fetchLatestOrder = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_ORDER_REQUEST });
   try {
-    const response = await fetch('http://localhost:3001/order?latest=true'); // Adjust the API endpoint as needed
+    const response = await fetch(`${BASE_URL}/order?latest=true`); // Adjust the API endpoint as needed
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -272,7 +272,7 @@ export const fetchLatestOrder = () => async (dispatch) => {
     if (data.error) {
       throw new Error(data.message || 'Error fetching latest order');
     }
-    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data.data.orders[0] });
+    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data.message.orders[0] });
   } catch (error) {
     dispatch({ type: FETCH_LATEST_ORDER_FAILURE, payload: error.message });
   }

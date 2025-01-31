@@ -4,10 +4,10 @@ const response = require('../../utils/response');
 module.exports = async (req, res) => {
   try {
     const { latest } = req.query;
-
+    console.log('Latest query param:', latest);
     let orders;
     if (latest === 'true') {
-      orders = await OrderDetail.findAll({
+      const latestOrder = await OrderDetail.findOne({
         include: [
           {
             model: Product,
@@ -39,6 +39,8 @@ module.exports = async (req, res) => {
         order: [['createdAt', 'DESC']],
         limit: 1
       });
+      console.log('Latest order found:', latestOrder);
+      orders = latestOrder ? [latestOrder] : [];
     } else {
       orders = await OrderDetail.findAll({
         include: [
@@ -74,7 +76,7 @@ module.exports = async (req, res) => {
     }
 
     if (!orders || orders.length === 0) {
-      return response(res, 404, { error: 'No se encontraron órdenes' });
+      return response(res, 200, { orders: [] }); // Changed to 200 for empty results
     }
 
     const formattedOrders = orders.map(order => ({

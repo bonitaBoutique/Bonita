@@ -51,6 +51,7 @@ import AdminRoute from "./Components/AdminRoute";
 import AdminCajeroRoute from "./Components/AdminCajeroRoute";
 import ReservationList from "./Components/ReservationsList";
 import ClientAccountBalance from "./Components/ClientAccountBalance";
+import FixedLogo from "./Components/FixedLogo";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -92,6 +93,7 @@ function App() {
   return (
     <>
       <div>
+        <FixedLogo />
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<LandingPrincipal />} />

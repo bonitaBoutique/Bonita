@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     }
 
     // Validate status
-    const validStates = ["Pendiente", "Completada", "Cancelada"];
+    const validStates = ["pendiente", "completada", "cancelada"];
     if (status && !validStates.includes(status)) {
       return response(res, 400, { error: "Invalid status" });
     }
@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
 
       // Check if total payments equal the order amount
       if (reservation.totalPaid >= reservation.OrderDetail.amount) {
-        reservation.OrderDetail.status = "Completada";
+        reservation.OrderDetail.status = "completada";
       }
     }
     if (status !== undefined) reservation.status = status;

@@ -23,13 +23,9 @@ const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
-const { getClientAccountBalance } = require("./AccountBalance/index.js");
-const { getAllClientAccounts } = require("./AccountBalance/index.js");
-const {getAllReservations} = require("./ReservationController/getAllReservations");
-const {updateReservation} = require("./ReservationController/updateReservation");
-const {reservationByDocument} = require("./ReservationController/reservationByDocument");
-const {applyingPayments} = require("./ReservationController/applyingPayments.js");
-// const { getAllReservations } = require("./ReservationController/getAllReservations");
+const { getClientAccountBalance, getAllClientAccounts } = require("./AccountBalance/index.js");
+const { getAllReservations, updateReservation, reservationByDocument, applyingPayments } = require("./ReservationController");
+
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
   createCategory: catchedAsync(require("./Category/createCategory")),
@@ -50,15 +46,15 @@ module.exports = {
   getOrderByOrderId: catchedAsync(require("./OrdersDetails/getOrderByOrderId")),
   updateOrderDetail: catchedAsync(require("./OrdersDetails/updateOrderDetail")),
   webhook: catchedAsync(require("./webhook")),
-  getOrCreateSellerData: catchedAsync(getOrCreateSellerData), // Aquí importa directamente el controlador
+  getOrCreateSellerData: catchedAsync(getOrCreateSellerData),
   updateSellerData: catchedAsync(updateSellerData),
   TaxxaService: catchedAsync(require("./Taxxa/TaxxaService")),
   getProductStock: catchedAsync(require("./Products/getProductStock")),
-  createReceipt: catchedAsync(require("./Caja/createReceipt")),
-  lastReceipt: catchedAsync(require("./Caja/lastReceipt")),
-  getReceipts: catchedAsync(require("./Caja/getReceipts")),
-  createExpense: catchedAsync(require("./Informes/createExpense")),
-  filterExpenses: catchedAsync(require("./Informes/filterExpenses")),
+  createReceipt: catchedAsync(createReceipt),
+  lastReceipt: catchedAsync(lastReceipt),
+  getReceipts: catchedAsync(getReceipts),
+  createExpense: catchedAsync(createExpense),
+  filterExpenses: catchedAsync(filterExpenses),
   deleteExpense: catchedAsync(require("./Informes/deleteExpense")),
   getLocations: catchedAsync(require("./MiPaquete/getLocations")),
   quoteShipping: catchedAsync(require("./MiPaquete/quoteShipping")),
@@ -71,9 +67,7 @@ module.exports = {
   createDirection: catchedAsync(createDirection),
   updateDirection: catchedAsync(updateDirection),
   deleteDirection: catchedAsync(deleteDirection),
-  updateReservation: catchedAsync(
-    require("./ReservationController/updateReservation.js")
-  ),
+  updateReservation: catchedAsync(updateReservation),
   getBalance: catchedAsync(getBalance),
   forgotPassword: catchedAsync(forgotPassword),
   resetPassword: catchedAsync(resetPassword),
@@ -81,7 +75,6 @@ module.exports = {
   getClientAccountBalance: catchedAsync(getClientAccountBalance),
   getAllClientAccounts: catchedAsync(getAllClientAccounts),
   getAllReservations: catchedAsync(getAllReservations),
-  updateReservation: catchedAsync(updateReservation),
   reservationByDocument: catchedAsync(reservationByDocument),
   applyingPayments: catchedAsync(applyingPayments),
 };

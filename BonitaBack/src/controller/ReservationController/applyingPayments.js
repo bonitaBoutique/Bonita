@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
 
     // Check if total payments equal the order amount
     if (reservation.totalPaid >= reservation.OrderDetail.amount) {
-      reservation.OrderDetail.status = "Completada";
+      reservation.OrderDetail.status = "completada";
     }
 
     // Save changes

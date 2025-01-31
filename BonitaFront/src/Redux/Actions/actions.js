@@ -326,13 +326,17 @@ export const login = (email, password) => async (dispatch) => {
       config
     );
 
+    if (!data?.message?.token) {
+      throw new Error('Token no recibido del servidor');
+    }
+
     // Decodifica el token para obtener el rol del usuario
-    const decodedToken = jwtDecode(data.data.token);
+    const decodedToken = jwtDecode(data.message.token);
     const userInfo = {
-      token: data.token,
+      token: data.message.token,
       role: decodedToken.role,
-      n_document: decodedToken.n_document, // Agregar n_document desde el token decodificado
-      message: data.message,
+      n_document: data.message.n_document,
+      message: data.message.message,
     };
 
     dispatch({
@@ -341,14 +345,16 @@ export const login = (email, password) => async (dispatch) => {
     });
 
     localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    
+    Swal.fire('Éxito', 'Inicio de sesión exitoso', 'success');
+
   } catch (error) {
+    console.error('Login error:', error);
     dispatch({
       type: USER_LOGIN_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.response?.data?.message || 'Error al iniciar sesión',
     });
+    Swal.fire('Error', 'Error al iniciar sesión', 'error');
   }
 };
 

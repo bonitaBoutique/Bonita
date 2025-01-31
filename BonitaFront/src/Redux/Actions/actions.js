@@ -913,11 +913,13 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/reservation/all`);
+      console.log('Response from getAllReservations:', res.data);
       dispatch({
         type: GET_ALL_RESERVATIONS_SUCCESS,
-        payload: res.data.data.reservations, // Access the nested data object
+        payload: res.data.message.reservations, // Updated to access correct path
       });
     } catch (error) {
+      console.error('Error in getAllReservations:', error);
       dispatch({
         type: GET_ALL_RESERVATIONS_FAILURE,
         payload: error.message,

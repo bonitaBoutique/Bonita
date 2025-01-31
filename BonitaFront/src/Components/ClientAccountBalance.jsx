@@ -5,7 +5,9 @@ import { getClientAccountBalance, getAllClientAccounts } from '../Redux/Actions/
 const ClientAccountBalance = () => {
   const dispatch = useDispatch();
   const { user, orderDetails, loading, error } = useSelector((state) => state.clientAccountBalance);
-  const allClientAccounts = useSelector((state) => state.allClientAccounts.data.users || []);
+  const allClientAccounts = useSelector((state) => 
+    state.allClientAccounts?.data || []
+  );
   const [nDocument, setNDocument] = useState('');
 
   const handleFetchAccountBalance = () => {

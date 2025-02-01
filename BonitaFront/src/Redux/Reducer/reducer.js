@@ -224,7 +224,12 @@ const initialState = {
     online: [],
     local: []
   },
-  expenses: [],
+  expenses: {
+    data: [],
+    loading: false,
+    success: false,
+    error: null
+  },
 
   order: {
     loading: false,
@@ -1042,36 +1047,36 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-    case GET_FILTERED_EXPENSES_REQUEST:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          loading: true,
-          success: false,
-          error: null,
-        },
-      };
-    case GET_FILTERED_EXPENSES_SUCCESS:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          data: action.payload,
-          loading: false,
-          success: true,
-          error: null,
-        },
-      };
-    case GET_FILTERED_EXPENSES_FAILURE:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          loading: false,
-          success: false,
-          error: action.payload,
-        },
+      case GET_FILTERED_EXPENSES_REQUEST:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            loading: true,
+            success: false,
+            error: null,
+          },
+        };
+      case GET_FILTERED_EXPENSES_SUCCESS:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            data: action.payload,
+            loading: false,
+            success: true,
+            error: null,
+          },
+        };
+      case GET_FILTERED_EXPENSES_FAILURE:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            loading: false,
+            success: false,
+            error: action.payload,
+          },
       };
     case DELETE_EXPENSE_REQUEST:
       return {

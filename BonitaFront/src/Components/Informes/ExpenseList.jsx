@@ -1,25 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses, deleteExpense } from '../../Redux/Actions/actions';
+import { formatCurrency } from '../../formatCurrency';
+
 
 const ExpenseList = () => {
   const dispatch = useDispatch();
-  const { data, loading, error } = useSelector(state => state.expenses);
   const [currentPage, setCurrentPage] = useState(1);
-  const [expensesPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
+  
+  const expenses = useSelector(state => state.expenses?.data || []);
+  const loading = useSelector(state => state.expenses?.loading);
+  const error = useSelector(state => state.expenses?.error);
+
 
   useEffect(() => {
     dispatch(getFilteredExpenses({}));
   }, [dispatch]);
+
+  if (loading) return <div>Cargando gastos...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   const handleDelete = (id) => {
     dispatch(deleteExpense(id));
   };
 
   // Paginación
-  const indexOfLastExpense = currentPage * expensesPerPage;
-  const indexOfFirstExpense = indexOfLastExpense - expensesPerPage;
-  const currentExpenses = data.slice(indexOfFirstExpense, indexOfLastExpense);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentExpenses = expenses.slice(indexOfFirstItem, indexOfLastItem);
+
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -32,8 +42,7 @@ const ExpenseList = () => {
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
      <div>
-      {loading && <p>Loading...</p>}
-      {error && <p>Error: {error}</p>}
+      
       <ul>
         {currentExpenses.map(expense => (
           <li key={expense.id}>
@@ -63,7 +72,9 @@ const ExpenseList = () => {
                 <tr key={expense.id}>
                   <td className="py-2 px-4 border-b">{formatDate(expense.date)}</td>
                   <td className="py-2 px-4 border-b">{expense.type}</td>
-                  <td className="py-2 px-4 border-b">{expense.amount}</td>
+                  <td className="border px-4 py-2">{expense.description}</td>
+                  <td className="border px-4 py-2">{expense.paymentMethods}</td>
+                  <td className="border px-4 py-2">{formatCurrency(expense.amount)}</td>
                   <td className="py-2 px-4 border-b">
                     <button
                       onClick={() => handleDelete(expense.id)}
@@ -77,13 +88,15 @@ const ExpenseList = () => {
             </tbody>
           </table>
           <div className="mt-4">
-            {Array.from({ length: Math.ceil(data.length / expensesPerPage) }, (_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => paginate(i + 1)}
-                className={`px-4 py-2 mx-1 ${currentPage === i + 1 ? 'bg-pink-300 text-white' : 'bg-gray-200'}`}
-              >
-                {i + 1}
+          {Array.from({ length: Math.ceil(expenses.length / itemsPerPage) }).map((_, index) => (
+          <button
+            key={index}
+            onClick={() => paginate(index + 1)}
+            className={`mx-1 px-3 py-1 ${
+              currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'
+            }`}
+          >
+                 {index + 1}
               </button>
             ))}
           </div>

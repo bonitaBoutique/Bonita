@@ -830,12 +830,25 @@ export const createExpense = (expenseData) => async (dispatch) => {
 export const getFilteredExpenses = (filters) => async (dispatch) => {
   dispatch({ type: GET_FILTERED_EXPENSES_REQUEST });
   try {
-    const response = await axios.get(`/expense/filter`, { params: filters });
-    dispatch({ type: GET_FILTERED_EXPENSES_SUCCESS, payload: response.data });
+    const response = await axios.get(`${BASE_URL}/expense/filter`, { params: filters });
+    console.log('Filtered expenses response:', response.data);
+
+    // Ensure we have an array of expenses, even if empty
+    const expenses = Array.isArray(response.data) ? response.data : [];
+
+    dispatch({ 
+      type: GET_FILTERED_EXPENSES_SUCCESS, 
+      payload: expenses 
+    });
   } catch (error) {
-    dispatch({ type: GET_FILTERED_EXPENSES_FAILURE, payload: error.message });
+    console.error('Error filtering expenses:', error);
+    dispatch({ 
+      type: GET_FILTERED_EXPENSES_FAILURE, 
+      payload: error.message 
+    });
     Swal.fire("Error", "No se pudieron filtrar los gastos", "error");
-  }}
+  }
+};
 
   
   

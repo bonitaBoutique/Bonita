@@ -415,7 +415,7 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
 
     const { data } = await axios.get(`${BASE_URL}/order/${n_document}`);
 
-    dispatch({ type: FETCH_ORDERS_SUCCESS, payload: data.data.orders });
+    dispatch({ type: FETCH_ORDERS_SUCCESS, payload: data.message.orders });
   } catch (error) {
     dispatch({
       type: FETCH_ORDERS_FAILURE,

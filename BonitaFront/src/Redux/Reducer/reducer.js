@@ -117,7 +117,7 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
-
+  RESET_RECEIPT_STATE
 
 } from "../Actions/actions-type";
 
@@ -998,6 +998,14 @@ const rootReducer = (state = initialState, action) => {
 
     case CREATE_RECEIPT_FAILURE:
       return { ...state, loading: false, error: action.payload };
+
+      case RESET_RECEIPT_STATE:
+      return {
+        ...state,
+        receipts: [],
+        receiptNumber: null,
+        // restablecer otros estados relacionados con el recibo si es necesario...
+      };
 
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };

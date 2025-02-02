@@ -227,9 +227,15 @@ export const createOrder = (orderData) => async (dispatch) => {
   try {
     dispatch({ type: ORDER_CREATE_REQUEST });
 
-    const { data } = await axios.post(`${BASE_URL}/order/create/`, orderData);
+    const response = await axios.post(`${BASE_URL}/order/create/`, orderData);
+    console.log('Order creation response:', response.data);
 
-    const orderDetail = data.data.orderDetail; // Asegúrate de acceder correctamente a orderDetail
+    if (!response.data || !response.data.message || !response.data.message.orderDetail) {
+      console.error('Invalid response structure:', response.data);
+      throw new Error('Order detail not received from server');
+    }
+
+    const orderDetail = response.data.message.orderDetail;
 
     dispatch({
       type: ORDER_CREATE_SUCCESS,
@@ -239,23 +245,15 @@ export const createOrder = (orderData) => async (dispatch) => {
     dispatch(clearCart());
     localStorage.removeItem("cartItems");
 
-    return orderDetail; // Devuelve el detalle de la orden
+    return orderDetail; // Return the order detail
   } catch (error) {
-    console.error("Error al crear la orden:", error.response || error.message);
-
+    console.error('Error al crear la orden:', error);
     dispatch({
       type: ORDER_CREATE_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.message || 'Error al crear la orden',
     });
-
-    throw new Error(
-      error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message
-    );
+    Swal.fire('Error', 'Error al crear la orden', 'error');
+    throw error; // Rethrow the error to be caught in the component
   }
 };
 
@@ -428,27 +426,42 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
 };
 
 export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
-  try {
-    dispatch({ type: FETCH_ORDERBYID_REQUEST });
-    console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-    const { data } = await axios.get(
-      `${BASE_URL}/order/products/${id_orderDetail}`
-    );
-    console.log("Response data:", data); // Log para inspeccionar la respuesta
+  while (attempt < MAX_RETRIES) {
+    try {
+      dispatch({ type: FETCH_ORDERBYID_REQUEST });
+      console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
 
-    dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: data.data.orderDetail });
-    console.log("Dispatched success:", data.data.orderDetail); // Log después del dispatch
-  } catch (error) {
-    console.error("Error fetching order:", error); // Log del error para más contexto
+      const { data } = await axios.get(
+        `${BASE_URL}/order/products/${id_orderDetail}`
+      );
+      console.log("Response data:", data); // Log para inspeccionar la respuesta
 
-    dispatch({
-      type: FETCH_ORDERBYID_FAILURE,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
-    });
+      if (!data || !data.message || !data.message.orderDetail) {
+        throw new Error('Order detail not received from server');
+      }
+
+      const orderDetail = data.message.orderDetail;
+
+      dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: orderDetail });
+      console.log("Dispatched success:", orderDetail); // Log después del dispatch
+      break; // Exit the loop if successful
+    } catch (error) {
+      attempt++;
+      console.error(`Error fetching order (Intento ${attempt}):`, error.message); // Log del error para más contexto
+
+      if (attempt >= MAX_RETRIES) {
+        dispatch({
+          type: FETCH_ORDERBYID_FAILURE,
+          payload:
+            error.response && error.response.data.message
+              ? error.response.data.message
+              : error.message,
+        });
+      }
+    }
   }
 };
 
@@ -635,8 +648,9 @@ export const fetchUserByDocument = (n_document) => async (dispatch) => {
     const response = await fetch(`${BASE_URL}/user/${n_document}`);
     const data = await response.json();
     console.log(data);
-    if (data) {
-      dispatch({ type: FETCH_USER_SUCCESS, payload: data });
+
+    if (data && data.message) {
+      dispatch({ type: FETCH_USER_SUCCESS, payload: data.message });
     } else {
       dispatch({ type: FETCH_USER_FAILURE, payload: "Usuario no encontrado" });
     }
@@ -762,7 +776,9 @@ export const createReceipt = (receipt) => async (dispatch) => {
   }
 };
 
-
+export const resetReceiptState = () => ({
+  type: RESET_RECEIPT_STATE,
+});
 
 export const fetchLatestReceipt = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_RECEIPTS_REQUEST });
@@ -935,9 +951,19 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     try {
       const res = await axios.get(`${BASE_URL}/reservation/all`);
       console.log('Response from getAllReservations:', res.data);
+  
+      if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
+        Swal.fire('Información', 'No se encontraron reservas', 'info');
+        dispatch({
+          type: GET_ALL_RESERVATIONS_SUCCESS,
+          payload: [], // Dispatch an empty array if no reservations are found
+        });
+        return;
+      }
+  
       dispatch({
         type: GET_ALL_RESERVATIONS_SUCCESS,
-        payload: res.data.message.reservations, // Updated to access correct path
+        payload: res.data.message.reservations,
       });
     } catch (error) {
       console.error('Error in getAllReservations:', error);
@@ -945,6 +971,7 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
         type: GET_ALL_RESERVATIONS_FAILURE,
         payload: error.message,
       });
+      Swal.fire( 'No hay reservas');
     }
   };
   

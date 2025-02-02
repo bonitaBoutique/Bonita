@@ -56,9 +56,12 @@ const Recibo = () => {
 
   useEffect(() => {
     if (order && order.id_orderDetail === idOrder) {
+      console.log(order)
       setTotalAmount(order.amount);
       setDate(order.date);
-
+      setBuyerName(`${order.userData.first_name} ${order.userData.last_name}`);
+      setBuyerEmail(order.userData.email);
+      setBuyerPhone(order.userData.phone);
       // Despacha la acción para obtener la información del usuario
       dispatch(fetchUserByDocument(order.n_document));
     }
@@ -67,9 +70,10 @@ const Recibo = () => {
   useEffect(() => {
     if (userInfo && userInfo.data) {
       const userData = userInfo.data;
-      setBuyerName(`${userData.first_name} ${userData.last_name}`);
-      setBuyerEmail(userData.email);
-      setBuyerPhone(userData.phone);
+      console.log("User info received:", userData);
+      setBuyerName(`${order.first_name} ${order.last_name}`);
+      setBuyerEmail(order.email);
+      setBuyerPhone(order.phone);
     }
   }, [userInfo]);
 

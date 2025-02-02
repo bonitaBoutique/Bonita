@@ -138,19 +138,20 @@ const Caja = () => {
     };
   
     try {
+      console.log("Sending order data:", orderDataToSend);
       const orderDetail = await dispatch(createOrder(orderDataToSend));
+      console.log("Order detail received:", orderDetail);
+    
       const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
-  
       console.log("ID de la orden creada:", idOrder);
-  
+    
       navigate(`/receipt/${idOrder}`); // Redirige al recibo
     } catch (error) {
       console.error("Error al crear la orden:", error.message);
       Swal.fire("Error", "No se pudo crear la orden. Inténtalo de nuevo.", "error");
     }
-  };
   
-  
+  }
   
 
   if (loading) {

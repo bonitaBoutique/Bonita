@@ -5,7 +5,7 @@ const FixedLogo = () => {
     return (
       <div className="fixed  top-0 md:-top-4 left-0 z-50">
          <Link to="/">
-        <img src={logo} alt="Logo" className="w-56 md:w-20 lg:w-96 cursor-pointer" />
+        <img src={logo} alt="Logo" className="w-56 md:w-20 lg:w-96 " />
       </Link>
       </div>
     );

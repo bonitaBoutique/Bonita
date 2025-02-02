@@ -2,10 +2,10 @@ import React from 'react';
 import { Disclosure, Menu } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../assets/img/logoNombre.png';
+//import logo from '../assets/img/logoNombre.png';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../Redux/Actions/actions';
-
+import FixedLogo from './FixedLogo';
 const navigation = [
   { name: 'Tienda', href: '/products' },
   { name: 'Volver', href: '/panelGeneral' },
@@ -189,9 +189,11 @@ export default function Navbar2() {
             <div className="flex h-16 items-center justify-between">
               {/* Logo */}
               <div className="flex-shrink-0">
-                <Link to="/">
-                  <img className="h-8 object-contain" src={logo} alt="Logo" />
-                </Link>
+              <div >
+                
+                <FixedLogo/>
+          
+            </div>
               </div>
 
               {/* Navigation Links (Desktop) */}

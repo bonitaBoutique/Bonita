@@ -19,13 +19,12 @@ app.use(passport.initialize());
 
 
 // Session
-app.use(
-  session({
-    secret: JWT_SECRET_KEY,
-    resave: false,
-    saveUninitialized: false,
-  })
-);
+app.use(cors({
+  origin: 'http://localhost:5173', // Permitir solicitudes desde este origen
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'], // Métodos permitidos
+  allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
+  credentials: true, // Permitir el uso de credenciales
+}));
 
 // CORS Headers
 app.use((req, res, next) => {
@@ -45,6 +44,10 @@ app.use('*', (req, res) => {
     error: true,
     message: 'Not found',
   });
+});
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
 // Error Handling Middleware

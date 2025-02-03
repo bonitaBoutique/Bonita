@@ -5,6 +5,8 @@ module.exports = async (req, res) => {
   const { id_reservation } = req.params;
   const { amount } = req.body;
 
+  console.log("Received request to apply payment:", { id_reservation, amount });
+
   try {
     const reservation = await Reservation.findByPk(id_reservation, {
       include: OrderDetail
@@ -25,7 +27,7 @@ module.exports = async (req, res) => {
 
     // Check if total payments equal the order amount
     if (reservation.totalPaid >= reservation.OrderDetail.amount) {
-      reservation.OrderDetail.status = "completada";
+      reservation.OrderDetail.status = "completada"; // Usa el valor permitido
     }
 
     // Save changes

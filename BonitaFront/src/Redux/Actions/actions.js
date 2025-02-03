@@ -121,6 +121,7 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
+  RESET_RECEIPT_STATE
 
 } from "./actions-type";
 
@@ -950,7 +951,7 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/reservation/all`);
-      console.log('Response from getAllReservations:', res.data);
+      console.log('Response from getAllReservations:', res.data.message);
   
       if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
         Swal.fire('Información', 'No se encontraron reservas', 'info');
@@ -978,7 +979,7 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
   export const applyPayment = (id_reservation, amount) => async (dispatch) => {
     dispatch({ type: APPLY_PAYMENT_REQUEST });
     try {
-      const res = await axios.post(`${BASE_URL}/reservation/applyPayment/${id_reservation}`, { amount });
+      const res = await axios.post(`${BASE_URL}/reservation/applyPayments/${id_reservation}`, { amount });
       dispatch({
         type: APPLY_PAYMENT_SUCCESS,
         payload: res.data.reservation,

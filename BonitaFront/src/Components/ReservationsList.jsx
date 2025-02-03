@@ -16,7 +16,8 @@ const ReservationList = () => {
   console.log(reservations);
 
   const handlePayment = async (id_reservation) => {
-    const amount = paymentAmounts[id_reservation] || 0;
+    const amount = parseFloat(paymentAmounts[id_reservation]) || 0;
+    console.log("Sending payment request:", { id_reservation, amount });
     await dispatch(applyPayment(id_reservation, amount));
     await dispatch(createReceipt(id_reservation, amount)); // Create and send the receipt
   };

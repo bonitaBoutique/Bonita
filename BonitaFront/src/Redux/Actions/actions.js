@@ -121,6 +121,7 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
+  RESET_RECEIPT_STATE
 
 } from "./actions-type";
 
@@ -160,23 +161,23 @@ export const fetchProducts = () => async (dispatch) => {
 
   try {
     const response = await axios.get(`${BASE_URL}/product/`);
-    console.log("Respuesta de la API:", response); // Muestra toda la respuesta
+    console.log("Respuesta de la API:", response.data);
 
-    // Verifica si la respuesta contiene productos y envía solo los productos
-    if (response.data && response.data.data && response.data.data.products) {
-      dispatch({
-        type: FETCH_PRODUCTS_SUCCESS,
-        payload: response.data.data.products, // Accedemos a los productos directamente
-      });
-    } else {
-      dispatch({
-        type: FETCH_PRODUCTS_FAILURE,
-        payload: "No se encontraron productos.",
-      });
+    if (!response.data?.message?.products) {
+      throw new Error('No se encontraron productos');
     }
+
+    dispatch({
+      type: FETCH_PRODUCTS_SUCCESS,
+      payload: response.data.message.products,
+    });
   } catch (error) {
-    console.log("Error de la API:", error);
-    dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: error.message });
+    console.error("Error al obtener productos:", error);
+    dispatch({
+      type: FETCH_PRODUCTS_FAILURE,
+      payload: error.message || "Error al cargar los productos",
+    });
+    Swal.fire('Error', 'Error al cargar los productos', 'error');
   }
 };
 
@@ -187,7 +188,7 @@ export const fetchProductById = (id_product) => async (dispatch) => {
     const response = await axios.get(`${BASE_URL}/product/${id_product}`);
 
     // Acceso correcto a "product"
-    const product = response.data.data.product;
+    const product = response.data.message.product;
 
     dispatch({
       type: FETCH_PRODUCT_SUCCESS,
@@ -227,9 +228,15 @@ export const createOrder = (orderData) => async (dispatch) => {
   try {
     dispatch({ type: ORDER_CREATE_REQUEST });
 
-    const { data } = await axios.post(`${BASE_URL}/order/create/`, orderData);
+    const response = await axios.post(`${BASE_URL}/order/create/`, orderData);
+    console.log('Order creation response:', response.data);
 
-    const orderDetail = data.data.orderDetail; // Asegúrate de acceder correctamente a orderDetail
+    if (!response.data || !response.data.message || !response.data.message.orderDetail) {
+      console.error('Invalid response structure:', response.data);
+      throw new Error('Order detail not received from server');
+    }
+
+    const orderDetail = response.data.message.orderDetail;
 
     dispatch({
       type: ORDER_CREATE_SUCCESS,
@@ -239,23 +246,15 @@ export const createOrder = (orderData) => async (dispatch) => {
     dispatch(clearCart());
     localStorage.removeItem("cartItems");
 
-    return orderDetail; // Devuelve el detalle de la orden
+    return orderDetail; // Return the order detail
   } catch (error) {
-    console.error("Error al crear la orden:", error.response || error.message);
-
+    console.error('Error al crear la orden:', error);
     dispatch({
       type: ORDER_CREATE_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.message || 'Error al crear la orden',
     });
-
-    throw new Error(
-      error.response && error.response.data.message
-        ? error.response.data.message
-        : error.message
-    );
+    Swal.fire('Error', 'Error al crear la orden', 'error');
+    throw error; // Rethrow the error to be caught in the component
   }
 };
 
@@ -264,7 +263,7 @@ export const createOrder = (orderData) => async (dispatch) => {
 export const fetchLatestOrder = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_ORDER_REQUEST });
   try {
-    const response = await fetch('http://localhost:3001/order?latest=true'); // Adjust the API endpoint as needed
+    const response = await fetch(`${BASE_URL}/order?latest=true`); // Adjust the API endpoint as needed
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -272,7 +271,7 @@ export const fetchLatestOrder = () => async (dispatch) => {
     if (data.error) {
       throw new Error(data.message || 'Error fetching latest order');
     }
-    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data.data.orders[0] });
+    dispatch({ type: FETCH_LATEST_ORDER_SUCCESS, payload: data.message.orders[0] });
   } catch (error) {
     dispatch({ type: FETCH_LATEST_ORDER_FAILURE, payload: error.message });
   }
@@ -326,13 +325,17 @@ export const login = (email, password) => async (dispatch) => {
       config
     );
 
+    if (!data?.message?.token) {
+      throw new Error('Token no recibido del servidor');
+    }
+
     // Decodifica el token para obtener el rol del usuario
-    const decodedToken = jwtDecode(data.data.token);
+    const decodedToken = jwtDecode(data.message.token);
     const userInfo = {
-      token: data.token,
+      token: data.message.token,
       role: decodedToken.role,
-      n_document: decodedToken.n_document, // Agregar n_document desde el token decodificado
-      message: data.message,
+      n_document: data.message.n_document,
+      message: data.message.message,
     };
 
     dispatch({
@@ -341,14 +344,16 @@ export const login = (email, password) => async (dispatch) => {
     });
 
     localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    
+    Swal.fire('Éxito', 'Inicio de sesión exitoso', 'success');
+
   } catch (error) {
+    console.error('Login error:', error);
     dispatch({
       type: USER_LOGIN_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.response?.data?.message || 'Error al iniciar sesión',
     });
+    Swal.fire('Error', 'Error al iniciar sesión', 'error');
   }
 };
 
@@ -409,7 +414,7 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
 
     const { data } = await axios.get(`${BASE_URL}/order/${n_document}`);
 
-    dispatch({ type: FETCH_ORDERS_SUCCESS, payload: data.data.orders });
+    dispatch({ type: FETCH_ORDERS_SUCCESS, payload: data.message.orders });
   } catch (error) {
     dispatch({
       type: FETCH_ORDERS_FAILURE,
@@ -422,27 +427,42 @@ export const fetchOrdersByDocument = (n_document) => async (dispatch) => {
 };
 
 export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
-  try {
-    dispatch({ type: FETCH_ORDERBYID_REQUEST });
-    console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-    const { data } = await axios.get(
-      `${BASE_URL}/order/products/${id_orderDetail}`
-    );
-    console.log("Response data:", data); // Log para inspeccionar la respuesta
+  while (attempt < MAX_RETRIES) {
+    try {
+      dispatch({ type: FETCH_ORDERBYID_REQUEST });
+      console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
 
-    dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: data.data.orderDetail });
-    console.log("Dispatched success:", data.data.orderDetail); // Log después del dispatch
-  } catch (error) {
-    console.error("Error fetching order:", error); // Log del error para más contexto
+      const { data } = await axios.get(
+        `${BASE_URL}/order/products/${id_orderDetail}`
+      );
+      console.log("Response data:", data); // Log para inspeccionar la respuesta
 
-    dispatch({
-      type: FETCH_ORDERBYID_FAILURE,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
-    });
+      if (!data || !data.message || !data.message.orderDetail) {
+        throw new Error('Order detail not received from server');
+      }
+
+      const orderDetail = data.message.orderDetail;
+
+      dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: orderDetail });
+      console.log("Dispatched success:", orderDetail); // Log después del dispatch
+      break; // Exit the loop if successful
+    } catch (error) {
+      attempt++;
+      console.error(`Error fetching order (Intento ${attempt}):`, error.message); // Log del error para más contexto
+
+      if (attempt >= MAX_RETRIES) {
+        dispatch({
+          type: FETCH_ORDERBYID_FAILURE,
+          payload:
+            error.response && error.response.data.message
+              ? error.response.data.message
+              : error.message,
+        });
+      }
+    }
   }
 };
 
@@ -450,18 +470,20 @@ export const fetchAllOrders = () => async (dispatch) => {
   try {
     dispatch({ type: FETCH_ALLS_ORDERS_REQUEST });
 
-    const { data } = await axios.get(`${BASE_URL}/order`);
-    console.log("API response data:", data);
+    const res = await axios.get(`${BASE_URL}/order`);
+    console.log("API response data:", res.data);
 
-    dispatch({ type: FETCH_ALLS_ORDERS_SUCCESS, payload: data.data.orders });
+    dispatch({ 
+      type: FETCH_ALLS_ORDERS_SUCCESS, 
+      payload: res.data.message.orders 
+    });
   } catch (error) {
+    console.error('Error fetching orders:', error);
     dispatch({
       type: FETCH_ALLS_ORDERS_FAILURE,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.message,
     });
+    Swal.fire('Error', 'Error al obtener las órdenes', 'error');
   }
 };
 
@@ -627,8 +649,9 @@ export const fetchUserByDocument = (n_document) => async (dispatch) => {
     const response = await fetch(`${BASE_URL}/user/${n_document}`);
     const data = await response.json();
     console.log(data);
-    if (data) {
-      dispatch({ type: FETCH_USER_SUCCESS, payload: data });
+
+    if (data && data.message) {
+      dispatch({ type: FETCH_USER_SUCCESS, payload: data.message });
     } else {
       dispatch({ type: FETCH_USER_FAILURE, payload: "Usuario no encontrado" });
     }
@@ -754,7 +777,9 @@ export const createReceipt = (receipt) => async (dispatch) => {
   }
 };
 
-
+export const resetReceiptState = () => ({
+  type: RESET_RECEIPT_STATE,
+});
 
 export const fetchLatestReceipt = () => async (dispatch) => {
   dispatch({ type: FETCH_LATEST_RECEIPTS_REQUEST });
@@ -822,12 +847,25 @@ export const createExpense = (expenseData) => async (dispatch) => {
 export const getFilteredExpenses = (filters) => async (dispatch) => {
   dispatch({ type: GET_FILTERED_EXPENSES_REQUEST });
   try {
-    const response = await axios.get(`/expense/filter`, { params: filters });
-    dispatch({ type: GET_FILTERED_EXPENSES_SUCCESS, payload: response.data });
+    const response = await axios.get(`${BASE_URL}/expense/filter`, { params: filters });
+    console.log('Filtered expenses response:', response.data);
+
+    // Ensure we have an array of expenses, even if empty
+    const expenses = Array.isArray(response.data) ? response.data : [];
+
+    dispatch({ 
+      type: GET_FILTERED_EXPENSES_SUCCESS, 
+      payload: expenses 
+    });
   } catch (error) {
-    dispatch({ type: GET_FILTERED_EXPENSES_FAILURE, payload: error.message });
+    console.error('Error filtering expenses:', error);
+    dispatch({ 
+      type: GET_FILTERED_EXPENSES_FAILURE, 
+      payload: error.message 
+    });
     Swal.fire("Error", "No se pudieron filtrar los gastos", "error");
-  }}
+  }
+};
 
   
   
@@ -913,22 +951,35 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/reservation/all`);
+      console.log('Response from getAllReservations:', res.data.message);
+  
+      if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
+        Swal.fire('Información', 'No se encontraron reservas', 'info');
+        dispatch({
+          type: GET_ALL_RESERVATIONS_SUCCESS,
+          payload: [], // Dispatch an empty array if no reservations are found
+        });
+        return;
+      }
+  
       dispatch({
         type: GET_ALL_RESERVATIONS_SUCCESS,
-        payload: res.data.data.reservations, // Access the nested data object
+        payload: res.data.message.reservations,
       });
     } catch (error) {
+      console.error('Error in getAllReservations:', error);
       dispatch({
         type: GET_ALL_RESERVATIONS_FAILURE,
         payload: error.message,
       });
+      Swal.fire( 'No hay reservas');
     }
   };
   
   export const applyPayment = (id_reservation, amount) => async (dispatch) => {
     dispatch({ type: APPLY_PAYMENT_REQUEST });
     try {
-      const res = await axios.post(`${BASE_URL}/reservation/applyPayment/${id_reservation}`, { amount });
+      const res = await axios.post(`${BASE_URL}/reservation/applyPayments/${id_reservation}`, { amount });
       dispatch({
         type: APPLY_PAYMENT_SUCCESS,
         payload: res.data.reservation,
@@ -963,33 +1014,41 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     dispatch({ type: GET_CLIENT_ACCOUNT_BALANCE_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/userAccount/${n_document}`);
+      console.log('Client Account Balance Response:', res.data);
       dispatch({
         type: GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
-        payload: res.data.data,
+        payload: {
+          user: res.data.message.user,
+          orderDetails: res.data.message.orderDetails
+        },
       });
     } catch (error) {
+      console.error('Error fetching client account balance:', error);
       dispatch({
         type: GET_CLIENT_ACCOUNT_BALANCE_FAILURE,
         payload: error.message,
       });
-      Swal.fire('Error', 'Failed to fetch client account balance', 'error');
+      Swal.fire('Error', 'Error al obtener el saldo del cliente', 'error');
     }
   };
 
+  
   export const getAllClientAccounts = () => async (dispatch) => {
     dispatch({ type: GET_ALL_CLIENT_ACCOUNTS_REQUEST });
     try {
       const res = await axios.get(`${BASE_URL}/userAccount`);
+      console.log('All Client Accounts Response:', res.data);
       dispatch({
         type: GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
-        payload: res.data.data,
+        payload: res.data.message.users, // Update path to match API response
       });
     } catch (error) {
+      console.error('Error fetching all client accounts:', error);
       dispatch({
         type: GET_ALL_CLIENT_ACCOUNTS_FAILURE,
         payload: error.message,
       });
-      Swal.fire('Error', 'Failed to fetch all client accounts', 'error');
+      Swal.fire('Error', 'Error al obtener las cuentas de clientes', 'error');
     }
   };
 

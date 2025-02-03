@@ -117,7 +117,7 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
-
+  RESET_RECEIPT_STATE
 
 } from "../Actions/actions-type";
 
@@ -224,7 +224,12 @@ const initialState = {
     online: [],
     local: []
   },
-  expenses: [],
+  expenses: {
+    data: [],
+    loading: false,
+    success: false,
+    error: null
+  },
 
   order: {
     loading: false,
@@ -994,6 +999,14 @@ const rootReducer = (state = initialState, action) => {
     case CREATE_RECEIPT_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
+      case RESET_RECEIPT_STATE:
+      return {
+        ...state,
+        receipts: [],
+        receiptNumber: null,
+        // restablecer otros estados relacionados con el recibo si es necesario...
+      };
+
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };
 
@@ -1042,36 +1055,36 @@ const rootReducer = (state = initialState, action) => {
           error: action.payload,
         },
       };
-    case GET_FILTERED_EXPENSES_REQUEST:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          loading: true,
-          success: false,
-          error: null,
-        },
-      };
-    case GET_FILTERED_EXPENSES_SUCCESS:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          data: action.payload,
-          loading: false,
-          success: true,
-          error: null,
-        },
-      };
-    case GET_FILTERED_EXPENSES_FAILURE:
-      return {
-        ...state,
-        expenses: {
-          ...state.expenses,
-          loading: false,
-          success: false,
-          error: action.payload,
-        },
+      case GET_FILTERED_EXPENSES_REQUEST:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            loading: true,
+            success: false,
+            error: null,
+          },
+        };
+      case GET_FILTERED_EXPENSES_SUCCESS:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            data: action.payload,
+            loading: false,
+            success: true,
+            error: null,
+          },
+        };
+      case GET_FILTERED_EXPENSES_FAILURE:
+        return {
+          ...state,
+          expenses: {
+            ...state.expenses,
+            loading: false,
+            success: false,
+            error: action.payload,
+          },
       };
     case DELETE_EXPENSE_REQUEST:
       return {

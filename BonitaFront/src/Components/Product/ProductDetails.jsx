@@ -70,7 +70,7 @@ const ProductDetails = () => {
         <div className="max-w-6xl mx-auto">
           <button
             onClick={() => navigate(-1)}
-            className="mb-6 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="mb-6 px-4 py-2 bg-colorBeigeClaro rounded-lg hover:bg-gray-200"
           >
             ← Volver
           </button>
@@ -109,7 +109,7 @@ const ProductDetails = () => {
             {/* Detalles del producto */}
             <div className="flex flex-col h-full">
               <div className="flex-grow space-y-4">
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-slate-700 font-nunito uppercase">
                   {product.description}
                 </h1>
                 
@@ -121,13 +121,13 @@ const ProductDetails = () => {
                     <span className="font-semibold">Color:</span> {product.colors}
                   </p>
                   {product.sizes && (
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 uppercase">
                       <span className="font-semibold">Tallas:</span> {product.sizes}
                     </p>
                   )}
                 </div>
 
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-colorBeige">
                   ${product.priceSell}
                 </div>
 
@@ -139,7 +139,7 @@ const ProductDetails = () => {
               <div className="mt-8">
                 <button
                   onClick={handleAddToCart}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 
+                  className="w-full bg-colorBeige text-white py-3 px-4 rounded-lg hover:bg-blue-700 
                     transition duration-200 flex items-center justify-center"
                 >
                   <FiShoppingCart className="inline-block mr-2" />

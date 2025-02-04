@@ -1,5 +1,5 @@
-const { Reservation, OrderDetail } = require("../../data");
-const response = require("../../utils/response");
+const { Reservation, OrderDetail, User } = require('../../data');
+const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   try {
@@ -9,7 +9,13 @@ module.exports = async (req, res) => {
         {
           model: OrderDetail,
           attributes: ['amount'],
-        },
+          include: [
+            {
+              model: User,
+              attributes: ['first_name', 'last_name', 'email', 'phone']
+            }
+          ]
+        }
       ],
       logging: console.log
     });

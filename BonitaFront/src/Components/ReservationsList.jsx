@@ -1,8 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getAllReservations, applyPayment, createReceipt, deleteReservation, updateReservation, fetchLatestReceipt, fetchOrdersByIdOrder } from '../Redux/Actions/actions';
-import jsPDF from 'jspdf';
-import Swal from 'sweetalert2';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getAllReservations,
+  applyPayment,
+  createReceipt,
+  deleteReservation,
+  updateReservation,
+  fetchLatestReceipt,
+  fetchOrdersByIdOrder,
+} from "../Redux/Actions/actions";
+import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 const ReservationList = () => {
   const dispatch = useDispatch();
@@ -12,7 +20,9 @@ const ReservationList = () => {
   const latestReceipt = useSelector((state) => state.receiptNumber);
   const orderDetails = useSelector((state) => state.orderById.orderDetail);
   const [paymentAmounts, setPaymentAmounts] = useState({});
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [hoveredOrderId, setHoveredOrderId] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
 
   useEffect(() => {
     dispatch(getAllReservations());
@@ -27,7 +37,9 @@ const ReservationList = () => {
     await dispatch(applyPayment(id_reservation, amount));
 
     // Obtener la reserva actualizada
-    const updatedReservation = reservations.find(res => res.id_reservation === id_reservation);
+    const updatedReservation = reservations.find(
+      (res) => res.id_reservation === id_reservation
+    );
 
     // Obtener el número de recibo más reciente y sumarle uno
     const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
@@ -37,21 +49,24 @@ const ReservationList = () => {
       receiptNumber, // Usar el número de recibo actualizado
       id_orderDetail: updatedReservation.id_orderDetail,
       total_amount: amount,
-      buyer_name: updatedReservation.OrderDetail.User.first_name + ' ' + updatedReservation.OrderDetail.User.last_name,
+      buyer_name:
+        updatedReservation.OrderDetail.User.first_name +
+        " " +
+        updatedReservation.OrderDetail.User.last_name,
       buyer_email: updatedReservation.OrderDetail.User.email,
       buyer_phone: updatedReservation.OrderDetail.User.phone,
       payMethod: "Crédito",
-      date: new Date().toISOString().split('T')[0], // Usar la fecha del día en formato YYYY-MM-DD
+      date: new Date().toISOString().split("T")[0], // Usar la fecha del día en formato YYYY-MM-DD
     };
     console.log("Creating receipt with data:", receiptData);
     await dispatch(createReceipt(receiptData));
 
     // Mostrar alerta de que el recibo está listo para descargar
     Swal.fire({
-      title: 'Recibo Creado',
-      text: 'El recibo está listo para descargar.',
-      icon: 'success',
-      confirmButtonText: 'Descargar'
+      title: "Recibo Creado",
+      text: "El recibo está listo para descargar.",
+      icon: "success",
+      confirmButtonText: "Descargar",
     }).then((result) => {
       if (result.isConfirmed) {
         generatePDF(receiptData);
@@ -59,8 +74,11 @@ const ReservationList = () => {
     });
 
     // Verificar si el total pagado es igual al monto de la orden
-    if (updatedReservation.totalPaid + amount >= updatedReservation.OrderDetail.amount) {
-      await dispatch(updateReservation(id_reservation, 'Completada'));
+    if (
+      updatedReservation.totalPaid + amount >=
+      updatedReservation.OrderDetail.amount
+    ) {
+      await dispatch(updateReservation(id_reservation, "Completada"));
     }
   };
 
@@ -79,58 +97,100 @@ const ReservationList = () => {
     });
   };
 
-  const handleOrderClick = (id_orderDetail) => {
-    setSelectedOrderId(id_orderDetail);
+  const handleMouseEnter = (id_orderDetail, event) => {
+    const rect = event.target.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left,
+      y: rect.bottom + window.scrollY,
+    });
+    setHoveredOrderId(id_orderDetail);
     dispatch(fetchOrdersByIdOrder(id_orderDetail));
   };
 
-  const closePopup = () => {
-    setSelectedOrderId(null);
+  const handleMouseLeave = () => {
+    setHoveredOrderId(null);
   };
 
   const generatePDF = (receiptData) => {
-    const { receiptNumber, date, buyer_name, buyer_email, buyer_phone, total_amount, payMethod, id_orderDetail } = receiptData;
+    const {
+      receiptNumber,
+      date,
+      buyer_name,
+      buyer_email,
+      buyer_phone,
+      total_amount,
+      payMethod,
+      id_orderDetail,
+    } = receiptData;
 
     // Crear un nuevo documento PDF con tamaño 80x297 mm
     const doc = new jsPDF({
-      unit: "pt",  // Establecer la unidad a puntos
-      format: [226.77, 839.28],  // Definir el tamaño del recibo en puntos (80 x 297 mm)
+      unit: "pt", // Establecer la unidad a puntos
+      format: [226.77, 839.28], // Definir el tamaño del recibo en puntos (80 x 297 mm)
     });
 
     // Título centrado en la parte superior
     doc.setFontSize(18);
-    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, { align: "center" });
+    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+      align: "center",
+    });
 
     // Información adicional centrada y más pequeña
     doc.setFontSize(10);
     let currentY = 50; // Posición inicial
 
-    doc.text("Bonita Boutique  S.A.S NIT:", doc.internal.pageSize.width / 2, currentY, { align: "center" });
-    currentY += 20;  // Espacio mayor entre líneas
+    doc.text(
+      "Bonita Boutique  S.A.S NIT:",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 20; // Espacio mayor entre líneas
 
-    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
     currentY += 20;
 
-    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
     currentY += 30; // Más espacio antes de la sección siguiente
 
     // Número de recibo centrado
-    doc.text(`RECIBO # ${receiptNumber}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text(
+      `RECIBO # ${receiptNumber}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
     currentY += 20;
 
     // Fecha y estado de la venta
-    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
     currentY += 20;
 
-    doc.text(`Estado de venta: ${payMethod}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text(
+      `Estado de venta: ${payMethod}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
 
     // Línea de asteriscos
     currentY += 20; // Espacio antes de la línea
-    doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text(
+      "***************************",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
     currentY += 20; // Espacio después de la línea
 
     // Detalles del recibo
-    doc.setFontSize(10);  // Tamaño de fuente más pequeño para los detalles
+    doc.setFontSize(10); // Tamaño de fuente más pequeño para los detalles
     doc.text(`Nombre del Comprador: ${buyer_name}`, 20, currentY);
     currentY += 20;
 
@@ -150,15 +210,22 @@ const ReservationList = () => {
     // Agregar texto final centrado
     currentY += 40; // Espacio mayor antes del mensaje final
     doc.setFontSize(12);
-    doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    doc.text(
+      "Gracias por elegirnos!",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
 
     // Guardar el PDF con un nombre personalizado que incluye el número de recibo
-    const fileName = `Recibo_${receiptNumber}.pdf`;  // Nombre del archivo
+    const fileName = `Recibo_${receiptNumber}.pdf`; // Nombre del archivo
     doc.save(fileName);
   };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
+
+  
 
   return (
     <div className="container mx-auto p-4 mt-12">
@@ -178,8 +245,12 @@ const ReservationList = () => {
           <tbody>
             {reservations && reservations.map((reservation) => (
               <tr key={reservation.id_reservation}>
-                <td className="py-2 px-4 border-b">
-                  <button onClick={() => handleOrderClick(reservation.id_orderDetail)} className="text-blue-500 underline">
+                <td className="py-2 px-4 border-b relative">
+                  <button
+                    onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
+                    onMouseLeave={handleMouseLeave}
+                    className="text-blue-500 underline hover:text-blue-700"
+                  >
                     {reservation.id_orderDetail}
                   </button>
                 </td>
@@ -204,7 +275,7 @@ const ReservationList = () => {
                   <button
                     onClick={() => generatePDF({
                       receiptNumber: reservation.receiptNumber || 1001,
-                      date: new Date().toISOString().split('T')[0], // Usar la fecha del día en formato YYYY-MM-DD
+                      date: new Date().toISOString().split('T')[0],
                       buyer_name: reservation.OrderDetail.User.first_name + ' ' + reservation.OrderDetail.User.last_name,
                       buyer_email: reservation.OrderDetail.User.email,
                       buyer_phone: reservation.OrderDetail.User.phone,
@@ -234,32 +305,38 @@ const ReservationList = () => {
           </tbody>
         </table>
       </div>
+  
+      {/* Tooltip */}
+      {reservations.map((reservation) => (
+            <tr key={reservation.id_reservation}>
+              <td
+                className="py-2 px-4 border-b relative"
+                onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
+                onMouseLeave={handleMouseLeave}
+              >
+                {reservation.id_orderDetail}
 
-      {selectedOrderId && orderDetails && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-4 rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Detalles de la Orden</h2>
-            <p><strong>ID de Orden:</strong> {orderDetails.id_orderDetail}</p>
-            <p><strong>Nombre del Comprador:</strong> {orderDetails.userData.first_name} {orderDetails.userData.last_name}</p>
-            <p><strong>Email del Comprador:</strong> {orderDetails.userData.email}</p>
-            <p><strong>Teléfono del Comprador:</strong> {orderDetails.userData.phone}</p>
-            <p><strong>Monto Total:</strong> {orderDetails.amount}</p>
-            <p><strong>Estado de la Orden:</strong> {orderDetails.state_order}</p>
-            <p><strong>Dirección:</strong> {orderDetails.address}</p>
-            <p><strong>Productos:</strong></p>
-            <ul>
-              {orderDetails.products.map(product => (
-                <li key={product.id_product}>
-                  {product.description} - ${product.priceSell}
-                </li>
-              ))}
-            </ul>
-            <button onClick={closePopup} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
+                {/* Tooltip */}
+                {hoveredOrderId === reservation.id_orderDetail && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${tooltipPosition.x}px`,
+                      top: `${tooltipPosition.y}px`,
+                      zIndex: 50,
+                    }}
+                    className="bg-gray-700 text-white p-2 rounded-md shadow-lg"
+                  >
+                    <p>Detalles de la Orden:</p>
+                    <p>Id: {orderDetails?.id}</p>
+                    <p>Monto: {orderDetails?.amount}</p>
+                    <p>Cliente: {orderDetails?.User?.first_name}</p>
+                  </div>
+                )}
+              </td>
+              <td className="py-2 px-4 border-b">{reservation.id_reservation}</td>
+            </tr>
+          ))}
     </div>
   );
 };

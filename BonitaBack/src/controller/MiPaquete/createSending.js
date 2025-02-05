@@ -2,7 +2,7 @@ const axios = require('axios');
 const response = require('../../utils/response');
 
 const DEFAULT_VALUES = {
-  originDaneCode: "50226", // Bogotá
+  originDaneCode: "50226", 
   originCountryCode: "170",   // Mexico code per API docs
   destinyCountryCode: "170",  // Mexico code per API docs
   deliveryCompany: "653928ae0a945520b78f279b",

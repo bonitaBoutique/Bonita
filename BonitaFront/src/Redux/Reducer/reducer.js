@@ -117,7 +117,10 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
-  RESET_RECEIPT_STATE
+  RESET_RECEIPT_STATE,
+  CREATE_SENDING_REQUEST,
+  CREATE_SENDING_SUCCESS,
+  CREATE_SENDING_FAILURE
 
 } from "../Actions/actions-type";
 
@@ -141,6 +144,11 @@ const initialState = {
       error: null,
       success: false
     }
+  },
+  sending: {
+    loading: false,
+    error: null,
+    data: null
   },
  clientAccountBalance: {
     user: null,
@@ -1345,6 +1353,35 @@ const rootReducer = (state = initialState, action) => {
                     error: action.payload,
                   },
                 };
+                case CREATE_SENDING_REQUEST:
+  return {
+    ...state,
+    sending: {
+      ...state.sending,
+      loading: true,
+      error: null
+    }
+  };
+
+case CREATE_SENDING_SUCCESS:
+  return {
+    ...state,
+    sending: {
+      loading: false,
+      error: null,
+      data: action.payload
+    }
+  };
+
+case CREATE_SENDING_FAILURE:
+  return {
+    ...state,
+    sending: {
+      ...state.sending,
+      loading: false,
+      error: action.payload
+    }
+  };
 
           
     default:

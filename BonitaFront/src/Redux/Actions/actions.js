@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import {
   CREATE_PRODUCT_REQUEST,
   CREATE_PRODUCT_SUCCESS,
-  CREATE_PRODUCT_FAILURE,
+  CREATE_PRODUCT_FAILURE, 
   FETCH_CATEGORIES_REQUEST,
   FETCH_CATEGORIES_SUCCESS,
   FETCH_CATEGORIES_FAILURE,
@@ -121,8 +121,11 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
-  RESET_RECEIPT_STATE
-
+  RESET_RECEIPT_STATE,
+  CREATE_SENDING_REQUEST,
+  CREATE_SENDING_SUCCESS,
+  CREATE_SENDING_FAILURE
+  
 } from "./actions-type";
 
 export const createProduct = (productData) => async (dispatch) => {
@@ -1054,7 +1057,56 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
 
 
 
-
+  export const createSending = (sendingData) => {
+    return async (dispatch) => {
+      dispatch({ type: CREATE_SENDING_REQUEST });
+  
+      try {
+        const response = await axios.post(
+          `${BASE_URL}/mipaquete/create-sending`,
+          sendingData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+  
+        console.log('Create Sending Response:', response.data);
+  
+        dispatch({
+          type: CREATE_SENDING_SUCCESS,
+          payload: response.data.data
+        });
+  
+        // Show success message
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Envío creado correctamente',
+          icon: 'success'
+        });
+  
+        return response.data;
+  
+      } catch (error) {
+        console.error('Create Sending Error:', error);
+        
+        dispatch({
+          type: CREATE_SENDING_FAILURE,
+          payload: error.response?.data?.message || 'Error al crear el envío'
+        });
+  
+        // Show error message
+        Swal.fire({
+          title: 'Error',
+          text: error.response?.data?.message || 'Error al crear el envío',
+          icon: 'error'
+        });
+  
+        throw error;
+      }
+    };
+  };
 
 
 

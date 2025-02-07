@@ -30,7 +30,6 @@ module.exports = async (req, res) => {
     const newUser = await User.create({
       first_name: user.first_name,
       last_name: user.last_name,
-      gender: user.gender[0], // Considerando que 'gender' es un array y tomamos el primer elemento
       n_document: user.n_document,
       email: user.email,
       password: hash,

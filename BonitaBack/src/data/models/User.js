@@ -19,10 +19,7 @@ module.exports = (sequelize) => {
       last_name: {
         type: DataTypes.STRING,
       },
-      gender: {
-        type: DataTypes.ENUM('F', 'M', 'X'),
-        allowNull: false,
-      },
+     
       email: {
         type: DataTypes.STRING,
         allowNull: false,

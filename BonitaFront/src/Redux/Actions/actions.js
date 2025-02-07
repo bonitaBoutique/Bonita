@@ -291,23 +291,30 @@ export const registerUser = (userData) => async (dispatch) => {
 
     const config = {
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     };
 
-    const { data } = await axios.post(`${BASE_URL}/user`, userData, config);
-
-    dispatch({
-      type: USER_REGISTER_SUCCESS,
-      payload: data,
-    });
+    const response = await axios.post(`${BASE_URL}/auth/register`, userData, config);
+    
+    // Handle success
+    if (response.data.status === 'success') {
+      dispatch({
+        type: USER_REGISTER_SUCCESS,
+        payload: response.data.data,
+      });
+    } else {
+      // Handle error from API
+      dispatch({
+        type: USER_REGISTER_FAIL,
+        payload: response.data.message,
+      });
+    }
   } catch (error) {
+    // Handle axios error
     dispatch({
       type: USER_REGISTER_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.response?.data?.message || 'Error en el registro',
     });
   }
 };

@@ -178,18 +178,15 @@ const initialState = {
   },
 
   userRegister: {
-    userInfo: localStorage.getItem("userInfo")
-      ? JSON.parse(localStorage.getItem("userInfo"))
-      : null,
+    userInfo: null,
     loading: false,
     error: null,
+    success: false
   },
   userLogin: {
-    userInfo: localStorage.getItem("userInfo")
-      ? JSON.parse(localStorage.getItem("userInfo"))
-      : null,
+    userInfo: null,
     loading: false,
-    error: null,
+    error: null
   },
   categories: {
     loading: false,
@@ -846,34 +843,40 @@ const rootReducer = (state = initialState, action) => {
         },
       };
 
-    case USER_REGISTER_REQUEST:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: true,
-          error: null,
-        },
-      };
-    case USER_REGISTER_SUCCESS:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: false,
-          userInfo: action.payload,
-          error: null,
-        },
-      };
-    case USER_REGISTER_FAIL:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: false,
-          error: action.payload,
-        },
-      };
+      case USER_REGISTER_REQUEST:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: true,
+      success: false,
+      error: null,
+    },
+  };
+
+case USER_REGISTER_SUCCESS:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: false,
+      userInfo: action.payload,
+      error: null,
+      success: true
+    },
+  };
+
+case USER_REGISTER_FAIL:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: false,
+      success: false,
+      error: action.payload,
+      userInfo: null,
+    },
+  };
 
     case FETCH_SELLER_REQUEST:
       return {

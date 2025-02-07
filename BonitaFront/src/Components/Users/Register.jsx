@@ -3,37 +3,81 @@ import { useDispatch, useSelector } from 'react-redux';
 import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
 import imgFondo from '../../assets/img/BannerPrincipal/banner6.png';
+import Swal from 'sweetalert2';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    n_document: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'User',
   });
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const userRegister = useSelector((state) => state.userRegister);
-  const { loading, error, userInfo } = userRegister;
+ 
+  // Get state from Redux
+  const { loading, error, success } = useSelector((state) => state.userRegister);
+  const loggedInUserRole = useSelector((state) => state.userLogin.userInfo?.role);
 
-  const submitHandler = (e) => {
-    e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-    dispatch(registerUser(formData));
+  // Debug logging
+  useEffect(() => {
+    console.log('Current State:', { loading, error, success, loggedInUserRole });
+  }, [loading, error, success, loggedInUserRole]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // Redirect if user is logged in
+  // Consolidated success/error handling
   useEffect(() => {
-    if (userInfo) {
-      navigate('/');
+    if (success) {
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Usuario creado exitosamente',
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Ok'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login');
+        }
+      });
+    } else if (error) {
+      Swal.fire({
+        title: '¡Error!',
+        text: error,
+        icon: 'error',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Ok'
+      });
     }
-  }, [userInfo, navigate]);
+  }, [success, error, navigate]);
 
+  const submitHandler = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      Swal.fire({
+        title: '¡Error!',
+        text: 'Las contraseñas no coinciden',
+        icon: 'error',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Ok'
+      });
+      return;
+    }
+    await dispatch(registerUser(formData));
+  };
+
+  // Handle success/error effects
+  
   return (
     <div 
       className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center" 
@@ -44,79 +88,123 @@ const Register = () => {
         className="max-w-lg w-full bg-white bg-opacity-80 p-8 rounded-lg shadow-md"
       >
         <h2 className="text-2xl mb-6 text-center">Registrarse</h2>
+        
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
             {error}
           </div>
         )}
+
         <div className="mb-4">
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
             Nombre
           </label>
           <input
             type="text"
-            id="firstName"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
           />
         </div>
+
         <div className="mb-4">
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
             Apellido
           </label>
           <input
             type="text"
-            id="lastName"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
           />
         </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Documento
+          </label>
+          <input
+            type="text"
+            name="n_document"
+            value={formData.n_document}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
+          />
+        </div>
+
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
             Email
           </label>
           <input
             type="email"
-            id="email"
+            name="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
           />
         </div>
+
         <div className="mb-4">
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Contraseña
           </label>
           <input
             type="password"
-            id="password"
+            name="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
           />
         </div>
+
         <div className="mb-4">
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
             Confirmar Contraseña
           </label>
           <input
             type="password"
-            id="confirmPassword"
+            name="confirmPassword"
             value={formData.confirmPassword}
-            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
           />
         </div>
+        {loggedInUserRole === 'Admin' && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Rol
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+              <option value="User">Usuario</option>
+              <option value="Admin">Administrador</option>
+              <option value="Cajero">Cajero</option>
+            </select>
+          </div>
+        )}
         <div>
           <button
             type="submit"
             className="w-full bg-colorFooter text-white py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={loading}
           >
             {loading ? 'Cargando...' : 'Registrarse'}
           </button>
         </div>
+
         <div className="mt-4 flex justify-between">
           <button
             type="button"

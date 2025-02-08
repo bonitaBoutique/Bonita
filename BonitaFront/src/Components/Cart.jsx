@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { incrementQuantity, removeFromCart, clearCart, decrementQuantity } from '../Redux/Actions/actions';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,15 +6,21 @@ import { SlTrash, SlMinus, SlPlus } from "react-icons/sl";
 import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
 import Navbar from './Navbar';
 import Swal from 'sweetalert2';
+import ShippingOptionsPopup from './ShippingOptionsPopup';
+import ShippingPopup from './ShippingPopup';
 
 
 const Cart = () => {
+  
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart);
-  
+  console.log(cart)
   const { userInfo } = useSelector((state) => state.userLogin)
   const navigate = useNavigate();
-
+  const [showShippingOptions, setShowShippingOptions] = useState(false);
+  const [showShippingPopup, setShowShippingPopup] = useState(false);
+  const [shippingType, setShippingType] = useState('');
+ 
   const handleIncrementQuantity = (productId, stock) => {
     const item = cart.items.find((item) => item.id_product === productId);
     if (item.quantity < stock) {
@@ -45,10 +51,20 @@ const Cart = () => {
       });
     } else {
       console.log('Continuar con el proceso de compra');
-      navigate('/checkout'); // Redirige a la página de checkout si está autenticado
+      setShowShippingOptions(true);
     }
   };
   
+  const handleShippingSelect = (option) => {
+    setShowShippingOptions(false);
+    setShippingType(option);
+    
+    if (option === 'Retira en local') {
+      navigate('/checkout', { state: { shippingType: option } });
+    } else {
+      setShowShippingPopup(true);
+    }
+  };
 
   return (
     <>
@@ -115,12 +131,32 @@ const Cart = () => {
                   Seguir Comprando
                 </Link>
                 <button
-                  onClick={handleCheckout}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 font-nunito font-semibold"
-                >
-                  Finalizar Compra
-                </button>
-              </div>
+        onClick={handleCheckout}
+        className=" px-4 py-2 bg-pink-400 text-white rounded-md"
+      >
+        Proceder al pago
+      </button>
+
+      {showShippingOptions && (
+        <ShippingOptionsPopup
+          onClose={() => setShowShippingOptions(false)}
+          onSelect={handleShippingSelect}
+        />
+      )}
+
+      {showShippingPopup && (
+        <ShippingPopup
+          onClose={() => setShowShippingPopup(false)}
+          onSave={(address) => {
+            navigate('/checkout', { 
+              state: { 
+                shippingType: shippingType,
+                deliveryAddress: address 
+              } 
+            });
+          }}
+        />
+      )} </div>
             </div>
           )}
         </div>

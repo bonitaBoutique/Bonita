@@ -117,7 +117,10 @@ import {
   GET_ALL_CLIENT_ACCOUNTS_REQUEST,
   GET_ALL_CLIENT_ACCOUNTS_SUCCESS,
   GET_ALL_CLIENT_ACCOUNTS_FAILURE,
-  RESET_RECEIPT_STATE
+  RESET_RECEIPT_STATE,
+  CREATE_SENDING_REQUEST,
+  CREATE_SENDING_SUCCESS,
+  CREATE_SENDING_FAILURE
 
 } from "../Actions/actions-type";
 
@@ -141,6 +144,11 @@ const initialState = {
       error: null,
       success: false
     }
+  },
+  sending: {
+    loading: false,
+    error: null,
+    data: null
   },
  clientAccountBalance: {
     user: null,
@@ -170,18 +178,15 @@ const initialState = {
   },
 
   userRegister: {
-    userInfo: localStorage.getItem("userInfo")
-      ? JSON.parse(localStorage.getItem("userInfo"))
-      : null,
+    userInfo: null,
     loading: false,
     error: null,
+    success: false
   },
   userLogin: {
-    userInfo: localStorage.getItem("userInfo")
-      ? JSON.parse(localStorage.getItem("userInfo"))
-      : null,
+    userInfo: null,
     loading: false,
-    error: null,
+    error: null
   },
   categories: {
     loading: false,
@@ -838,34 +843,40 @@ const rootReducer = (state = initialState, action) => {
         },
       };
 
-    case USER_REGISTER_REQUEST:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: true,
-          error: null,
-        },
-      };
-    case USER_REGISTER_SUCCESS:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: false,
-          userInfo: action.payload,
-          error: null,
-        },
-      };
-    case USER_REGISTER_FAIL:
-      return {
-        ...state,
-        userTaxxa: {
-          ...state.userTaxxa,
-          loading: false,
-          error: action.payload,
-        },
-      };
+      case USER_REGISTER_REQUEST:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: true,
+      success: false,
+      error: null,
+    },
+  };
+
+case USER_REGISTER_SUCCESS:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: false,
+      userInfo: action.payload,
+      error: null,
+      success: true
+    },
+  };
+
+case USER_REGISTER_FAIL:
+  return {
+    ...state,
+    userRegister: {
+      ...state.userRegister,
+      loading: false,
+      success: false,
+      error: action.payload,
+      userInfo: null,
+    },
+  };
 
     case FETCH_SELLER_REQUEST:
       return {
@@ -1345,6 +1356,35 @@ const rootReducer = (state = initialState, action) => {
                     error: action.payload,
                   },
                 };
+                case CREATE_SENDING_REQUEST:
+  return {
+    ...state,
+    sending: {
+      ...state.sending,
+      loading: true,
+      error: null
+    }
+  };
+
+case CREATE_SENDING_SUCCESS:
+  return {
+    ...state,
+    sending: {
+      loading: false,
+      error: null,
+      data: action.payload
+    }
+  };
+
+case CREATE_SENDING_FAILURE:
+  return {
+    ...state,
+    sending: {
+      ...state.sending,
+      loading: false,
+      error: action.payload
+    }
+  };
 
           
     default:

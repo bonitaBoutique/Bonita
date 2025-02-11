@@ -21,6 +21,18 @@ module.exports = (sequelize) => {
       amount: {
         type: DataTypes.FLOAT,
         allowNull: false,
+        comment: 'Order amount before shipping'
+      },
+      shippingCost: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: 0,
+        comment: 'Shipping cost from MiPaquete'
+      },
+      shippingProvider: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'MiPaquete shipping provider'
       },
       address: {
         type: DataTypes.ENUM("Envio a domicilio", "Retira en local"),

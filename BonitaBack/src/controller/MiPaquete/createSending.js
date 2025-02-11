@@ -2,7 +2,7 @@ const axios = require('axios');
 const response = require('../../utils/response');
 
 const DEFAULT_VALUES = {
-  originDaneCode: "50226", 
+  originDaneCode: "50226000", 
   originCountryCode: "170",   // Mexico code per API docs
   destinyCountryCode: "170",  // Mexico code per API docs
   deliveryCompany: "653928ae0a945520b78f279b",
@@ -24,9 +24,9 @@ const createSending = async (req, res) => {
         originCountryCode: DEFAULT_VALUES.originCountryCode,
         destinyCountryCode: DEFAULT_VALUES.destinyCountryCode
       },
-      paymentType: 101,
+      paymentType: 102,
       productInformation: {
-        declaredValue: req.body.declaredValue || 10000,
+        declaredValue: req.body.declaredValue || 0,
         forbiddenProduct: true,
         height: req.body.height || 10,
         large: req.body.length || 10,

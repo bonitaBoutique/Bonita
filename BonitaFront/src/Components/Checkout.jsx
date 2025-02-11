@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../Config";
@@ -12,13 +13,19 @@ import {
 import Swal from "sweetalert2";
 import imgFondo from '../assets/img/BannerPrincipal/banner3.png'
 import Navbar from "./Navbar";
+import PropTypes from 'prop-types';
 
 const Checkout = () => {
   const currentDate = new Date().toISOString().split("T")[0];
-  const [address, setAddress] = useState("Retira en local");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const location = useLocation();
+  const { shippingType, deliveryAddress: locationDeliveryAddress } = location.state || {
+    shippingType: 'Retira en local',
+    deliveryAddress: ''
+  };
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
 
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
@@ -29,14 +36,14 @@ const Checkout = () => {
   const [error, setError] = useState(null);
 
   const [orderData, setOrderData] = useState({
-    date: currentDate,
+   date: currentDate,
     amount: cart.totalPrice,
     quantity: cart.totalItems,
     state_order: "Pedido Realizado",
     n_document: userInfo ? userInfo.n_document : "",
     id_product: cart.items.map((item) => item.id_product),
-    address,
-    deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
+    address: shippingType,
+    deliveryAddress: locationDeliveryAddress
   });
 
   // Manejar creación de orden exitosa
@@ -116,19 +123,21 @@ const Checkout = () => {
 
   // Actualizar dirección de entrega
   useEffect(() => {
-    setOrderData((prevData) => ({
-      ...prevData,
-      address,
-      deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
+    setOrderData(prev => ({
+      ...prev,
+      address: shippingType
     }));
-  }, [address, deliveryAddress]);
+  }, [shippingType]);
 
-  const handleAddressChange = (e) => {
-    setAddress(e.target.value);
-  };
+ 
 
   const handleDeliveryAddressChange = (e) => {
-    setDeliveryAddress(e.target.value);
+    const address = e.target.value;
+    setDeliveryAddress(address);
+    setOrderData(prev => ({
+      ...prev,
+      deliveryAddress: address
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -249,6 +258,10 @@ const Checkout = () => {
   </>
   );
 };
+Checkout.propTypes = {
+  shippingType: PropTypes.string,
+};
 
 export default Checkout;
+
 

@@ -124,7 +124,11 @@ import {
   RESET_RECEIPT_STATE,
   CREATE_SENDING_REQUEST,
   CREATE_SENDING_SUCCESS,
-  CREATE_SENDING_FAILURE
+  CREATE_SENDING_FAILURE,
+  FETCH_SENDINGTRACKING_REQUEST,
+FETCH_SENDINGTRACKING_SUCCESS,
+FETCH_SENDINGTRACKING_FAILURE
+
   
 } from "./actions-type";
 
@@ -1114,7 +1118,30 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       }
     };
   };
+export const getSendingTracking = () => async (dispatch) => {
+  dispatch({ type: FETCH_SENDINGTRACKING_REQUEST });
 
+  try {
+    const response = await axios.get(`${BASE_URL}/mipaquete/tracking`);
+    console.log("Respuesta de la API:", response.data);
+
+    if (!response.data?.message?.products) {
+      throw new Error('No se encontraron productos');
+    }
+
+    dispatch({
+      type: FETCH_SENDINGTRACKING_SUCCESS,
+      payload: response.data.message.products,
+    });
+  } catch (error) {
+    console.error("Error al obtener productos:", error);
+    dispatch({
+      type: FETCH_SENDINGTRACKING_FAILURE,
+      payload: error.message || "Error al cargar los productos",
+    });
+    Swal.fire('Error', 'Error al cargar los productos', 'error');
+  }
+};
 
 
 

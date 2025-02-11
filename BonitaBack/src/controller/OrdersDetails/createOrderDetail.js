@@ -13,14 +13,31 @@ function generarFirmaIntegridad(id_orderDetail, monto, moneda, secretoIntegridad
 
 module.exports = async (req, res) => {
   try {
-    const { date, amount, quantity, state_order, pointOfSale, id_product, address, deliveryAddress, n_document } = req.body;
+    const { 
+      date, 
+      amount, // base amount without shipping
+      quantity, 
+      state_order, 
+      pointOfSale, 
+      id_product, 
+      address,
+      deliveryAddress,
+      shippingCost = 0, // New field for shipping cost
+      n_document 
+    } = req.body;
 
     if (!date || !amount || !quantity || !state_order || !id_product || !address) {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
-    if (address === "Envio a domicilio" && !deliveryAddress) {
-      return response(res, 400, { error: "Missing delivery address" });
-    }
+    const totalAmount = Number(amount) + Number(shippingCost);
+
+    const referencia = `SO-${uuidv4()}`;
+    const integritySignature = generarFirmaIntegridad(
+      referencia, 
+      totalAmount * 100, 
+      "COP", 
+      secretoIntegridad
+    );
 
     // Verificar el stock de los productos
     const products = await Product.findAll({
@@ -38,25 +55,23 @@ module.exports = async (req, res) => {
     }
 
     // Generar la firma de integridad
-    const referencia = `SO-${uuidv4()}`;
-    const integritySignature = generarFirmaIntegridad(referencia, amount * 100, "COP", secretoIntegridad);
+   
     const isFacturable = products.some(product => product.isDian);
 
     // Crear la orden
     const orderDetail = await OrderDetail.create({
       id_orderDetail: uuidv4(),
       date,
-      amount,
+      amount: totalAmount,
+      shippingCost,
       quantity,
       state_order,
       address,
       deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
       n_document,
-      isFacturable,
       pointOfSale,
-      integritySignature,
+      integritySignature
     });
-
     // Asociar productos a la orden y registrar movimiento de stock
     await Promise.all(
       id_product.map(async (productId) => {
@@ -91,7 +106,15 @@ module.exports = async (req, res) => {
     });
 
     console.log("Orden creada:", updatedOrderDetail);
-    return response(res, 201, { orderDetail: updatedOrderDetail });
+    return response(res, 201, { 
+      orderDetail: updatedOrderDetail,
+      wompiData: {
+        referencia,
+        integritySignature,
+        amount: totalAmount * 100 // Amount in cents for Wompi
+      }
+    });
+
   } catch (error) {
     console.error("Error creating orderDetail:", error);
     return response(res, 500, { error: error.message });

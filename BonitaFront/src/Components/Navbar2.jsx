@@ -19,6 +19,8 @@ export default function Navbar2() {
   const dispatch = useDispatch();
   const userInfo = useSelector((state) => state.userLogin.userInfo);
 
+  console.log("userInfo:", userInfo);
+
   const renderMenuItems = () => {
     if (!userInfo) {
       return (
@@ -151,18 +153,27 @@ export default function Navbar2() {
             )}
           </Menu.Item>
           <Menu.Item>
-            {({ active }) => (
-              <Link
-                to="/register"
-                className={classNames(
-                  active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
-                )}
-              >
-                Crear Administrador
-              </Link>
-            )}
-          </Menu.Item>
+  {({ active }) => {
+    let linkText = "Crear Administrador";
+    if (userInfo && userInfo.role === 'Admin') {
+      linkText = "Crear Administrador";
+    } else if (userInfo && userInfo.role === 'Cajero') {
+      linkText = "Crear Cliente";
+    }
+
+    return (
+      <Link
+        to="/register"
+        className={classNames(
+          active ? 'bg-gray-100' : '',
+          'block px-4 py-2 text-sm text-gray-700'
+        )}
+      >
+        {linkText}
+      </Link>
+    );
+  }}
+</Menu.Item>
           <Menu.Item>
             {({ active }) => (
               <button

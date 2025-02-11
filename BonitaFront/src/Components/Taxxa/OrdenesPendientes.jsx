@@ -8,20 +8,21 @@ const OrdenesPendientes = () => {
   const [filterState, setFilterState] = useState("");
   const [expandedOrder, setExpandedOrder] = useState(null); // Para controlar qué orden está expandida
   const dispatch = useDispatch();
-  const { orders, loading, error } = useSelector(
-    (state) => state.ordersGeneral
-  );
+  const { orders, loading, error } = useSelector(state => state.ordersGeneral);
 
   useEffect(() => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  const filteredOrders = orders.filter((order) => {
-    if (!filterState) {
-      return order.isFacturable === true; // Solo órdenes facturables
-    }
-    return order.state_order === filterState && order.isFacturable === true;
-  });
+  // const filteredOrders = orders.filter((order) => {
+  //   if (!filterState) {
+  //     return order.isFacturable === true && order.isFacturable === false; // Solo órdenes facturables
+  //   }
+  //   return order.state_order === filterState && order.isFacturable === true;
+  // });
+
+  console.log("Orders:", orders);
+  console.log("Filtered Orders:", orders);
 
   const handleFilterChange = (e) => {
     setFilterState(e.target.value);
@@ -102,7 +103,7 @@ const OrdenesPendientes = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
+              {orders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
                   className="bg-white border-b dark:bg-gray-800  text-white"

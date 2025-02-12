@@ -7,8 +7,6 @@ import DocumentTypePopup from "./DocumentTypePopup"; // Importa el popup
 import { useNavigate } from "react-router-dom";
 import OrdenesPendientes from "./OrdenesPendientes";
 
-
-
 const BillingForm = () => {
   const navigate = useNavigate();
   const [n_document, setNDocument] = useState("");
@@ -52,25 +50,42 @@ const BillingForm = () => {
   useEffect(() => {
     if (userTaxxa.userInfo && userTaxxa.userInfo.error) {
       setShowRegistrationPopup(true);
-    } else if (userTaxxa.userInfo && userTaxxa.userInfo.data) {
-      const { first_name, last_name, email, phone, n_document } =
-        userTaxxa.userInfo.data;
+    } else if (userTaxxa.userInfo) {
+      const {
+        first_name,
+        last_name,
+        email,
+        phone,
+        n_document,
+        wlegalorganizationtype,
+        scostumername,
+        stributaryidentificationkey,
+        sfiscalresponsibilities,
+        wdoctype,
+      } = userTaxxa.userInfo;
+
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
-        scostumername: `${first_name} ${last_name}`.trim(),
+        wlegalorganizationtype: wlegalorganizationtype || "",
+        scostumername: scostumername || `${first_name} ${last_name}`.trim() || "",
+        stributaryidentificationkey: stributaryidentificationkey || "",
+        sfiscalresponsibilities: sfiscalresponsibilities || "",
         jpartylegalentity: {
           ...prevBuyer.jpartylegalentity,
+          wdoctype: wdoctype || "",
           sdocno: n_document || "",
-          scorporateregistrationschemename: `${first_name} ${last_name}`.trim(),
+          scorporateregistrationschemename: `${first_name} ${last_name}`.trim() || "",
         },
         jcontact: {
-          scontactperson: `${first_name} ${last_name}`.trim(),
+          scontactperson: `${first_name} ${last_name}`.trim() || "",
           selectronicmail: email || "",
           stelephone: phone || "",
         },
       }));
     }
   }, [userTaxxa]);
+
+  console.log(userTaxxa);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -80,78 +95,62 @@ const BillingForm = () => {
   const closePopup = () => setShowRegistrationPopup(false);
 
   return (
-  <div className="">
+    <div className="">
+      <OrdenesPendientes />
 
-      <OrdenesPendientes/>
-    
-    <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">
+      <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">
+        <form onSubmit={handleFetchUser} className="flex flex-col gap-4 mb-6">
+          <label className="text-gray-700">Número de Documento</label>
+          <input
+            type="text"
+            value={n_document}
+            onChange={(e) => setNDocument(e.target.value)}
+            className="p-2 border border-gray-300 rounded"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          >
+            Buscar Usuario
+          </button>
+        </form>
 
-    
-      <form onSubmit={handleFetchUser} className="flex flex-col gap-4 mb-6">
-        <label className="text-gray-700">Número de Documento</label>
-        <input
-          type="text"
-          value={n_document}
-          onChange={(e) => setNDocument(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-          required
-        />
+        {userTaxxa.error && <p className="text-red-500 mt-2">{userTaxxa.error}</p>}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <BuyerForm jbuyer={jbuyer} setBuyer={setBuyer} />
+        </form>
+
+        {showRegistrationPopup && <UserRegistrationPopup onClose={closePopup} />}
         <button
-          type="submit"
-          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          type="button"
+          onClick={handleProceedToDocument}
+          className="bg-blue-500 text-white py-2 rounded mt-12 hover:bg-blue-600"
         >
-          Buscar Usuario
+          Proceder a Facturar o Nota de Crédito
         </button>
-      </form>
 
-      {userTaxxa.error && <p className="text-red-500 mt-2">{userTaxxa.error}</p>}
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <BuyerForm jbuyer={jbuyer} setBuyer={setBuyer} />
-       
-      </form>
-
-      {showRegistrationPopup && <UserRegistrationPopup onClose={closePopup} />}
-      <button
-        type="button"
-        onClick={handleProceedToDocument}
-        className="bg-blue-500 text-white py-2 rounded mt-12 hover:bg-blue-600"
-      >
-        Proceder a Facturar o Nota de Crédito
-      </button>
-
-      {/* Popup para seleccionar tipo de comprobante */}
-      {showInvoicePopup && (
-  <DocumentTypePopup
-    onClose={() => setShowInvoicePopup(false)}
-    onSubmit={(type) => {
-      if (type === "01") {
-        navigate("/invoice", { state: { buyer: jbuyer } });
- // Navegar a la ruta de facturas
-      } else if (type === "91") {
-        navigate("/creditN", { state: { buyer: jbuyer } });
- // Navegar a la ruta de notas de crédito
-      }
-    }}
-  />
-  
-)}
-</div> 
-  </div>
+        {/* Popup para seleccionar tipo de comprobante */}
+        {showInvoicePopup && (
+          <DocumentTypePopup
+            onClose={() => setShowInvoicePopup(false)}
+            onSubmit={(type) => {
+              if (type === "01") {
+                console.log("Invoice Data:", jbuyer); // Log invoice data
+                navigate("/invoice", { state: { buyer: jbuyer } });
+                // Navegar a la ruta de facturas
+              } else if (type === "91") {
+                console.log("Credit Note Data:", jbuyer); // Log credit note data
+                navigate("/creditN", { state: { buyer: jbuyer } });
+                // Navegar a la ruta de notas de crédito
+              }
+            }}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 
 export default BillingForm;
-
-
-
-
-
-
-
-
-
-
-
-
-

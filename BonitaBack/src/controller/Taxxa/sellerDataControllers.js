@@ -16,7 +16,7 @@ const getOrCreateSellerData = async (req, res) => {
       wtowncode,
       scityname,
       jcontact: {
-        selectronicmail: contact_selectronicmail = null,
+        selectronicmail = null,
         jregistrationaddress: {
           wdepartmentcode: registration_wdepartmentcode = null,
           scityname: registration_scityname = null,
@@ -80,7 +80,7 @@ const getOrCreateSellerData = async (req, res) => {
 
 const updateSellerData = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { sdocno } = req.params;
     const updateData = req.body;
 
     // Validar que existen datos para actualizar
@@ -88,12 +88,12 @@ const updateSellerData = async (req, res) => {
       return res.status(400).json({ message: 'No hay datos para actualizar' });
     }
 
-    console.log("ID recibido para actualizar:", id);
+    console.log("ID recibido para actualizar:", sdocno);
     console.log("Datos recibidos para actualizar:", updateData);
 
     // Actualizar el registro
     const [rowsUpdated, updatedRecords] = await SellerData.update(updateData, {
-      where: { id },
+      where: { sdocno },
       returning: true,
     });
 
@@ -115,9 +115,38 @@ const updateSellerData = async (req, res) => {
   }
 };
 
+const getSellerDataBySdocno = async (req, res) => {
+  try {
+    const { sdocno } = req.params;
+
+    // Validar que el sdocno existe
+    if (!sdocno) {
+      return res.status(400).json({ message: 'SDocno es requerido' });
+    }
+
+    // Buscar el vendedor por sdocno
+    const sellerData = await SellerData.findOne({
+      where: { sdocno },
+    });
+
+    // Validar si se encontraron datos
+    if (!sellerData) {
+      return res.status(404).json({ message: 'Datos del vendedor no encontrados' });
+    }
+
+    // Responder con los datos del vendedor
+    res.status(200).json({ message: 'Datos del vendedor encontrados exitosamente', data: sellerData });
+
+  } catch (error) {
+    console.error('Error al obtener los datos del vendedor:', error);
+    res.status(500).json({ message: 'Error al obtener los datos del vendedor', error: error.message });
+  }
+};
 
 module.exports = {
   getOrCreateSellerData,
   updateSellerData,
-  
+  getSellerDataBySdocno, // Exporta la nueva función
 };
+
+

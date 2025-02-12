@@ -3,7 +3,7 @@ const { catchedAsync } = require("../utils");
 const webhook = require("./webhook");
 const {
   updateSellerData,
-  getOrCreateSellerData,
+  getOrCreateSellerData,getSellerDataBySdocno
 } = require("./Taxxa/sellerDataControllers");
 const { getProductStock, createProduct } = require("./Products");
 const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
@@ -26,6 +26,9 @@ const { sendEmail } = require("./nodemailerController/index.js");
 
 const { getClientAccountBalance, getAllClientAccounts } = require("./AccountBalance/index.js");
 const { getAllReservations, updateReservation, reservationByDocument, applyingPayments } = require("./ReservationController");
+const { createInvoice } = require("./Taxxa/TaxxaService");
+const  {postInvoice}  = require("./invoiceControllers.js");
+const { getInvoiceByStatus } = require("./invoiceControllers.js");
 
 
 module.exports = {
@@ -49,8 +52,10 @@ module.exports = {
   updateOrderDetail: catchedAsync(require("./OrdersDetails/updateOrderDetail")),
   webhook: catchedAsync(require("./webhook")),
   getOrCreateSellerData: catchedAsync(getOrCreateSellerData),
+  getSellerDataBySdocno: catchedAsync(getSellerDataBySdocno),
   updateSellerData: catchedAsync(updateSellerData),
   TaxxaService: catchedAsync(require("./Taxxa/TaxxaService")),
+  taxxaUtils: catchedAsync(require("./Taxxa/taxxaUtils")),
   getProductStock: catchedAsync(require("./Products/getProductStock")),
   createReceipt: catchedAsync(createReceipt),
   lastReceipt: catchedAsync(lastReceipt),
@@ -79,5 +84,9 @@ module.exports = {
   getAllReservations: catchedAsync(getAllReservations),
   reservationByDocument: catchedAsync(reservationByDocument),
   applyingPayments: catchedAsync(applyingPayments),
+  createInvoice: catchedAsync(createInvoice),
+  postInvoice: catchedAsync(postInvoice),
+  getInvoiceByStatus: catchedAsync(getInvoiceByStatus),
+
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

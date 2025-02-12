@@ -57,9 +57,9 @@ const SellerForm = ({ jseller, setSeller }) => {
     e.preventDefault();
     console.log('Datos enviados:', formData); // Verifica el objeto antes de enviarlo
 
-    if (sellerData && sellerData.id) {
+    if (sellerData && sellerData.sdocno) {
       // Actualizar datos existentes
-      const success = await dispatch(updateSellerData(sellerData.id, formData));
+      const success = await dispatch(updateSellerData(sellerData.sdocno, formData));
       if (success) {
         alert("Datos actualizados con éxito");
         navigate("/panel");

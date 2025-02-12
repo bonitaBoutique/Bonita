@@ -1,17 +1,17 @@
-const  Router  = require('express');
-const controller = require('../controller');
+const express = require('express');
+const router = express.Router();
+const controller  = require('../controller');
 
-const router = Router();
+
 
 
 
 router.post('/', controller.getOrCreateSellerData);
-router.put('/:id', controller.updateSellerData);
-
-
-
-
+router.put('/:sdocno', controller.updateSellerData);
+router.get('/:sdocno', controller.getSellerDataBySdocno); 
 
 
 
 module.exports = router;
+
+

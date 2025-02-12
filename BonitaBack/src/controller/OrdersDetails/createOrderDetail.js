@@ -58,6 +58,11 @@ module.exports = async (req, res) => {
    
     const isFacturable = products.some(product => product.isDian);
 
+    let finalDeliveryAddress = null;
+    if (address === "Envio a domicilio") {
+      finalDeliveryAddress = deliveryAddress;
+    }
+
     // Crear la orden
     const orderDetail = await OrderDetail.create({
       id_orderDetail: uuidv4(),
@@ -67,7 +72,7 @@ module.exports = async (req, res) => {
       quantity,
       state_order,
       address,
-      deliveryAddress: address === "Envio a domicilio" ? deliveryAddress : null,
+      deliveryAddress: finalDeliveryAddress,
       n_document,
       pointOfSale,
       integritySignature

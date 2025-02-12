@@ -748,24 +748,28 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
 export const sendInvoice = (invoiceData) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   try {
-    const response = await fetch(`${BASE_URL}/taxxa/invoice`, {
-      method: "POST",
+    console.log("invoiceData:", JSON.stringify(invoiceData, null, 2)); // Imprime el objeto invoiceData en la consola
+
+    const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, invoiceData, {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(invoiceData),
     });
 
-    if (!response.ok) {
-      throw new Error("Error al enviar la factura");
-    }
-
-    const data = await response.json();
-    dispatch({ type: SEND_INVOICE_SUCCESS, payload: data });
+    dispatch({ type: SEND_INVOICE_SUCCESS, payload: response.data });
+    return response.data; // Devuelve la respuesta para que el componente pueda manejarla
   } catch (error) {
-    dispatch({ type: SEND_INVOICE_FAILURE, payload: error.message });
+    // Imprime el error completo para depuración
+    console.error("Error al enviar la factura:", error);
+
+    // Verifica si hay una respuesta del servidor para obtener más detalles
+    const errorMessage = error.response?.data?.message || error.message || "Error al enviar la factura";
+
+    dispatch({ type: SEND_INVOICE_FAILURE, payload: errorMessage });
+    throw new Error(errorMessage); // Lanza el error para que el componente pueda manejarlo
   }
 };
+
 
 export const createReceipt = (receipt) => async (dispatch) => {
   dispatch({ type: CREATE_RECEIPT_REQUEST });

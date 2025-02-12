@@ -7,6 +7,7 @@ import paymentMethods from "./options/paymentMethods";
 import OrdenesPendientes from "./OrdenesPendientes";
 
 const Invoice = () => {
+  const sellerId = '901832769';
   const location = useLocation();
   const buyer = location.state?.buyer || {};
   const dispatch = useDispatch();
@@ -14,48 +15,45 @@ const Invoice = () => {
   const orderLoading = useSelector((state) => state.orderById.loading);
   const orderError = useSelector((state) => state.orderById.error);
 
-  const getCurrentDateTime = () => new Date().toISOString().slice(0, 16);
-  const getCurrentDate = () => new Date().toISOString().slice(0, 10);
-
   const [orderId, setOrderId] = useState("");
-  const { loading, success, error } = useSelector((state) => state.invoice);
+  const { loading: invoiceLoading, success, error: invoiceError } = useSelector((state) => state.invoice);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [invoiceData, setInvoiceData] = useState({
+  const [jDocumentData, setJDocumentData] = useState({ // Cambia invoiceData a jDocumentData
     wVersionUBL: "2.1",
     wenvironment: "test",
-    jDocument: {
-      wdocumenttype: "Invoice",
-      wdocumenttypecode: "01",
-      scustomizationid: "10",
-      wcurrency: "COP",
-      sdocumentprefix: "",
-      sdocumentsuffix: null,
-      tissuedate: new Date().toISOString(),
-      tduedate: new Date().toISOString().split("T")[0],
-      wpaymentmeans: 1,
-      wpaymentmethod: "10",
-      nlineextensionamount: 0,
-      ntaxexclusiveamount: 0,
-      ntaxinclusiveamount: 0,
-      npayableamount: 0,
-      sorderreference: "",
-      snotes: "",
-      snotetop: "",
-      jextrainfo: {
-        ntotalinvoicepayment: 0,
-        stotalinvoicewords: "",
-        iitemscount: "0"
-      },
-      jdocumentitems: [],
-      jbuyer: buyer,
-    }
+    wdocumenttype: "Invoice",
+    wdocumenttypecode: "01",
+    scustomizationid: "10",
+    wcurrency: "COP",
+    sdocumentprefix: "FVB",
+    sdocumentsuffix: null,
+    tissuedate: new Date().toISOString(),
+    tduedate: new Date().toISOString().split("T")[0],
+    wpaymentmeans: 1,
+    wpaymentmethod: "10",
+    nlineextensionamount: 0,
+    ntaxexclusiveamount: 0,
+    ntaxinclusiveamount: 0,
+    npayableamount: 0,
+    sorderreference: "",
+    snotes: "",
+    snotetop: "",
+    jextrainfo: {
+      ntotalinvoicepayment: 0,
+      stotalinvoicewords: "",
+      iitemscount: "0"
+    },
+    jdocumentitems: [],
+    jbuyer: buyer,
   });
 
   useEffect(() => {
     if (order && order.amount) {
       const totalAmount = Number(order.amount);
       const amountWithoutTax = Number((totalAmount / 1.19).toFixed(2));
-      const taxAmount = Number((totalAmount - amountWithoutTax).toFixed(2));
+      //const taxAmount = Number((totalAmount - amountWithoutTax).toFixed(2));
 
       const productsData = order.products.map(product => {
         const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2));
@@ -83,43 +81,26 @@ const Invoice = () => {
         };
       });
 
-      setInvoiceData({
-        wVersionUBL: "2.1",
-        wenvironment: "test",
-        jDocument: {
-          wdocumenttype: "Invoice",
-          wdocumenttypecode: "01",
-          scustomizationid: "10",
-          wcurrency: "COP",
-          sdocumentprefix: "",
-          sdocumentsuffix: null,
-          tissuedate: new Date().toISOString().split("T")[0],
-          tduedate: new Date().toISOString().split("T")[0],
-          wpaymentmeans: 1,
-          wpaymentmethod: "10",
-          nlineextensionamount: parseFloat(amountWithoutTax.toFixed(2)),
-          ntaxexclusiveamount: parseFloat(amountWithoutTax.toFixed(2)),
-          ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
-          npayableamount: parseFloat(totalAmount.toFixed(2)),
-          sorderreference: order.id_orderDetail,
-          snotes: "",
-          snotetop: "",
-          jextrainfo: {
-            ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
-            stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
-            iitemscount: order.products.length.toString(),
-          },
-          jdocumentitems: productsData,
-          jbuyer: buyer,
+      setJDocumentData(prevJDocumentData => ({ // Cambia setInvoiceData a setJDocumentData
+        ...prevJDocumentData,
+        nlineextensionamount: parseFloat(amountWithoutTax.toFixed(2)),
+        ntaxexclusiveamount: parseFloat(amountWithoutTax.toFixed(2)),
+        ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
+        npayableamount: parseFloat(totalAmount.toFixed(2)),
+        jextrainfo: {
+          ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
+          stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
+          iitemscount: order.products.length.toString(),
         },
-      });
+        jdocumentitems: productsData,
+      }));
     }
   }, [order, buyer]);
 
   const handleChange = (e, path) => {
     const keys = path.split(".");
     const value = e.target.value;
-    setInvoiceData((prevState) => {
+    setJDocumentData((prevState) => { // Cambia setInvoiceData a setJDocumentData
       let obj = { ...prevState };
       let ref = obj;
       for (let i = 0; i < keys.length - 1; i++) {
@@ -141,15 +122,29 @@ const Invoice = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage("");
     try {
-      await dispatch(sendInvoice(invoiceData));
-      if (!error) {
+      if (order && order.id_orderDetail) {
+        const invoiceDataToSend = {
+          id_orderDetail: order.id_orderDetail,
+          invoiceData: jDocumentData, // Envia solo el objeto jDocument
+          sellerId: sellerId,
+        };
+        console.log("invoiceDataToSend:", invoiceDataToSend);
+        await dispatch(sendInvoice(invoiceDataToSend));
         console.log("Factura enviada con éxito");
+      } else {
+        setErrorMessage("No se encontró la orden o el ID de la orden es inválido.");
       }
     } catch (err) {
       console.error("Error al enviar la factura:", err);
+      setErrorMessage("Error al enviar la factura: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="p-4 pt-16">
@@ -171,20 +166,20 @@ const Invoice = () => {
           </button>
         </div>
         {orderLoading && <p>Cargando...</p>}
-        {orderError && <p className="text-red-500">{error}</p>}
+        {orderError && <p className="text-red-500">{orderError}</p>}
       </div>
       <form
         onSubmit={handleSubmit}
         className="p-4 bg-gray-100 rounded-md shadow-md mt-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
+
           <div>
             <label className="block mb-2">Prefijo del documento:</label>
             <input
               type="text"
-              value={invoiceData.jDocument.sdocumentprefix}
-              onChange={(e) => handleChange(e, "jDocument.sdocumentprefix")}
+              value={jDocumentData.sdocumentprefix} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "sdocumentprefix")} // Cambia jDocument.sdocumentprefix a sdocumentprefix
               className="border p-2 w-full"
               placeholder="Colocar el prefijo activo en DIAN, mínimo 1 carácter, máximo 4"
             />
@@ -194,8 +189,8 @@ const Invoice = () => {
             <label className="block mb-2">Fecha de emisión:</label>
             <input
               type="date"
-              value={invoiceData.jDocument.tissuedate}
-              onChange={(e) => handleChange(e, "jDocument.tissuedate")}
+              value={jDocumentData.tissuedate} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "tissuedate")} // Cambia jDocument.tissuedate a tissuedate
               className="border p-2 w-full"
             />
           </div>
@@ -203,16 +198,16 @@ const Invoice = () => {
             <label className="block mb-2">Fecha de vencimiento:</label>
             <input
               type="date"
-              value={invoiceData.jDocument.tduedate}
-              onChange={(e) => handleChange(e, "jDocument.tduedate")}
+              value={jDocumentData.tduedate} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "tduedate")} // Cambia jDocument.tduedate a tduedate
               className="border p-2 w-full"
             />
           </div>
           <div>
             <label className="block mb-2">Método de pago:</label>
             <select
-              value={invoiceData.jDocument.wpaymentmeans}
-              onChange={(e) => handleChange(e, "jDocument.wpaymentmeans")}
+              value={jDocumentData.wpaymentmeans} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "wpaymentmeans")} // Cambia jDocument.wpaymentmeans a wpaymentmeans
               className="border p-2 w-full"
             >
               <option value={1}>Contado</option>
@@ -222,8 +217,8 @@ const Invoice = () => {
           <div>
             <label className="block mb-2">Método de pago:</label>
             <select
-              value={invoiceData.jDocument.wpaymentmethod}
-              onChange={(e) => handleChange(e, "jDocument.wpaymentmethod")}
+              value={jDocumentData.wpaymentmethod} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "wpaymentmethod")} // Cambia jDocument.wpaymentmethod a wpaymentmethod
               className="border p-2 w-full"
             >
               {paymentMethods.map((method) => (
@@ -237,9 +232,9 @@ const Invoice = () => {
             <label className="block mb-2">Monto de la Orden:</label>
             <input
               type="text"
-              value={invoiceData.jDocument.nlineextensionamount}
+              value={jDocumentData.nlineextensionamount} // Cambia invoiceData a jDocumentData
               onChange={(e) =>
-                handleChange(e, "jDocument.nlineextensionamount")
+                handleChange(e, "nlineextensionamount") // Cambia jDocument.nlineextensionamount a nlineextensionamount
               }
               className="border p-2 w-full"
             />
@@ -250,8 +245,8 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={invoiceData.jDocument.ntaxexclusiveamount}
-              onChange={(e) => handleChange(e, "jDocument.ntaxexclusiveamount")}
+              value={jDocumentData.ntaxexclusiveamount} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "ntaxexclusiveamount")} // Cambia jDocument.ntaxexclusiveamount a ntaxexclusiveamount
               className="border p-2 w-full"
             />
           </div>
@@ -261,8 +256,8 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={invoiceData.jDocument.ntaxinclusiveamount}
-              onChange={(e) => handleChange(e, "jDocument.ntaxinclusiveamount")}
+              value={jDocumentData.ntaxinclusiveamount} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "ntaxinclusiveamount")} // Cambia jDocument.ntaxinclusiveamount a ntaxinclusiveamount
               className="border p-2 w-full"
             />
           </div>
@@ -272,8 +267,8 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={invoiceData.jDocument.npayableamount}
-              onChange={(e) => handleChange(e, "jDocument.npayableamount")}
+              value={jDocumentData.npayableamount} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "npayableamount")} // Cambia jDocument.npayableamount a npayableamount
               className="border p-2 w-full"
             />
           </div>
@@ -283,8 +278,8 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={invoiceData.jDocument.jextrainfo.stotalinvoicewords}
-              onChange={(e) => handleChange(e, "jDocument.jextrainfo.stotalinvoicewords")}
+              value={jDocumentData.jextrainfo.stotalinvoicewords} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "jextrainfo.stotalinvoicewords")} // Cambia jDocument.jextrainfo.stotalinvoicewords a jextrainfo.stotalinvoicewords
               className="border p-2 w-full"
             />
           </div>
@@ -294,8 +289,8 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={invoiceData.jDocument.jextrainfo.iitemscount}
-              onChange={(e) => handleChange(e, "jDocument.jextrainfo.stotalinvoicewords")}
+              value={jDocumentData.jextrainfo.iitemscount} // Cambia invoiceData a jDocumentData
+              onChange={(e) => handleChange(e, "jextrainfo.iitemscount")} // Cambia jDocument.jextrainfo.iitemscount a jextrainfo.iitemscount
               className="border p-2 w-full"
             />
           </div>
@@ -303,12 +298,13 @@ const Invoice = () => {
         <button
           type="submit"
           className="bg-blue-500 text-white p-2 mt-4 rounded hover:bg-blue-600"
+          disabled={isLoading}
         >
-          Enviar factura
+          {isLoading ? "Enviando factura..." : "Enviar factura"}
         </button>
-
       </form>
-      <div>{success ? "Invoice sent successfully!" : "Send an invoice"}</div>
+      {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
+      {success && <p className="text-green-500 mt-2">Factura enviada con éxito!</p>}
     </div>
   );
 };

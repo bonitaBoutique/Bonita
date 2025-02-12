@@ -18,15 +18,15 @@ import PropTypes from 'prop-types';
 const Checkout = () => {
   const currentDate = new Date().toISOString().split("T")[0];
   const location = useLocation();
-  const { shippingType, deliveryAddress: locationDeliveryAddress } = location.state || {
-    shippingType: 'Retira en local',
-    deliveryAddress: ''
-  };
+  const { shippingType, deliveryAddress } = location.state || {};
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  console.log("Shipping Type:", shippingType);
+  console.log("Delivery Address:", deliveryAddress);
 
+  const address = deliveryAddress || "Bonita por Defecto"; // Use default if deliveryAddress is null/undefined
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
   const cart = useSelector((state) => state.cart);
@@ -43,7 +43,7 @@ const Checkout = () => {
     n_document: userInfo ? userInfo.n_document : "",
     id_product: cart.items.map((item) => item.id_product),
     address: shippingType,
-    deliveryAddress: locationDeliveryAddress
+    deliveryAddress: address
   });
 
   // Manejar creación de orden exitosa
@@ -131,14 +131,14 @@ const Checkout = () => {
 
  
 
-  const handleDeliveryAddressChange = (e) => {
-    const address = e.target.value;
-    setDeliveryAddress(address);
-    setOrderData(prev => ({
-      ...prev,
-      deliveryAddress: address
-    }));
-  };
+  // const handleDeliveryAddressChange = (e) => {
+  //   const address = e.target.value;
+  //   setDeliveryAddress(address);
+  //   setOrderData(prev => ({
+  //     ...prev,
+  //     deliveryAddress: address
+  //   }));
+  // };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -191,7 +191,7 @@ const Checkout = () => {
           <select
             id="address"
             value={address}
-            onChange={handleAddressChange}
+            onChange={address}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
           >

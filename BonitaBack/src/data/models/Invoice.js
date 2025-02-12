@@ -12,6 +12,7 @@ module.exports = (sequelize) => {
           model: "Users",
           key: "n_document",
         },
+        index: true,
       },
       sellerId: {
         type: DataTypes.STRING,
@@ -20,11 +21,13 @@ module.exports = (sequelize) => {
           model: "SellerData",
           key: "sdocno",
         },
+        index: true,
       },
       invoiceNumber: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        index: true,
       },
       status: {
         type: DataTypes.ENUM("pending", "sent", "failed"),
@@ -36,6 +39,10 @@ module.exports = (sequelize) => {
       },
       taxxaResponse: {
         type: DataTypes.JSONB,
+        allowNull: true,
+      },
+      taxxaId: {
+        type: DataTypes.STRING,
         allowNull: true,
       },
     },

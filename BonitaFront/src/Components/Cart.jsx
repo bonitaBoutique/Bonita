@@ -20,6 +20,7 @@ const Cart = () => {
   const [showShippingOptions, setShowShippingOptions] = useState(false);
   const [showShippingPopup, setShowShippingPopup] = useState(false);
   const [shippingType, setShippingType] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState(null);
  
   const handleIncrementQuantity = (productId, stock) => {
     const item = cart.items.find((item) => item.id_product === productId);
@@ -59,11 +60,27 @@ const Cart = () => {
     setShowShippingOptions(false);
     setShippingType(option);
     
-    if (option === 'Retira en local') {
-      navigate('/checkout', { state: { shippingType: option } });
+    if (option === 'pickup') {
+      navigate('/checkout', { 
+        state: { 
+          shippingType: 'Retira en Local',
+          deliveryAddress: "Bonita por Defecto" // Default address for pickup
+        } 
+      });
     } else {
       setShowShippingPopup(true);
     }
+  };
+
+  const handleSaveShippingAddress = (address) => {
+    setShowShippingPopup(false);
+    setDeliveryAddress(address);
+    navigate('/checkout', { 
+      state: { 
+        shippingType: 'Envio a Domicilio',
+        deliveryAddress: address // Address from ShippingPopup
+      } 
+    });
   };
 
   return (
@@ -147,14 +164,7 @@ const Cart = () => {
       {showShippingPopup && (
         <ShippingPopup
           onClose={() => setShowShippingPopup(false)}
-          onSave={(address) => {
-            navigate('/checkout', { 
-              state: { 
-                shippingType: shippingType,
-                deliveryAddress: address 
-              } 
-            });
-          }}
+          onSave={handleSaveShippingAddress}
         />
       )} </div>
             </div>

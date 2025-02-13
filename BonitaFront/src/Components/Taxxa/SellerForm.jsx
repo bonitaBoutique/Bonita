@@ -40,6 +40,18 @@ const SellerForm = ({ jseller, setSeller }) => {
   });
   
 
+  const updateNestedField = (obj, path, value) => {
+    const keys = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {};
+      }
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+  };
+
   useEffect(() => {
     dispatch(fetchSellerData());
     console.log('fetchSellerData ejecutado'); // Confirmación de la acción
@@ -55,11 +67,30 @@ const SellerForm = ({ jseller, setSeller }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Datos enviados:', formData); // Verifica el objeto antes de enviarlo
-
+    console.log('Datos enviados:', formData);
+  
+    // Extraer los datos de jcontact y jregistrationaddress
+    const { jcontact, ...sellerData } = formData;
+    const { jregistrationaddress, selectronicmail } = jcontact;
+  
+    // Construir el objeto a enviar al backend
+    const dataToSend = {
+      ...sellerData,
+      contact_selectronicmail: selectronicmail,
+      registration_wdepartmentcode: jregistrationaddress.wdepartmentcode,
+      registration_scityname: jregistrationaddress.scityname,
+      registration_saddressline1: jregistrationaddress.saddressline1,
+      registration_scountrycode: jregistrationaddress.scountrycode,
+      registration_wprovincecode: jregistrationaddress.wprovincecode,
+      registration_szip: jregistrationaddress.szip,
+      registration_sdepartmentname: jregistrationaddress.sdepartmentname,
+    };
+  
+    console.log('Datos a enviar:', dataToSend);
+  
     if (sellerData && sellerData.sdocno) {
       // Actualizar datos existentes
-      const success = await dispatch(updateSellerData(sellerData.sdocno, formData));
+      const success = await dispatch(updateSellerData(sellerData.sdocno, dataToSend));
       if (success) {
         alert("Datos actualizados con éxito");
         navigate("/panel");
@@ -68,7 +99,7 @@ const SellerForm = ({ jseller, setSeller }) => {
       }
     } else {
       // Crear nuevos datos
-      const success = await dispatch(createSellerData(formData));
+      const success = await dispatch(createSellerData(dataToSend));
       if (success) {
         alert("Datos creados con éxito");
         navigate("/panel");
@@ -82,21 +113,21 @@ const SellerForm = ({ jseller, setSeller }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
   
-    const updateNestedField = (obj, path, value) => {
-      const keys = path.split('.');
-      let current = obj;
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        if (!current[key]) current[key] = {}; // Crear si no existe
-        current = current[key];
+    setFormData(prevFormData => {
+      const updatedFormData = { ...prevFormData };
+  
+      if (name.includes('jcontact.jregistrationaddress')) {
+        const path = name.split('.').slice(2).join('.');
+        updateNestedField(updatedFormData.jcontact.jregistrationaddress, path, value);
+      } else if (name.includes('jcontact')) {
+        const path = name.split('.').slice(1).join('.');
+        updateNestedField(updatedFormData.jcontact, path, value);
+      } else {
+        updatedFormData[name] = value;
       }
-      current[keys[keys.length - 1]] = value;
-    };
   
-    const updatedFormData = { ...formData };
-    updateNestedField(updatedFormData, name, value);
-  
-    setFormData(updatedFormData);
+      return updatedFormData;
+    });
   };
 
 

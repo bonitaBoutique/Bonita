@@ -707,14 +707,29 @@ export const createSellerData = (sellerData) => async (dispatch) => {
 
     if (response.ok) {
       dispatch({ type: CREATE_SELLER_SUCCESS, payload: data.data });
+      Swal.fire({
+        icon: 'success',
+        title: 'Datos del comercio creados',
+        text: 'Los datos del comercio se han creado correctamente.',
+      });
     } else {
       dispatch({
         type: CREATE_SELLER_FAILURE,
         payload: data.error || "Error al crear los datos del comercio",
       });
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al crear los datos del comercio',
+        text: data.error || "Ha ocurrido un error al crear los datos del comercio.",
+      });
     }
   } catch (error) {
     dispatch({ type: CREATE_SELLER_FAILURE, payload: error.message });
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al crear los datos del comercio',
+      text: error.message || "Ha ocurrido un error inesperado.",
+    });
   }
 };
 

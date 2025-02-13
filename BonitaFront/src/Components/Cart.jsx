@@ -96,7 +96,7 @@ const Cart = () => {
       <div className="relative flex flex-col justify-center items-center min-h-screen py-16 px-4 sm:px-6 lg:px-8">
         <div className="bg-gray-100 rounded-lg shadow-lg p-6 lg:p-8 w-full max-w-4xl">
           <h1 className="text-3xl text-gray-600 font-bold font-nunito mb-10 text-center">
-            PRODUCTOS SELECCIONADOS
+          PRODUCTOS SELECCIONADOS
           </h1>
           {cart.items.length === 0 ? (
             <p className="text-center text-gray-700 font-nunito font-semibold">Tu carrito está vacío.</p>
@@ -114,20 +114,19 @@ const Cart = () => {
                       <p className="font-nunito text-lg text-gray-500">Stock disponible: {item.stock}</p>
                       <div className="flex items-center space-x-2 mt-2">
                         <button
-                          className={`bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 ${item.quantity >= item.stock ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          onClick={() => handleIncrementQuantity(item.id_product, item.stock)}
-
-                          disabled={item.quantity >= item.stock}
-                        >
-                       <SlPlus />
-                        </button>
-                        <span className="text-lg text-gray-700">{item.quantity}</span>
-                        <button
                           className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
                           onClick={() => handleDecrementQuantity(item.id_product)}
                         >
                              <SlMinus />
                           
+                        </button>
+                        <span className="text-lg text-gray-700">{item.quantity}</span>
+                        <button
+                          className={`bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 ${item.quantity >= item.stock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          onClick={() => handleIncrementQuantity(item.id_product, item.stock)}
+                          disabled={item.quantity >= item.stock}
+                        >
+                       <SlPlus />
                         </button>
                         <button
                           className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"

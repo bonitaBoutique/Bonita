@@ -16,7 +16,7 @@ const getOrCreateSellerData = async (req, res) => {
       wtowncode,
       scityname,
       jcontact: {
-        selectronicmail = null,
+        selectronicmail: contact_selectronicmail = null,
         jregistrationaddress: {
           wdepartmentcode: registration_wdepartmentcode = null,
           scityname: registration_scityname = null,

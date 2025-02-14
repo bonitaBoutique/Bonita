@@ -7,6 +7,8 @@ import {
   FETCH_CATEGORIES_SUCCESS,
   FETCH_CATEGORIES_FAILURE,
   FETCH_PRODUCTS_REQUEST,
+  FETCH_FILTERED_PRODUCTS_REQUEST,
+  FETCH_FILTERED_PRODUCTS_SUCCESS,
   FETCH_PRODUCTS_SUCCESS,
   FETCH_PRODUCTS_FAILURE,
   FETCH_PRODUCT_REQUEST,
@@ -286,6 +288,7 @@ const rootReducer = (state = initialState, action) => {
         loading: false,
         product: action.payload,
       };
+      
     case CREATE_PRODUCT_FAILURE:
       return {
         ...state,
@@ -328,6 +331,21 @@ const rootReducer = (state = initialState, action) => {
         products: action.payload,
         loading: false,
       };
+      case FETCH_FILTERED_PRODUCTS_REQUEST: // Nuevo caso para la solicitud de búsqueda filtrada
+      return {
+        ...state,
+        loading: true, // Establece loading en true cuando se inicia la búsqueda
+        error: null,
+      };
+
+    case FETCH_FILTERED_PRODUCTS_SUCCESS:
+      return {
+        ...state,
+        searchResults: action.payload,
+        loading: false,
+        error: null,
+      };
+
 
     case FETCH_PRODUCTS_FAILURE:
       return {

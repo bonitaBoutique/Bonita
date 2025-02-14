@@ -16,15 +16,10 @@ const ProductsList = () => {
 
   // Selecciona los datos del estado global
   const products = useSelector((state) => state.products || []);
-  const productsFilter = useSelector((state) => state.productsFilter || []);
+  const searchResults = useSelector((state) => state.searchResults || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
-  console.log("Estado global:", { products, productsFilter });
-
-  useEffect(() => {
-    console.log("Productos filtrados:", productsFilter);
-  }, [productsFilter]);
 
   useEffect(() => {
     // Cargar todos los productos al inicio
@@ -32,12 +27,8 @@ const ProductsList = () => {
   }, [dispatch]);
 
   // Mostrar productos filtrados si existen, de lo contrario, mostrar todos
-  const activeProducts = (productsFilter.length > 0 ? productsFilter : products)
+  const activeProducts = (searchResults.length > 0 ? searchResults : products)
   .filter(product => product.stock > 0);
-
-  useEffect(() => {
-    console.log("Productos activos (con stock > 0):", activeProducts);
-  }, [productsFilter, products]);
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -93,7 +84,7 @@ const ProductsList = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-40">
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-14">
         <SearchComponent />
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           {activeProducts.length === 0 ? (
@@ -144,7 +135,7 @@ const ProductsList = () => {
                       
                       {/* Stock indicator */}
                       <p className={`text-sm mt-2 ${
-                        product.stock <= 5 ? 'text-red-500' : 'text-green-600'
+                        product.stock <= 5 ? 'text-red-500' : 'text-amber-100'
                       }`}>
                         Stock disponible: {product.stock} unidades
                       </p>

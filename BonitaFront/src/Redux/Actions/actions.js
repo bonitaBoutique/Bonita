@@ -233,35 +233,20 @@ export const decrementQuantity = (productId) => ({
 
 export const createOrder = (orderData) => async (dispatch) => {
   try {
-    dispatch({ type: ORDER_CREATE_REQUEST });
-
     const response = await axios.post(`${BASE_URL}/order/create/`, orderData);
-    console.log('Order creation response:', response.data);
-
-    if (!response.data || !response.data.message || !response.data.message.orderDetail) {
-      console.error('Invalid response structure:', response.data);
-      throw new Error('Order detail not received from server');
-    }
-
-    const orderDetail = response.data.message.orderDetail;
-
+    //console.log("Response data from createOrder:", response.data); // Agrega este log
     dispatch({
-      type: ORDER_CREATE_SUCCESS,
-      payload: orderDetail,
+      type: "CREATE_ORDER_SUCCESS",
+      payload: response.data.message.orderDetail,
     });
-
-    dispatch(clearCart());
-    localStorage.removeItem("cartItems");
-
-    return orderDetail; // Return the order detail
+    return response.data.message.orderDetail; // Retorna la data para que el componente pueda acceder al id
   } catch (error) {
-    console.error('Error al crear la orden:', error);
+    console.error("Error creating order:", error);
     dispatch({
-      type: ORDER_CREATE_FAIL,
-      payload: error.message || 'Error al crear la orden',
+      type: "CREATE_ORDER_ERROR",
+      payload: error.message,
     });
-    Swal.fire('Error', 'Error al crear la orden', 'error');
-    throw error; // Rethrow the error to be caught in the component
+    throw error; // Re-lanza el error para que el componente pueda manejarlo
   }
 };
 

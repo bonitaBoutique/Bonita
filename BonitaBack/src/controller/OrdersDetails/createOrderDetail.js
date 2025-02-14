@@ -115,7 +115,7 @@ module.exports = async (req, res) => {
 
     console.log("Orden creada:", updatedOrderDetail);
 
-    const responseData = {
+    const responseData = { 
       orderDetail: updatedOrderDetail
     };
 
@@ -128,8 +128,9 @@ module.exports = async (req, res) => {
     }
 
     return response(res, 201, responseData);
+
   } catch (error) {
     console.error("Error creating orderDetail:", error);
     return response(res, 500, { error: error.message });
   }
-};
+};      

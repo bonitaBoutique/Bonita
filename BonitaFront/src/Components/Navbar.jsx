@@ -145,14 +145,14 @@ export default function Navbar() {
           <Menu.Item>
             {({ active }) => (
               <Link
-                to="/register"
-                className={classNames(
-                  active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
-                )}
-              >
-                Crear Administrador
-              </Link>
+              to="/register"
+              className={classNames(
+                active ? 'bg-gray-100' : '',
+                'block px-4 py-2 text-sm text-gray-700'
+              )}
+            >
+              {userInfo.role === 'Admin' ? 'Crear Administrador' : 'Crear Cliente'}
+            </Link>
             )}
           </Menu.Item>
           <Menu.Item>

@@ -3,10 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
 import imgFondo from '../../assets/img/BannerPrincipal/banner6.png';
+import { IoEyeOff, IoEye } from 'react-icons/io5';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -26,12 +28,12 @@ const Login = () => {
   }, [userInfo, navigate]);
 
   return (
-    <div 
-      className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center" 
+    <div
+      className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center"
       style={{ backgroundImage: `url(${imgFondo})` }}
     >
-      <form 
-        onSubmit={submitHandler} 
+      <form
+        onSubmit={submitHandler}
         className="max-w-lg w-full bg-white bg-opacity-80 p-8 rounded-lg shadow-md"
       >
         <h2 className="text-2xl mb-6 text-center">Iniciar Sesión</h2>
@@ -56,13 +58,22 @@ const Login = () => {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Contraseña
           </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? <IoEyeOff size={24} /> : <IoEye size={24} />}
+            </button>
+          </div>
         </div>
         <div>
           <button

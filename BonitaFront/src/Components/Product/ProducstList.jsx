@@ -93,7 +93,7 @@ const ProductsList = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-40">
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-14">
         <SearchComponent />
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           {activeProducts.length === 0 ? (
@@ -144,7 +144,7 @@ const ProductsList = () => {
                       
                       {/* Stock indicator */}
                       <p className={`text-sm mt-2 ${
-                        product.stock <= 5 ? 'text-red-500' : 'text-green-600'
+                        product.stock <= 5 ? 'text-red-500' : 'text-amber-100'
                       }`}>
                         Stock disponible: {product.stock} unidades
                       </p>

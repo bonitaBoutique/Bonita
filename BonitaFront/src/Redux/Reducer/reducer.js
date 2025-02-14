@@ -1244,23 +1244,19 @@ case USER_REGISTER_FAIL:
               },
             },
           };
-        case APPLY_PAYMENT_SUCCESS:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              list: state.reservation.list.map((reservation) =>
-                reservation.id_reservation === action.payload.id_reservation
-                  ? action.payload
-                  : reservation
-              ),
-              updateStatus: {
+          case "APPLY_PAYMENT_SUCCESS":
+            return {
+              ...state,
+              reservation: {
+                ...state.reservation,
                 loading: false,
-                error: null,
-                success: true,
+                list: state.reservation.list.map((reservation) =>
+                  reservation.id_reservation === action.payload.reservation.id_reservation
+                    ? action.payload.reservation
+                    : reservation
+                ),
               },
-            },
-          };
+            };
         case APPLY_PAYMENT_FAILURE:
           return {
             ...state,

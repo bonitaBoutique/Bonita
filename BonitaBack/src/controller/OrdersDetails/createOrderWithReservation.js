@@ -19,7 +19,8 @@ module.exports = async (req, res) => {
       partialPayment,
       totalPaid: partialPayment,
       dueDate,
-      status: "Pendiente"
+      status: "Pendiente",
+      
     });
 
     return response(res, 201, { reservation });

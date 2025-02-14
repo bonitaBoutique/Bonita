@@ -432,12 +432,12 @@ export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
   while (attempt < MAX_RETRIES) {
     try {
       dispatch({ type: FETCH_ORDERBYID_REQUEST });
-      console.log("Fetching order by ID:", id_orderDetail); // Log antes de realizar la solicitud
+      console.log("Fetching order by ID:", id_orderDetail);
 
       const { data } = await axios.get(
         `${BASE_URL}/order/products/${id_orderDetail}`
       );
-      console.log("Response data:", data); // Log para inspeccionar la respuesta
+      console.log("Response data:", data);
 
       if (!data || !data.message || !data.message.orderDetail) {
         throw new Error('Order detail not received from server');
@@ -446,11 +446,11 @@ export const fetchOrdersByIdOrder = (id_orderDetail) => async (dispatch) => {
       const orderDetail = data.message.orderDetail;
 
       dispatch({ type: FETCH_ORDERBYID_SUCCESS, payload: orderDetail });
-      console.log("Dispatched success:", orderDetail); // Log después del dispatch
-      break; // Exit the loop if successful
+      console.log("Dispatched success:", orderDetail);
+      return orderDetail; // Retornar el orderDetail
     } catch (error) {
       attempt++;
-      console.error(`Error fetching order (Intento ${attempt}):`, error.message); // Log del error para más contexto
+      console.error(`Error fetching order (Intento ${attempt}):`, error.message);
 
       if (attempt >= MAX_RETRIES) {
         dispatch({
@@ -928,23 +928,24 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       });
     }
   };
-
   export const createReservation = (id_orderDetail, reservationData) => async (dispatch) => {
     try {
       dispatch({ type: CREATE_RESERVATION_REQUEST });
-      
+  
       // Extract just the ID string if an object was passed
       const orderId = typeof id_orderDetail === 'object' ? id_orderDetail.id_orderDetail : id_orderDetail;
-      
+  
       console.log('Sending reservation request with ID:', orderId);
-      
+  
       const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
   
       dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
       Swal.fire('Success', 'Reservation created successfully', 'success');
+      return data; // Return the data to the component
     } catch (error) {
       dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
       Swal.fire('Error', 'Failed to create reservation', 'error');
+      throw error; // Re-throw the error to the component
     }
   };
 

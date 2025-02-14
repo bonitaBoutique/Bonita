@@ -7,6 +7,7 @@ import { createReservation } from '../Redux/Actions/actions';
 const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
   const [partialPayment, setPartialPayment] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo'); // Estado para el tipo de pago
   const dispatch = useDispatch();
 
   const handleSubmit = (e) => {
@@ -14,6 +15,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
     const reservationData = {
       partialPayment,
       dueDate,
+      paymentMethod, // Incluir el tipo de pago en los datos de la reserva
     };
     dispatch(createReservation({ id_orderDetail: orderId, totalAmount }, reservationData));
     onClose();
@@ -34,7 +36,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Pago Parcial</label>
+            <label className="block text-sm font-medium text-gray-700">Pago Inicial</label>
             <input
               type="number"
               value={partialPayment}
@@ -42,6 +44,22 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
               className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               required
             />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Tipo de Pago</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              required
+            >
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+              <option value="Addi">Addi</option>
+              <option value="Sistecredito">Sistecredito</option>
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Otro">Otro</option>
+            </select>
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Fecha de Vencimiento</label>
@@ -73,6 +91,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
     </div>
   );
 };
+
 ReservationPopup.propTypes = {
   orderId: PropTypes.string.isRequired,
   totalAmount: PropTypes.number.isRequired,

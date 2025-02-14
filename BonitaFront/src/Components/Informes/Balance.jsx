@@ -99,6 +99,12 @@ const Balance = () => {
     XLSX.writeFile(wb, `balance_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  // Calcular ingresos por método de pago
+  const ingresosEfectivo = (income.local || []).filter(sale => sale.payMethod === 'Efectivo').reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosTarjeta = (income.local || []).filter(sale => sale.payMethod === 'Tarjeta').reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosNequi = (income.local || []).filter(sale => sale.payMethod === 'Nequi').reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosBancolombia = (income.local || []).filter(sale => sale.payMethod === 'Bancolombia').reduce((acc, sale) => acc + sale.total_amount, 0);
+
   if (loading) return <div>Cargando...</div>;
 
   return (
@@ -140,6 +146,30 @@ const Balance = () => {
           <option value="Proveedores">Proveedores</option>
           <option value="Otros">Otros</option>
         </select>
+      </div>
+
+      {/* Ingresos por Método de Pago */}
+      <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Efectivo</h3>
+          <p className="text-2xl">${ingresosEfectivo}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Tarjeta</h3>
+          <p className="text-2xl">${ingresosTarjeta}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Nequi</h3>
+          <p className="text-2xl">${ingresosNequi}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Bancolombia</h3>
+          <p className="text-2xl">${ingresosBancolombia}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Venta Online</h3>
+          <p className="text-2xl">${totalOnlineSales}</p>
+        </div>
       </div>
 
       {/* Summary */}

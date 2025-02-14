@@ -80,7 +80,7 @@
   }
   @keyframes marquee {
     0% {
-      transform: translateX(100%);
+      transform: translateX(0%);
     }
     100% {
       transform: translateX(-100%);
@@ -89,6 +89,7 @@
   
   .animate-marquee {
     display: flex;
-    animation: marquee 15s linear infinite;
+    animation: marquee 20s linear infinite;
+    white-space: nowrap;
   }
   

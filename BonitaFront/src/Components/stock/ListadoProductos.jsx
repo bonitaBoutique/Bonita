@@ -15,6 +15,9 @@ const ListadoProductos = () => {
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const [filtro, setFiltro] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectAll, setSelectAll] = useState(false);
 
   const [selectedProducts, setSelectedProducts] = useState([]);
 
@@ -47,12 +50,27 @@ const ListadoProductos = () => {
     );
   };
 
-  const toggleTiendaOnline = (producto) => {
-    const updatedProduct = {
-      ...producto,
-      tiendaOnLine: !producto.tiendaOnLine,
-    };
-    dispatch(updateProduct(producto.id_product, updatedProduct));
+  const toggleTiendaOnline = async (producto) => {
+    try {
+      const updatedProduct = {
+        ...producto,
+        tiendaOnLine: !producto.tiendaOnLine,
+      };
+      await dispatch(updateProduct(producto.id_product, updatedProduct));
+      // Recargar los productos después de la actualización
+      dispatch(fetchProducts());
+    } catch (error) {
+      console.error("Error al actualizar el estado:", error);
+    }
+  };
+
+  const handleSelectAll = () => {
+    setSelectAll(!selectAll);
+    if (!selectAll) {
+      setSelectedProducts(productosFiltrados.map(p => p.id_product));
+    } else {
+      setSelectedProducts([]);
+    }
   };
 
   const handleDeleteProduct = (id_product) => {
@@ -91,6 +109,14 @@ const ListadoProductos = () => {
       .includes(filtro)
   );
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = productosFiltrados.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
+
+  // Función para cambiar de página
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   if (loading)
     return <p className="text-center text-blue-500">Cargando productos...</p>;
   if (error) return <p className="text-center text-red-500">Error: {error}</p>;
@@ -99,28 +125,30 @@ const ListadoProductos = () => {
     <>
       <Navbar2 />
       <div className="p-6 mt-36">
-        <input
-          type="text"
-          placeholder="Buscar por marca, código de barra o proveedor"
-          className="w-full mb-4 px-4 py-2 border border-gray-300 rounded-lg"
-          onChange={handleFiltroChange}
-        />
-
-        <button
-          onClick={handleDownloadExcel}
-          className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg"
-          disabled={selectedProducts.length === 0}
-        >
-          Descargar Excel
-        </button>
-
+        <div className="flex gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Buscar por marca, código de barra o proveedor"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+            onChange={handleFiltroChange}
+          />
+  
+          <button
+            onClick={handleDownloadExcel}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedProducts.length === 0}
+          >
+            Descargar Excel
+          </button>
+        </div>
+  
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-300">
             <thead className="bg-gray-100">
               <tr>
                 {[
-                  "Imágenes", // Moved Imágenes first
-                  "Seleccionar", // Moved Seleccionar second
+                  "Imágenes",
+                  "Seleccionar",
                   "Código Barra",
                   "Marca",
                   "Código Proveedor",
@@ -140,10 +168,18 @@ const ListadoProductos = () => {
                     {header}
                   </th>
                 ))}
+                <th className="px-4 py-2 border border-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="form-checkbox h-5 w-5"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
-              {productosFiltrados.map((producto) => (
+              {currentItems.map((producto) => (
                 <tr key={producto.id_product} className="hover:bg-gray-50">
                   <td className="px-4 py-2 border border-gray-300">
                     {producto.image ? (
@@ -179,50 +215,30 @@ const ListadoProductos = () => {
                     <input
                       type="checkbox"
                       checked={selectedProducts.includes(producto.id_product)}
-                      onChange={() =>
-                        toggleProductSelection(producto.id_product)
-                      }
+                      onChange={() => toggleProductSelection(producto.id_product)}
+                      className="form-checkbox h-5 w-5"
                     />
                   </td>
-
+                  <td className="px-4 py-2 border border-gray-300">{producto.codigoBarra}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.marca}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.codigoProv}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.description}</td>
+                  <td className="px-4 py-2 border border-gray-300">${producto.price}</td>
+                  <td className="px-4 py-2 border border-gray-300">${producto.priceSell}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.stock}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.sizes}</td>
+                  <td className="px-4 py-2 border border-gray-300">{producto.colors}</td>
                   <td className="px-4 py-2 border border-gray-300">
-                    {producto.codigoBarra}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.marca}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.codigoProv}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.description}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${producto.price}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${producto.priceSell}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.stock}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.sizes}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.colors}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                  <button
-                onClick={() => toggleTiendaOnline(producto)}
-                className={`px-4 py-2 rounded-lg ${
-                  producto.tiendaOnLine
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-300 text-black"
-                }`}
-              >
-                {producto.tiendaOnLine ? "Activo" : "Inactivo"}
-              </button>
+                    <button
+                      onClick={() => toggleTiendaOnline(producto)}
+                      className={`px-4 py-2 rounded-lg ${
+                        producto.tiendaOnLine
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-300 text-black"
+                      }`}
+                    >
+                      {producto.tiendaOnLine ? "Activo" : "Inactivo"}
+                    </button>
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
                     <button
@@ -236,6 +252,47 @@ const ListadoProductos = () => {
               ))}
             </tbody>
           </table>
+  
+          {/* Paginación */}
+          <div className="mt-4 flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+              >
+                Anterior
+              </button>
+  
+              <div className="flex gap-2">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => paginate(i + 1)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === i + 1
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+  
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
+  
+            <div className="mt-2 text-sm text-gray-600">
+              Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, productosFiltrados.length)} de {productosFiltrados.length} productos
+            </div>
+          </div>
         </div>
       </div>
     </>

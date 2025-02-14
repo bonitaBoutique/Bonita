@@ -114,15 +114,20 @@ module.exports = async (req, res) => {
     });
 
     console.log("Orden creada:", updatedOrderDetail);
-    return response(res, 201, { 
-      orderDetail: updatedOrderDetail,
-      wompiData: {
+
+    const responseData = {
+      orderDetail: updatedOrderDetail
+    };
+
+    if (pointOfSale !== "Local") {
+      responseData.wompiData = {
         referencia,
         integritySignature,
         amount: totalAmount * 100 // Amount in cents for Wompi
-      }
-    });
+      };
+    }
 
+    return response(res, 201, responseData);
   } catch (error) {
     console.error("Error creating orderDetail:", error);
     return response(res, 500, { error: error.message });

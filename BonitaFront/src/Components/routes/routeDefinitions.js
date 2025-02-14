@@ -73,6 +73,14 @@ export const adminRoutes = [
     component: lazy(() => import('../Taxxa/Panel')) 
   },
   { 
+    path: '/panelGastos/createGastos', 
+    component: lazy(() => import('../Informes/CargarGastos')) 
+  },
+  { 
+    path: '/panelGastos/filtroGastos', 
+    component: lazy(() => import('../Informes/FilterExpenses')) 
+  },
+  { 
     path: '/panelGeneral', 
     component: lazy(() => import('../PanelGeneral')) 
   },
@@ -87,6 +95,10 @@ export const adminRoutes = [
   { 
     path: '/panelProductos', 
     component: lazy(() => import('../Product/PanelProductos')) 
+  },
+  { 
+    path: '/reservas', 
+    component: lazy(() => import('../ReservationsList')) 
   },
   { 
     path: '/panel/seller', 
@@ -104,6 +116,7 @@ export const adminRoutes = [
     path: '/panelGastos', 
     component: lazy(() => import('../Informes/PanelInformes')) 
   },
+  
   { 
     path: '/informes', 
     component: lazy(() => import('../Informes/Balance')) 
@@ -127,7 +140,11 @@ export const cashierRoutes = [
   { 
     path: '/receipt/:idOrder', 
     component: lazy(() => import('../Recibo')) 
-  }
+  },
+  { 
+    path: '/accountClient', 
+    component: lazy(() => import('../ClientAccountBalance')) 
+  },
 ];
 
 // Lista de rutas administrativas para verificación

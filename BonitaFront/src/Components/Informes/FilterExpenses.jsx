@@ -25,7 +25,7 @@ const FilterExpenses = () => {
   };
 
   // Calcular subtotales
-  const totalAmount = data.reduce((acc, expense) => acc + expense.amount, 0);
+  const totalAmount = data ? data.reduce((acc, expense) => acc + expense.amount, 0) : 0;
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
@@ -81,7 +81,7 @@ const FilterExpenses = () => {
       </form>
       <div className="mt-6">
         <h3 className="text-xl font-bold mb-4">Resultados</h3>
-        {data.length > 0 ? (
+        {data && data.length > 0 ? (
           <>
             <ul>
               {data.map(expense => (

@@ -4,8 +4,10 @@ import { registerUser } from '../../Redux/Actions/actions';
 import { useNavigate } from 'react-router-dom';
 import imgFondo from '../../assets/img/BannerPrincipal/banner6.png';
 import Swal from 'sweetalert2';
+import { IoEyeOff, IoEye } from 'react-icons/io5';
 
 const Register = () => {
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     n_document: '',
     first_name: '',
@@ -18,7 +20,7 @@ const Register = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
- 
+
   // Get state from Redux
   const { loading, error, success } = useSelector((state) => state.userRegister);
   const loggedInUserRole = useSelector((state) => state.userLogin.userInfo?.role);
@@ -77,18 +79,18 @@ const Register = () => {
   };
 
   // Handle success/error effects
-  
+
   return (
-    <div 
-      className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center" 
+    <div
+      className="min-h-screen flex flex-col justify-center items-center bg-cover bg-center"
       style={{ backgroundImage: `url(${imgFondo})` }}
     >
-      <form 
-        onSubmit={submitHandler} 
+      <form
+        onSubmit={submitHandler}
         className="max-w-lg w-full bg-white bg-opacity-80 p-8 rounded-lg shadow-md"
       >
         <h2 className="text-2xl mb-6 text-center">Registrarse</h2>
-        
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
             {error}
@@ -155,28 +157,46 @@ const Register = () => {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Contraseña
           </label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? <IoEyeOff size={24} /> : <IoEye size={24} />}
+            </button>
+          </div>
         </div>
 
         <div className="mb-4">
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
             Confirmar Contraseña
           </label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? <IoEyeOff size={24} /> : <IoEye size={24} />}
+            </button>
+          </div>
         </div>
         {loggedInUserRole === 'Admin' && (
           <div className="mb-4">

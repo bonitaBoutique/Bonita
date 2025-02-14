@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const BuyerForm = ({ jbuyer, setBuyer }) => {
   const handleChange = (e) => {
@@ -112,7 +113,25 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
     </>
   );
 };
+BuyerForm.propTypes = {
+  jbuyer: PropTypes.shape({
+    scostumername: PropTypes.string,
+    wlegalorganizationtype: PropTypes.string,
+    sfiscalresponsibilities: PropTypes.string,
+    jpartylegalentity: PropTypes.shape({
+      wdoctype: PropTypes.string,
+      sdocno: PropTypes.string,
+    }),
+    jcontact: PropTypes.shape({
+      scontactperson: PropTypes.string,
+      selectronicmail: PropTypes.string,
+      stelephone: PropTypes.string,
+    }),
+  }).isRequired,
+  setBuyer: PropTypes.func.isRequired,
+};
 
 export default BuyerForm;
+
 
   

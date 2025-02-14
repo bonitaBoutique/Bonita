@@ -36,12 +36,18 @@ const Checkout = () => {
   const [error, setError] = useState(null);
 
   const [orderData, setOrderData] = useState({
-   date: currentDate,
+    date: currentDate,
     amount: cart.totalPrice,
     quantity: cart.totalItems,
     state_order: "Pedido Realizado",
     n_document: userInfo ? userInfo.n_document : "",
-    id_product: cart.items.map((item) => item.id_product),
+    // Modificar para incluir la cantidad de cada producto
+    products: cart.items.map(item => ({
+      id_product: item.id_product,
+      quantity: item.quantity,
+      description: item.description,
+      price: item.priceSell
+    })),
     address: shippingType,
     deliveryAddress: address
   });
@@ -115,7 +121,12 @@ const Checkout = () => {
   useEffect(() => {
     setOrderData((prevData) => ({
       ...prevData,
-      id_product: cart.items.map((item) => item.id_product),
+      products: cart.items.map(item => ({
+        id_product: item.id_product,
+        quantity: item.quantity,
+        description: item.description,
+        price: item.priceSell
+      })),
       amount: cart.totalPrice,
       quantity: cart.totalItems,
     }));

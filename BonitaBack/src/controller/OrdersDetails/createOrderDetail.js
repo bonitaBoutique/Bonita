@@ -1,4 +1,3 @@
-
 const { OrderDetail, Product, StockMovement } = require("../../data");
 const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
@@ -15,21 +14,43 @@ module.exports = async (req, res) => {
   try {
     const { 
       date, 
-      amount, // base amount without shipping
-      quantity, 
-      state_order, 
-      pointOfSale, 
-      id_product, 
+      amount,
+      quantity,
+      state_order,
+      products, // Array de objetos con id_product y quantity
       address,
       deliveryAddress,
-      shippingCost = 0, // New field for shipping cost
-      n_document 
+      shippingCost = 0,
+      n_document,
+      pointOfSale 
     } = req.body;
 
-    if (!date || !amount || !quantity || !state_order || !id_product || !address) {
+    // Validación de datos requeridos
+    if (!date || !amount || !quantity || !state_order || !products || !address) {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
+
     const totalAmount = Number(amount) + Number(shippingCost);
+
+    // Verificar el stock de los productos
+    const productIds = products.map(p => p.id_product);
+    const dbProducts = await Product.findAll({
+      where: { id_product: productIds },
+      attributes: ["id_product", "stock", 'isDian'],
+    });
+
+    // Verificar stock disponible
+    const productosSinStock = dbProducts.filter((dbProduct) => {
+      const ordenProducto = products.find(p => p.id_product === dbProduct.id_product);
+      return dbProduct.stock < ordenProducto.quantity;
+    });
+
+    if (productosSinStock.length > 0) {
+      return response(res, 400, { 
+        error: "Not enough stock for some products", 
+        productosSinStock 
+      });
+    }
 
     const referencia = `SO-${uuidv4()}`;
     const integritySignature = generarFirmaIntegridad(
@@ -39,29 +60,8 @@ module.exports = async (req, res) => {
       secretoIntegridad
     );
 
-    // Verificar el stock de los productos
-    const products = await Product.findAll({
-      where: { id_product: id_product },
-      attributes: ["id_product", "stock", 'isDian'],
-    });
-
-    const productosSinStock = products.filter((product) => {
-      const ordenCantidad = id_product.filter((id) => id === product.id_product).length;
-      return product.stock < ordenCantidad;
-    });
-
-    if (productosSinStock.length > 0) {
-      return response(res, 400, { error: "Not enough stock for some products", productosSinStock });
-    }
-
-    // Generar la firma de integridad
-   
-    const isFacturable = products.some(product => product.isDian);
-
-    let finalDeliveryAddress = null;
-    if (address === "Envio a domicilio") {
-      finalDeliveryAddress = deliveryAddress;
-    }
+    const isFacturable = dbProducts.some(product => product.isDian);
+    const finalDeliveryAddress = address === "Envio a domicilio" ? deliveryAddress : null;
 
     // Crear la orden
     const orderDetail = await OrderDetail.create({
@@ -75,38 +75,41 @@ module.exports = async (req, res) => {
       deliveryAddress: finalDeliveryAddress,
       n_document,
       pointOfSale,
-      integritySignature
+      integritySignature,
+      isFacturable
     });
-    // Asociar productos a la orden y registrar movimiento de stock
-    await Promise.all(
-      id_product.map(async (productId) => {
-        const cantidadSalida = id_product.filter((id) => id === productId).length;
 
+    // Asociar productos y actualizar stock
+    await Promise.all(
+      products.map(async (product) => {
         // Registrar movimiento de stock
         await StockMovement.create({
           id_movement: uuidv4(),
-          id_product: productId,
+          id_product: product.id_product,
           type: "OUT",
-          quantity: cantidadSalida,
+          quantity: product.quantity,
         });
 
         // Actualizar el stock del producto
         await Product.decrement("stock", {
-          by: cantidadSalida,
-          where: { id_product: productId },
+          by: product.quantity,
+          where: { id_product: product.id_product },
         });
 
-        await orderDetail.addProduct(productId, { through: { quantity: cantidadSalida } });
-  })
-);
+        // Asociar producto con la orden
+        await orderDetail.addProduct(product.id_product, { 
+          through: { quantity: product.quantity } 
+        });
+      })
+    );
 
-    // Incluir productos en la respuesta final
+    // Obtener la orden actualizada con los productos
     const updatedOrderDetail = await OrderDetail.findOne({
       where: { id_orderDetail: orderDetail.id_orderDetail },
       include: {
         model: Product,
         as: "products",
-        attributes: ["id_product", "stock"],
+        attributes: ["id_product", "stock", "description", "price"],
       },
     });
 

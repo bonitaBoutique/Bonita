@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllOrders } from "../../Redux/Actions/actions";
 import Navbar2 from "../Navbar2";
-// import Swal from 'sweetalert2';
+import Swal from 'sweetalert2';
 
 const OrdenesPendientes = () => {
   const [filterState, setFilterState] = useState("");
@@ -28,11 +28,71 @@ const OrdenesPendientes = () => {
     setFilterState(e.target.value);
   };
 
-  const handleCopyOrderId = (id_orderDetail) => {
-    navigator.clipboard.writeText(id_orderDetail);
-    alert(`ID de la orden copiado: ${id_orderDetail}`); // Notificación rápida
+  const handleCopyOrderId = async (id_orderDetail) => {
+    try {
+      // Usar writeText para copiar al portapapeles
+      await navigator.clipboard.writeText(id_orderDetail);
+      
+      // Mostrar notificación de éxito con Swal
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Copiado!',
+        text: `ID: ${id_orderDetail}`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+        background: '#48BB78',
+        color: '#fff',
+        customClass: {
+          popup: 'rounded-lg'
+        }
+      });
+    } catch (error) {
+      console.error('Error al copiar:', error);
+      
+      // Mostrar notificación de error con Swal
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo copiar el ID al portapapeles',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        background: '#F56565',
+        color: '#fff',
+        customClass: {
+          popup: 'rounded-lg'
+        }
+      });
+  
+      // Fallback para navegadores que no soportan clipboard API
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = id_orderDetail;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Copiado!',
+          text: `ID: ${id_orderDetail}`,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000,
+          background: '#48BB78',
+          color: '#fff'
+        });
+      } catch (fallbackError) {
+        console.error('Error en fallback:', fallbackError);
+      }
+    }
   };
-
   const toggleOrderDetails = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId); // Expandir/contraer
   };
@@ -57,7 +117,7 @@ const OrdenesPendientes = () => {
     <div className="bg-colorFooter ">
     <Navbar2/>
       <div className="container mx-auto px-4 py-8 mt-10">
-        <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-300 bg-colorDetalle p-2 rounded">
+        <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-900 bg-white p-2 rounded">
           Lista de Pedidos
         </h2>
         <div className="mb-4">
@@ -76,8 +136,8 @@ const OrdenesPendientes = () => {
         </div>
 
         <div className="overflow-x-auto shadow-md sm:rounded-lg">
-          <table className="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <table className="min-w-full text-sm text-left text-gray-500">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 ">
                   N° Pedido
@@ -85,6 +145,7 @@ const OrdenesPendientes = () => {
                 <th scope="col" className="px-6 py-3">
                   Fecha
                 </th>
+               
                 <th scope="col" className="px-6 py-3">
                   Cantidad
                 </th>
@@ -112,6 +173,7 @@ const OrdenesPendientes = () => {
                     {order.id_orderDetail}
                   </td>
                   <td className="px-6 py-4">{order.date}</td>
+                 
                   <td className="px-6 py-4">{order.quantity}</td>
                   <td className="px-6 py-4">${order.amount}</td>
                   <td className="px-6 py-4">
@@ -119,13 +181,15 @@ const OrdenesPendientes = () => {
                   </td>
                   <td className="px-6 py-4">{order.state_order}</td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleCopyOrderId(order.id_orderDetail)}
-                      className="bg-green-500 text-white px-4 py-2 rounded mr-2"
-                      disabled={isFacturada(order)}
-                    >
-                      Copiar ID
-                    </button>
+                  <button
+  onClick={() => handleCopyOrderId(order.id_orderDetail)}
+  className={`bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded mr-2 transition-colors duration-200 ${
+    isFacturada(order) ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+  }`}
+  disabled={isFacturada(order)}
+>
+  Copiar ID
+</button>
                     <button
                       onClick={() => toggleOrderDetails(order.id_orderDetail)}
                       className="bg-blue-500 text-white px-4 py-2 rounded"
@@ -142,30 +206,30 @@ const OrdenesPendientes = () => {
         </div>
 
         {expandedOrder && (
-          <div className="mt-4 bg-gray-700 text-gray-200 p-4 rounded">
-            <h3 className="text-lg font-semibold mb-2">
-              Productos de la Orden:
-            </h3>
-            {filteredOrders
-              .find((order) => order.id_orderDetail === expandedOrder)
-              ?.products.map((product) => (
-                <div key={product.id_product} className="mb-2">
-                  <p>
-                    <strong>Descripción:</strong> {product.description}
-                  </p>
-                  <p>
-                    <strong>Precio:</strong> ${product.price}
-                  </p>
-                  <p>
-                    <strong>ID Producto:</strong> {product.id_product}
-                  </p>
-                  <p>
-                    <strong>Codigo de Barra:</strong> {product.codigoBarra}
-                  </p>
-                </div>
-              ))}
-          </div>
-        )}
+  <div className="mt-4 bg-gray-700 text-gray-200 p-4 rounded">
+    <h3 className="text-lg font-semibold mb-2">
+      Productos de la Orden:
+    </h3>
+    {orders
+      .find((order) => order.id_orderDetail === expandedOrder)
+      ?.products.map((product) => (
+        <div key={product.id_product} className="mb-2 p-4 bg-gray-600 rounded">
+          <p className="mb-2">
+            <strong>Descripción:</strong> {product.description}
+          </p>
+          <p className="mb-2">
+            <strong>Precio:</strong> ${product.price.toLocaleString()}
+          </p>
+          <p className="mb-2">
+            <strong>ID Producto:</strong> {product.id_product}
+          </p>
+          <p>
+            <strong>Código de Barra:</strong> {product.codigoBarra}
+          </p>
+        </div>
+      ))}
+  </div>
+)}
       </div>
     </div>
     

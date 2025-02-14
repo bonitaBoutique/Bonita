@@ -1,133 +1,121 @@
-// filepath: /c:/Users/merce/Desktop/Bonita/BonitaBack/src/controller/TAXXA/TAXXAUtils.js
 const axios = require('axios');
 const dotenv = require('dotenv');
-const { Token } = require('../../data'); // Importa el modelo de Sequelize para el token
+const { Token } = require('../../data');
 
 dotenv.config();
 
 const TAXXA_API_URL = process.env.TAXXA_API_URL;
-const TAXXA_EMAIL = process.env.TAXAA_EMAIL;
-const TAXXA_PASSWORD = process.env.TAXXA_PASSWORD;
-let   CURRENT_TOKEN = process.env.TAXAA_TOKEN;
+console.log('TAXXA_API_URL:', TAXXA_API_URL); // Verificar la URL de la API
 
+const axiosInstance = axios.create({
+  baseURL: TAXXA_API_URL,
+  timeout: 10000, // 10 segundos de timeout
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
-console.log('TAXXA_API_URL:', TAXXA_API_URL);
+// Interceptor para logging
+axiosInstance.interceptors.request.use(request => {
+  console.log('Request:', {
+    url: request.url,
+    method: request.method,
+    data: request.data
+  });
+  return request;
+});
+
 async function generateToken() {
-    const url = TAXXA_API_URL;
+  try {
+    console.log('Generating new token...');
     const payload = {
-        jApi: {
-            sMethod: 'classTAXXA.fjTokenGenerate',
-            jParams: {
-                sEmail: "bonitaBoutiquecumaral@gmail.com",
-                sPass: "F3lec2024*"
-            },
+      jApi: {
+        sMethod: 'classTAXXA.fjTokenGenerate',
+        jParams: {
+          sEmail: process.env.TAXXA_EMAIL,
+          sPass: process.env.TAXXA_PASSWORD,
         },
+      },
     };
 
-    try {
-        const response = await axios.post(url, payload);
-        const data = response.data;
+    console.log('Token generation payload:', JSON.stringify(payload, null, 2));
+    const response = await axiosInstance.post('', payload);
+    console.log('Token generation response:', JSON.stringify(response.data, null, 2));
 
-        if (data.rerror === 0) {
-            const newToken = data.jret.stoken;
-            console.log('New token generated:', newToken);
-            CURRENT_TOKEN = newToken; // Update the current token
+    if (response.data && response.data.rerror === 0) {
+      const newToken = response.data.jret.stoken;
+      console.log('New token generated successfully:', newToken);
 
-            // Guardar el token en la base de datos
-            await Token.create({
-                token: newToken,
-                // Puedes agregar otros campos como fecha de creación, etc.
-            });
+      await Token.create({
+        token: newToken,
+        created_at: new Date()
+      });
 
-            return newToken;
-        } else {
-            console.error('Error generating token:', data);
-            return null;
-        }
-    } catch (error) {
-        console.error('Request error:', error);
-        return null;
+      return newToken;
+    } else {
+      console.error('Error en la respuesta de generación de token:', response.data);
+      return null;
     }
+  } catch (error) {
+    console.error('Error generating token:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    return null;
+  }
 }
 
-console.log('TAXXA_API_URL:', TAXXA_API_URL);
-async function generateToken() {
-    const url = TAXXA_API_URL;
-    const payload = {
-        jApi: {
-            sMethod: 'classTAXXA.fjTokenGenerate',
-            jParams: {
-                sEmail: "bonitaBoutiquecumaral@gmail.com",
-                sPass: "F3lec2024*"
-            },
-        },
-    };
+async function sendDocument(payload) {
+  try {
+    console.log('Preparing to send document...');
+    console.log('Document payload:', JSON.stringify(payload, null, 2));
 
-    try {
-        const response = await axios.post(url, payload);
-        const data = response.data;
-
-        if (data.rerror === 0) {
-            const newToken = data.jret.stoken;
-            console.log('New token generated:', newToken);
-            CURRENT_TOKEN = newToken; // Update the current token
-
-            // Guardar el token en la base de datos
-            await Token.create({
-                token: newToken,
-                // Puedes agregar otros campos como fecha de creación, etc.
-            });
-
-            return newToken;
-        } else {
-            console.error('Error generating token:', data);
-            return null;
-        }
-    } catch (error) {
-        console.error('Request error:', error);
-        return null;
+    if (!payload.stoken) {
+      console.error('No token provided in payload');
+      throw new Error('Token no proporcionado');
     }
-}
 
-async function sendDocument(documentData, token = CURRENT_TOKEN) {
-    const url = TAXXA_API_URL;
-    const payload = {
-        stoken: token,
-        jApi: documentData,
-    };
+    const response = await axiosInstance.post('', payload);
+    console.log('Document submission response:', JSON.stringify(response.data, null, 2));
 
-    try {
-        const response = await axios.post(url, payload);
-        const data = response.data;
-
-        if (data && typeof data === 'object' && data.rerror === 9) { // Assuming rerror 9 means token expired
-            console.log('Token expired. Generating a new token...');
-            const newToken = await generateToken();
-            if (newToken) {
-                // Retry sending the document with the new token
-                return sendDocument(documentData, newToken);
-            } else {
-                console.error('Failed to generate a new token. Document not sent.');
-                throw new Error('Failed to generate a new token. Document not sent.');
-            }
-        } else if (data && typeof data === 'object' && data.rerror !== 0) {
-            // Lanzar un error si la respuesta de Taxxa tiene un código de error diferente de 0
-            console.error('Error sending document:', data);
-            const error = new Error(`Error sending document: ${JSON.stringify(data)}`);
-            error.response = { data: data }; // Incluir la data en el objeto response
-            throw error;
-        } else {
-            // Process the successful response here
-            console.log('Document sent successfully:', data);
-            return data;
+    if (response.data && typeof response.data === 'object') {
+      if (response.data.rerror === 9) {
+        console.log('Token expired, generating new token...');
+        const newToken = await generateToken();
+        if (newToken) {
+          payload.stoken = newToken;
+          return sendDocument(payload);
         }
-    } catch (error) {
-        console.error('Request error:', error);
+        throw new Error('No se pudo generar un nuevo token');
+      }
+
+      if (response.data.rerror !== 0) {
+        const error = new Error('Error en la respuesta de Taxxa');
+        error.response = { 
+          data: response.data,
+          status: response.status
+        };
         throw error;
+      }
+
+      console.log('Document sent successfully');
+      return response.data;
     }
+
+    throw new Error('Respuesta inválida de la API');
+  } catch (error) {
+    console.error('Error sending document:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
 }
 
 module.exports = {
-    generateToken,
-    sendDocument
+  generateToken,
+  sendDocument,
 };

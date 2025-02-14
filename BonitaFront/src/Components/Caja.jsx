@@ -6,10 +6,9 @@ import {
   fetchProducts,
   fetchFilteredProducts,
   createOrder,
-  updateOrderState
+  updateOrderState,
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
-
 
 const Caja = () => {
   const dispatch = useDispatch();
@@ -30,7 +29,7 @@ const Caja = () => {
     id_product: [],
     address: "Retira en local",
     deliveryAddress: null,
-    pointOfSale:"Local"
+    pointOfSale: "Local",
   });
 
   const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
@@ -62,7 +61,10 @@ const Caja = () => {
     }
 
     // Asegurarse de que productCodes sea una cadena de texto antes de usar split
-    const codes = productCodes.trim().split(",").map(code => code.trim().toUpperCase());
+    const codes = productCodes
+      .trim()
+      .split(",")
+      .map((code) => code.trim().toUpperCase());
     const productsToAdd = [];
 
     codes.forEach((id_product) => {
@@ -75,10 +77,18 @@ const Caja = () => {
           // Solo agregar el producto si tiene stock disponible
           productsToAdd.push({ ...product, quantity: 1 }); // Agrega la cantidad inicial como 1
         } else {
-          Swal.fire("Error", `El producto con código ${id_product} no tiene stock disponible.`, "error");
+          Swal.fire(
+            "Error",
+            `El producto con código ${id_product} no tiene stock disponible.`,
+            "error"
+          );
         }
       } else {
-        Swal.fire("Error", `No se encontró el producto con código ${id_product}.`, "error");
+        Swal.fire(
+          "Error",
+          `No se encontró el producto con código ${id_product}.`,
+          "error"
+        );
       }
     });
     // Si hay productos para agregar, los agregamos al estado
@@ -117,14 +127,14 @@ const Caja = () => {
   // Manejar el envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!nDocument) {
       alert("Por favor, ingresa el número de documento.");
       return;
     }
-  
+
     const { totalPrice, totalQuantity } = calculateTotals();
-  
+
     const orderDataToSend = {
       date: new Date().toISOString(),
       amount: totalPrice,
@@ -134,25 +144,45 @@ const Caja = () => {
       id_product: selectedProducts.map((item) => item.id_product),
       address: orderData.address,
       deliveryAddress: orderData.deliveryAddress,
-      pointOfSale:"Local"
+      pointOfSale: "Local",
     };
-  
+
     try {
-      console.log("Sending order data:", orderDataToSend);
-      const orderDetail = await dispatch(createOrder(orderDataToSend));
-      console.log("Order detail received:", orderDetail);
-    
-      const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
-      console.log("ID de la orden creada:", idOrder);
-    
-      navigate(`/receipt/${idOrder}`); // Redirige al recibo
-    } catch (error) {
-      console.error("Error al crear la orden:", error.message);
-      Swal.fire("Error", "No se pudo crear la orden. Inténtalo de nuevo.", "error");
+    console.log("Sending order data:", orderDataToSend);
+    const orderDetail = await dispatch(createOrder(orderDataToSend));
+    console.log("Order detail received:", orderDetail);
+
+    const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
+    console.log("ID de la orden creada:", idOrder);
+
+    navigate(`/receipt/${idOrder}`); // Redirige al recibo
+  } catch (error) {
+    console.error("Error al crear la orden:", error);
+
+    // Verificar si el error es porque el usuario no está registrado
+    if (error.message.includes("Usuario no registrado")) {
+      Swal.fire({
+        title: "Usuario no registrado",
+        text: "¿Deseas registrarte ahora?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Registrarse",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/register"); // Redirige a la página de registro
+        }
+      });
+    } else {
+      // Mostrar un mensaje de error genérico si no es un error de usuario no registrado
+      Swal.fire(
+        "Error",
+        "No se pudo crear la orden. Inténtalo de nuevo.",
+        "error"
+      );
     }
-  
   }
-  
+};
 
   if (loading) {
     return (
@@ -180,7 +210,7 @@ const Caja = () => {
 
   return (
     <div className="p-6 pt-20 bg-slate-200 h-screen rounded-lg shadow-md">
-      <Navbar2/>
+      <Navbar2 />
       <h2 className="text-2xl font-semibold mb-6">Seleccionar Productos</h2>
 
       {/* Input para los códigos de productos */}
@@ -206,12 +236,26 @@ const Caja = () => {
           <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
           {selectedProducts.map((product) => (
             <div
-              key={product.id_product} // Usa id_product aquí
+              key={product.id_product}
               className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
             >
               <div className="flex items-center">
-                <p className="mr-4 text-lg font-semibold">{product.description}</p>
-                <p className="text-sm text-gray-500">Precio Unitario: ${product.priceSell}</p> {/* Mostrar el precio individual */}
+                {/* Miniatura de la imagen del producto */}
+                {product.Images && product.Images.length > 0 && (
+                  <img
+                    src={product.Images[0].url}
+                    alt={product.description}
+                    className="w-12 h-12 mr-4 rounded-full object-cover"
+                  />
+                )}
+                <div>
+                  <p className="mr-4 text-lg font-semibold">
+                    {product.description}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Precio Unitario: ${product.priceSell}
+                  </p>
+                </div>
               </div>
               <div>
                 <input
@@ -219,11 +263,16 @@ const Caja = () => {
                   min="1"
                   value={product.quantity || 1}
                   onChange={(e) =>
-                    handleQuantityChange(product.id_product, Number(e.target.value))
+                    handleQuantityChange(
+                      product.id_product,
+                      Number(e.target.value)
+                    )
                   }
                   className="w-16 p-2 border border-gray-300 rounded-md text-center"
                 />
-                <p className="text-sm text-gray-500">Total: ${product.priceSell * (product.quantity || 1)}</p> {/* Mostrar el monto total */}
+                <p className="text-sm text-gray-500">
+                  Total: ${product.priceSell * (product.quantity || 1)}
+                </p>
               </div>
             </div>
           ))}
@@ -258,10 +307,4 @@ const Caja = () => {
   );
 };
 
-
 export default Caja;
-
- 
-
-
-

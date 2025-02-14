@@ -126,13 +126,24 @@ const Invoice = () => {
     setErrorMessage("");
     try {
       if (order && order.id_orderDetail) {
+        // Agregar el id_orderDetail al objeto jDocumentData
+        const jDocumentDataWithOrderId = {
+          ...jDocumentData,
+          sorderreference: order.id_orderDetail,
+        };
+  
+        console.log('jDocumentDataWithOrderId:', jDocumentDataWithOrderId); // Imprimir el objeto jDocumentDataWithOrderId
+  
         const invoiceDataToSend = {
-          id_orderDetail: order.id_orderDetail,
-          invoiceData: jDocumentData, // Envia solo el objeto jDocument
+          invoiceData: jDocumentDataWithOrderId, // Enviar el objeto jDocument con el id_orderDetail
           sellerId: sellerId,
         };
         console.log("invoiceDataToSend:", invoiceDataToSend);
-        await dispatch(sendInvoice(invoiceDataToSend));
+        await dispatch(sendInvoice(invoiceDataToSend, { // Agregar el header Content-Type
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }));
         console.log("Factura enviada con éxito");
       } else {
         setErrorMessage("No se encontró la orden o el ID de la orden es inválido.");

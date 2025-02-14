@@ -16,15 +16,10 @@ const ProductsList = () => {
 
   // Selecciona los datos del estado global
   const products = useSelector((state) => state.products || []);
-  const productsFilter = useSelector((state) => state.productsFilter || []);
+  const searchResults = useSelector((state) => state.searchResults || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
-  console.log("Estado global:", { products, productsFilter });
-
-  useEffect(() => {
-    console.log("Productos filtrados:", productsFilter);
-  }, [productsFilter]);
 
   useEffect(() => {
     // Cargar todos los productos al inicio
@@ -32,12 +27,8 @@ const ProductsList = () => {
   }, [dispatch]);
 
   // Mostrar productos filtrados si existen, de lo contrario, mostrar todos
-  const activeProducts = (productsFilter.length > 0 ? productsFilter : products)
+  const activeProducts = (searchResults.length > 0 ? searchResults : products)
   .filter(product => product.stock > 0);
-
-  useEffect(() => {
-    console.log("Productos activos (con stock > 0):", activeProducts);
-  }, [productsFilter, products]);
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;

@@ -67,6 +67,8 @@ import {
   FETCH_USER_REQUEST,
   FETCH_USER_SUCCESS,
   FETCH_USER_FAILURE,
+  FETCH_FILTERED_PRODUCTS_SUCCESS,
+  FETCH_FILTERED_PRODUCTS_REQUEST,
   FETCH_SELLER_REQUEST,
   FETCH_SELLER_SUCCESS,
   FETCH_SELLER_FAILURE,
@@ -378,10 +380,10 @@ export const setCategoryFilter = (category) => ({
 
 export const fetchFilteredProducts =
   (searchTerm, priceFilter, categoryName, isOffer) => async (dispatch) => {
-    dispatch({ type: FETCH_PRODUCTS_REQUEST });
+    dispatch({ type: FETCH_FILTERED_PRODUCTS_REQUEST });
 
     try {
-      let url = `${BASE_URL}/product/search?search=${searchTerm}`;
+      let url = `${BASE_URL}/product/search?search=${searchTerm}`; // Usa el searchTerm directamente
 
       if (priceFilter && priceFilter.min !== null && priceFilter.max !== null) {
         url += `&minPrice=${priceFilter.min}&maxPrice=${priceFilter.max}`;
@@ -397,8 +399,8 @@ export const fetchFilteredProducts =
       const response = await fetch(url);
       const data = await response.json();
 
-      if (!data.error && data.products) {
-        dispatch({ type: FETCH_PRODUCTS_SUCCESS, payload: data.products });
+      if (!data.error && data.message.products) {
+        dispatch({ type: FETCH_FILTERED_PRODUCTS_SUCCESS, payload: data.message.products });
       } else {
         dispatch({ type: FETCH_PRODUCTS_FAILURE, payload: data.message });
       }

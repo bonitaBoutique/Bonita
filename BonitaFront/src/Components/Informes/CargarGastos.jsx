@@ -23,6 +23,13 @@ const CargarGastos = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(createExpense({ date, type, amount,  paymentMethods, description }));
+
+    // Restablecer los estados locales a sus valores iniciales
+    setDate("");
+    setType("");
+    setAmount("");
+    setDescription("");
+    setPaymentMethods("");
   };
 
   return (

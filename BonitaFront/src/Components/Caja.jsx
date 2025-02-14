@@ -27,7 +27,7 @@ const Caja = () => {
     state_order: "Pedido Realizado",
     n_document: "",
     id_product: [],
-    address: "Retira en local",
+    address: "Retira en Local",
     deliveryAddress: null,
     pointOfSale: "Local",
   });
@@ -127,63 +127,78 @@ const Caja = () => {
   // Manejar el envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!nDocument) {
       alert("Por favor, ingresa el número de documento.");
       return;
     }
-
+  
     const { totalPrice, totalQuantity } = calculateTotals();
-
+  
+    // Formatea los productos para que coincidan con la estructura esperada por el backend
+    const formattedProducts = selectedProducts.map(product => ({
+      id_product: product.id_product,
+      quantity: product.quantity || 1 // Asegúrate de que la cantidad esté definida
+    }));
+  
     const orderDataToSend = {
-      date: new Date().toISOString(),
+      date: new Date().toISOString().split('T')[0], // Formatea la fecha como YYYY-MM-DD
       amount: totalPrice,
       quantity: totalQuantity,
       state_order: "Pedido Realizado",
+      products: formattedProducts, // Usa el array de objetos formateados
+      address: "Retira en Local",
+      deliveryAddress: null,
+      shippingCost: 0,
       n_document: nDocument,
-      id_product: selectedProducts.map((item) => item.id_product),
-      address: orderData.address,
-      deliveryAddress: orderData.deliveryAddress,
-      pointOfSale: "Local",
+      pointOfSale: "Local"
     };
-
+  
     try {
-    console.log("Sending order data:", orderDataToSend);
-    const orderDetail = await dispatch(createOrder(orderDataToSend));
-    console.log("Order detail received:", orderDetail);
-
-    const idOrder = orderDetail.id_orderDetail; // Usa el id de la orden creada
-    console.log("ID de la orden creada:", idOrder);
-
-    navigate(`/receipt/${idOrder}`); // Redirige al recibo
-  } catch (error) {
-    console.error("Error al crear la orden:", error);
-
-    // Verificar si el error es porque el usuario no está registrado
-    if (error.message.includes("Usuario no registrado")) {
-      Swal.fire({
-        title: "Usuario no registrado",
-        text: "¿Deseas registrarte ahora?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Registrarse",
-        cancelButtonText: "Cancelar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          navigate("/register"); // Redirige a la página de registro
-        }
-      });
-    } else {
-      // Mostrar un mensaje de error genérico si no es un error de usuario no registrado
-      Swal.fire(
-        "Error",
-        "No se pudo crear la orden. Inténtalo de nuevo.",
-        "error"
-      );
+      console.log("Enviando datos de la orden:", orderDataToSend);
+      const orderDetail = await dispatch(createOrder(orderDataToSend));
+      console.log("Respuesta completa:", orderDetail);
+  
+      if (orderDetail && orderDetail.id_orderDetail) {
+        console.log("Orden creada exitosamente:", orderDetail);
+        navigate(`/receipt/${orderDetail.id_orderDetail}`);
+      } else {
+        console.error("Estructura de respuesta inválida:", orderDetail);
+        Swal.fire({
+          title: "Error",
+          text: "No se recibió el detalle de la orden correctamente",
+          icon: "error",
+        });
+        throw new Error("No se recibió el detalle de la orden correctamente");
+      }
+    } catch (error) {
+      console.error("Error al crear la orden:", error);
+  
+      // Verificar si el error es porque el usuario no está registrado
+      if (error.message.includes("Usuario no registrado")) {
+        Swal.fire({
+          title: "Usuario no registrado",
+          text: "¿Deseas registrarte ahora?",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Registrarse",
+          cancelButtonText: "Cancelar",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate("/register"); // Redirige a la página de registro
+          }
+        });
+      } else {
+        // Mostrar un mensaje de error genérico si no es un error de usuario no registrado
+        Swal.fire(
+          "Error",
+          "No se pudo crear la orden. Inténtalo de nuevo.",
+          "error"
+        );
+      }
     }
-  }
-};
-
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -307,4 +322,5 @@ const Caja = () => {
   );
 };
 
-export default Caja;
+export default Caja;                                      
+     

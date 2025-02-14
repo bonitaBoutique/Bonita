@@ -78,7 +78,7 @@ const PanelGeneral = () => {
                   to="/reservas"
                   className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
                 >
-                  Reservas
+                  Cuentas por cobrar
                 </Link>
                 <p className="text-sm text-slate-600">
                   Listado de Reservas 

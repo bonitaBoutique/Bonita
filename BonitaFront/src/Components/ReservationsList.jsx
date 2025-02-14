@@ -22,14 +22,37 @@ const ReservationList = () => {
   const [paymentAmounts, setPaymentAmounts] = useState({});
   const [hoveredOrderId, setHoveredOrderId] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
 
 
   useEffect(() => {
     dispatch(getAllReservations());
     dispatch(fetchLatestReceipt());
   }, [dispatch]);
+  
+  useEffect(() => {
+    if (!loading && (!reservations || reservations.length === 0)) {
+      Swal.fire({
+        title: 'Sin Reservas',
+        text: 'No hay reservas para mostrar en este momento',
+        icon: 'info',
+        confirmButtonText: 'Aceptar'
+      });
+    }
+  }, [reservations, loading]);
 
   console.log(latestReceipt);
+
+  const calculatePendingDebt = (totalAmount, paidAmount) => {
+    return totalAmount - paidAmount;
+  };
+
+  useEffect(() => {
+    if (orderDetails) {
+      console.log('OrderDetails actualizado:', orderDetails);
+      setCurrentOrderDetail(orderDetails);
+    }
+  }, [orderDetails]);
 
   const handlePayment = async (id_reservation) => {
     const amount = parseFloat(paymentAmounts[id_reservation]) || 0;
@@ -97,16 +120,46 @@ const ReservationList = () => {
     });
   };
 
-  const handleMouseEnter = (id_orderDetail, event) => {
-    const rect = event.target.getBoundingClientRect();
-    setTooltipPosition({
-      x: rect.left,
-      y: rect.bottom + window.scrollY,
-    });
-    setHoveredOrderId(id_orderDetail);
-    dispatch(fetchOrdersByIdOrder(id_orderDetail));
+  const handleMouseEnter = async (id_orderDetail, event) => {
+    try {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left,
+        y: rect.bottom + window.scrollY + 5
+      });
+      setHoveredOrderId(id_orderDetail);
+      
+      // Limpiar el detalle actual mientras carga
+      setCurrentOrderDetail(null);
+      
+      const result = await dispatch(fetchOrdersByIdOrder(id_orderDetail));
+      console.log('Fetched order details:', result);
+      
+      if (result) {
+        setCurrentOrderDetail(result);
+      }
+    } catch (error) {
+      console.error('Error en handleMouseEnter:', error);
+      setCurrentOrderDetail(null);
+    }
   };
-
+  
+  // Añadir este useEffect para manejar los cambios en orderDetails
+  useEffect(() => {
+    if (orderDetails) {
+      const orderData = {
+        userData: {
+          first_name: orderDetails.userData?.first_name || '',
+          last_name: orderDetails.userData?.last_name || ''
+        },
+        n_document: orderDetails.n_document,
+        products: orderDetails.products || []
+      };
+      setCurrentOrderDetail(orderData);
+    }
+  }, [orderDetails]);
+  
+  
   const handleMouseLeave = () => {
     setHoveredOrderId(null);
   };
@@ -230,113 +283,136 @@ const ReservationList = () => {
   return (
     <div className="container mx-auto p-4 mt-12">
       <h1 className="text-2xl font-bold mb-4">Reservas</h1>
+      
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
           <thead>
             <tr>
               <th className="py-2 px-4 border-b">Id Orden</th>
-              <th className="py-2 px-4 border-b">Id Reserva</th>
               <th className="py-2 px-4 border-b">Vencimiento</th>
-              <th className="py-2 px-4 border-b">Pago Total</th>
+              <th className="py-2 px-4 border-b">Parcial</th>
               <th className="py-2 px-4 border-b">Monto Orden</th>
+              <th className="py-2 px-4 border-b">Deuda Pendiente</th>
               <th className="py-2 px-4 border-b">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {reservations && reservations.map((reservation) => (
-              <tr key={reservation.id_reservation}>
-                <td className="py-2 px-4 border-b relative">
-                  <button
-                    onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
-                    onMouseLeave={handleMouseLeave}
-                    className="text-blue-500 underline hover:text-blue-700"
-                  >
-                    {reservation.id_orderDetail}
-                  </button>
-                </td>
-                <td className="py-2 px-4 border-b">{reservation.id_reservation}</td>
-                <td className="py-2 px-4 border-b">{new Date(reservation.dueDate).toLocaleDateString()}</td>
-                <td className="py-2 px-4 border-b">{reservation.totalPaid}</td>
-                <td className="py-2 px-4 border-b">{reservation.OrderDetail ? reservation.OrderDetail.amount : 'N/A'}</td>
-                <td className="py-2 px-4 border-b">
-                  <input
-                    type="number"
-                    value={paymentAmounts[reservation.id_reservation] || ''}
-                    onChange={(e) => handlePaymentAmountChange(reservation.id_reservation, e.target.value)}
-                    className="border rounded px-2 py-1 mr-2"
-                    placeholder="Payment Amount"
-                  />
-                  <button
-                    onClick={() => handlePayment(reservation.id_reservation)}
-                    className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2"
-                  >
-                    Pay
-                  </button>
-                  <button
-                    onClick={() => generatePDF({
-                      receiptNumber: reservation.receiptNumber || 1001,
-                      date: new Date().toISOString().split('T')[0],
-                      buyer_name: reservation.OrderDetail.User.first_name + ' ' + reservation.OrderDetail.User.last_name,
-                      buyer_email: reservation.OrderDetail.User.email,
-                      buyer_phone: reservation.OrderDetail.User.phone,
-                      total_amount: reservation.totalPaid,
-                      payMethod: "Crédito",
-                      id_orderDetail: reservation.id_orderDetail
-                    })}
-                    className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
-                  >
-                    Generate PDF
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(reservation.id_reservation, 'Completada')}
-                    className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
-                  >
-                    Complete
-                  </button>
-                  <button
-                    onClick={() => handleDelete(reservation.id_reservation)}
-                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {reservations && reservations.map((reservation) => {
+              const pendingDebt = calculatePendingDebt(
+                reservation.OrderDetail?.amount || 0,
+                reservation.totalPaid || 0
+              );
+              
+              return (
+                <tr key={reservation.id_reservation}>
+                  <td className="py-2 px-4 border-b relative">
+                    <button
+                      onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
+                      onMouseLeave={handleMouseLeave}
+                      className="text-blue-500 underline hover:text-blue-700"
+                    >
+                      {reservation.id_orderDetail}
+                    </button>
+                    
+                    {hoveredOrderId === reservation.id_orderDetail && (
+  <div
+    style={{
+      position: "fixed",
+      left: `${tooltipPosition.x}px`,
+      top: `${tooltipPosition.y}px`,
+      zIndex: 1000,
+    }}
+    className="bg-gray-700 text-white p-3 rounded-md shadow-lg min-w-[300px]"
+  >
+    <div className="space-y-2">
+      <p className="font-semibold border-b pb-1">Detalles de la Orden:</p>
+      
+      {currentOrderDetail ? (
+        <>
+          <div className="mb-2">
+            <p className="font-medium text-gray-300">Cliente:</p>
+            <p>{`${currentOrderDetail.userData?.first_name || 'N/A'} ${currentOrderDetail.userData?.last_name || ''}`}</p>
+            <p className="text-sm text-gray-400">Doc: {currentOrderDetail.n_document || 'N/A'}</p>
+          </div>
+
+          {currentOrderDetail.products && currentOrderDetail.products.length > 0 ? (
+            <div>
+              <p className="font-medium text-gray-300 border-b pb-1">Productos:</p>
+              {currentOrderDetail.products.map((product, index) => (
+                <div key={index} className="pl-2 py-1">
+                  <p className="text-sm">{product.description || 'Sin descripción'}</p>
+                  <div className="text-xs text-gray-400">
+                    <p>Código: {product.codigoBarra || 'N/A'}</p>
+                    <p>Precio: ${product.priceSell?.toLocaleString() || '0'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">No hay productos disponibles</p>
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-gray-400">Cargando detalles...</p>
+      )}
+    </div>
+  </div>
+)}
+                  </td>
+                  <td className="py-2 px-4 border-b">
+                    {new Date(reservation.dueDate).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-4 border-b">
+                    ${reservation.totalPaid?.toLocaleString()}
+                  </td>
+                  <td className="py-2 px-4 border-b">
+                    ${reservation.OrderDetail?.amount?.toLocaleString() || 'N/A'}
+                  </td>
+                  <td className="py-2 px-4 border-b text-red-600 font-semibold">
+                    ${pendingDebt?.toLocaleString()}
+                  </td>
+                  <td className="py-2 px-4 border-b">
+                    <input
+                      type="number"
+                      value={paymentAmounts[reservation.id_reservation] || ''}
+                      onChange={(e) => handlePaymentAmountChange(reservation.id_reservation, e.target.value)}
+                      className="border rounded px-2 py-1 mr-2"
+                      placeholder="Monto a Pagar"
+                    />
+                    <button
+                      onClick={() => handlePayment(reservation.id_reservation)}
+                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2"
+                    >
+                      Aplicar Pago
+                    </button>
+                    <button
+                      onClick={() => generatePDF({
+                        receiptNumber: reservation.receiptNumber || 1001,
+                        date: new Date().toISOString().split('T')[0],
+                        buyer_name: reservation.OrderDetail.User.first_name + ' ' + reservation.OrderDetail.User.last_name,
+                        buyer_email: reservation.OrderDetail.User.email,
+                        buyer_phone: reservation.OrderDetail.User.phone,
+                        total_amount: reservation.totalPaid,
+                        payMethod: "Crédito",
+                        id_orderDetail: reservation.id_orderDetail
+                      })}
+                      className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
+                    >
+                      Generar Recibo
+                    </button>
+                    <button
+                      onClick={() => handleDelete(reservation.id_reservation)}
+                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-  
-      {/* Tooltip */}
-      {reservations.map((reservation) => (
-            <tr key={reservation.id_reservation}>
-              <td
-                className="py-2 px-4 border-b relative"
-                onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
-                onMouseLeave={handleMouseLeave}
-              >
-                {reservation.id_orderDetail}
-
-                {/* Tooltip */}
-                {hoveredOrderId === reservation.id_orderDetail && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${tooltipPosition.x}px`,
-                      top: `${tooltipPosition.y}px`,
-                      zIndex: 50,
-                    }}
-                    className="bg-gray-700 text-white p-2 rounded-md shadow-lg"
-                  >
-                    <p>Detalles de la Orden:</p>
-                    <p>Id: {orderDetails?.id}</p>
-                    <p>Monto: {orderDetails?.amount}</p>
-                    <p>Cliente: {orderDetails?.User?.first_name}</p>
-                  </div>
-                )}
-              </td>
-              <td className="py-2 px-4 border-b">{reservation.id_reservation}</td>
-            </tr>
-          ))}
     </div>
   );
 };

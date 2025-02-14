@@ -17,6 +17,7 @@ export const publicRoutes = [
     component: lazy(() => import('../Users/Register')),
     exact: true 
   },
+  
   { 
     path: '/products', 
     component: lazy(() => import('../Product/ProducstList')),
@@ -128,7 +129,10 @@ export const adminRoutes = [
   { 
     path: '/creditN', 
     component: lazy(() => import('../Taxxa/CreditN')) 
-  }
+  },
+  
+  
+
 ];
 
 // Rutas de cajero y admin

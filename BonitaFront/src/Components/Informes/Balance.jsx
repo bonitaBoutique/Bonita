@@ -4,7 +4,6 @@ import { fetchBalance } from '../../Redux/Actions/actions';
 import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 
-
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -33,7 +32,7 @@ const Balance = () => {
     startDate: '',
     endDate: '',
     paymentMethod: '',
-    expenseType:''
+    expenseType: ''
   });
 
   useEffect(() => {
@@ -46,15 +45,18 @@ const Balance = () => {
         ...sale,
         type: 'Venta Online',
         amount: sale.amount,
-        date: new Date(sale.date)
+        date: new Date(sale.date),
+        paymentMethod: sale.payMethod // Agregado para ventas online
       })),
       ...(income.local || []).map(sale => ({
         ...sale,
         type: 'Venta Local',
         amount: sale.total_amount,
-        date: new Date(sale.date)
+        date: new Date(sale.date),
+        paymentMethod: sale.payMethod // Agregado para ventas locales
       })),
       ...(Array.isArray(expenses) ? expenses : []).map(expense => ({
+        ...expense,
         ...expense,
         type: `Gasto - ${expense.type}`,
         amount: -expense.amount,
@@ -62,15 +64,20 @@ const Balance = () => {
         paymentMethod: expense.paymentMethods
       }))
     ];
-  
+
     let filteredMovements = movements;
-  
+
     if (filters.expenseType) {
-      filteredMovements = filteredMovements.filter(movement => 
+      filteredMovements = filteredMovements.filter(movement =>
         movement.type === `Gasto - ${filters.expenseType}`
       );
     }
-  
+
+    // Agregar console.log para inspeccionar cada movimiento
+    filteredMovements.forEach(movement => {
+      console.log('Movement:', movement);
+    });
+
     return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
@@ -101,18 +108,18 @@ const Balance = () => {
         <input
           type="date"
           value={filters.startDate}
-          onChange={e => setFilters({...filters, startDate: e.target.value})}
+          onChange={e => setFilters({ ...filters, startDate: e.target.value })}
           className="border rounded p-2"
         />
         <input
           type="date"
           value={filters.endDate}
-          onChange={e => setFilters({...filters, endDate: e.target.value})}
+          onChange={e => setFilters({ ...filters, endDate: e.target.value })}
           className="border rounded p-2"
         />
         <select
           value={filters.paymentMethod}
-          onChange={e => setFilters({...filters, paymentMethod: e.target.value})}
+          onChange={e => setFilters({ ...filters, paymentMethod: e.target.value })}
           className="border rounded p-2"
         >
           <option value="">Todos los métodos</option>
@@ -123,7 +130,7 @@ const Balance = () => {
         </select>
         <select
           value={filters.expenseType}
-          onChange={e => setFilters({...filters, expenseType: e.target.value})}
+          onChange={e => setFilters({ ...filters, expenseType: e.target.value })}
           className="border rounded p-2"
         >
           <option value="">Todos los tipos de gasto</option>

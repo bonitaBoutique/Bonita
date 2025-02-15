@@ -28,7 +28,7 @@ const ProductsList = () => {
 
   // Mostrar productos filtrados si existen, de lo contrario, mostrar todos
   const activeProducts = (searchResults.length > 0 ? searchResults : products)
-  .filter(product => product.stock > 0);
+    .filter(product => product.stock > 0 && product.tiendaOnLine === true); // Filtra por stock y tiendaOnLine
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -172,7 +172,18 @@ const ProductsList = () => {
                 ))}
               </div>
 
-              {/* Pagination remains the same */}
+              {/* Pagination */}
+              <div className="flex justify-center mt-8">
+                {Array.from({ length: Math.ceil(activeProducts.length / productsPerPage) }, (_, i) => i + 1).map(pageNumber => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => paginate(pageNumber)}
+                    className={`mx-1 px-3 py-1 rounded-md ${currentPage === pageNumber ? 'bg-amber-100 text-slate-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </div>
             </>
           )}
         </div>

@@ -13,23 +13,32 @@ const BillingForm = () => {
   const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
   const [showInvoicePopup, setShowInvoicePopup] = useState(false); // Estado para el popup
   const [jbuyer, setBuyer] = useState({
-    wlegalorganizationtype: "",
-    scostumername: "",
-    stributaryidentificationkey: "",
-    stributaryidentificationname: "",
-    sfiscalresponsibilities: "",
-    sfiscalregime: "",
-    jpartylegalentity: {
-      wdoctype: "",
-      sdocno: "",
-      scorporateregistrationschemename: "",
-    },
-    jcontact: {
-      scontactperson: "",
-      selectronicmail: "",
-      stelephone: "",
-    },
-  });
+   
+      wlegalorganizationtype: "person",
+      scostumername: "Consumidor Final",
+      stributaryidentificationkey: "01",
+      stributaryidentificationname: "IVA",
+      sfiscalresponsibilities: "R-99-PN",
+      sfiscalregime: "49",
+      jpartylegalentity: {
+        wdoctype: "",
+        sdocno: "",
+        scorporateregistrationschemename: ""
+      },
+      jcontact: {
+        scontactperson: "",
+        selectronicmail: "",
+        stelephone: "",
+        jregistrationaddress: {
+          scountrycode: "CO",
+          wdepartmentcode: "",
+          wtowncode: "",
+          scityname: "",
+          saddressline1: "",
+          szip: ""
+        }
+      }
+    });
 
   const handleProceedToDocument = () => {
     if (jbuyer.scostumername === "CONSUMIDOR FINAL") {
@@ -60,27 +69,43 @@ const BillingForm = () => {
         wlegalorganizationtype,
         scostumername,
         stributaryidentificationkey,
+        sfiscalregime,
         sfiscalresponsibilities,
         wdoctype,
+        wdepartmentcode,
+        wtowncode,
+        scityname,
+        saddressline1,
+        szip
       } = userTaxxa.userInfo;
+
 
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
-        wlegalorganizationtype: wlegalorganizationtype || "",
-        scostumername: scostumername || `${first_name} ${last_name}`.trim() || "",
-        stributaryidentificationkey: stributaryidentificationkey || "",
-        sfiscalresponsibilities: sfiscalresponsibilities || "",
+        wlegalorganizationtype: wlegalorganizationtype || "person",
+        scostumername: scostumername || `${first_name} ${last_name}`.trim() || "Consumidor Final",
+        stributaryidentificationkey: stributaryidentificationkey || "01",
+        stributaryidentificationname: "IVA",
+        sfiscalresponsibilities: sfiscalresponsibilities || "R-99-PN",
+        sfiscalregime: sfiscalregime || "49",
         jpartylegalentity: {
-          ...prevBuyer.jpartylegalentity,
           wdoctype: wdoctype || "",
           sdocno: n_document || "",
-          scorporateregistrationschemename: `${first_name} ${last_name}`.trim() || "",
+          scorporateregistrationschemename: `${first_name} ${last_name}`.trim() || ""
         },
         jcontact: {
           scontactperson: `${first_name} ${last_name}`.trim() || "",
           selectronicmail: email || "",
           stelephone: phone || "",
-        },
+          jregistrationaddress: {
+            scountrycode: "CO",
+            wdepartmentcode: wdepartmentcode || "",
+            wtowncode: wtowncode || "",
+            scityname: scityname || "",
+            saddressline1: saddressline1 || "",
+            szip: szip || ""
+          }
+        }
       }));
     }
   }, [userTaxxa]);

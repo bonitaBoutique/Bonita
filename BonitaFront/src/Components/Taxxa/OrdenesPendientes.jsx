@@ -14,16 +14,6 @@ const OrdenesPendientes = () => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  // const filteredOrders = orders.filter((order) => {
-  //   if (!filterState) {
-  //     return order.isFacturable === true && order.isFacturable === false; // Solo órdenes facturables
-  //   }
-  //   return order.state_order === filterState && order.isFacturable === true;
-  // });
-
-  console.log("Orders:", orders);
-  console.log("Filtered Orders:", orders);
-
   const handleFilterChange = (e) => {
     setFilterState(e.target.value);
   };
@@ -135,52 +125,53 @@ const OrdenesPendientes = () => {
           </select>
         </div>
 
-        <div className="overflow-x-auto shadow-md sm:rounded-lg">
+        <div className="overflow-x-auto shadow-md sm:rounded-lg" style={{ maxHeight: '500px' }}>
           <table className="min-w-full text-sm text-left text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50" style={{ display: 'table', width: 'calc(100% - 0.9em)', tableLayout: 'fixed' }}>
               <tr>
-                <th scope="col" className="px-6 py-3 ">
+                <th scope="col" className="px-6 py-3 " style={{ width: '10%' }}>
                   N° Pedido
                 </th>
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '15%' }}>
                   Fecha
                 </th>
                
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '10%' }}>
                   Cantidad
                 </th>
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '15%' }}>
                   Monto
                 </th>
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '20%' }}>
                   Documento Cliente
                 </th>
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '10%' }}>
                   Estado
                 </th>
-                <th scope="col" className="px-6 py-3">
+                <th scope="col" className="px-6 py-3" style={{ width: '20%' }}>
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody style={{ overflowY: 'auto', display: 'block', height: '400px', width: '100%' }}>
               {orders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
                   className="bg-white border-b dark:bg-gray-800  text-white"
+                  style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}
                 >
-                  <td className="px-6 py-4 font-medium text-white">
+                  <td className="px-6 py-4 font-medium text-white" style={{ width: '10%' }}>
                     {order.id_orderDetail}
                   </td>
-                  <td className="px-6 py-4">{order.date}</td>
+                  <td className="px-6 py-4" style={{ width: '15%' }}>{order.date}</td>
                  
-                  <td className="px-6 py-4">{order.quantity}</td>
-                  <td className="px-6 py-4">${order.amount}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4" style={{ width: '10%' }}>{order.quantity}</td>
+                  <td className="px-6 py-4" style={{ width: '15%' }}>${order.amount}</td>
+                  <td className="px-6 py-4" style={{ width: '20%' }}>
                     {order.n_document }
                   </td>
-                  <td className="px-6 py-4">{order.state_order}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4" style={{ width: '10%' }}>{order.state_order}</td>
+                  <td className="px-6 py-4" style={{ width: '20%' }}>
                   <button
   onClick={() => handleCopyOrderId(order.id_orderDetail)}
   className={`bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded mr-2 transition-colors duration-200 ${

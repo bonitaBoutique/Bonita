@@ -81,14 +81,34 @@ const createInvoice = async (req, res) => {
     }
     console.log('Datos del comprador encontrados:', userData.first_name, userData.last_name);
 
+    // Construir el objeto jdocumentitems como un array
+    const documentItemsArray = Object.values(invoiceData.jdocumentitems);
+
     console.log('=== Construyendo documento para Taxxa ===');
     const documentBody = {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {
-        wVersionUBL: invoiceData.wVersionUBL,
-        wenvironment: invoiceData.wenvironment,
+        wVersionUBL: "2.1",
+        wenvironment: "test",
         jDocument: {
-          ...invoiceData,
+          wdocumenttype: "Invoice",
+          wdocumenttypecode: "01",
+          scustomizationid: "10",
+          wcurrency: "COP",
+          sdocumentprefix: "FVB",
+          sdocumentsuffix: null,
+          tissuedate: new Date().toISOString().slice(0, 19),
+          tduedate: new Date().toISOString().slice(0, 10),
+          wpaymentmeans: 1,
+          wpaymentmethod: "10",
+          nlineextensionamount: 21008.4,
+          ntaxexclusiveamount: 21008.4,
+          ntaxinclusiveamount: 25000,
+          npayableamount: 25000,
+          sorderreference: id_orderDetail,
+          tdatereference: new Date().toISOString().slice(0, 10),
+          jextrainfo: {},
+          jdocumentitems: documentItemsArray,
           jseller: {
             wlegalorganizationtype: 'company',
             sfiscalresponsibilities: sellerData.sfiscalresponsibilities,
@@ -112,6 +132,23 @@ const createInvoice = async (req, res) => {
                 szip: sellerData.registration_szip,
                 sdepartmentname: sellerData.registration_sdepartmentname,
               }
+            }
+          },
+          jbuyer: {
+            wlegalorganizationtype: "person",
+            scostumername: userData.first_name + ' ' + userData.last_name,
+            stributaryidentificationkey: "O-1",
+            sfiscalresponsibilities: "R-99-PN",
+            sfiscalregime: "48",
+            jpartylegalentity: {
+              wdoctype: userData.wdoctype,
+              sdocno: userData.n_document,
+              scorporateregistrationschemename: userData.first_name + ' ' + userData.last_name
+            },
+            jcontact: {
+              scontactperson: userData.first_name + ' ' + userData.last_name,
+              selectronicmail: userData.email,
+              stelephone: userData.phone
             }
           }
         }

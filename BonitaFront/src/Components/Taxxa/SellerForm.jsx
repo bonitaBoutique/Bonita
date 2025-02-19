@@ -14,10 +14,10 @@ const SellerForm = ({ jseller, setSeller }) => {
  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    wlegalorganizationtype: "",
-    sfiscalresponsibilities: "",
+    wlegalorganizationtype: "company",
+    sfiscalresponsibilities: "O-47",
     sdocno: "",
-    sdoctype: "",
+    sdoctype: "NIT",
     ssellername: "",
     ssellerbrand: "",
     scontactperson: "",
@@ -69,21 +69,31 @@ const SellerForm = ({ jseller, setSeller }) => {
     e.preventDefault();
     console.log('Datos enviados:', formData);
   
-    // Extraer los datos de jcontact y jregistrationaddress
-    const { jcontact, ...sellerData } = formData;
-    const { jregistrationaddress, selectronicmail } = jcontact;
-  
     // Construir el objeto a enviar al backend
     const dataToSend = {
-      ...sellerData,
-      contact_selectronicmail: selectronicmail,
-      registration_wdepartmentcode: jregistrationaddress.wdepartmentcode,
-      registration_scityname: jregistrationaddress.scityname,
-      registration_saddressline1: jregistrationaddress.saddressline1,
-      registration_scountrycode: jregistrationaddress.scountrycode,
-      registration_wprovincecode: jregistrationaddress.wprovincecode,
-      registration_szip: jregistrationaddress.szip,
-      registration_sdepartmentname: jregistrationaddress.sdepartmentname,
+      wlegalorganizationtype: formData.wlegalorganizationtype,
+      sfiscalresponsibilities: formData.sfiscalresponsibilities,
+      sdocno: formData.sdocno,
+      sdoctype: formData.sdoctype,
+      ssellername: formData.ssellername,
+      ssellerbrand: formData.ssellerbrand,
+      scontactperson: formData.scontactperson,
+      saddresszip: formData.saddresszip,
+      wdepartmentcode: formData.wdepartmentcode,
+      wtowncode: formData.wtowncode,
+      scityname: formData.scityname,
+      jcontact: {
+        selectronicmail: formData.jcontact.selectronicmail,
+        jregistrationaddress: {
+          wdepartmentcode: formData.jcontact.jregistrationaddress.wdepartmentcode,
+          scityname: formData.jcontact.jregistrationaddress.scityname,
+          saddressline1: formData.jcontact.jregistrationaddress.saddressline1,
+          scountrycode: formData.jcontact.jregistrationaddress.scountrycode,
+          wprovincecode: formData.jcontact.jregistrationaddress.wprovincecode,
+          szip: formData.jcontact.jregistrationaddress.szip,
+          sdepartmentname: formData.jcontact.jregistrationaddress.sdepartmentname,
+        },
+      },
     };
   
     console.log('Datos a enviar:', dataToSend);

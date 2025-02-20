@@ -14,6 +14,7 @@ const Invoice = () => {
   const order = useSelector((state) => state.orderById.order);
   const orderLoading = useSelector((state) => state.orderById.loading);
   const orderError = useSelector((state) => state.orderById.error);
+  const sellerData = useSelector((state) => state.sellerData.data);
 
   const [orderId, setOrderId] = useState("");
   const { loading: invoiceLoading, success, error: invoiceError } = useSelector((state) => state.invoice);
@@ -125,11 +126,36 @@ const Invoice = () => {
     setIsLoading(true);
     setErrorMessage("");
     try {
-      if (order && order.id_orderDetail) {
+      if (order && order.id_orderDetail && sellerData) {
         // Agregar el id_orderDetail al objeto jDocumentData
         const jDocumentDataWithOrderId = {
           ...jDocumentData,
           sorderreference: order.id_orderDetail,
+          jseller: {
+            wlegalorganizationtype: sellerData.wlegalorganizationtype,
+            sfiscalresponsibilities: sellerData.sfiscalresponsibilities,
+            sdocno: sellerData.sdocno,
+            sdoctype: sellerData.sdoctype,
+            ssellername: sellerData.ssellername,
+            ssellerbrand: sellerData.ssellerbrand,
+            scontactperson: sellerData.scontactperson,
+            saddresszip: sellerData.saddresszip,
+            wdepartmentcode: sellerData.wdepartmentcode,
+            wtowncode: sellerData.wtowncode,
+            scityname: sellerData.scityname,
+            jcontact: {
+              selectronicmail: sellerData.jcontact.selectronicmail,
+              jregistrationaddress: {
+                wdepartmentcode: sellerData.jcontact.jregistrationaddress.wdepartmentcode,
+                scityname: sellerData.jcontact.jregistrationaddress.scityname,
+                saddressline1: sellerData.jcontact.jregistrationaddress.saddressline1,
+                scountrycode: sellerData.jcontact.jregistrationaddress.scountrycode,
+                wprovincecode: sellerData.jcontact.jregistrationaddress.wprovincecode,
+                szip: sellerData.jcontact.jregistrationaddress.szip,
+                sdepartmentname: sellerData.jcontact.jregistrationaddress.sdepartmentname,
+              }
+            }
+          }
         };
   
         console.log('jDocumentDataWithOrderId:', jDocumentDataWithOrderId); // Imprimir el objeto jDocumentDataWithOrderId

@@ -7,12 +7,12 @@ const createInvoice = async (req, res) => {
     console.log('Received payload:', JSON.stringify(req.body, null, 2));
 
     const { invoiceData, sellerId } = req.body;
-    
+
     if (!invoiceData || !sellerId) {
       console.error('Datos de factura o vendedor faltantes');
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Datos de factura o vendedor faltantes',
-        success: false 
+        success: false
       });
     }
 
@@ -20,17 +20,17 @@ const createInvoice = async (req, res) => {
     console.log('Procesando orden:', id_orderDetail);
 
     // First, get the order details
-    const orderDetail = await OrderDetail.findOne({ 
-      where: { id_orderDetail } 
+    const orderDetail = await OrderDetail.findOne({
+      where: { id_orderDetail }
     });
 
     // Validate order exists
     if (!orderDetail) {
       console.error('Orden no encontrada:', id_orderDetail);
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: 'Orden no encontrada',
         success: false,
-        orderReference: id_orderDetail 
+        orderReference: id_orderDetail
       });
     }
 
@@ -44,11 +44,11 @@ const createInvoice = async (req, res) => {
       console.log('Estado:', orderDetail.status);
       console.log('Fecha de facturación:', orderDetail.updatedAt);
 
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'La orden ya está facturada',
         success: false,
         orderReference: id_orderDetail,
-        invoicedAt: orderDetail.updatedAt 
+        invoicedAt: orderDetail.updatedAt
       });
     }
 
@@ -62,10 +62,10 @@ const createInvoice = async (req, res) => {
     // Validate and log seller data
     if (!sellerData) {
       console.error('Datos del vendedor no encontrados:', sellerId);
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: 'Datos del vendedor no encontrados',
         success: false,
-        sellerId 
+        sellerId
       });
     }
     console.log('Datos del vendedor encontrados:', sellerData.ssellername);
@@ -73,10 +73,10 @@ const createInvoice = async (req, res) => {
     // Validate and log user data
     if (!userData) {
       console.error('Datos del comprador no encontrados:', orderDetail.n_document);
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: 'Datos del comprador no encontrados',
         success: false,
-        buyerId: orderDetail.n_document 
+        buyerId: orderDetail.n_document
       });
     }
     console.log('Datos del comprador encontrados:', userData.first_name, userData.last_name);
@@ -175,8 +175,8 @@ const createInvoice = async (req, res) => {
     if (taxxaResponse && taxxaResponse.rerror === 0) {
       console.log('=== Actualizando estado de la orden ===');
       await orderDetail.update({ status: 'facturada' });
-      
-      return res.status(200).json({ 
+
+      return res.status(200).json({
         message: 'Factura creada y enviada con éxito',
         success: true,
         response: taxxaResponse,
@@ -190,7 +190,7 @@ const createInvoice = async (req, res) => {
     console.error('=== Error en el proceso de facturación ===');
     console.error('Error:', error.message);
     console.error('Stack:', error.stack);
-    
+
     if (error.response) {
       console.error('Response data:', JSON.stringify(error.response.data, null, 2));
       console.error('Response status:', error.response.status);

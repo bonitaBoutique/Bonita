@@ -108,6 +108,17 @@ Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail", allowNull: false 
 Reservation.hasMany(CreditPayment, { foreignKey: 'id_reservation' });
 CreditPayment.belongsTo(Reservation, { foreignKey: 'id_reservation' });
 
+Receipt.belongsTo(User, { 
+  foreignKey: 'cashier_document',
+  targetKey: 'n_document',
+  as: 'cashier'
+});
+User.hasMany(Receipt, { 
+  foreignKey: 'cashier_document',
+  sourceKey: 'n_document',
+  as: 'receipts'
+});
+
 //---------------------------------------------------------------------------------//
 module.exports = {
   ...sequelize.models, // para poder importar los modelos así: const { Product, User } = require('./db.js');

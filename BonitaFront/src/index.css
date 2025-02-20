@@ -78,44 +78,12 @@
     height: auto; /* Mantener proporción */
     object-fit: contain;
   }
+
   @keyframes marquee {
-    0% {
-      transform: translateX(0%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
   }
   
-  .animate-marquee {
-    display: flex;
-    animation: marquee 20s linear infinite;
-    white-space: nowrap;
-  }
-  
-  .animate-marquee > * {
-    flex: 0 0 auto;
-  }
-  
-  .carousel .slide img {
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: 0.5rem; /* Ajusta el radio de los bordes según sea necesario */
-  }
-  
-  .carousel .slide .absolute {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: #f5f5f5;
-  }
-  
-  @media (max-width: 640px) {
-    .carousel .slide img {
-      height: 70vh; /* Ajusta la altura para pantallas pequeñas */
-      object-fit: cover;
-    }
+  .marquee {
+    animation: marquee 80s linear infinite;
   }

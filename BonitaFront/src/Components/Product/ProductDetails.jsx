@@ -117,9 +117,7 @@ const ProductDetails = () => {
                   <p className="text-gray-600">
                     <span className="font-semibold">Marca:</span> {product.marca}
                   </p>
-                  <p className="text-gray-600">
-                    <span className="font-semibold">Color:</span> {product.colors}
-                  </p>
+                 
                   {product.sizes && (
                     <p className="text-gray-600 uppercase">
                       <span className="font-semibold">Tallas:</span> {product.sizes}

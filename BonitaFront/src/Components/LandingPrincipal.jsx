@@ -14,10 +14,19 @@ import ProductsList from "./Product/ProducstList";
 import Navbar from "./Navbar";
 
 const LandingPrincipal = () => {
+  const logos = [
+    { src: efecti, alt: "Efecti" },
+    { src: logoAmeric, alt: "American Express" },
+    { src: master, alt: "Mastercard" },
+    { src: logoVisa, alt: "Visa" },
+    { src: logosiste, alt: "siste" },
+    { src: contraentrega, alt: "contraentrega" },
+  ];
+
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-colorBeige">
+      <div className="min-h-screen bg-black">
         {/* Carrusel de banners */}
         <div className="flex justify-center items-center h-screen p-2 ">
           <div className="w-full h-full max-w-screen-xl overflow-hidden relative rounded-lg mt-28 sm:mt-28">
@@ -66,19 +75,22 @@ const LandingPrincipal = () => {
 
         {/* Logos sin fondo debajo de la imagen principal */}
         
-          <div className="flex animate-marquee w-full overflow-hidden space-x-4 sm:space-x-8 ">
-            <img src={efecti} alt="Efecti" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoAmeric} alt="American Express" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={master} alt="Mastercard" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoVisa} alt="Visa" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logosiste} alt="siste" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={contraentrega} alt="contra" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={efecti} alt="Efecti" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoAmeric} alt="American Express" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={master} alt="Mastercard" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoVisa} alt="Visa" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logosiste} alt="siste" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={contraentrega} alt="contra" className="h-16 sm:h-20 w-auto object-contain" />
+          <div className="flex w-full overflow-hidden relative">
+            <div className="flex flex-nowrap space-x-4 sm:space-x-8 marquee">
+              {/* Duplica los logos varias veces para que se repitan */}
+              {[...Array(5)].map((_, i) => (
+                <React.Fragment key={i}>
+                  {logos.map((logo, index) => (
+                    <img
+                      key={index}
+                      src={logo.src}
+                      alt={logo.alt}
+                      className="h-16 sm:h-20 w-auto object-contain"
+                    />
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         
 
@@ -88,19 +100,22 @@ const LandingPrincipal = () => {
 
         {/* Carrusel de logos de pago */}
         <div className="bg-black py-4 overflow-hidden relative">
-          <div className="flex animate-marquee w-full overflow-hidden space-x-4 sm:space-x-8">
-            <img src={efecti} alt="Efecti" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoAmeric} alt="American Express" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={master} alt="Mastercard" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoVisa} alt="Visa" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logosiste} alt="siste" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={contraentrega} alt="contra" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={efecti} alt="Efecti" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoAmeric} alt="American Express" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={master} alt="Mastercard" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logoVisa} alt="Visa" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={logosiste} alt="siste" className="h-16 sm:h-20 w-auto object-contain" />
-            <img src={contraentrega} alt="contra" className="h-16 sm:h-20 w-auto object-contain" />
+          <div className="flex w-full overflow-hidden relative">
+            <div className="flex flex-nowrap space-x-4 sm:space-x-8 marquee">
+              {/* Duplica los logos varias veces para que se repitan */}
+              {[...Array(5)].map((_, i) => (
+                <React.Fragment key={i}>
+                  {logos.map((logo, index) => (
+                    <img
+                      key={index}
+                      src={logo.src}
+                      alt={logo.alt}
+                      className="h-16 sm:h-20 w-auto object-contain"
+                    />
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -10,6 +10,13 @@ module.exports = (sequelize) => {
         autoIncrement: true,
         allowNull: false, // Auto incremento, sin valor predeterminado
       },
+      cashier_document: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'n_document'
+        }},
       buyer_name: {
         type: DataTypes.STRING,
         allowNull: false, // Nombre del comprador (obligatorio)

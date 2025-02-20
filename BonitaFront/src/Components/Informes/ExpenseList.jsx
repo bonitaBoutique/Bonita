@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses, deleteExpense } from '../../Redux/Actions/actions';
 import { formatCurrency } from '../../formatCurrency';
-
+import Swal from 'sweetalert2'; // Importa SweetAlert
 
 const ExpenseList = () => {
   const dispatch = useDispatch();
@@ -22,7 +22,25 @@ const ExpenseList = () => {
   if (error) return <div>Error: {error}</div>;
 
   const handleDelete = (id) => {
-    dispatch(deleteExpense(id));
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "No podrás revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar!',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteExpense(id));
+        Swal.fire(
+          'Eliminado!',
+          'El gasto ha sido eliminado.',
+          'success'
+        )
+      }
+    })
   };
 
   // Paginación
@@ -43,14 +61,7 @@ const ExpenseList = () => {
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
      <div>
       
-      <ul>
-        {currentExpenses.map(expense => (
-          <li key={expense.id}>
-            {expense.description} - {expense.amount}
-            <button onClick={() => handleDelete(expense.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+ 
       <h2 className="text-2xl font-bold mb-6">Lista de Gastos</h2>
       {loading ? (
         <p>Cargando...</p>
@@ -63,6 +74,8 @@ const ExpenseList = () => {
               <tr>
                 <th className="py-2 px-4 border-b">Fecha</th>
                 <th className="py-2 px-4 border-b">Tipo</th>
+                 <th className="py-2 px-4 border-b">Descripción</th>
+                <th  className="py-2 px-4 border-b">Metodo de Pago</th>
                 <th className="py-2 px-4 border-b">Monto</th>
                 <th className="py-2 px-4 border-b">Acciones</th>
               </tr>

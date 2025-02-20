@@ -78,17 +78,13 @@
     height: auto; /* Mantener proporción */
     object-fit: contain;
   }
+
   @keyframes marquee {
-    0% {
-      transform: translateX(100%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
   }
   
-  .animate-marquee {
-    display: flex;
-    animation: marquee 15s linear infinite;
+  .marquee {
+    animation: marquee 80s linear infinite;
   }
-  
+ 

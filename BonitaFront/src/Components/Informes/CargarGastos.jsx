@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { createExpense } from "../../Redux/Actions/actions"; // Asegúrate de tener esta acción definida
+import { createExpense } from "../../Redux/Actions/actions";
+import Swal from "sweetalert2";
 
-//crear descripcion de gasto.
-//agregar en el select pago seguridad social
-// agregar select Nequi bancolombia efectivo y otro
 const CargarGastos = () => {
   const [date, setDate] = useState("");
   const [type, setType] = useState("");
@@ -17,19 +15,34 @@ const CargarGastos = () => {
   const { loading, success, error } = useSelector((state) => state.expenses);
 
   const handleBack = () => {
-    navigate(-1); // Navigate back to the previous page
+    navigate(-1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(createExpense({ date, type, amount,  paymentMethods, description }));
+    try {
+      await dispatch(createExpense({ date, type, amount, paymentMethods, description }));
 
-    // Restablecer los estados locales a sus valores iniciales
-    setDate("");
-    setType("");
-    setAmount("");
-    setDescription("");
-    setPaymentMethods("");
+      Swal.fire({
+        icon: "success",
+        title: "Éxito!",
+        text: "Gasto creado exitosamente!",
+        confirmButtonText: "Ok",
+      });
+
+      setDate("");
+      setType("");
+      setAmount("");
+      setDescription("");
+      setPaymentMethods("");
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error!",
+        text: err.message || "Hubo un problema al crear el gasto.",
+        confirmButtonText: "Ok",
+      });
+    }
   };
 
   return (
@@ -64,9 +77,7 @@ const CargarGastos = () => {
             <option value="Nomina Contratistas Externos">
               Nomina Contratistas Externos
             </option>
-            <option value="Seguridad Social">
-           Seguridad Social
-            </option>
+            <option value="Seguridad Social">Seguridad Social</option>
             <option value="Publicidad">Publicidad</option>
             <option value="Servicio Agua">Servicio Agua</option>
             <option value="Servicio Energia">Servicio Energia</option>
@@ -115,7 +126,7 @@ const CargarGastos = () => {
             <option value="Efectivo">Efectivo</option>
             <option value="Bancolombia">Bancolombia</option>
             <option value="Nequi">Nequi</option>
-            <option value="Otro">Otro</option> 
+            <option value="Otro">Otro</option>
           </select>
         </div>
         <div className="col-span-2">
@@ -134,12 +145,6 @@ const CargarGastos = () => {
             Volver
           </button>
         </div>
-        {success && (
-          <div className="col-span-2 text-green-500">
-            Gasto creado exitosamente!
-          </div>
-        )}
-        {error && <div className="col-span-2 text-red-500">{error}</div>}
       </form>
     </div>
   );

@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
           {
             model: Product,
             as: 'products',
-            attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'],
+            attributes: ['id_product', 'description', 'price', 'priceSell', 'isDian', 'tiendaOnLine', 'codigoBarra'],
             through: { attributes: [] }
           }
         ],
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
           {
             model: Product,
             as: 'products',
-            attributes: ['id_product', 'description', 'price', 'isDian', 'tiendaOnLine', 'codigoBarra'],
+            attributes: ['id_product', 'description', 'price', 'priceSell', 'isDian', 'tiendaOnLine', 'codigoBarra'],
             through: { attributes: [] }
           }
         ],
@@ -85,6 +85,7 @@ module.exports = async (req, res) => {
         id_product: product.id_product,
         description: product.description,
         price: product.price,
+        priceSell:product.priceSell,
         isDian: product.isDian,
         tiendaOnLine: product.tiendaOnLine,
         codigoBarra: product.codigoBarra

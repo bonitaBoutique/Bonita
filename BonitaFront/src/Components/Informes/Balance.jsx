@@ -15,6 +15,7 @@ const Balance = () => {
     totalExpenses = 0,
     income = { online: [], local: [] },
     expenses = [],
+    cashierTotals = {}, // Add cashierTotals to the state
     loading
   } = useSelector(state => state);
 
@@ -25,14 +26,16 @@ const Balance = () => {
     totalLocalSales,
     totalExpenses,
     income,
-    expenses
+    expenses,
+    cashierTotals
   });
 
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
     paymentMethod: '',
-    expenseType: ''
+    expenseType: '',
+    cashier: '' // Add cashier filter
   });
 
   useEffect(() => {
@@ -105,6 +108,9 @@ const Balance = () => {
   const ingresosNequi = (income.local || []).filter(sale => sale.payMethod === 'Nequi').reduce((acc, sale) => acc + sale.total_amount, 0);
   const ingresosBancolombia = (income.local || []).filter(sale => sale.payMethod === 'Bancolombia').reduce((acc, sale) => acc + sale.total_amount, 0);
 
+  // Get unique cashiers for the filter
+  const cashiers = [...new Set((income.local || []).map(sale => sale.cashier_document))];
+
   if (loading) return <div>Cargando...</div>;
 
   return (
@@ -145,6 +151,17 @@ const Balance = () => {
           <option value="Arriendo">Arriendo</option>
           <option value="Proveedores">Proveedores</option>
           <option value="Otros">Otros</option>
+        </select>
+        {/* Cashier Filter */}
+        <select
+          value={filters.cashier}
+          onChange={e => setFilters({ ...filters, cashier: e.target.value })}
+          className="border rounded p-2"
+        >
+          <option value="">Todos los cajeros</option>
+          {cashiers.map(cashier => (
+            <option key={cashier} value={cashier}>{cashier}</option>
+          ))}
         </select>
       </div>
 
@@ -192,6 +209,21 @@ const Balance = () => {
         >
           Exportar Excel
         </button>
+      </div>
+
+      {/* Cashier Totals */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Ventas por Cajero</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {Object.entries(cashierTotals)
+            .filter(([cashier]) => !filters.cashier || cashier === filters.cashier) // Apply cashier filter
+            .map(([cashier, total]) => (
+              <div key={cashier} className="bg-yellow-50 p-4 rounded">
+                <h3 className="text-lg font-semibold">{cashier}</h3>
+                <p className="text-2xl">${total}</p>
+              </div>
+            ))}
+        </div>
       </div>
 
       {/* Movements Table */}

@@ -296,6 +296,12 @@ const SellerForm = ({ jseller, setSeller }) => {
             className="w-full px-4 py-2 border rounded bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
+         {/* Contact Information Section */}
+         <div className="mb-4 col-span-full md:col-span-2 lg:col-span-4">
+          <h3 className="text-lg font-semibold mb-2 text-gray-800">
+            Información de Contacto
+          </h3>
+        </div>
         <div className="mb-4">
         <label className="block text-gray-700 mb-2">Correo Electrónico:</label>
         <input

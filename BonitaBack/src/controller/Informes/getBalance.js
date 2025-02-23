@@ -3,7 +3,7 @@ const { Op } = require("sequelize");
 
 const getBalance = async (req, res) => {
   try {
-    const { startDate, endDate, paymentMethod,  pointOfSale } = req.query;
+    const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
 
     const dateFilter = {
       date: {
@@ -37,7 +37,8 @@ const getBalance = async (req, res) => {
         'id_receipt',
         'date',
         'total_amount',
-        'payMethod'
+        'payMethod',
+        'cashier_document' // Use cashier_document instead of cashier
       ]
     });
 
@@ -64,6 +65,13 @@ const getBalance = async (req, res) => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
+    // Calculate cashier-wise totals
+    const cashierTotals = localSales.reduce((acc, sale) => {
+      const cashier = sale.cashier_document || 'Unknown'; // Use cashier_document
+      acc[cashier] = (acc[cashier] || 0) + sale.total_amount;
+      return acc;
+    }, {});
+
     return res.status(200).json({
       balance,
       totalIncome,
@@ -74,7 +82,8 @@ const getBalance = async (req, res) => {
         online: onlineSales,
         local: localSales
       },
-      expenses
+      expenses,
+      cashierTotals // Send cashier totals to the frontend
     });
 
   } catch (error) {

@@ -51,7 +51,7 @@ sequelize.models = Object.fromEntries(capsEntries);
 
 // En sequelize.models están todos los modelos importados como propiedades
 // Para relacionarlos hacemos un destructuring
-const { User, Receipt, Product, StockMovement, CreditPayment , Expense, Reservation,  Category, Delivery,  OrderDetail, Payment, Image, OrderProduct, SubCategory, Invoice, Token } = sequelize.models;
+const { User, Receipt, Product, StockMovement, CreditPayment , Expense, Reservation,  Delivery,  OrderDetail, Payment, Image, OrderProduct, SubCategory, Invoice, Token } = sequelize.models;
 
 OrderDetail.belongsToMany(Product, { through: 'OrderProduct', as: 'products', foreignKey: 'id_orderDetail' });
 
@@ -61,9 +61,7 @@ Product.belongsToMany(OrderDetail, { through: 'OrderProduct', as: 'orders', fore
 OrderDetail.belongsTo(User,{foreignKey:"n_document"})
 User.hasMany(OrderDetail,{foreignKey: "n_document"})
 
-//Product --> Category
-Product.belongsTo(Category,{foreignKey:"id_category"})
-Category.hasMany(Product,{foreignKey: "id_category"})
+
 
 //Order --> Delivery
 OrderDetail.hasOne(Delivery, { foreignKey: 'id_orderDetail' });
@@ -81,11 +79,7 @@ OrderDetail.hasMany(Payment, { foreignKey: 'id_orderDetail' });
 Product.hasMany(Image, { foreignKey: 'id_product' });
 Image.belongsTo(Product, { foreignKey: 'id_product' });
 
-Category.hasMany(SubCategory, {foreignKey: 'id_category'})
-SubCategory.belongsTo(Category, {foreingKey: 'id_category'})
 
-Product.belongsTo(SubCategory,{foreignKey:"id_SB"})
-SubCategory.hasMany(Product,{foreignKey: "id_SB"})
 
 Product.hasMany(StockMovement, { foreignKey: 'id_product' });
 StockMovement.belongsTo(Product, { foreignKey: 'id_product' });

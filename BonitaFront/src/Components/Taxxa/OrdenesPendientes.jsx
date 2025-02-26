@@ -180,7 +180,7 @@ const OrdenesPendientes = () => {
               {facturableOrders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
-                  className="bg-white border-b dark:bg-gray-800  text-white"
+                  className="bg-gray-700 border-b text-white"
                   style={{
                     display: "table",
                     width: "100%",

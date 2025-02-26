@@ -127,11 +127,8 @@ const OrdenesPendientes = () => {
           </select>
         </div>
 
-        <div
-          className="overflow-x-auto shadow-md sm:rounded-lg"
-          style={{ maxHeight: "500px" }}
-        >
-          <table className="min-w-full text-sm text-left text-gray-500">
+        <div className="overflow-x-auto shadow-md sm:rounded-lg" style={{ maxHeight: "500px" }}>
+        <table className="min-w-full text-sm text-left text-gray-500">
             <thead
               className="text-xs text-gray-700 uppercase bg-gray-50"
               style={{

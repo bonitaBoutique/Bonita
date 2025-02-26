@@ -110,11 +110,11 @@ const BillingForm = () => {
     }
   }, [userTaxxa]);
 
-  console.log(userTaxxa);
+ 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(jbuyer); // Aquí enviarías `jbuyer` al backend con la estructura solicitada
+    
   };
 
   const closePopup = () => setShowRegistrationPopup(false);

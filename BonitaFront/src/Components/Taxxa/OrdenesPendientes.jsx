@@ -276,3 +276,4 @@ const OrdenesPendientes = () => {
 };
 
 export default OrdenesPendientes;
+// Compare this snippet from BonitaFront/src/Components/Navbar2.jsx:

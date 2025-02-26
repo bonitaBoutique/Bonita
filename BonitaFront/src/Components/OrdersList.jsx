@@ -84,7 +84,7 @@ const OrdersList = () => {
       <div className="container mx-auto px-4 py-8 mt-20">
         <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-700 bg-slate-300 p-2 rounded">Lista de Pedidos</h2>
         <div className="mb-4">
-          <label className="mr-2 text-gray-400 font-nunito font-semibold">Filtrar por estado:</label>
+          <label className="mr-2 text-gray-200 font-nunito font-semibold">Filtrar por estado:</label>
           <select
             onChange={handleFilterChange}
             value={filterState}

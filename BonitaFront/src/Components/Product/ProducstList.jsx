@@ -129,9 +129,13 @@ const ProductsList = () => {
                           {product.description}
                         </Link>
                       </h3>
-                      <p className="text-lg font-semibold font-nunito text-gray-800">
-                        ${product.priceSell}
-                      </p>
+                      <div className="text-2xl font-bold text-white">
+  {new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(product.priceSell)}
+</div>
                       
                       {/* Stock indicator */}
                       <p className={`text-sm mt-2 ${

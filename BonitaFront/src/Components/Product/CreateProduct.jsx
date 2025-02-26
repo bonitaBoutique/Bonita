@@ -26,14 +26,9 @@ const CreateProduct = () => {
 
   const navigate = useNavigate();
 
-  const handleWidget =  (productId) => {
+  const handleWidget = () => {
     openCloudinaryWidget((uploadedImageUrl) => {
-      if (uploadedImageUrl) {
-        console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
-        dispatch(updateProduct(productId, { image: uploadedImageUrl }));
-      } else {
-        console.error("Error al subir la imagen.");
-      }
+      setImages((prevImages) => [...prevImages, uploadedImageUrl]);
     });
   };
 

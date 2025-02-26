@@ -120,8 +120,10 @@ const BillingForm = () => {
   const closePopup = () => setShowRegistrationPopup(false);
 
   return (
-    <div className="">
+    <div className="flex flex-col min-h-screen">
+      <div className="flex-1 bg-gray-900">
       <OrdenesPendientes />
+    </div>
 
       <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">
         <form onSubmit={handleFetchUser} className="flex flex-col gap-4 mb-6">

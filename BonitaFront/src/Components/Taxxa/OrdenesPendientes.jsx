@@ -180,7 +180,7 @@ const OrdenesPendientes = () => {
               {facturableOrders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
-                  className="bg-white border-b  text-white"
+                  className="bg-white border-b  text-black"
                   style={{
                     display: "table",
                     width: "100%",
@@ -188,7 +188,7 @@ const OrdenesPendientes = () => {
                   }}
                 >
                   <td
-                    className="px-6 py-4 font-medium text-white"
+                    className="px-6 py-4 font-medium text-black"
                     style={{ width: "10%" }}
                   >
                     {order.id_orderDetail}

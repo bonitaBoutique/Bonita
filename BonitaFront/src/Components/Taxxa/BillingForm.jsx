@@ -121,8 +121,7 @@ const BillingForm = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-    {/* Contenedor específico para OrdenesPendientes */}
-    <div className="flex-1 bg-gray-900">
+      <div className="flex-1 bg-gray-900">
       <OrdenesPendientes />
     </div>
 

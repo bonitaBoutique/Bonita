@@ -114,9 +114,7 @@ const ProductDetails = () => {
                 </h1>
                 
                 <div className="space-y-2">
-                  <p className="text-gray-600">
-                    <span className="font-semibold">Marca:</span> {product.marca}
-                  </p>
+                 
                  
                   {product.sizes && (
                     <p className="text-gray-600 uppercase">
@@ -126,8 +124,12 @@ const ProductDetails = () => {
                 </div>
 
                 <div className="text-2xl font-bold text-colorBeige">
-                  ${product.priceSell}
-                </div>
+  {new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(product.priceSell)}
+</div>
 
                 <div className="prose max-w-none">
                   <p className="text-gray-600">{product.description}</p>

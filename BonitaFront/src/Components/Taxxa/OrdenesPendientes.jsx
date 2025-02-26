@@ -133,7 +133,7 @@ const OrdenesPendientes = () => {
         >
           <table className="min-w-full text-sm text-left text-gray-500">
             <thead
-              className="text-xs text-gray-700 uppercase bg-gray-50"
+              className="text-xs text-gray-700 uppercase bg-gray-500"
               style={{
                 display: "table",
                 width: "calc(100% - 0.9em)",
@@ -180,7 +180,7 @@ const OrdenesPendientes = () => {
               {facturableOrders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
-                  className="bg-white border-b dark:bg-gray-800  text-white"
+                  className="bg-white border-b  text-black"
                   style={{
                     display: "table",
                     width: "100%",
@@ -188,7 +188,7 @@ const OrdenesPendientes = () => {
                   }}
                 >
                   <td
-                    className="px-6 py-4 font-medium text-white"
+                    className="px-6 py-4 font-medium text-black"
                     style={{ width: "10%" }}
                   >
                     {order.id_orderDetail}
@@ -247,7 +247,7 @@ const OrdenesPendientes = () => {
             {orders
   .find((order) => order.id_orderDetail === expandedOrder)
   ?.products.map((product) => {
-    console.log("Producto:", product); // Agrega este console.log
+    console.log("Producto:", product); 
     return (
       <div
         key={product.id_product}

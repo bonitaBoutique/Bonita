@@ -240,36 +240,34 @@ const OrdenesPendientes = () => {
         </div>
 
         {expandedOrder && (
-          <div className="mt-4 bg-gray-700 text-gray-600 p-4 rounded">
-            <h3 className="text-lg font-semibold mb-2">
-              Productos de la Orden:
-            </h3>
-            {orders
-  .find((order) => order.id_orderDetail === expandedOrder)
-  ?.products.map((product) => {
-    console.log("Producto:", product); // Agrega este console.log
-    return (
-      <div
-        key={product.id_product}
-        className="mb-2 p-4 bg-gray-600 rounded"
-      >
-        <p className="mb-2">
-          <strong>Descripción:</strong> {product.description}
-        </p>
-        <p className="mb-2">
-          <strong>Precio:</strong> ${product.priceSell ? product.priceSell.toLocaleString() : 'N/A'}
-        </p>
-        <p className="mb-2">
-          <strong>ID Producto:</strong> {product.id_product}
-        </p>
-        <p>
-          <strong>Código de Barra:</strong> {product.codigoBarra}
-        </p>
-      </div>
-    );
-  })}
-          </div>
-        )}
+  <div className="mt-4 bg-gray-800 text-white p-4 rounded">
+    <h3 className="text-lg font-semibold mb-2">
+      Productos de la Orden:
+    </h3>
+    {orders
+      .find((order) => order.id_orderDetail === expandedOrder)
+      ?.products.map((product) => (
+        <div
+          key={product.id_product}
+          className="mb-2 p-4 bg-gray-700 rounded"
+        >
+          <p className="mb-2">
+            <strong>Descripción:</strong> {product.description}
+          </p>
+          <p className="mb-2">
+            <strong>Precio:</strong>{" "}
+            {product.priceSell ? product.priceSell.toLocaleString() : 'N/A'}
+          </p>
+          <p className="mb-2">
+            <strong>ID Producto:</strong> {product.id_product}
+          </p>
+          <p>
+            <strong>Código de Barra:</strong> {product.codigoBarra}
+          </p>
+        </div>
+      ))}
+  </div>
+)}
       </div>
     </div>
   );

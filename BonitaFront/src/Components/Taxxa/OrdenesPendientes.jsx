@@ -240,7 +240,7 @@ const OrdenesPendientes = () => {
         </div>
 
         {expandedOrder && (
-  <div className="mt-4 bg-gray-800 text-white p-4 rounded">
+  <div className="mt-4 bg-white text-black p-4 rounded">
     <h3 className="text-lg font-semibold mb-2">
       Productos de la Orden:
     </h3>

@@ -107,7 +107,8 @@ const Balance = () => {
   const ingresosTarjeta = (income.local || []).filter(sale => sale.payMethod === 'Tarjeta').reduce((acc, sale) => acc + sale.total_amount, 0);
   const ingresosNequi = (income.local || []).filter(sale => sale.payMethod === 'Nequi').reduce((acc, sale) => acc + sale.total_amount, 0);
   const ingresosBancolombia = (income.local || []).filter(sale => sale.payMethod === 'Bancolombia').reduce((acc, sale) => acc + sale.total_amount, 0);
-
+  const ingresosAddi = (income.local || []).filter(sale => sale.payMethod === 'Addi').reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosSistecredito = (income.local || []).filter(sale => sale.payMethod === 'Sistecredito').reduce((acc, sale) => acc + sale.total_amount, 0);
   // Get unique cashiers for the filter
   const cashiers = [...new Set((income.local || []).map(sale => sale.cashier_document))];
 
@@ -175,6 +176,7 @@ const Balance = () => {
           <h3 className="text-lg font-semibold">Tarjeta</h3>
           <p className="text-2xl">${ingresosTarjeta}</p>
         </div>
+        
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-semibold">Nequi</h3>
           <p className="text-2xl">${ingresosNequi}</p>
@@ -183,6 +185,17 @@ const Balance = () => {
           <h3 className="text-lg font-semibold">Bancolombia</h3>
           <p className="text-2xl">${ingresosBancolombia}</p>
         </div>
+        
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Addi</h3>
+          <p className="text-2xl">${ingresosAddi}</p>
+        </div>
+
+        <div className="bg-green-50 p-4 rounded">
+          <h3 className="text-lg font-semibold">Sistecredito</h3>
+          <p className="text-2xl">${ingresosSistecredito}</p>
+        </div>
+
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-semibold">Venta Online</h3>
           <p className="text-2xl">${totalOnlineSales}</p>

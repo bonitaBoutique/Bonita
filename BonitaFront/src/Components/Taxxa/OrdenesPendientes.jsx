@@ -119,7 +119,7 @@ const OrdenesPendientes = () => {
           <select
             onChange={handleFilterChange}
             value={filterState}
-            className="bg-gray-600 text-gray-800 font-nunito px-2 py-1 rounded"
+            className="bg-gray-600 text-gray-200 font-nunito px-2 py-1 rounded"
           >
             <option value="">Todos</option>
             <option value="Pedido Realizado">Pedido Realizado</option>
@@ -180,7 +180,7 @@ const OrdenesPendientes = () => {
               {facturableOrders.map((order) => (
                 <tr
                   key={order.id_orderDetail}
-                  className="bg-white border-b dark:bg-gray-800  text-black"
+                  className="bg-white border-b dark:bg-gray-800  text-white"
                   style={{
                     display: "table",
                     width: "100%",
@@ -188,7 +188,7 @@ const OrdenesPendientes = () => {
                   }}
                 >
                   <td
-                    className="px-6 py-4 font-medium text-black"
+                    className="px-6 py-4 font-medium text-white"
                     style={{ width: "10%" }}
                   >
                     {order.id_orderDetail}

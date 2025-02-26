@@ -4,8 +4,19 @@ const response = require('../../utils/response');
 module.exports = async (req, res) => {
   const { id } = req.params;
   const { marca, description, price, priceSell, stock, sizes, colors, tiendaOnLine } = req.body;
+  const images = req.body.images; // Recoger la propiedad images
 
-  if (!marca && !description && !price && !stock && !priceSell  && !sizes && !colors   && tiendaOnLine === undefined) {
+  if (
+    !marca &&
+    !description &&
+    !price &&
+    !stock &&
+    !priceSell &&
+    !sizes &&
+    !colors &&
+    !images &&
+    tiendaOnLine === undefined
+  ) {
     return response(res, 400, { error: "No data to update" });
   }
 
@@ -25,7 +36,9 @@ module.exports = async (req, res) => {
     product.tiendaOnLine = tiendaOnLine !== undefined ? JSON.parse(tiendaOnLine) : product.tiendaOnLine;
     product.sizes = sizes !== undefined ? sizes : product.sizes;
     product.colors = colors !== undefined ? colors : product.colors;
-
+    
+    // Actualizar la imagesn si se proporciona
+    product.images = images !== undefined ? images : product.images;
 
     // Guardar los cambios en la base de datos
     await product.save();

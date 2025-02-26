@@ -22,10 +22,12 @@ const ListadoProductos = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   const handleImageUpload = (productId) => {
-    // eslint-disable-next-line no-undef
-    openCloudinaryWidget((error, result) => {
-      if (!error && result && result.event === "success") {
-        dispatch(updateProduct(productId, { image: result.info.url }));
+    openCloudinaryWidget((uploadedImageUrl) => {
+      if (uploadedImageUrl) {
+        console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
+        dispatch(updateProduct(productId, { images: [uploadedImageUrl] }));
+      } else {
+        console.error("Error al subir la imagen.");
       }
     });
   };

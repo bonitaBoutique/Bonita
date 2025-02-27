@@ -15,8 +15,8 @@ const getBalance = async (req, res) => {
     const onlineSales = await OrderDetail.findAll({
       where: {
         ...dateFilter,
-        pointOfSale: 'Online',
-        transaction_status: 'Aprobado'
+       
+        
       },
       attributes: [
         'id_orderDetail',

@@ -13,6 +13,35 @@ const ProductsList = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 6;
+  const maxPagesToShow = 5;
+
+  const getPageNumbers = () => {
+    const totalPages = Math.ceil(activeProducts.length / productsPerPage);
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+  
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  
+    const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+  
+    if (startPage > 1) {
+      pageNumbers.unshift(1);
+      if (startPage > 2) {
+        pageNumbers.unshift("...");
+      }
+    }
+  
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pageNumbers.push("...");
+      }
+      pageNumbers.push(totalPages);
+    }
+  
+    return pageNumbers;
+  };
 
   // Selecciona los datos del estado global
   const products = useSelector((state) => state.products || []);
@@ -27,8 +56,9 @@ const ProductsList = () => {
   }, [dispatch]);
 
   // Mostrar productos filtrados si existen, de lo contrario, mostrar todos
-  const activeProducts = (searchResults.length > 0 ? searchResults : products)
-    .filter(product => product.stock > 0 && product.tiendaOnLine === true); // Filtra por stock y tiendaOnLine
+  const activeProducts = (
+    searchResults.length > 0 ? searchResults : products
+  ).filter((product) => product.stock > 0 && product.tiendaOnLine === true); // Filtra por stock y tiendaOnLine
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -107,15 +137,15 @@ const ProductsList = () => {
                     {/* Contenedor de la imagen */}
                     <div className="w-full h-96 bg-gray-100 overflow-hidden">
                       <Link to={`/product/${product.id_product}`}>
-                      <img
-  src={
-    product.images && product.images.length > 0
-      ? product.images[0]
-      : "https://via.placeholder.com/300"
-  }
-  alt={product.description || "Producto sin nombre"}
-  className="h-full w-full object-cover object-center transition-all duration-500 ease-in-out transform hover:scale-110"
-/>
+                        <img
+                          src={
+                            product.images && product.images.length > 0
+                              ? product.images[0]
+                              : "https://via.placeholder.com/300"
+                          }
+                          alt={product.description || "Producto sin nombre"}
+                          className="h-full w-full object-cover object-center transition-all duration-500 ease-in-out transform hover:scale-110"
+                        />
                       </Link>
                     </div>
 
@@ -130,17 +160,19 @@ const ProductsList = () => {
                         </Link>
                       </h3>
                       <div className="text-2xl font-bold text-white">
-  {new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0
-  }).format(product.priceSell)}
-</div>
-                      
+                        {new Intl.NumberFormat("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                          minimumFractionDigits: 0,
+                        }).format(product.priceSell)}
+                      </div>
+
                       {/* Stock indicator */}
-                      <p className={`text-sm mt-2 ${
-                        product.stock <= 5 ? 'text-red-500' : 'text-red-600'
-                      }`}>
+                      <p
+                        className={`text-sm mt-2 ${
+                          product.stock <= 5 ? "text-red-500" : "text-red-600"
+                        }`}
+                      >
                         Stock disponible: {product.stock} unidades
                       </p>
 
@@ -166,7 +198,9 @@ const ProductsList = () => {
                         </button>
                         <button
                           className="bg-red-500 text-white p-2 rounded-full hover:bg-red-700"
-                          onClick={() => handleDeleteProduct(product.id_product)}
+                          onClick={() =>
+                            handleDeleteProduct(product.id_product)
+                          }
                         >
                           <FiTrash size={20} />
                         </button>
@@ -178,16 +212,55 @@ const ProductsList = () => {
 
               {/* Pagination */}
               <div className="flex justify-center mt-8">
-                {Array.from({ length: Math.ceil(activeProducts.length / productsPerPage) }, (_, i) => i + 1).map(pageNumber => (
-                  <button
-                    key={pageNumber}
-                    onClick={() => paginate(pageNumber)}
-                    className={`mx-1 px-3 py-1 rounded-md ${currentPage === pageNumber ? 'bg-amber-100 text-slate-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
+  <button
+    onClick={() => paginate(1)}
+    disabled={currentPage === 1}
+    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+  >
+    {"<<"}
+  </button>
+  <button
+    onClick={() => paginate(currentPage - 1)}
+    disabled={currentPage === 1}
+    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+  >
+    {"<"}
+  </button>
+
+  {getPageNumbers().map((pageNumber, index) => (
+    <button
+      key={index}
+      onClick={() => {
+        if (typeof pageNumber === "number") {
+          paginate(pageNumber);
+        }
+      }}
+      disabled={typeof pageNumber === "string"}
+      className={`mx-1 px-3 py-1 rounded-md ${
+        currentPage === pageNumber
+          ? "bg-amber-100 text-slate-700"
+          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+      } ${typeof pageNumber === "string" ? "cursor-default" : ""}`}
+    >
+      {pageNumber}
+    </button>
+  ))}
+
+  <button
+    onClick={() => paginate(currentPage + 1)}
+    disabled={currentPage === Math.ceil(activeProducts.length / productsPerPage)}
+    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+  >
+    {">"}
+  </button>
+  <button
+    onClick={() => paginate(Math.ceil(activeProducts.length / productsPerPage))}
+    disabled={currentPage === Math.ceil(activeProducts.length / productsPerPage)}
+    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+  >
+    {">>"}
+  </button>
+</div>
             </>
           )}
         </div>

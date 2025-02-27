@@ -20,26 +20,29 @@ const ProductsList = () => {
     if (totalPages <= maxPagesToShow) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-  
+
     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-  
-    const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
-  
+
+    const pageNumbers = Array.from(
+      { length: endPage - startPage + 1 },
+      (_, i) => startPage + i
+    );
+
     if (startPage > 1) {
       pageNumbers.unshift(1);
       if (startPage > 2) {
         pageNumbers.unshift("...");
       }
     }
-  
+
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         pageNumbers.push("...");
       }
       pageNumbers.push(totalPages);
     }
-  
+
     return pageNumbers;
   };
 
@@ -114,7 +117,7 @@ const ProductsList = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen flex flex-col justify-center items-center bg-black opacity-95 py-40">
+      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-40">
         <SearchComponent />
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           {activeProducts.length === 0 ? (
@@ -212,55 +215,65 @@ const ProductsList = () => {
 
               {/* Pagination */}
               <div className="flex justify-center mt-8">
-  <button
-    onClick={() => paginate(1)}
-    disabled={currentPage === 1}
-    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {"<<"}
-  </button>
-  <button
-    onClick={() => paginate(currentPage - 1)}
-    disabled={currentPage === 1}
-    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {"<"}
-  </button>
+                <button
+                  onClick={() => paginate(1)}
+                  disabled={currentPage === 1}
+                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  {"<<"}
+                </button>
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  {"<"}
+                </button>
 
-  {getPageNumbers().map((pageNumber, index) => (
-    <button
-      key={index}
-      onClick={() => {
-        if (typeof pageNumber === "number") {
-          paginate(pageNumber);
-        }
-      }}
-      disabled={typeof pageNumber === "string"}
-      className={`mx-1 px-3 py-1 rounded-md ${
-        currentPage === pageNumber
-          ? "bg-amber-100 text-slate-700"
-          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-      } ${typeof pageNumber === "string" ? "cursor-default" : ""}`}
-    >
-      {pageNumber}
-    </button>
-  ))}
+                {getPageNumbers().map((pageNumber, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (typeof pageNumber === "number") {
+                        paginate(pageNumber);
+                      }
+                    }}
+                    disabled={typeof pageNumber === "string"}
+                    className={`mx-1 px-3 py-1 rounded-md ${
+                      currentPage === pageNumber
+                        ? "bg-amber-100 text-slate-700"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    } ${
+                      typeof pageNumber === "string" ? "cursor-default" : ""
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
 
-  <button
-    onClick={() => paginate(currentPage + 1)}
-    disabled={currentPage === Math.ceil(activeProducts.length / productsPerPage)}
-    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {">"}
-  </button>
-  <button
-    onClick={() => paginate(Math.ceil(activeProducts.length / productsPerPage))}
-    disabled={currentPage === Math.ceil(activeProducts.length / productsPerPage)}
-    className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {">>"}
-  </button>
-</div>
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={
+                    currentPage ===
+                    Math.ceil(activeProducts.length / productsPerPage)
+                  }
+                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  {">"}
+                </button>
+                <button
+                  onClick={() =>
+                    paginate(Math.ceil(activeProducts.length / productsPerPage))
+                  }
+                  disabled={
+                    currentPage ===
+                    Math.ceil(activeProducts.length / productsPerPage)
+                  }
+                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  {">>"}
+                </button>
+              </div>
             </>
           )}
         </div>

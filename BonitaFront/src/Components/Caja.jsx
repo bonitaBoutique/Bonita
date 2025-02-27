@@ -124,6 +124,12 @@ const Caja = () => {
     return { totalPrice, totalQuantity };
   };
 
+  const handleRemoveProduct = (id_product) => {
+    setSelectedProducts((prev) =>
+      prev.filter((product) => product.id_product !== id_product)
+    );
+  };
+
   // Manejar el envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -247,52 +253,54 @@ const Caja = () => {
 
       {/* Mostrar productos seleccionados */}
       {selectedProducts.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
-          {selectedProducts.map((product) => (
-            <div
-              key={product.id_product}
-              className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
-            >
-              <div className="flex items-center">
-                {/* Miniatura de la imagen del producto */}
-                {product.Images && product.Images.length > 0 && (
-                  <img
-                    src={product.Images[0].url}
-                    alt={product.description}
-                    className="w-12 h-12 mr-4 rounded-full object-cover"
-                  />
-                )}
-                <div>
-                  <p className="mr-4 text-lg font-semibold">
-                    {product.description}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Precio Unitario: ${product.priceSell}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  min="1"
-                  value={product.quantity || 1}
-                  onChange={(e) =>
-                    handleQuantityChange(
-                      product.id_product,
-                      Number(e.target.value)
-                    )
-                  }
-                  className="w-16 p-2 border border-gray-300 rounded-md text-center"
-                />
-                <p className="text-sm text-gray-500">
-                  Total: ${product.priceSell * (product.quantity || 1)}
-                </p>
-              </div>
-            </div>
-          ))}
+  <div className="mb-6">
+    <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
+    {selectedProducts.map((product) => (
+      <div
+        key={product.id_product}
+        className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
+      >
+        <div className="flex items-center">
+          {/* Miniatura de la imagen del producto */}
+          {product.Images && product.Images.length > 0 && (
+            <img
+              src={product.Images[0].url}
+              alt={product.description}
+              className="w-12 h-12 mr-4 rounded-full object-cover"
+            />
+          )}
+          <div>
+            <p className="mr-4 text-lg font-semibold">{product.description}</p>
+            <p className="text-sm text-gray-500">
+              Precio Unitario: ${product.priceSell}
+            </p>
+          </div>
         </div>
-      )}
+        <div>
+          <input
+            type="number"
+            min="1"
+            value={product.quantity || 1}
+            onChange={(e) =>
+              handleQuantityChange(product.id_product, Number(e.target.value))
+            }
+            className="w-16 p-2 border border-gray-300 rounded-md text-center"
+          />
+          <p className="text-sm text-gray-500">
+            Total: ${product.priceSell * (product.quantity || 1)}
+          </p>
+          {/* Botón de eliminar */}
+          <button
+            onClick={() => handleRemoveProduct(product.id_product)}
+            className="mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-700 transition duration-300"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
       {/* Input para el número de documento */}
       <div className="mb-4">

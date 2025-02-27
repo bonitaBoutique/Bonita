@@ -15,7 +15,13 @@ module.exports = async (req, res) => {
   }
 
   // Validar que el payMethod sea uno de los valores permitidos
-  const validPayMethods = ["Efectivo","Crédito", "Sistecredito", "Addi", "Tarjeta", "Bancolombia", "Combinado"];
+  const validPayMethods = [ "Efectivo",
+    "Sistecredito",
+    "Addi",
+    "Tarjeta",
+    "Crédito",
+    "Bancolombia",
+    "Otro"];
   if (!validPayMethods.includes(payMethod)) {
     return res.status(400).json({ message: "El método de pago no es válido" });
   }
@@ -54,8 +60,9 @@ module.exports = async (req, res) => {
       buyer_phone,
       total_amount: order.amount,
       date,
-      payMethod,  // Guardamos el método de pago
+      payMethod,
       receipt_number: receiptNumber,
+      cashier_document: req.body.cashier_document // Agregamos el número de documento del cajero
     });
 
     // Actualizar el estado de la orden

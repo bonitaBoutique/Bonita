@@ -5,43 +5,17 @@ const response = require('../../utils/response');
 
 const generateNextId = async () => {
   try {
-    let nextId = 'B001';
-    let idExists = true;
-    let counter = 0; // Add a counter to prevent infinite loops
+    const products = await Product.findAll({
+      attributes: ['id_product']
+    });
 
-    while (idExists && counter < 1000) { // Limit the loop to 1000 iterations
-      const lastProduct = await Product.findOne({
-        order: [['createdAt', 'DESC']],
-      });
-
-      if (lastProduct) {
-        const lastIdNum = parseInt(lastProduct.id_product.substring(1), 10);
-        const nextNum = lastIdNum + 1;
-        const numDigits = String(nextNum).length; // Determine the number of digits
-        nextId = `B${String(nextNum).padStart(numDigits < 3 ? 3 : numDigits, '0')}`; // Adjust padding
-      }
-
-      // Check if the generated ID already exists
-      const existingProduct = await Product.findOne({
-        where: {
-          id_product: nextId,
-        },
-      });
-
-      if (!existingProduct) {
-        // If the ID doesn't exist, exit the loop
-        idExists = false;
-      } else {
-        // If the ID exists, generate a new one
-        console.log(`ID ${nextId} already exists, generating a new one`);
-      }
-      counter++; // Increment the counter
-    }
-
-    if (counter >= 1800) {
-      console.error('Exceeded maximum ID generation attempts.');
-      throw new Error('Could not generate a unique ID.');
-    }
+    // Extrae todos los números de id_product (quitando la letra inicial)  
+    const numbers = products.map(p => parseInt(p.id_product.substring(1), 10));
+    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    const nextNum = maxNum + 1;
+    
+    // Ajusta el padding: 3 dígitos por defecto
+    const nextId = `B${String(nextNum).padStart(3, '0')}`;
 
     return nextId;
   } catch (error) {

@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     const receipts = await Receipt.findAndCountAll({
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [["id", "DESC"]], // Ordenar por ID descendente (más recientes primero)
+      order: [["id_receipt", "DESC"]], // Ordenar por ID descendente (más recientes primero)
     });
 
     if (receipts.count === 0) {

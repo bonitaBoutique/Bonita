@@ -107,15 +107,15 @@ const ProductsList = () => {
                     {/* Contenedor de la imagen */}
                     <div className="w-full h-96 bg-gray-100 overflow-hidden">
                       <Link to={`/product/${product.id_product}`}>
-                        <img
-                          src={
-                            product.Images.length > 0
-                              ? product.Images[0].url
-                              : "https://via.placeholder.com/300"
-                          }
-                          alt={product.description || "Producto sin nombre"}
-                          className="h-full w-full object-cover object-center transition-all duration-500 ease-in-out transform hover:scale-110"
-                        />
+                      <img
+  src={
+    product.images && product.images.length > 0
+      ? product.images[0]
+      : "https://via.placeholder.com/300"
+  }
+  alt={product.description || "Producto sin nombre"}
+  className="h-full w-full object-cover object-center transition-all duration-500 ease-in-out transform hover:scale-110"
+/>
                       </Link>
                     </div>
 

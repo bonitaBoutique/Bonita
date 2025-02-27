@@ -5,18 +5,14 @@ const response = require('../../utils/response');
 
 const generateNextId = async () => {
   try {
-    const products = await Product.findAll({
-      attributes: ['id_product']
-    });
-
-    // Extrae todos los números de id_product (quitando la letra inicial)  
-    const numbers = products.map(p => parseInt(p.id_product.substring(1), 10));
-    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+    // Obtiene el máximo número de los id_product
+    const result = await Product.sequelize.query(
+      "SELECT MAX(CAST(SUBSTRING(id_product,2) AS INTEGER)) as max FROM \"Products\"",
+      { type: Product.sequelize.QueryTypes.SELECT }
+    );
+    const maxNum = result[0].max || 0;
     const nextNum = maxNum + 1;
-    
-    // Ajusta el padding: 3 dígitos por defecto
     const nextId = `B${String(nextNum).padStart(3, '0')}`;
-
     return nextId;
   } catch (error) {
     console.error('Error generating next ID:', error);

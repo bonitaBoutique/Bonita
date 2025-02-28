@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses } from '../../Redux/Actions/actions';
 import ExpenseList from './ExpenseList';
@@ -8,7 +9,13 @@ const FilterExpenses = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { data, loading, error } = useSelector(state => state.expenses);
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,6 +55,7 @@ const FilterExpenses = () => {
             <option value="Servicio Internet">Servicio Internet</option>
             <option value="Suministros">Suministros</option>
             <option value="Viaticos y Transportes">Viaticos y Transportes</option>
+            <option value="Inventario">Inventario</option>
           </select>
         </div>
         <div className="col-span-1">
@@ -97,12 +105,20 @@ const FilterExpenses = () => {
             <div className="mt-4 p-4 bg-white rounded-lg shadow-md">
               <p><strong>Total:</strong> {totalAmount}</p>
             </div>
+           
           </>
         ) : (
           <p>No se encontraron gastos.</p>
         )}
       </div>
       <ExpenseList/>
+      <button
+            type="button"
+            onClick={handleBack}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 mt-4 hover:bg-pink-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Volver
+          </button>
     </div>
   );
 };

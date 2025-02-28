@@ -19,6 +19,7 @@ module.exports = (sequelize) => {
         "Suministros",
         "Seguridad Social",
         "Viaticos y Transportes",
+        "Inventario",
       ],
       allowNull: false,
     },

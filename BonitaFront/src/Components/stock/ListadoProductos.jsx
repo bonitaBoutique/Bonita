@@ -256,44 +256,56 @@ const ListadoProductos = () => {
           </table>
   
           {/* Paginación */}
-          <div className="mt-4 flex flex-col items-center">
-            <div className="flex items-center gap-2">
+          <div className="flex justify-center mt-8 w-full overflow-x-auto">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+              >
+                {"<<"}
+              </button>
               <button
                 onClick={() => paginate(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
               >
-                Anterior
+                {"<"}
               </button>
-  
-              <div className="flex gap-2">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => paginate(i + 1)}
-                    className={`px-4 py-2 rounded-lg ${
-                      currentPage === i + 1
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-  
+
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => paginate(i + 1)}
+                  className={`mx-1 px-2 py-1 rounded-md ${
+                    currentPage === i + 1
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
               <button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
               >
-                Siguiente
+                {">"}
+              </button>
+              <button
+                onClick={() => paginate(totalPages)}
+                disabled={currentPage === totalPages}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+              >
+                {">>"}
               </button>
             </div>
-  
-            <div className="mt-2 text-sm text-gray-600">
-              Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, productosFiltrados.length)} de {productosFiltrados.length} productos
-            </div>
+          </div>
+
+          <div className="mt-2 text-sm text-gray-600">
+            Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, productosFiltrados.length)} de {productosFiltrados.length} productos
           </div>
         </div>
       </div>

@@ -214,65 +214,67 @@ const ProductsList = () => {
               </div>
 
               {/* Pagination */}
-              <div className="flex justify-center mt-8">
-                <button
-                  onClick={() => paginate(1)}
-                  disabled={currentPage === 1}
-                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                >
-                  {"<<"}
-                </button>
-                <button
-                  onClick={() => paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                >
-                  {"<"}
-                </button>
-
-                {getPageNumbers().map((pageNumber, index) => (
+              <div className="flex justify-center mt-8 w-full overflow-x-auto">
+                <div className="flex space-x-1">
                   <button
-                    key={index}
-                    onClick={() => {
-                      if (typeof pageNumber === "number") {
-                        paginate(pageNumber);
-                      }
-                    }}
-                    disabled={typeof pageNumber === "string"}
-                    className={`mx-1 px-3 py-1 rounded-md ${
-                      currentPage === pageNumber
-                        ? "bg-amber-100 text-slate-700"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    } ${
-                      typeof pageNumber === "string" ? "cursor-default" : ""
-                    }`}
+                    onClick={() => paginate(1)}
+                    disabled={currentPage === 1}
+                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
                   >
-                    {pageNumber}
+                    {"<<"}
                   </button>
-                ))}
+                  <button
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    {"<"}
+                  </button>
 
-                <button
-                  onClick={() => paginate(currentPage + 1)}
-                  disabled={
-                    currentPage ===
-                    Math.ceil(activeProducts.length / productsPerPage)
-                  }
-                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                >
-                  {">"}
-                </button>
-                <button
-                  onClick={() =>
-                    paginate(Math.ceil(activeProducts.length / productsPerPage))
-                  }
-                  disabled={
-                    currentPage ===
-                    Math.ceil(activeProducts.length / productsPerPage)
-                  }
-                  className="mx-1 px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                >
-                  {">>"}
-                </button>
+                  {getPageNumbers().map((pageNumber, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        if (typeof pageNumber === "number") {
+                          paginate(pageNumber);
+                        }
+                      }}
+                      disabled={typeof pageNumber === "string"}
+                      className={`mx-1 px-2 py-1 rounded-md ${
+                        currentPage === pageNumber
+                          ? "bg-amber-100 text-slate-700"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      } ${
+                        typeof pageNumber === "string" ? "cursor-default" : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={
+                      currentPage ===
+                      Math.ceil(activeProducts.length / productsPerPage)
+                    }
+                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    {">"}
+                  </button>
+                  <button
+                    onClick={() =>
+                      paginate(Math.ceil(activeProducts.length / productsPerPage))
+                    }
+                    disabled={
+                      currentPage ===
+                      Math.ceil(activeProducts.length / productsPerPage)
+                    }
+                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    {">>"}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -281,5 +283,4 @@ const ProductsList = () => {
     </>
   );
 };
-
 export default ProductsList;

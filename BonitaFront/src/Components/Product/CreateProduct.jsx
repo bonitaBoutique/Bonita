@@ -94,7 +94,7 @@ const CreateProduct = () => {
       setColors("");
       setIsDian(false);
       setTimeout(() => {
-        navigate("/");
+        navigate("/createProducts");
       }, 1500);
     } catch (error) {
       console.error("Error during dispatch:", error); // Log de cualquier error en el dispatch

@@ -84,8 +84,10 @@ const CargarGastos = () => {
             <option value="Servicio Internet">Servicio Internet</option>
             <option value="Suministros">Suministros</option>
             <option value="Viaticos y Transportes">
+              
               Viaticos y Transportes
             </option>
+            <option value="Inventario">Inventario</option>
           </select>
         </div>
         <div className="col-span-2">

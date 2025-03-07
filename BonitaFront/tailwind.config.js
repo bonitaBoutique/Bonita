@@ -1,8 +1,11 @@
 import aspectRatio from '@tailwindcss/aspect-ratio';
 
+/** @type {import('tailwindcss').Config} */
 export default {
-  purge: ['./src/**/*.{js,jsx,ts,tsx}', './public/index.html'],
-  darkMode: false, // or 'media' or 'class'
+  content: [
+    "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
@@ -10,6 +13,7 @@ export default {
         colorDetalle: "#2e5059",
         colorBeige: "#8F8074",
         colorBeigeClaro: "#95867b",
+        colorFooter: '#111827',  // Agregado para tu componente
       },
       fontFamily: {
         nunito: ['Nunito', 'sans-serif'], 
@@ -25,11 +29,7 @@ export default {
       }
     },
   },
-  variants: {
-    extend: {},
-    aspectRatio,
   plugins: [
     aspectRatio,
   ],
-}
 }

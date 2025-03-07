@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
+import { useDispatch } from 'react-redux';
+import { createSending } from '../Redux/Actions/actions'; // Importa la action createSending
+import PropTypes from 'prop-types';
 
-const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
+
+const ShippingPopup = ({ isShippingPopupOpen, onClose, id_orderDetail }) => {
   const [formData, setFormData] = useState({
     receiver: {
       cellPhone: "",
@@ -20,6 +24,8 @@ const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
       destinyCountryCode: "170"
     }
   });
+  const [isLoading, setIsLoading] = useState(false); // Estado para mostrar el mensaje de carga
+  const dispatch = useDispatch(); // Obtiene la función dispatch de Redux
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,8 +41,10 @@ const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Muestra el mensaje de carga
+
     const shippingData = {
       adminTransactionData: { saleValue: 0 },
       channel: "Test API",
@@ -67,18 +75,39 @@ const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
         pickupAddress: "reterterterterter",
         prefix: "+57",
         surname: "."
-      }
+      },
+      id_orderDetail: id_orderDetail // Agrega el id_orderDetail a los datos de envío
     };
-    onSubmit(shippingData);
+
+    try {
+      await dispatch(createSending(shippingData)); // Llama a la action createSending
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Envío creado correctamente',
+        icon: 'success'
+      });
+      onClose(); // Cierra el popup
+    } catch (error) {
+      console.error('Error al crear el envío:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al crear el envío',
+        icon: 'error'
+      });
+    } finally {
+      setIsLoading(false); // Oculta el mensaje de carga
+    }
   };
 
-  if (!isOpen) return null;
+  if (!isShippingPopupOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-8 rounded-lg max-w-md w-full">
         <h2 className="text-2xl font-bold mb-6">Datos de Envío</h2>
         <form onSubmit={handleSubmit}>
+          {/* Campo oculto para el id_orderDetail */}
+          <input type="hidden" name="id_orderDetail" value={id_orderDetail} />
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -144,8 +173,9 @@ const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
             <button
               type="submit"
               className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+              disabled={isLoading} // Deshabilita el botón mientras se está cargando
             >
-              Confirmar
+              {isLoading ? 'Cargando...' : 'Confirmar'} {/* Muestra el mensaje de carga */}
             </button>
           </div>
         </form>
@@ -154,4 +184,10 @@ const ShippingPopup = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
+
+ShippingPopup.propTypes = {
+  isShippingPopupOpen: PropTypes.bool.isRequired, // Valida que isShippingPopupOpen sea de tipo booleano y requerido
+  onClose: PropTypes.func.isRequired,
+  id_orderDetail: PropTypes.string.isRequired,
+};
 export default ShippingPopup;

@@ -1,45 +1,53 @@
 const axios = require('axios');
 const response = require('../../utils/response');
 
+// Valores requeridos por la API según documentación
 const DEFAULT_VALUES = {
-  originDaneCode: "50226000", 
-  originCountryCode: "170",   // Mexico code per API docs
-  destinyCountryCode: "170",  // Mexico code per API docs
+  originDaneCode: "50226", 
+  originCountryCode: "170",
+  destinyCountryCode: "170",
   deliveryCompany: "653928ae0a945520b78f279b",
-  user: "5e8cbd8508d7ea3dee8b14f6"
+  
 };
 
 const createSending = async (req, res) => {
   try {
+    console.log('Request body received:', req.body);
+    
+    // Extraemos datos del request, omitiendo id_orderDetail que puede causar problemas
+    const { id_orderDetail, ...requestWithoutId } = req.body;
+    
+    // Creamos el objeto requestData mezclando los datos recibidos con los valores requeridos
     const requestData = {
       adminTransactionData: { saleValue: 0 },
       channel: "Test API",
-      comments: "notas del pedidooo",
+      comments: requestWithoutId.comments || "notas del pedidooo",
       criteria: "price",
       deliveryCompany: DEFAULT_VALUES.deliveryCompany,
-      description: "notas del pedidooo",
+      description: requestWithoutId.description || "notas del pedidooo",
       locate: {
-        destinyDaneCode: req.body.destinyLocationCode || "20000",
-        originDaneCode: DEFAULT_VALUES.originDaneCode,
-        originCountryCode: DEFAULT_VALUES.originCountryCode,
-        destinyCountryCode: DEFAULT_VALUES.destinyCountryCode
+        // Usamos el destinyDaneCode del request pero mantenemos los valores requeridos
+        destinyDaneCode: requestWithoutId.locate?.destinyDaneCode || "20000",
+        originDaneCode: DEFAULT_VALUES.originDaneCode,  // Usamos el valor esperado por la API
+        originCountryCode: DEFAULT_VALUES.originCountryCode,  // Usamos el valor esperado por la API
+        destinyCountryCode: DEFAULT_VALUES.destinyCountryCode  // Usamos el valor esperado por la API
       },
-      paymentType: 102,
+      paymentType: 101,  // Según el modelo requerido
       productInformation: {
-        declaredValue: req.body.declaredValue || 0,
+        declaredValue: requestWithoutId.productInformation?.declaredValue || 10000,
         forbiddenProduct: true,
-        height: req.body.height || 10,
-        large: req.body.length || 10,
+        height: requestWithoutId.productInformation?.height || 10,
+        large: requestWithoutId.productInformation?.large || 10,
         productReference: "-",
-        quantity: req.body.quantity || 1,
-        weight: req.body.weight || 1,
-        width: req.body.width || 10
+        quantity: requestWithoutId.productInformation?.quantity || 1,
+        weight: requestWithoutId.productInformation?.weight || 1,
+        width: requestWithoutId.productInformation?.width || 10
       },
       receiver: {
-        cellPhone: "3000000000",
-        destinationAddress: "Carera test # 3",
-        email: "Test@gmail.com",
-        name: "Test test",
+        cellPhone: requestWithoutId.receiver?.cellPhone || "3000000000",
+        destinationAddress: requestWithoutId.receiver?.destinationAddress || "Carera test # 3",
+        email: requestWithoutId.receiver?.email || "Test@gmail.com",
+        name: requestWithoutId.receiver?.name || "Test test",
         nit: ".",
         nitType: ".",
         prefix: "+57",
@@ -47,12 +55,12 @@ const createSending = async (req, res) => {
       },
       requestPickup: "false",
       sender: {
-        cellPhone: "3000000000",
-        email: "pruebasmipaqueteoficial@gmail.com",
-        name: "sebastian meneses",
-        nit: "1036638301",
-        nitType: "NIT",
-        pickupAddress: "reterterterterter",
+        cellPhone: "3000000000",  // Mantenemos el valor estándar de la API
+        email: "pruebasmipaqueteoficial@gmail.com",  // Mantenemos el valor estándar de la API
+        name: "sebastian meneses",  // Mantenemos el valor estándar de la API
+        nit: "1036638301",  // Mantenemos el valor estándar de la API
+        nitType: "NIT",  // Mantenemos el valor estándar de la API
+        pickupAddress: "reterterterterter",  // Mantenemos el valor estándar de la API
         prefix: "+57",
         surname: "."
       },

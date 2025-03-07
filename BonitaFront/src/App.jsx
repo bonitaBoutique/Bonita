@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import ErrorBoundary from './Components/routes/error/ErrorBoundary';
 import ProtectedRoute from './Components/routes/ProtectedRoute/ProtectedRoute';
@@ -45,7 +45,9 @@ function App() {
                 path={path}
                 element={
                   <ProtectedRoute>
-                    <Component />
+                    <Suspense fallback={<Loading />}>
+                      {React.createElement(Component)}
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -58,7 +60,9 @@ function App() {
                 path={path}
                 element={
                   <ProtectedRoute requiredRole="Admin">
-                    <Component />
+                    <Suspense fallback={<Loading />}>
+                      {React.createElement(Component)}
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -71,7 +75,9 @@ function App() {
                 path={path}
                 element={
                   <ProtectedRoute requiredRole="AdminCajero">
-                    <Component />
+                    <Suspense fallback={<Loading />}>
+                      {React.createElement(Component)}
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />

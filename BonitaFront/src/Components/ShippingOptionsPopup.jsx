@@ -16,10 +16,10 @@ const ShippingOptionsPopup = ({ onClose, onSelect }) => {
             Retira en Local
           </button>
           <button
-            onClick={() => onSelect('delivery')}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            disabled
+            className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed opacity-70"
           >
-            Envío a Domicilio
+            Muy pronto envíos a domicilio
           </button>
           <button
             onClick={onClose}
@@ -32,6 +32,7 @@ const ShippingOptionsPopup = ({ onClose, onSelect }) => {
     </div>
   );
 };
+
 ShippingOptionsPopup.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSelect: PropTypes.func.isRequired,

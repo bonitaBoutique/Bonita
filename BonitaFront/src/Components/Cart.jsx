@@ -63,7 +63,7 @@ const Cart = () => {
       navigate('/checkout', { 
         state: { 
           shippingType: 'Retira en Local',
-          deliveryAddress: "Bonita por Defecto" // Dirección por defecto para retiro
+          deliveryAddress: "Bonita por Defecto" 
         } 
       });
     } else {
@@ -77,7 +77,7 @@ const Cart = () => {
     navigate('/checkout', { 
       state: { 
         shippingType: 'Envio a Domicilio',
-        deliveryAddress: address // Dirección ingresada en ShippingPopup
+        deliveryAddress: address 
       } 
     });
   };

@@ -9,7 +9,7 @@ const SearchComponent = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    dispatch(fetchFilteredProducts(search)); // Envía el searchTerm directamente
+    dispatch(fetchFilteredProducts(search)); 
   };
 
   const handleShowAll = () => {

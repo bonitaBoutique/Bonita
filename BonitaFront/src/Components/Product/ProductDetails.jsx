@@ -1,33 +1,70 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProductById, addToCart } from "../../Redux/Actions/actions";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FiShoppingCart } from "react-icons/fi";
 import Navbar from "../Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const location = useLocation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState(""); // Estado para la talla
   const [isLoading, setIsLoading] = useState(true);
 
+  // Si el detalle viene con un grupo (de la lista agrupada), se usará ese grupo para extraer tallas
+  const groupFromState = location.state?.group;
   const product = useSelector((state) => state.product);
 
   useEffect(() => {
-    const loadProduct = async () => {
-      setIsLoading(true);
-      await dispatch(fetchProductById(id));
+    // Si se envía un grupo, ya tenemos un representante; de lo contrario, consultamos el back
+    if (!groupFromState) {
+      const loadProduct = async () => {
+        setIsLoading(true);
+        await dispatch(fetchProductById(id));
+        setIsLoading(false);
+      };
+      loadProduct();
+    } else {
       setIsLoading(false);
-    };
-    loadProduct();
-  }, [dispatch, id]);
+    }
+  }, [dispatch, id, groupFromState]);
+
+  // Definimos referenceProduct para usarlo tanto en el render como en el carrito.
+  const referenceProduct = groupFromState ? groupFromState[0] : product;
+  const images = referenceProduct?.images || [referenceProduct?.image || '/default-product.png'];
+
+  // Construimos el arreglo de tallas
+  let sizesArray = [];
+  if (groupFromState && groupFromState.length > 0) {
+    sizesArray = Array.from(new Set(groupFromState.map(item => item.sizes))).filter(Boolean);
+  } else {
+    sizesArray =
+      referenceProduct?.sizes && typeof referenceProduct.sizes === "string"
+        ? referenceProduct.sizes.split(",").map((s) => s.trim())
+        : referenceProduct?.sizes || [];
+  }
+  console.log("Tallas obtenidas:", sizesArray);
 
   const handleAddToCart = () => {
-    if (product) {
-      dispatch(addToCart(product));
-      navigate("/cart");
+    let productToAdd;
+    if (groupFromState && groupFromState.length > 0) {
+      // Buscamos la variante que coincida con la talla seleccionada en el grupo
+      productToAdd = groupFromState.find((item) => item.sizes === selectedSize);
+      if (!productToAdd) {
+        alert("Por favor selecciona una talla");
+        return;
+      }
+    } else if (product) {
+      productToAdd = { ...product };
+      if (selectedSize) {
+        productToAdd.selectedSize = selectedSize;
+      }
     }
+    dispatch(addToCart(productToAdd));
+    navigate("/cart");
   };
 
   if (isLoading) {
@@ -57,12 +94,6 @@ const ProductDetails = () => {
     );
   }
 
-  if (!product) {
-    return <div className="text-center py-8">Producto no encontrado</div>;
-  }
-
-  const images = product.images || [product.image || '/default-product.png'];
-
   return (
     <>
       <Navbar />
@@ -81,7 +112,7 @@ const ProductDetails = () => {
               <div className="aspect-square rounded-lg overflow-hidden border border-gray-200">
                 <img
                   src={images[selectedImage]}
-                  alt={product.description}
+                  alt={referenceProduct.description}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -92,8 +123,9 @@ const ProductDetails = () => {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 
-                        ${selectedImage === index ? 'border-blue-500' : 'border-transparent'}`}
+                      className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 ${
+                        selectedImage === index ? "border-blue-500" : "border-transparent"
+                      }`}
                     >
                       <img
                         src={image}
@@ -110,37 +142,46 @@ const ProductDetails = () => {
             <div className="flex flex-col h-full">
               <div className="flex-grow space-y-4">
                 <h1 className="text-3xl font-bold text-slate-700 font-nunito uppercase">
-                  {product.description}
+                  {referenceProduct.description}
                 </h1>
                 
-                <div className="space-y-2">
-                 
-                 
-                  {product.sizes && (
-                    <p className="text-gray-600 uppercase">
-                      <span className="font-semibold">Tallas:</span> {product.sizes}
-                    </p>
-                  )}
+                {/* Selector de tallas */}
+                {sizesArray.length > 0 && (
+                  <div className="mt-4">
+                    <span className="text-gray-600 uppercase font-semibold">Tallas:</span>
+                    <div className="mt-2 flex gap-2">
+                      {sizesArray.map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          className={`px-3 py-1 border rounded-lg ${
+                            selectedSize === size ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-2xl font-bold text-colorBeige">
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(referenceProduct.priceSell)}
                 </div>
 
-                <div className="text-2xl font-bold text-colorBeige">
-  {new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0
-  }).format(product.priceSell)}
-</div>
-
                 <div className="prose max-w-none">
-                  <p className="text-gray-600">{product.description}</p>
+                  <p className="text-gray-600">{referenceProduct.description}</p>
                 </div>
               </div>
 
               <div className="mt-8">
                 <button
                   onClick={handleAddToCart}
-                  className="w-full bg-colorBeige text-white py-3 px-4 rounded-lg hover:bg-blue-700 
-                    transition duration-200 flex items-center justify-center"
+                  className="w-full bg-colorBeige text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center justify-center"
                 >
                   <FiShoppingCart className="inline-block mr-2" />
                   Agregar al carrito

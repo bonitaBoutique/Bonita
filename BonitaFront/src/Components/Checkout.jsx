@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../Config";
-import CryptoJS from "crypto-js";
+import * as CryptoJS from "crypto-js"
 import axios from "axios";
 import {
   createOrder,

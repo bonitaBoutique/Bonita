@@ -89,7 +89,7 @@ const Checkout = () => {
       const { amount, id_orderDetail } = latestOrder;
       const amountInCents = amount * 100;
       const currency = "COP";
-      const integritySecret = "test_integrity_A72xJJDM3dnfu9hrZJ7WmfdcXRexp5RO"; // Replace with your actual integrity secret
+      const integritySecret = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD"; // Replace with your actual integrity secret
       const expirationTime = null;
 
       const integritySignature = generateIntegritySignature(id_orderDetail, amountInCents, currency, integritySecret, expirationTime);
@@ -98,7 +98,7 @@ const Checkout = () => {
         currency,
         amountInCents,
         reference: String(id_orderDetail),
-        publicKey: "pub_test_6RwrhvdNBYWkhABV7oavX1dEIAXQ1MG3",
+        publicKey: "pub_prod_pbz8e9I6apsTsgdJHUfp05FQ6jf3vVDB",
         redirectUrl: `https://bonita-seven.vercel.app/eventos/respuesta?id=${id_orderDetail}`, // Updated redirect URL
         integritySignature,
       };

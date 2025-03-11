@@ -25,7 +25,12 @@ const ListadoProductos = () => {
     openCloudinaryWidget((uploadedImageUrl) => {
       if (uploadedImageUrl) {
         console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
-        dispatch(updateProduct(productId, { images: [uploadedImageUrl] }));
+        // Busca el producto actual en el arreglo de productos
+        const productToUpdate = products.find(p => p.id_product === productId);
+        const newImages = productToUpdate && productToUpdate.images 
+          ? [...productToUpdate.images, uploadedImageUrl]
+          : [uploadedImageUrl];
+        dispatch(updateProduct(productId, { images: newImages }));
       } else {
         console.error("Error al subir la imagen.");
       }
@@ -106,7 +111,7 @@ const ListadoProductos = () => {
   };
 
   const productosFiltrados = products.filter((producto) =>
-    `${producto.codigoBarra} ${producto.marca} ${producto.codigoProv}`
+    `${producto.codigoBarra} ${producto.marca} ${producto.description}`
       .toLowerCase()
       .includes(filtro)
   );

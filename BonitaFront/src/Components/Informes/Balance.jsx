@@ -49,14 +49,16 @@ const Balance = () => {
         type: 'Venta Online',
         amount: sale.amount,
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod // Agregado para ventas online
+        paymentMethod: sale.payMethod,
+        pointOfSale: 'Online' // Agregar punto de venta
       })),
       ...(income.local || []).map(sale => ({
         ...sale,
         type: 'Venta Local',
         amount: sale.total_amount,
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod // Agregado para ventas locales
+        paymentMethod: sale.payMethod,
+        pointOfSale: 'Local' // Agregar punto de venta
       })),
       ...(Array.isArray(expenses) ? expenses : []).map(expense => ({
         ...expense,
@@ -64,23 +66,29 @@ const Balance = () => {
         type: `Gasto - ${expense.type}`,
         amount: -expense.amount,
         date: new Date(expense.date),
-        paymentMethod: expense.paymentMethods
+        paymentMethod: expense.paymentMethods,
+        pointOfSale: 'Local' // Asumiendo que los gastos son locales
       }))
     ];
-
+  
     let filteredMovements = movements;
-
+  
     if (filters.expenseType) {
       filteredMovements = filteredMovements.filter(movement =>
         movement.type === `Gasto - ${filters.expenseType}`
       );
     }
-
-    // Agregar console.log para inspeccionar cada movimiento
+  
+    if (filters.pointOfSale) {
+      filteredMovements = filteredMovements.filter(movement =>
+        movement.pointOfSale === filters.pointOfSale
+      );
+    }
+  
     filteredMovements.forEach(movement => {
       console.log('Movement:', movement);
     });
-
+  
     return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
@@ -141,6 +149,15 @@ const Balance = () => {
           <option value="Nequi">Nequi</option>
           <option value="Bancolombia">Bancolombia</option>
         </select>
+        <select
+  value={filters.pointOfSale}
+  onChange={e => setFilters({ ...filters, pointOfSale: e.target.value })}
+  className="border rounded p-2"
+>
+  <option value="">Todos los puntos de venta</option>
+  <option value="Local">Local</option>
+  <option value="Online">Online</option>
+</select>
         <select
           value={filters.expenseType}
           onChange={e => setFilters({ ...filters, expenseType: e.target.value })}

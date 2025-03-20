@@ -88,7 +88,8 @@ module.exports = async (req, res) => {
         priceSell:product.priceSell,
         isDian: product.isDian,
         tiendaOnLine: product.tiendaOnLine,
-        codigoBarra: product.codigoBarra
+        codigoBarra: product.codigoBarra,
+        
       })) : []
     }));
 

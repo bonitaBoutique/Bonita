@@ -1,5 +1,5 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from "react";
+import PropTypes from "prop-types";
 
 const ShippingOptionsPopup = ({ onClose, onSelect }) => {
   return (
@@ -10,10 +10,12 @@ const ShippingOptionsPopup = ({ onClose, onSelect }) => {
         </h3>
         <div className="space-y-4">
           <button
-            onClick={() => onSelect('pickup')}
+            onClick={() =>
+              (window.location.href = "https://wa.me/573118318191")
+            }
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
-            Retira en Local
+            Coordina la entrega por WhatsApp
           </button>
           <button
             disabled

@@ -3,7 +3,7 @@ const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
 
-const secretoIntegridad = "test_integrity_VMVZ36lyoQot5DsN0fBXAmp4onT5T86G";
+const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD";
 
 function generarFirmaIntegridad(id_orderDetail, monto, moneda, secretoIntegridad) {
   const cadenaConcatenada = `${id_orderDetail}${monto}${moneda}${secretoIntegridad}`;

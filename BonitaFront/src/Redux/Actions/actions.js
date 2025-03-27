@@ -666,9 +666,11 @@ export const fetchSellerData = (dni) => async (dispatch) => {
   console.log('🔍 Iniciando búsqueda de vendedor con DNI:', dni);
 
   try {
-    console.log(`📡 Haciendo petición a: ${BASE_URL}/seller/${dni}`);
+    // Cambiar la URL para usar path parameter en lugar de query parameter
+    const url = `${BASE_URL}/seller/${dni}`;
+    console.log(`📡 Haciendo petición a:`, url);
     
-    const response = await axios.get(`${BASE_URL}/seller/${dni}`);
+    const response = await axios.get(url);
     console.log('✅ Respuesta recibida:', response.data);
 
     if (response.data && response.data.data) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
+import { BASE_URL } from "../../Config";
 import { 
   fetchOrdersByIdOrder, 
   sendInvoice,
@@ -9,6 +10,7 @@ import {
 import numeroALetrasConDecimales from '../Taxxa/options/numeroALetras';
 import paymentMethods from "./options/paymentMethods";
 import OrdenesPendientes from "./OrdenesPendientes";
+
 
 const Invoice = () => {
   const sellerId = '901832769';
@@ -62,6 +64,29 @@ const Invoice = () => {
       dispatch(fetchSellerData(sellerId));
     }
   }, [dispatch, sellerId, sellerData]);
+
+  useEffect(() => {
+    const fetchLastInvoiceNumber = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/invoice/lastInvoiceNumber`);
+        const nextNumber = response.data.nextInvoiceNumber;
+        
+        setJDocumentData(prev => ({
+          ...prev,
+          sdocumentsuffix: nextNumber // It's still a string here
+        }));
+      } catch (error) {
+        console.error("Error fetching last invoice number:", error);
+        // Set a default number if fetch fails
+        setJDocumentData(prev => ({
+          ...prev,
+          sdocumentsuffix: 2,
+        }));
+      }
+    };
+
+    fetchLastInvoiceNumber();
+  }, []);
 
   useEffect(() => {
     if (order && order.amount) {
@@ -186,6 +211,7 @@ const Invoice = () => {
       const jDocumentDataWithOrderId = {
         ...jDocumentData,
         sorderreference: order.id_orderDetail,
+        sdocumentsuffix: jDocumentData.sdocumentsuffix,
         jseller: {
           wlegalorganizationtype: sellerData.wlegalorganizationtype || '',
           sfiscalresponsibilities: sellerData.sfiscalresponsibilities || '',

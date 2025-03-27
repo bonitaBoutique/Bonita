@@ -101,7 +101,7 @@ const createInvoice = async (req, res) => {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {
         wVersionUBL: "2.1",
-        wenvironment: "test",
+        wenvironment: "prod",
         jDocument: {
           ...invoiceData,
           jseller: {

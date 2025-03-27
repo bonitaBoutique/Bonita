@@ -65,14 +65,25 @@ const Invoice = () => {
 
   useEffect(() => {
     if (order && order.amount) {
-      const totalAmount = Number(order.amount);
-      const amountWithoutTax = Number((totalAmount / 1.19).toFixed(2));
-      //const taxAmount = Number((totalAmount - amountWithoutTax).toFixed(2));
-
+      let totalAmountWithoutTax = 0;
+      let totalTaxAmount = 0;
+      let totalAmount = 0;
+  
       const productsData = order.products.map(product => {
+        // Calcular el precio unitario sin IVA y el IVA por unidad
         const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2));
         const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
-
+        
+        // Calcular totales para este producto específico
+        const productTotalWithoutTax = priceWithoutTax * order.quantity;
+        const productTotalTax = taxAmount * order.quantity;
+        const productTotal = product.priceSell * order.quantity;
+  
+        // Acumular totales
+        totalAmountWithoutTax += productTotalWithoutTax;
+        totalTaxAmount += productTotalTax;
+        totalAmount += productTotal;
+  
         return {
           jextrainfo: {
             sbarcode: product.codigoBarra,
@@ -82,23 +93,24 @@ const Invoice = () => {
           sstandarditemidentification: product.codigoBarra,
           sstandardidentificationcode: "999",
           nunitprice: priceWithoutTax,
-          nusertotal: parseFloat((priceWithoutTax * order.quantity).toFixed(2)),
-          nquantity: parseFloat(order.quantity.toFixed(2)),
+          nusertotal: parseFloat(productTotalWithoutTax.toFixed(2)),
+          nquantity: order.quantity,
           jtax: {
             jiva: {
               nrate: 19,
               sname: "IVA",
-              namount: parseFloat((taxAmount * order.quantity).toFixed(2)),
-              nbaseamount: parseFloat((priceWithoutTax * order.quantity).toFixed(2)),
+              namount: parseFloat(productTotalTax.toFixed(2)),
+              nbaseamount: parseFloat(productTotalWithoutTax.toFixed(2)),
             },
           },
         };
       });
-
-      setJDocumentData(prevJDocumentData => ({ // Cambia setInvoiceData a setJDocumentData
+  
+      // Actualizar el estado con los totales calculados
+      setJDocumentData(prevJDocumentData => ({
         ...prevJDocumentData,
-        nlineextensionamount: parseFloat(amountWithoutTax.toFixed(2)),
-        ntaxexclusiveamount: parseFloat(amountWithoutTax.toFixed(2)),
+        nlineextensionamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
+        ntaxexclusiveamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
         ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
         npayableamount: parseFloat(totalAmount.toFixed(2)),
         jextrainfo: {

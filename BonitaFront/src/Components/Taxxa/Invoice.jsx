@@ -125,58 +125,82 @@ const Invoice = () => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage("");
+    
+    // Logs de depuración iniciales
+    console.log('=== DEBUG INFORMACIÓN ===');
+    console.log('1. Estado actual de order:', order);
+    console.log('2. Estado actual de sellerData:', sellerData);
+    console.log('3. ID de la orden:', order?.id_orderDetail);
+    console.log('4. Estado actual de jDocumentData:', jDocumentData);
+  
     try {
-      if (order && order.id_orderDetail && sellerData) {
-        // Agregar el id_orderDetail al objeto jDocumentData
-        const jDocumentDataWithOrderId = {
-          ...jDocumentData,
-          sorderreference: order.id_orderDetail,
-          jseller: {
-            wlegalorganizationtype: sellerData.wlegalorganizationtype,
-            sfiscalresponsibilities: sellerData.sfiscalresponsibilities,
-            sdocno: sellerData.sdocno,
-            sdoctype: sellerData.sdoctype,
-            ssellername: sellerData.ssellername,
-            ssellerbrand: sellerData.ssellerbrand,
-            scontactperson: sellerData.scontactperson,
-            saddresszip: sellerData.saddresszip,
-            wdepartmentcode: sellerData.wdepartmentcode,
-            wtowncode: sellerData.wtowncode,
-            scityname: sellerData.scityname,
-            jcontact: {
-              selectronicmail: sellerData.jcontact.selectronicmail,
-              jregistrationaddress: {
-                wdepartmentcode: sellerData.jcontact.jregistrationaddress.wdepartmentcode,
-                scityname: sellerData.jcontact.jregistrationaddress.scityname,
-                saddressline1: sellerData.jcontact.jregistrationaddress.saddressline1,
-                scountrycode: sellerData.jcontact.jregistrationaddress.scountrycode,
-                wprovincecode: sellerData.jcontact.jregistrationaddress.wprovincecode,
-                szip: sellerData.jcontact.jregistrationaddress.szip,
-                sdepartmentname: sellerData.jcontact.jregistrationaddress.sdepartmentname,
-              }
+      // Validaciones con logs
+      if (!order) {
+        console.error('❌ No hay orden seleccionada');
+        throw new Error('No hay orden seleccionada');
+      }
+  
+      if (!order.id_orderDetail) {
+        console.error('❌ No hay id_orderDetail en la orden');
+        throw new Error('ID de orden no válido');
+      }
+  
+      if (!sellerData) {
+        console.error('❌ No hay datos del vendedor');
+        throw new Error('Datos del vendedor no disponibles');
+      }
+  
+      console.log('✅ Todas las validaciones pasaron');
+      console.log('Preparando datos para enviar...');
+  
+      const jDocumentDataWithOrderId = {
+        ...jDocumentData,
+        sorderreference: order.id_orderDetail,
+        jseller: {
+          // Verificar cada campo del vendedor
+          wlegalorganizationtype: sellerData.wlegalorganizationtype || '',
+          sfiscalresponsibilities: sellerData.sfiscalresponsibilities || '',
+          sdocno: sellerData.sdocno || '',
+          sdoctype: sellerData.sdoctype || '',
+          ssellername: sellerData.ssellername || '',
+          ssellerbrand: sellerData.ssellerbrand || '',
+          scontactperson: sellerData.scontactperson || '',
+          saddresszip: sellerData.saddresszip || '',
+          wdepartmentcode: sellerData.wdepartmentcode || '',
+          wtowncode: sellerData.wtowncode || '',
+          scityname: sellerData.scityname || '',
+          jcontact: {
+            selectronicmail: sellerData.jcontact?.selectronicmail || '',
+            jregistrationaddress: {
+              wdepartmentcode: sellerData.jcontact?.jregistrationaddress?.wdepartmentcode || '',
+              scityname: sellerData.jcontact?.jregistrationaddress?.scityname || '',
+              saddressline1: sellerData.jcontact?.jregistrationaddress?.saddressline1 || '',
+              scountrycode: sellerData.jcontact?.jregistrationaddress?.scountrycode || '',
+              wprovincecode: sellerData.jcontact?.jregistrationaddress?.wprovincecode || '',
+              szip: sellerData.jcontact?.jregistrationaddress?.szip || '',
+              sdepartmentname: sellerData.jcontact?.jregistrationaddress?.sdepartmentname || '',
             }
           }
-        };
+        }
+      };
   
-        console.log('jDocumentDataWithOrderId:', jDocumentDataWithOrderId); // Imprimir el objeto jDocumentDataWithOrderId
+      console.log('5. Datos completos a enviar:', JSON.stringify(jDocumentDataWithOrderId, null, 2));
   
-        const invoiceDataToSend = {
-          invoiceData: jDocumentDataWithOrderId, // Enviar el objeto jDocument con el id_orderDetail
-          sellerId: sellerId,
-        };
-        console.log("invoiceDataToSend:", invoiceDataToSend);
-        await dispatch(sendInvoice(invoiceDataToSend, { // Agregar el header Content-Type
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }));
-        console.log("Factura enviada con éxito");
-      } else {
-        setErrorMessage("No se encontró la orden o el ID de la orden es inválido.");
-      }
+      const invoiceDataToSend = {
+        invoiceData: jDocumentDataWithOrderId,
+        sellerId: sellerId,
+      };
+  
+      console.log('6. Estructura final:', JSON.stringify(invoiceDataToSend, null, 2));
+  
+      // Enviar la factura
+      const response = await dispatch(sendInvoice(invoiceDataToSend));
+      console.log('7. Respuesta del servidor:', response);
+  
+      console.log("✅ Factura enviada con éxito");
     } catch (err) {
-      console.error("Error al enviar la factura:", err);
-      setErrorMessage("Error al enviar la factura: " + err.message);
+      console.error("❌ Error detallado:", err);
+      setErrorMessage(`Error al enviar la factura: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

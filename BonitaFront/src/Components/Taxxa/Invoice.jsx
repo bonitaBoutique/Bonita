@@ -68,59 +68,61 @@ const Invoice = () => {
       let totalAmountWithoutTax = 0;
       let totalTaxAmount = 0;
       let totalAmount = 0;
-  
+
       const productsData = order.products.map(product => {
         // Calcular el precio unitario sin IVA y el IVA por unidad
         const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2));
         const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
         
+        // Usar 1 como cantidad por producto en lugar de order.quantity
+        const quantity = 1;
+        
         // Calcular totales para este producto específico
-        const productTotalWithoutTax = priceWithoutTax * order.quantity;
-        const productTotalTax = taxAmount * order.quantity;
-        const productTotal = product.priceSell * order.quantity;
-  
-        // Acumular totales
-        totalAmountWithoutTax += productTotalWithoutTax;
-        totalTaxAmount += productTotalTax;
-        totalAmount += productTotal;
-  
-        return {
-          jextrainfo: {
-            sbarcode: product.codigoBarra,
-          },
-          sdescription: product.description,
-          wunitcode: "und",
-          sstandarditemidentification: product.codigoBarra,
-          sstandardidentificationcode: "999",
-          nunitprice: priceWithoutTax,
-          nusertotal: parseFloat(productTotalWithoutTax.toFixed(2)),
-          nquantity: order.quantity,
-          jtax: {
-            jiva: {
-              nrate: 19,
-              sname: "IVA",
-              namount: parseFloat(productTotalTax.toFixed(2)),
-              nbaseamount: parseFloat(productTotalWithoutTax.toFixed(2)),
-            },
-          },
-        };
-      });
-  
-      // Actualizar el estado con los totales calculados
-      setJDocumentData(prevJDocumentData => ({
-        ...prevJDocumentData,
-        nlineextensionamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
-        ntaxexclusiveamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
-        ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
-        npayableamount: parseFloat(totalAmount.toFixed(2)),
+        const productTotalWithoutTax = priceWithoutTax * quantity;
+        const productTotalTax = taxAmount * quantity;
+        const productTotal = product.priceSell * quantity;
+
+      // Acumular totales
+      totalAmountWithoutTax += productTotalWithoutTax;
+      totalTaxAmount += productTotalTax;
+      totalAmount += productTotal;
+
+      return {
         jextrainfo: {
-          ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
-          stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
-          iitemscount: order.products.length.toString(),
+          sbarcode: product.codigoBarra,
         },
-        jdocumentitems: productsData,
-      }));
-    }
+        sdescription: product.description,
+        wunitcode: "und",
+        sstandarditemidentification: product.codigoBarra,
+        sstandardidentificationcode: "999",
+        nunitprice: priceWithoutTax,
+        nusertotal: parseFloat(productTotalWithoutTax.toFixed(2)),
+        nquantity: quantity, // Usar quantity en lugar de order.quantity
+        jtax: {
+          jiva: {
+            nrate: 19,
+            sname: "IVA",
+            namount: parseFloat(productTotalTax.toFixed(2)),
+            nbaseamount: parseFloat(productTotalWithoutTax.toFixed(2)),
+          },
+        },
+      };
+    });
+
+    setJDocumentData(prevJDocumentData => ({
+      ...prevJDocumentData,
+      nlineextensionamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
+      ntaxexclusiveamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
+      ntaxinclusiveamount: parseFloat(totalAmount.toFixed(2)),
+      npayableamount: parseFloat(totalAmount.toFixed(2)),
+      jextrainfo: {
+        ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
+        stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
+        iitemscount: order.products.length.toString(), // Usar la longitud del array de productos
+      },
+      jdocumentitems: productsData,
+    }));
+  }
   }, [order, buyer]);
 
   const handleChange = (e, path) => {

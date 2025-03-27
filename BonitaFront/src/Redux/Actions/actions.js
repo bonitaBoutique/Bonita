@@ -793,24 +793,13 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
       throw error;
     }
 
-    console.log("📤 Preparando factura...");
+    console.log("📤 Enviando factura...");
+    console.log("📦 Datos a enviar:", JSON.stringify(invoiceData, null, 2));
 
-    // Restructurar el objeto para cumplir con el formato esperado
-    const formattedPayload = {
-      stoken: "221811205405", // Token fijo para pruebas
-      jApi: {
-        sMethod: "classTaxxa.fjDocumentAdd",
-        jParams: {
-          wVersionUBL: "2.1",
-          wenvironment: "prod",
-          jDocument: invoiceData // Usar directamente invoiceData sin envolverlo
-        }
-      }
-    };
-
-    console.log("📦 Datos formateados:", JSON.stringify(formattedPayload, null, 2));
-
-    const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, formattedPayload, {
+    const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, {
+      invoiceData,
+      sellerId: invoiceData.jseller.sdocno
+    }, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -818,8 +807,6 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
         return status >= 200 && status < 500;
       },
     });
-
-    console.log("📥 Respuesta del servidor:", response.data);
 
     if (response.status === 200) {
       console.log("✅ Factura enviada exitosamente");

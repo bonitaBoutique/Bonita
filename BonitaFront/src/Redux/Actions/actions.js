@@ -783,11 +783,6 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   
   try {
-    // Validar que exista sorderreference
-    if (!invoiceData.sorderreference) {
-      throw new Error('No se proporcionó el ID de la orden');
-    }
-
     // Primero verificar si la orden ya está facturada
     const orderDetail = await axios.get(`${BASE_URL}/order/products/${invoiceData.sorderreference}`);
     
@@ -800,72 +795,79 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
 
     console.log("📤 Preparando factura...");
 
-    // Crear el objeto con la estructura correcta
-    const formattedInvoice = {
-      ...invoiceData,
-      wenvironment: "prod", // Cambiar a prod
-      jseller: {
-        wlegalorganizationtype: 'company',
-        sfiscalresponsibilities: "O-47", // Cambiar de R-99-PN a O-47
-        sdocno: "901832769",
-        sdoctype: "NIT",
-        ssellername: "BONITA BOUTIQUE YP S.A.S",
-        ssellerbrand: "BONITA BOUTIQUE CUMARAL",
-        scontactperson: "ROSALES TAPIA YANIRIS PATRICIA",
-        saddresszip: "501021",
-        wdepartmentcode: "50",
-        wtowncode: "50226",
-        scityname: "CUMARAL",
-        jcontact: {
-          selectronicmail: "bonitaboutiquecumaral@gmail.com",
-          jregistrationaddress: {
-            wdepartmentcode: "50",
-            sdepartmentname: "META",
-            scityname: "CUMARAL",
-            saddressline1: "CL 12 17 51 LC 3 Y 4",
-            scountrycode: "CO",
-            wprovincecode: "50226",
-            szip: "501021"
-          }
+    // Restructurar el objeto para cumplir con el formato esperado
+    const formattedPayload = {
+      stoken: "221811205405", // Token fijo para pruebas
+      jApi: {
+        sMethod: "classTaxxa.fjDocumentAdd",
+        jParams: {
+          wVersionUBL: "2.1",
+          wenvironment: "prod",
+          jDocument: invoiceData // Usar directamente invoiceData sin envolverlo
         }
       }
     };
 
-    console.log("📦 Datos formateados:", JSON.stringify(formattedInvoice, null, 2));
+    console.log("📦 Datos formateados:", JSON.stringify(formattedPayload, null, 2));
 
-    const response = await axios.post(
-      `${BASE_URL}/taxxa/sendInvoice`, 
-      { invoiceData: formattedInvoice }, // Envolver en invoiceData
-      {
-        headers: {
-          "Content-Type": "application/json",
-        }
-      }
-    );
+    const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, formattedPayload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      validateStatus: function (status) {
+        return status >= 200 && status < 500;
+      },
+    });
+
+    console.log("📥 Respuesta del servidor:", response.data);
 
     if (response.status === 200) {
+      console.log("✅ Factura enviada exitosamente");
       dispatch({ type: SEND_INVOICE_SUCCESS, payload: response.data });
+      
       Swal.fire({
         icon: 'success',
         title: 'Factura enviada con éxito',
         text: 'La factura se ha generado correctamente'
       });
+      
       return response.data;
     } else {
       throw new Error(response.data.message || 'Error al enviar la factura');
     }
 
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("❌ Error detallado:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      isOrderAlreadyInvoiced: error.isOrderAlreadyInvoiced
+    });
+
+    let errorMessage = "Error al enviar la factura";
+    let icon = 'error';
+    let title = 'Error al enviar la factura';
+
+    if (error.isOrderAlreadyInvoiced) {
+      errorMessage = `La orden ya está facturada (${new Date(error.invoicedAt).toLocaleString()})`;
+      icon = 'warning';
+      title = 'Orden ya facturada';
+    } else if (error.response?.data) {
+      errorMessage = error.response.data.message || error.response.data;
+    }
+
     dispatch({ 
       type: SEND_INVOICE_FAILURE, 
-      payload: error.message 
+      payload: errorMessage 
     });
 
     Swal.fire({
-      icon: 'error',
-      title: 'Error al enviar la factura',
-      text: error.message
+      icon,
+      title,
+      text: errorMessage,
+      footer: error.isOrderAlreadyInvoiced ? undefined : 
+             `Código de error: ${error.response?.status || 'Desconocido'}`
     });
 
     throw error;

@@ -785,7 +785,7 @@ export const sendInvoice = (payload) => async (dispatch) => {
   try {
     console.log("📋 Datos recibidos:", payload);
 
-    // Extraer correctamente invoiceData
+    // Extraer correctamente invoiceData del payload anidado
     const invoiceData = payload.invoiceData;
     
     if (!invoiceData) {
@@ -807,17 +807,33 @@ export const sendInvoice = (payload) => async (dispatch) => {
       throw new Error('No se encontraron detalles de la orden');
     }
 
-    if (orderDetail.data?.message?.orderDetail?.status === 'facturada') {
-      throw new Error('La orden ya está facturada');
-    }
-
     // Crear el objeto con la estructura correcta
     const formattedInvoice = {
-      ...invoiceData,
+      wVersionUBL: invoiceData.wVersionUBL,
       wenvironment: "prod", // Cambiar a prod
+      wdocumenttype: invoiceData.wdocumenttype,
+      wdocumenttypecode: invoiceData.wdocumenttypecode,
+      scustomizationid: invoiceData.scustomizationid,
+      wcurrency: invoiceData.wcurrency,
+      sdocumentprefix: invoiceData.sdocumentprefix,
+      sdocumentsuffix: invoiceData.sdocumentsuffix,
+      tissuedate: invoiceData.tissuedate,
+      tduedate: invoiceData.tduedate,
+      wpaymentmeans: invoiceData.wpaymentmeans,
+      wpaymentmethod: invoiceData.wpaymentmethod,
+      nlineextensionamount: invoiceData.nlineextensionamount,
+      ntaxexclusiveamount: invoiceData.ntaxexclusiveamount,
+      ntaxinclusiveamount: invoiceData.ntaxinclusiveamount,
+      npayableamount: invoiceData.npayableamount,
+      sorderreference: invoiceData.sorderreference,
+      snotes: invoiceData.snotes || "",
+      snotetop: invoiceData.snotetop || "",
+      jextrainfo: invoiceData.jextrainfo,
+      jdocumentitems: invoiceData.jdocumentitems,
+      jbuyer: invoiceData.jbuyer,
       jseller: {
         wlegalorganizationtype: 'company',
-        sfiscalresponsibilities: "O-47", // Cambiar de R-99-PN a O-47
+        sfiscalresponsibilities: "O-47",
         sdocno: "901832769",
         sdoctype: "NIT",
         ssellername: "BONITA BOUTIQUE YP S.A.S",

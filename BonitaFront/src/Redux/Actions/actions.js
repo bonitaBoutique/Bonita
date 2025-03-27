@@ -779,13 +779,15 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
   }
 };
 
-export const sendInvoice = (invoiceData) => async (dispatch) => {
+export const sendInvoice = (payload) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   
   try {
-    console.log("📋 Datos recibidos:", invoiceData);
+    console.log("📋 Datos recibidos:", payload);
 
-    // Validación inicial más detallada
+    // Validar si tenemos el objeto invoiceData
+    const invoiceData = payload.invoiceData || payload;
+    
     if (!invoiceData) {
       throw new Error('No se proporcionaron datos de factura');
     }
@@ -798,27 +800,16 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
 
     console.log("🔍 Verificando orden:", invoiceData.sorderreference);
 
-    // Primero verificar si la orden ya está facturada
-    const orderDetail = await axios.get(`${BASE_URL}/order/products/${invoiceData.sorderreference}`)
-      .catch(error => {
-        console.error("Error al obtener la orden:", error);
-        throw new Error(`Error al obtener la orden: ${error.message}`);
-      });
-
-    console.log("📦 Detalles de la orden:", orderDetail.data);
+    // Verificar si la orden ya está facturada
+    const orderDetail = await axios.get(`${BASE_URL}/order/products/${invoiceData.sorderreference}`);
     
     if (!orderDetail.data?.message?.orderDetail) {
       throw new Error('No se encontraron detalles de la orden');
     }
 
     if (orderDetail.data?.message?.orderDetail?.status === 'facturada') {
-      const error = new Error('La orden ya está facturada');
-      error.isOrderAlreadyInvoiced = true;
-      error.invoicedAt = orderDetail.data.message.orderDetail.updatedAt;
-      throw error;
+      throw new Error('La orden ya está facturada');
     }
-
-    console.log("📤 Preparando factura...");
 
     // Crear el objeto con la estructura correcta
     const formattedInvoice = {
@@ -850,8 +841,6 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
         }
       }
     };
-
-    console.log("📦 Datos formateados:", JSON.stringify(formattedInvoice, null, 2));
 
     const response = await axios.post(
       `${BASE_URL}/taxxa/sendInvoice`, 
@@ -891,8 +880,7 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
     Swal.fire({
       icon: 'error',
       title: 'Error al enviar la factura',
-      text: error.message,
-      footer: error.response?.status ? `Status: ${error.response.status}` : undefined
+      text: error.message
     });
 
     throw error;

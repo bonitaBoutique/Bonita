@@ -82,12 +82,33 @@ const createInvoice = async (req, res) => {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {
         wVersionUBL: "2.1",
-        wenvironment: "prod",
+        wenvironment: "prod", // Cambiado a prod
         jDocument: {
-          ...invoiceData,
+          wVersionUBL: "2.1",
+          wenvironment: "prod", // Cambiado a prod
+          wdocumenttype: invoiceData.wdocumenttype,
+          wdocumenttypecode: invoiceData.wdocumenttypecode,
+          scustomizationid: invoiceData.scustomizationid,
+          wcurrency: invoiceData.wcurrency,
+          sdocumentprefix: invoiceData.sdocumentprefix,
+          sdocumentsuffix: invoiceData.sdocumentsuffix,
+          tissuedate: invoiceData.tissuedate,
+          tduedate: invoiceData.tduedate,
+          wpaymentmeans: invoiceData.wpaymentmeans,
+          wpaymentmethod: invoiceData.wpaymentmethod,
+          nlineextensionamount: invoiceData.nlineextensionamount,
+          ntaxexclusiveamount: invoiceData.ntaxexclusiveamount,
+          ntaxinclusiveamount: invoiceData.ntaxinclusiveamount,
+          npayableamount: invoiceData.npayableamount,
+          sorderreference: invoiceData.sorderreference,
+          snotes: invoiceData.snotes || "",
+          snotetop: invoiceData.snotetop || "",
+          jextrainfo: invoiceData.jextrainfo,
+          jdocumentitems: invoiceData.jdocumentitems,
+          jbuyer: invoiceData.jbuyer,
           jseller: {
             wlegalorganizationtype: 'company',
-            sfiscalresponsibilities: "O-47",
+            sfiscalresponsibilities: "O-47", // Corregido de R-99-PN a O-47
             sdocno: "901832769",
             sdoctype: "NIT",
             ssellername: "BONITA BOUTIQUE YP S.A.S",

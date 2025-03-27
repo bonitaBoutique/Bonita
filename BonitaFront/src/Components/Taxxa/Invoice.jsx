@@ -37,7 +37,7 @@ const Invoice = () => {
     scustomizationid: "10",
     wcurrency: "COP",
     sdocumentprefix: "FVB",
-    sdocumentsuffix: null,
+    sdocumentsuffix: 2,
     tissuedate: new Date().toISOString(),
     tduedate: new Date().toISOString().split("T")[0],
     wpaymentmeans: 1,
@@ -71,26 +71,25 @@ const Invoice = () => {
         const response = await axios.get(`${BASE_URL}/invoice/lastInvoiceNumber`);
         
         if (response.data.success) {
-          // El número viene como string desde el backend
-          const nextNumber = response.data.nextInvoiceNumber;
+          // Convert string to number
+          const nextNumber = parseInt(response.data.nextInvoiceNumber);
           
           setJDocumentData(prev => ({
             ...prev,
-            sdocumentsuffix: nextNumber
+            sdocumentsuffix: nextNumber // Store as number
           }));
         } else {
-          // Si hay error, usar "2" como valor inicial
+          // Use 2 as default number
           setJDocumentData(prev => ({
             ...prev,
-            sdocumentsuffix: "2"
+            sdocumentsuffix: 2
           }));
         }
       } catch (error) {
         console.error("Error obteniendo número de factura:", error);
-        // En caso de error de red, también usar "2"
         setJDocumentData(prev => ({
           ...prev,
-          sdocumentsuffix: "2"
+          sdocumentsuffix: 2
         }));
       }
     };
@@ -216,6 +215,10 @@ const Invoice = () => {
         throw new Error('ID de orden no válido');
       }
 
+      if (!jDocumentData.sdocumentsuffix || typeof jDocumentData.sdocumentsuffix !== 'number') {
+        throw new Error('Número de factura no válido');
+      }
+
       console.log('✅ Todas las validaciones pasaron');
       
       const jDocumentDataWithOrderId = {
@@ -335,6 +338,15 @@ const Invoice = () => {
               className="border p-2 w-full"
             />
           </div>
+          <div>
+          <input
+  type="number"
+  value={jDocumentData.sdocumentsuffix} // Will display as number
+  onChange={(e) => handleChange(e, "sdocumentsuffix")}
+  className="border p-2 w-full"
+/>
+</div>
+
           <div>
             <label className="block mb-2">Fecha de vencimiento:</label>
             <input

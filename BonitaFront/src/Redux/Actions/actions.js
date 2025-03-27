@@ -782,54 +782,69 @@ export const updateSellerData = (id, sellerData) => async (dispatch) => {
 export const sendInvoice = (invoiceData) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   try {
-    console.log("invoiceData:", JSON.stringify(invoiceData, null, 2));
+    console.log("📤 Enviando factura...");
+    console.log("📦 Datos a enviar:", JSON.stringify(invoiceData, null, 2));
 
     const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, invoiceData, {
       headers: {
         "Content-Type": "application/json",
       },
+      // Agregar validación de status
+      validateStatus: function (status) {
+        return status >= 200 && status < 500;
+      },
     });
 
-    dispatch({ type: SEND_INVOICE_SUCCESS, payload: response.data });
-    return response.data;
-  } catch (error) {
-    console.error("Error al enviar la factura:", error);
+    console.log("📥 Respuesta del servidor:", response.data);
 
-    // Captura el objeto de error completo
-    const errorData = error.response?.data;
-    let errorMessage = "Error al enviar la factura";
-    let shouldResend = true; // Assume we should resend unless we find a reason not to
-
-    // Check if the error indicates that we should NOT resend the invoice
-    if (errorData && errorData.rerror) {
-      if (errorData.rerror === 1262 || errorData.rerror === 1236) {
-        shouldResend = false;
-        errorMessage = `Error al enviar la factura: Contingencia activada (rerror: ${errorData.rerror}). No es necesario reenviar la factura.`;
-      } else if (errorData.smessage?.string) {
-        const errorMessages = Object.values(errorData.smessage.string);
-        errorMessage = errorMessages.join('\n');
-      } else {
-        errorMessage = JSON.stringify(errorData); // Muestra el objeto completo para depuración
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
+    if (response.status === 200) {
+      console.log("✅ Factura enviada exitosamente");
+      dispatch({ type: SEND_INVOICE_SUCCESS, payload: response.data });
+      return response.data;
+    } else {
+      console.error("❌ Error del servidor:", response.data);
+      throw new Error(response.data.message || 'Error al enviar la factura');
     }
 
-    dispatch({ type: SEND_INVOICE_FAILURE, payload: errorMessage });
+  } catch (error) {
+    console.error("❌ Error detallado:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
 
-    // Muestra el error con Swal
+    // Extraer mensaje de error detallado
+    const errorData = error.response?.data;
+    let errorMessage = "Error al enviar la factura";
+
+    if (errorData) {
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+    }
+
+    // Dispatch del error
+    dispatch({ 
+      type: SEND_INVOICE_FAILURE, 
+      payload: errorMessage 
+    });
+
+    // Mostrar alerta con detalles
     Swal.fire({
       icon: 'error',
       title: 'Error al enviar la factura',
       text: errorMessage,
+      footer: `Código de error: ${error.response?.status || 'Desconocido'}`
     });
 
-    // Only throw the error if we should resend
-    if (shouldResend) {
-      throw new Error(errorMessage);
-    }
+    throw error;
   }
-}; 
+};
 
 
 export const createReceipt = (receipt) => async (dispatch) => {

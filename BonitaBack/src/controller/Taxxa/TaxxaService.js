@@ -6,9 +6,10 @@ const createInvoice = async (req, res) => {
     console.log('=== Iniciando proceso de facturación ===');
     console.log('Received payload:', JSON.stringify(req.body, null, 2));
     
-    const { invoiceData } = req.body;
+    // 1. Extraer y validar datos básicos
+    const { invoiceData: rawInvoiceData } = req.body;
+    const invoiceData = rawInvoiceData.invoiceData || rawInvoiceData;
     
-    // Validación inicial de datos
     if (!invoiceData) {
       console.error('Datos de factura faltantes');
       return res.status(400).json({
@@ -16,27 +17,17 @@ const createInvoice = async (req, res) => {
         success: false
       });
     }
-  
-    // Extraer IDs necesarios
+
+    // 2. Extraer identificadores
     const sellerId = invoiceData.jseller?.sdocno || '901832769';
     const id_orderDetail = invoiceData.sorderreference;
     console.log('Procesando orden:', id_orderDetail);
 
-    // Validar que exista el ID de la orden
-    if (!id_orderDetail) {
-      console.error('ID de orden no proporcionado');
-      return res.status(400).json({
-        message: 'ID de orden no proporcionado',
-        success: false
-      });
-    }
-
-    // Obtener detalles de la orden
+    // 3. Validar orden
     const orderDetail = await OrderDetail.findOne({
       where: { id_orderDetail }
     });
 
-    // Validar existencia de la orden
     if (!orderDetail) {
       console.error('Orden no encontrada:', id_orderDetail);
       return res.status(404).json({
@@ -46,7 +37,7 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Verificar estado de la orden
+    // 4. Verificar estado de la orden
     console.log('Estado actual de la orden:', orderDetail.status);
     if (orderDetail.status === 'facturada') {
       console.log('=== Orden previamente facturada ===');
@@ -58,14 +49,14 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Obtener datos del vendedor y usuario en paralelo
+    // 5. Obtener datos adicionales
     console.log('=== Consultando datos adicionales ===');
     const [sellerData, userData] = await Promise.all([
       SellerData.findOne({ where: { sdocno: sellerId } }),
       User.findOne({ where: { n_document: orderDetail.n_document } })
     ]);
 
-    // Validar datos del vendedor
+    // 6. Validar datos del vendedor
     if (!sellerData) {
       console.error('Datos del vendedor no encontrados:', sellerId);
       return res.status(404).json({
@@ -75,17 +66,7 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Validar datos requeridos del vendedor
-    if (!sellerData.contact_selectronicmail || !sellerData.registration_saddressline1) {
-      console.error('Datos incompletos del vendedor');
-      return res.status(400).json({
-        message: 'Datos del vendedor incompletos (correo o dirección)',
-        success: false,
-        sellerId
-      });
-    }
-
-    // Validar datos del comprador
+    // 7. Validar datos del comprador
     if (!userData) {
       console.error('Datos del comprador no encontrados:', orderDetail.n_document);
       return res.status(404).json({
@@ -95,7 +76,7 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Construir el documento para Taxxa
+    // 8. Construir documento para Taxxa
     console.log('=== Construyendo documento para Taxxa ===');
     const documentBody = {
       sMethod: 'classTaxxa.fjDocumentAdd',
@@ -105,27 +86,27 @@ const createInvoice = async (req, res) => {
         jDocument: {
           ...invoiceData,
           jseller: {
-            wlegalorganizationtype: sellerData.wlegalorganizationtype || 'company',
-            sfiscalresponsibilities: sellerData.sfiscalresponsibilities,
-            sdocno: sellerData.sdocno,
-            sdoctype: sellerData.sdoctype,
-            ssellername: sellerData.ssellername,
-            ssellerbrand: sellerData.ssellerbrand,
-            scontactperson: sellerData.scontactperson,
-            saddresszip: sellerData.saddresszip,
-            wdepartmentcode: sellerData.wdepartmentcode,
-            wtowncode: sellerData.wtowncode || '501021',
-            scityname: sellerData.scityname,
+            wlegalorganizationtype: 'company',
+            sfiscalresponsibilities: "O-47",
+            sdocno: "901832769",
+            sdoctype: "NIT",
+            ssellername: "BONITA BOUTIQUE YP S.A.S",
+            ssellerbrand: "BONITA BOUTIQUE CUMARAL",
+            scontactperson: "ROSALES TAPIA YANIRIS PATRICIA",
+            saddresszip: "501021",
+            wdepartmentcode: "50",
+            wtowncode: "50226",
+            scityname: "CUMARAL",
             jcontact: {
-              selectronicmail: sellerData.contact_selectronicmail,
+              selectronicmail: "bonitaboutiquecumaral@gmail.com",
               jregistrationaddress: {
-                wdepartmentcode: sellerData.registration_wdepartmentcode,
-                scityname: sellerData.registration_scityname,
-                saddressline1: sellerData.registration_saddressline1,
-                scountrycode: sellerData.registration_scountrycode || 'CO',
-                wprovincecode: sellerData.registration_wprovincecode,
-                szip: sellerData.registration_szip,
-                sdepartmentname: sellerData.registration_sdepartmentname
+                wdepartmentcode: "50",
+                sdepartmentname: "META",
+                scityname: "CUMARAL",
+                saddressline1: "CL 12 17 51 LC 3 Y 4",
+                scountrycode: "CO",
+                wprovincecode: "50226",
+                szip: "501021"
               }
             }
           }
@@ -133,24 +114,27 @@ const createInvoice = async (req, res) => {
       }
     };
 
-    // Generar token
+    // 9. Generar token
     console.log('=== Generando token para Taxxa ===');
     const token = await generateToken();
     if (!token) {
       throw new Error('No se pudo generar el token de autenticación');
     }
 
-    // Preparar y enviar payload
+    // 10. Preparar payload final
     const taxxaPayload = {
       stoken: token,
       jApi: documentBody
     };
 
     console.log('=== Enviando documento a Taxxa ===');
+    console.log('Payload a enviar:', JSON.stringify(taxxaPayload, null, 2));
+
+    // 11. Enviar documento
     const taxxaResponse = await sendDocument(taxxaPayload);
     console.log('Respuesta de Taxxa:', JSON.stringify(taxxaResponse, null, 2));
 
-    // Procesar respuesta
+    // 12. Procesar respuesta
     if (taxxaResponse && taxxaResponse.rerror === 0) {
       console.log('=== Actualizando estado de la orden ===');
       await orderDetail.update({ status: 'facturada' });

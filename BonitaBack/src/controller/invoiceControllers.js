@@ -43,16 +43,20 @@ const getLastInvoiceNumber = async (req, res) => {
   try {
     // Obtener la última factura ordenada por número
     const lastInvoice = await Invoice.findOne({
-      order: [['invoiceNumber', 'DESC']],
-      where: {
-        status: ['pending', 'sent'] // Solo considerar facturas válidas
-      }
+      order: [['createdAt', 'DESC']] // Ordenar por fecha de creación en lugar de número
     });
 
-    // Si no hay facturas, empezar desde 2
-    const nextNumber = lastInvoice 
-      ? (parseInt(lastInvoice.invoiceNumber) + 1).toString()
-      : "2";
+    // Si no hay facturas, comenzar desde 2
+    if (!lastInvoice) {
+      return response(res, 200, { 
+        success: true,
+        nextInvoiceNumber: "2" // Primer número como string
+      });
+    }
+
+    // Si hay factura previa, convertir a número y sumar 1
+    const currentNumber = parseInt(lastInvoice.invoiceNumber || "1");
+    const nextNumber = (currentNumber + 1).toString(); // Convertir de vuelta a string
 
     return response(res, 200, { 
       success: true,

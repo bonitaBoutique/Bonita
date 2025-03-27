@@ -785,15 +785,15 @@ export const sendInvoice = (payload) => async (dispatch) => {
   try {
     console.log("📋 Datos recibidos:", payload);
 
-    // Validar si tenemos el objeto invoiceData
-    const invoiceData = payload.invoiceData || payload;
+    // Extraer correctamente invoiceData
+    const invoiceData = payload.invoiceData;
     
     if (!invoiceData) {
       throw new Error('No se proporcionaron datos de factura');
     }
 
     // Validar si sorderreference existe y es válido
-    if (!invoiceData.sorderreference || invoiceData.sorderreference === 'undefined') {
+    if (!invoiceData.sorderreference) {
       console.error('ID de orden inválido:', invoiceData.sorderreference);
       throw new Error('ID de orden no válido');
     }
@@ -814,10 +814,10 @@ export const sendInvoice = (payload) => async (dispatch) => {
     // Crear el objeto con la estructura correcta
     const formattedInvoice = {
       ...invoiceData,
-      wenvironment: "prod",
+      wenvironment: "prod", // Cambiar a prod
       jseller: {
         wlegalorganizationtype: 'company',
-        sfiscalresponsibilities: "O-47",
+        sfiscalresponsibilities: "O-47", // Cambiar de R-99-PN a O-47
         sdocno: "901832769",
         sdoctype: "NIT",
         ssellername: "BONITA BOUTIQUE YP S.A.S",
@@ -841,6 +841,8 @@ export const sendInvoice = (payload) => async (dispatch) => {
         }
       }
     };
+
+    console.log("📦 Datos formateados:", JSON.stringify(formattedInvoice, null, 2));
 
     const response = await axios.post(
       `${BASE_URL}/taxxa/sendInvoice`, 

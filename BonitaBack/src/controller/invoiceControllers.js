@@ -39,7 +39,26 @@ const getInvoicesByStatus = async (req, res) => {
   }
 };
 
+const getLastInvoiceNumber = async (req, res) => {
+  try {
+    const lastInvoice = await Invoice.findOne({
+      order: [['createdAt', 'DESC']],
+    });
+
+    // If no invoice exists, start with "2"
+    const nextNumber = lastInvoice 
+      ? (parseInt(lastInvoice.invoiceNumber) + 1).toString()
+      : "2";
+
+    return response(res, 200, { nextInvoiceNumber: nextNumber });
+  } catch (error) {
+    console.error('Error getting last invoice number:', error);
+    return response(res, 500, { error: error.message });
+  }
+};
+
 module.exports = {
   postInvoice,
-  getInvoicesByStatus, // Exporta la nueva función
+  getInvoicesByStatus, 
+  getLastInvoiceNumber
 };

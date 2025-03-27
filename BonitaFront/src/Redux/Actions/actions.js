@@ -783,6 +783,11 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
   dispatch({ type: SEND_INVOICE_REQUEST });
   
   try {
+    // Validar que exista sorderreference
+    if (!invoiceData.sorderreference) {
+      throw new Error('No se proporcionó el ID de la orden');
+    }
+
     // Primero verificar si la orden ya está facturada
     const orderDetail = await axios.get(`${BASE_URL}/order/products/${invoiceData.sorderreference}`);
     
@@ -795,13 +800,13 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
 
     console.log("📤 Preparando factura...");
 
-    // Asegurarse de que invoiceData tenga el ambiente correcto
-    const invoiceWithEnv = {
+    // Crear el objeto con la estructura correcta
+    const formattedInvoice = {
       ...invoiceData,
-      wenvironment: "prod",
+      wenvironment: "prod", // Cambiar a prod
       jseller: {
         wlegalorganizationtype: 'company',
-        sfiscalresponsibilities: "O-47",
+        sfiscalresponsibilities: "O-47", // Cambiar de R-99-PN a O-47
         sdocno: "901832769",
         sdoctype: "NIT",
         ssellername: "BONITA BOUTIQUE YP S.A.S",
@@ -826,10 +831,11 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
       }
     };
 
-    console.log("📦 Enviando datos:", JSON.stringify(invoiceWithEnv, null, 2));
+    console.log("📦 Datos formateados:", JSON.stringify(formattedInvoice, null, 2));
 
-    const response = await axios.post(`${BASE_URL}/taxxa/sendInvoice`, 
-      { invoiceData: invoiceWithEnv },
+    const response = await axios.post(
+      `${BASE_URL}/taxxa/sendInvoice`, 
+      { invoiceData: formattedInvoice }, // Envolver en invoiceData
       {
         headers: {
           "Content-Type": "application/json",
@@ -837,31 +843,20 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
       }
     );
 
-    console.log("📥 Respuesta del servidor:", response.data);
-
     if (response.status === 200) {
-      console.log("✅ Factura enviada exitosamente");
       dispatch({ type: SEND_INVOICE_SUCCESS, payload: response.data });
-      
       Swal.fire({
         icon: 'success',
         title: 'Factura enviada con éxito',
         text: 'La factura se ha generado correctamente'
       });
-      
       return response.data;
     } else {
       throw new Error(response.data.message || 'Error al enviar la factura');
     }
 
   } catch (error) {
-    console.error("❌ Error detallado:", {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message
-    });
-
+    console.error("❌ Error:", error);
     dispatch({ 
       type: SEND_INVOICE_FAILURE, 
       payload: error.message 
@@ -870,8 +865,7 @@ export const sendInvoice = (invoiceData) => async (dispatch) => {
     Swal.fire({
       icon: 'error',
       title: 'Error al enviar la factura',
-      text: error.message,
-      footer: `Código de error: ${error.response?.status || 'Desconocido'}`
+      text: error.message
     });
 
     throw error;

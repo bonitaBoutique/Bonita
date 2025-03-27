@@ -663,21 +663,51 @@ export const fetchUserByDocument = (n_document) => async (dispatch) => {
 
 export const fetchSellerData = (dni) => async (dispatch) => {
   dispatch({ type: FETCH_SELLER_REQUEST });
+  console.log('🔍 Iniciando búsqueda de vendedor con DNI:', dni);
 
   try {
-    const response = await fetch(`${BASE_URL}/seller?dni=${dni}`); // Pasar el DNI como parámetro
-    const result = await response.json();
+    console.log(`📡 Haciendo petición a: ${BASE_URL}/seller/${dni}`);
+    
+    const response = await axios.get(`${BASE_URL}/seller/${dni}`);
+    console.log('✅ Respuesta recibida:', response.data);
 
-    if (response.ok) {
-      dispatch({ type: FETCH_SELLER_SUCCESS, payload: result.data });
-    } else {
-      dispatch({
-        type: FETCH_SELLER_FAILURE,
-        payload: result.message || "Error al obtener los datos del comercio",
+    if (response.data && response.data.data) {
+      console.log('📦 Datos del vendedor encontrados:', response.data.data);
+      dispatch({ 
+        type: FETCH_SELLER_SUCCESS, 
+        payload: response.data.data 
       });
+      return response.data.data;
+    } else {
+      console.warn('⚠️ No se encontraron datos del vendedor');
+      throw new Error('No se encontraron datos del vendedor');
     }
+
   } catch (error) {
-    dispatch({ type: FETCH_SELLER_FAILURE, payload: error.message });
+    console.error('❌ Error al obtener datos del vendedor:', error);
+    console.error('Detalles del error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+
+    const errorMessage = error.response?.data?.message || 
+                        error.message || 
+                        "Error al obtener los datos del comercio";
+
+    dispatch({ 
+      type: FETCH_SELLER_FAILURE, 
+      payload: errorMessage 
+    });
+
+    // Mostrar alerta de error
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al cargar datos del vendedor',
+      text: errorMessage,
+    });
+
+    throw error;
   }
 };
 

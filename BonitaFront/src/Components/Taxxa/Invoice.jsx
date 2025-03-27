@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
-import { fetchOrdersByIdOrder, sendInvoice } from "../../Redux/Actions/actions";
+import { 
+  fetchOrdersByIdOrder, 
+  sendInvoice,
+  fetchSellerData  // Agregar esta importación
+} from "../../Redux/Actions/actions";
 import numeroALetrasConDecimales from '../Taxxa/options/numeroALetras';
 import paymentMethods from "./options/paymentMethods";
 import OrdenesPendientes from "./OrdenesPendientes";
@@ -15,6 +19,8 @@ const Invoice = () => {
   const orderLoading = useSelector((state) => state.orderById.loading);
   const orderError = useSelector((state) => state.orderById.error);
   const sellerData = useSelector((state) => state.sellerData.data);
+  const sellerLoading = useSelector((state) => state.sellerData.loading);
+  const sellerError = useSelector((state) => state.sellerData.error);
 
   const [orderId, setOrderId] = useState("");
   const { loading: invoiceLoading, success, error: invoiceError } = useSelector((state) => state.invoice);
@@ -49,6 +55,13 @@ const Invoice = () => {
     jdocumentitems: [],
     jbuyer: buyer,
   });
+
+  useEffect(() => {
+    if (sellerId && !sellerData) {
+      console.log('🔄 Cargando datos del vendedor inicial...');
+      dispatch(fetchSellerData(sellerId));
+    }
+  }, [dispatch, sellerId, sellerData]);
 
   useEffect(() => {
     if (order && order.amount) {
@@ -126,38 +139,40 @@ const Invoice = () => {
     setIsLoading(true);
     setErrorMessage("");
     
-    // Logs de depuración iniciales
     console.log('=== DEBUG INFORMACIÓN ===');
     console.log('1. Estado actual de order:', order);
     console.log('2. Estado actual de sellerData:', sellerData);
     console.log('3. ID de la orden:', order?.id_orderDetail);
-    console.log('4. Estado actual de jDocumentData:', jDocumentData);
-  
+    
     try {
-      // Validaciones con logs
+      // Primero verificar si hay datos del vendedor
+      if (!sellerData) {
+        console.log('⏳ Esperando datos del vendedor...');
+        await dispatch(fetchSellerData(sellerId));
+        // Esperar un momento para que el estado se actualice
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verificar nuevamente los datos del vendedor
+        if (!sellerData) {
+          throw new Error('No se pudieron cargar los datos del vendedor');
+        }
+      }
+
+      // Validaciones
       if (!order) {
-        console.error('❌ No hay orden seleccionada');
         throw new Error('No hay orden seleccionada');
       }
-  
+
       if (!order.id_orderDetail) {
-        console.error('❌ No hay id_orderDetail en la orden');
         throw new Error('ID de orden no válido');
       }
-  
-      if (!sellerData) {
-        console.error('❌ No hay datos del vendedor');
-        throw new Error('Datos del vendedor no disponibles');
-      }
-  
+
       console.log('✅ Todas las validaciones pasaron');
-      console.log('Preparando datos para enviar...');
-  
+      
       const jDocumentDataWithOrderId = {
         ...jDocumentData,
         sorderreference: order.id_orderDetail,
         jseller: {
-          // Verificar cada campo del vendedor
           wlegalorganizationtype: sellerData.wlegalorganizationtype || '',
           sfiscalresponsibilities: sellerData.sfiscalresponsibilities || '',
           sdocno: sellerData.sdocno || '',
@@ -183,24 +198,20 @@ const Invoice = () => {
           }
         }
       };
-  
+
       console.log('5. Datos completos a enviar:', JSON.stringify(jDocumentDataWithOrderId, null, 2));
-  
+
       const invoiceDataToSend = {
         invoiceData: jDocumentDataWithOrderId,
         sellerId: sellerId,
       };
-  
-      console.log('6. Estructura final:', JSON.stringify(invoiceDataToSend, null, 2));
-  
-      // Enviar la factura
+
       const response = await dispatch(sendInvoice(invoiceDataToSend));
-      console.log('7. Respuesta del servidor:', response);
-  
-      console.log("✅ Factura enviada con éxito");
+      console.log('✅ Factura enviada con éxito:', response);
+
     } catch (err) {
-      console.error("❌ Error detallado:", err);
-      setErrorMessage(`Error al enviar la factura: ${err.message}`);
+      console.error("❌ Error:", err);
+      setErrorMessage(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -209,6 +220,25 @@ const Invoice = () => {
 
   return (
     <div className="p-4 pt-16">
+      {/* Indicadores de estado del vendedor */}
+      {sellerLoading && (
+        <div className="text-blue-500 mb-4 p-3 bg-blue-50 rounded-md flex items-center">
+          <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+          </svg>
+          Cargando datos del vendedor...
+        </div>
+      )}
+      {sellerError && (
+        <div className="text-red-500 mb-4 p-3 bg-red-50 rounded-md flex items-center">
+          <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Error al cargar datos del vendedor: {sellerError}
+        </div>
+      )}
+  
       <OrdenesPendientes />
       <div className="mb-4">
         <label className="block mb-2">Buscar Orden por ID:</label>
@@ -357,12 +387,20 @@ const Invoice = () => {
           </div>
         </div>
         <button
-          type="submit"
-          className="bg-blue-500 text-white p-2 mt-4 rounded hover:bg-blue-600"
-          disabled={isLoading}
-        >
-          {isLoading ? "Enviando factura..." : "Enviar factura"}
-        </button>
+  type="submit"
+  className={`p-2 mt-4 rounded ${
+    isLoading || !sellerData
+      ? 'bg-gray-400'
+      : 'bg-blue-500 hover:bg-blue-600'
+  } text-white`}
+  disabled={isLoading || !sellerData}
+>
+  {isLoading 
+    ? "Enviando factura..." 
+    : !sellerData 
+      ? "Cargando datos del vendedor..." 
+      : "Enviar factura"}
+</button>
       </form>
       {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
       {success && <p className="text-green-500 mt-2">Factura enviada con éxito!</p>}

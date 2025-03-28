@@ -1,0 +1,22 @@
+{
+    "development": {
+      "url": "postgres://neondb_owner:0MXRGKb2rhVT@ep-weathered-bar-a5iad256-pooler.us-east-2.aws.neon.tech/neondb",
+      "dialect": "postgres",
+      "dialectOptions": {
+        "ssl": {
+          "require": true,
+          "rejectUnauthorized": false
+        }
+      }
+    },
+    "production": {
+      "url": "postgres://neondb_owner:0MXRGKb2rhVT@ep-weathered-bar-a5iad256-pooler.us-east-2.aws.neon.tech/neondb",
+      "dialect": "postgres",
+      "dialectOptions": {
+        "ssl": {
+          "require": true,
+          "rejectUnauthorized": false
+        }
+      }
+    }
+  }

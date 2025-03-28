@@ -124,7 +124,7 @@ const BillingForm = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 bg-gray-900">
-      <OrdenesPendientes />
+      <OrdenesPendientes filterType="facturablesPendientes" />
     </div>
 
       <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">

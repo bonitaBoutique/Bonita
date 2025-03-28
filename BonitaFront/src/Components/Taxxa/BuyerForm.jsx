@@ -22,64 +22,64 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
 
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-  
-    setBuyer((prevBuyer) => {
-      let updatedBuyer = { ...prevBuyer };
-  
-      // Handle address fields separately
-      if (name.startsWith('address.')) {
-        const addressField = name.split('.')[1];
-        updatedBuyer.jcontact.jregistrationaddress = {
-          ...updatedBuyer.jcontact.jregistrationaddress,
-          [addressField]: value
-        };
-        return updatedBuyer;
-      }
-  
-      // Handle other fields
-      if (name in updatedBuyer) {
-        updatedBuyer[name] = value;
-      } else if (name in updatedBuyer.jpartylegalentity) {
-        updatedBuyer.jpartylegalentity[name] = value;
-      } else if (name in updatedBuyer.jcontact) {
-        updatedBuyer.jcontact[name] = value;
-      }
-  
-      // Handle special cases
-      if (name === 'wlegalorganizationtype') {
-        updatedBuyer.sfiscalregime = value === 'company' ? '48' : '49';
-      }
-  
-      if (name === 'sfiscalresponsibilities') {
-        switch (value) {
-          case 'O1':
-            updatedBuyer.stributaryidentificationkey = '01';
-            updatedBuyer.stributaryidentificationname = 'IVA';
-            break;
-          case 'O4':
-            updatedBuyer.stributaryidentificationkey = '04';
-            updatedBuyer.stributaryidentificationname = 'INC';
-            break;
-          case 'ZA':
-            updatedBuyer.stributaryidentificationkey = 'ZA';
-            updatedBuyer.stributaryidentificationname = 'IVA e INC';
-            break;
-          case 'R-99-PN':
-            updatedBuyer.stributaryidentificationkey = 'ZZ';
-            updatedBuyer.stributaryidentificationname = 'No aplica';
-            break;
-          default:
-            updatedBuyer.stributaryidentificationkey = '';
-            updatedBuyer.stributaryidentificationname = '';
-            break;
-        }
-      }
-  
-      console.log('Updated Buyer:', updatedBuyer);
+  const { name, value } = e.target;
+
+  setBuyer((prevBuyer) => {
+    let updatedBuyer = { ...prevBuyer };
+
+    // Handle address fields separately
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      updatedBuyer.jcontact.jregistrationaddress = {
+        ...updatedBuyer.jcontact.jregistrationaddress,
+        [addressField]: value
+      };
       return updatedBuyer;
-    });
-  };
+    }
+
+    // Handle other fields
+    if (name in updatedBuyer) {
+      updatedBuyer[name] = value;
+    } else if (name in updatedBuyer.jpartylegalentity) {
+      updatedBuyer.jpartylegalentity[name] = value;
+    } else if (name in updatedBuyer.jcontact) {
+      updatedBuyer.jcontact[name] = value;
+    }
+
+    // Handle special cases
+    if (name === 'wlegalorganizationtype') {
+      updatedBuyer.sfiscalregime = value === 'company' ? '48' : '49';
+    }
+
+    if (name === 'sfiscalresponsibilities') {
+      switch (value) {
+        case 'O1':
+          updatedBuyer.stributaryidentificationkey = '01';
+          updatedBuyer.stributaryidentificationname = 'IVA';
+          break;
+        case 'O4':
+          updatedBuyer.stributaryidentificationkey = '04';
+          updatedBuyer.stributaryidentificationname = 'INC';
+          break;
+        case 'ZA':
+          updatedBuyer.stributaryidentificationkey = 'ZA';
+          updatedBuyer.stributaryidentificationname = 'IVA e INC';
+          break;
+        case 'R-99-PN':
+          updatedBuyer.stributaryidentificationkey = 'ZZ';
+          updatedBuyer.stributaryidentificationname = 'No aplica';
+          break;
+        default:
+          updatedBuyer.stributaryidentificationkey = '';
+          updatedBuyer.stributaryidentificationname = '';
+          break;
+      }
+    }
+
+    console.log('Updated Buyer:', updatedBuyer);
+    return updatedBuyer;
+  });
+};
 
   return (
     <>

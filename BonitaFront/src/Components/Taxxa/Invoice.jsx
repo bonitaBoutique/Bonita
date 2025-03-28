@@ -104,17 +104,26 @@ const Invoice = () => {
       let totalTaxAmount = 0;
       let totalAmount = 0;
   
-      const productsData = order.products.map(product => {
+      // Cantidad total a repartir entre productos
+      let remainingQuantity = order.quantity;
+  
+      const productsData = order.products.map((product, index) => {
         // Calcular el precio unitario sin IVA y el IVA por unidad
-        const priceWithoutTax = parseFloat((product.priceSell / 1.19).toFixed(2));
-        const taxAmount = parseFloat((product.priceSell - priceWithoutTax).toFixed(2));
-        
-        // La cantidad por producto es la cantidad total dividida entre el número de productos
-        const quantityPerProduct = Math.floor(order.quantity / order.products.length);
-        
-        // Calcular totales para este producto específico
-        const productTotalWithoutTax = priceWithoutTax * quantityPerProduct;
-        const productTotalTax = taxAmount * quantityPerProduct;
+        const priceWithoutTax = product.priceSell / 1.19;
+        const taxAmount = product.priceSell - priceWithoutTax;
+  
+        // Redondeo final para evitar errores de precisión
+        const formattedPriceWithoutTax = parseFloat(priceWithoutTax.toFixed(2));
+        const formattedTaxAmount = parseFloat(taxAmount.toFixed(2));
+  
+        // Cantidad proporcional por producto
+        const isLastProduct = index === order.products.length - 1;
+        const quantityPerProduct = isLastProduct ? remainingQuantity : Math.floor(order.quantity / order.products.length);
+        remainingQuantity -= quantityPerProduct;
+  
+        // Calcular totales por producto
+        const productTotalWithoutTax = formattedPriceWithoutTax * quantityPerProduct;
+        const productTotalTax = formattedTaxAmount * quantityPerProduct;
         const productTotal = product.priceSell * quantityPerProduct;
   
         // Acumular totales
@@ -130,9 +139,9 @@ const Invoice = () => {
           wunitcode: "und",
           sstandarditemidentification: product.codigoBarra,
           sstandardidentificationcode: "999",
-          nunitprice: priceWithoutTax,
+          nunitprice: formattedPriceWithoutTax,
           nusertotal: parseFloat(productTotalWithoutTax.toFixed(2)),
-          nquantity: quantityPerProduct, // Usar la cantidad por producto
+          nquantity: quantityPerProduct, // Cantidad calculada por producto
           jtax: {
             jiva: {
               nrate: 19,
@@ -144,6 +153,7 @@ const Invoice = () => {
         };
       });
   
+      // Actualizar estado con los valores calculados
       setJDocumentData(prevJDocumentData => ({
         ...prevJDocumentData,
         nlineextensionamount: parseFloat(totalAmountWithoutTax.toFixed(2)),
@@ -153,7 +163,7 @@ const Invoice = () => {
         jextrainfo: {
           ntotalinvoicepayment: parseFloat(totalAmount.toFixed(2)),
           stotalinvoicewords: numeroALetrasConDecimales(totalAmount),
-          iitemscount: order.products.length.toString(), // Número total de productos diferentes
+          iitemscount: order.products.length.toString(), // Número total de productos
         },
         jdocumentitems: productsData,
       }));

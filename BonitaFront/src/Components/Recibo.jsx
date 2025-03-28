@@ -41,7 +41,12 @@ const Recibo = () => {
 
   const resetForm = () => {
     setFormData(initialFormState);
-    setPayMethod("Efectivo");
+    setPayMethod("");
+    setBuyerName("");
+    setBuyerEmail("");
+    setBuyerPhone("");
+    setTotalAmount("");
+    setDate("");
   };
 
   useEffect(() => {

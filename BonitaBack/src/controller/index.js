@@ -28,6 +28,7 @@ const { getAllReservations, updateReservation, reservationByDocument, applyingPa
 const { createInvoice } = require("./Taxxa/TaxxaService");
 const  {postInvoice}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
+const {getLastInvoiceNumber} = require("./invoiceControllers.js");
 
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
@@ -85,6 +86,7 @@ module.exports = {
   createInvoice: catchedAsync(createInvoice),
   postInvoice: catchedAsync(postInvoice),
   getInvoiceByStatus: catchedAsync(getInvoiceByStatus),
+  getLastInvoiceNumber: catchedAsync(getLastInvoiceNumber)
 
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

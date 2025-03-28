@@ -23,16 +23,21 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+  
     setBuyer((prevBuyer) => {
       let updatedBuyer = { ...prevBuyer };
-if (name.startsWith('address.')) {
-      const addressField = name.split('.')[1];
-      updatedBuyer.jcontact.jregistrationaddress = {
-        ...updatedBuyer.jcontact.jregistrationaddress,
-        [addressField]: value
-      };
-      // Condicionales para actualizar campos específicos en la estructura
+  
+      // Handle address fields separately
+      if (name.startsWith('address.')) {
+        const addressField = name.split('.')[1];
+        updatedBuyer.jcontact.jregistrationaddress = {
+          ...updatedBuyer.jcontact.jregistrationaddress,
+          [addressField]: value
+        };
+        return updatedBuyer;
+      }
+  
+      // Handle other fields
       if (name in updatedBuyer) {
         updatedBuyer[name] = value;
       } else if (name in updatedBuyer.jpartylegalentity) {
@@ -40,13 +45,12 @@ if (name.startsWith('address.')) {
       } else if (name in updatedBuyer.jcontact) {
         updatedBuyer.jcontact[name] = value;
       }
-
-      // Actualiza `sfiscalregime` basado en `wlegalorganizationtype`
+  
+      // Handle special cases
       if (name === 'wlegalorganizationtype') {
         updatedBuyer.sfiscalregime = value === 'company' ? '48' : '49';
       }
-
-      // Condicional para `sfiscalresponsibilities`
+  
       if (name === 'sfiscalresponsibilities') {
         switch (value) {
           case 'O1':
@@ -71,9 +75,8 @@ if (name.startsWith('address.')) {
             break;
         }
       }
-
-      console.log('Updated Buyer:', updatedBuyer); // Imprimir el objeto actualizado para depuración
-
+  
+      console.log('Updated Buyer:', updatedBuyer);
       return updatedBuyer;
     });
   };

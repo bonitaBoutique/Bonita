@@ -8,16 +8,21 @@ require('dotenv').config();
 
 // Syncing all the models at once.
 conn.sync({ alter: false }).then(async () => {
-  // Ejecutar migraciones
   const umzug = new Umzug({
     migrations: {
-      path: path.join(__dirname, './migrations'),
-      pattern: /\.js$/,
-      params: [conn.getQueryInterface(), Sequelize]
+      glob: 'migrations/*.js', // Changed from pattern to glob
+      resolve: ({ name, path, context }) => {
+        const migration = require(path);
+        return {
+          name,
+          up: async () => migration.up(context, Sequelize),
+          down: async () => migration.down(context, Sequelize),
+        };
+      },
     },
-    storage: new SequelizeStorage({ sequelize: conn }),
     context: conn.getQueryInterface(),
-    logger: console
+    storage: new SequelizeStorage({ sequelize: conn }),
+    logger: console,
   });
 
   try {

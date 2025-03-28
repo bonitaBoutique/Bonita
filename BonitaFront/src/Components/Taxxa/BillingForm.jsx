@@ -78,12 +78,14 @@ const BillingForm = () => {
         saddressline1,
         szip
       } = userTaxxa.userInfo;
-
-
+  
       setBuyer((prevBuyer) => ({
         ...prevBuyer,
         wlegalorganizationtype: wlegalorganizationtype || "person",
-        scostumername: scostumername || `${first_name} ${last_name}`.trim() || "Consumidor Final",
+        scostumername:
+          scostumername ||
+          `${first_name} ${last_name}`.trim() ||
+          "Consumidor Final",
         stributaryidentificationkey: stributaryidentificationkey || "01",
         stributaryidentificationname: "IVA",
         sfiscalresponsibilities: sfiscalresponsibilities || "R-99-PN",
@@ -99,11 +101,11 @@ const BillingForm = () => {
           stelephone: phone || "",
           jregistrationaddress: {
             scountrycode: "CO",
-            wdepartmentcode: wdepartmentcode || "",
-            wtowncode: wtowncode || "",
-            scityname: scityname || "",
-            saddressline1: saddressline1 || "",
-            szip: szip || ""
+            wdepartmentcode: wdepartmentcode || "50",
+            wtowncode: wtowncode || "50226",
+            scityname: scityname || "Cumaral",
+            saddressline1: saddressline1 || "12 # 17 -57",
+            szip: szip || "501021"
           }
         }
       }));

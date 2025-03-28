@@ -1,13 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const BuyerForm = ({ jbuyer, setBuyer }) => {
+  useEffect(() => {
+    setBuyer(prevBuyer => ({
+      ...prevBuyer,
+      jcontact: {
+        ...prevBuyer.jcontact,
+        jregistrationaddress: {
+          ...prevBuyer.jcontact.jregistrationaddress,
+          scountrycode: "CO",
+          wdepartmentcode: "50",
+          wtowncode: "50226",
+          scityname: "Cumaral",
+          saddressline1: "12 # 17 -57",
+          szip: "501021"
+        }
+      }
+    }));
+  }, []);
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     setBuyer((prevBuyer) => {
       let updatedBuyer = { ...prevBuyer };
-
+if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      updatedBuyer.jcontact.jregistrationaddress = {
+        ...updatedBuyer.jcontact.jregistrationaddress,
+        [addressField]: value
+      };
       // Condicionales para actualizar campos específicos en la estructura
       if (name in updatedBuyer) {
         updatedBuyer[name] = value;
@@ -126,6 +150,14 @@ BuyerForm.propTypes = {
       scontactperson: PropTypes.string,
       selectronicmail: PropTypes.string,
       stelephone: PropTypes.string,
+      jregistrationaddress: PropTypes.shape({
+        scountrycode: PropTypes.string,
+        wdepartmentcode: PropTypes.string,
+        wtowncode: PropTypes.string,
+        scityname: PropTypes.string,
+        saddressline1: PropTypes.string,
+        szip: PropTypes.string
+      })
     }),
   }).isRequired,
   setBuyer: PropTypes.func.isRequired,

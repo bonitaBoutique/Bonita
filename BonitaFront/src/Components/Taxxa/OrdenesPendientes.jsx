@@ -98,36 +98,34 @@ const OrdenesPendientes = ({ filterType }) => {
     );
   }
   if (!orders || orders.length === 0) {
-    console.log("No hay órdenes disponibles para filtrar.");
+  
     return <p className="text-center mt-4">No hay órdenes disponibles.</p>;
   }
   
   console.log("Verificando datos de las órdenes:");
   orders.forEach((order) => {
-    console.log(`ID: ${order.id}, isFacturable: ${order.isFacturable}, status: ${order.status}`);
+   
   });
   
   let filteredOrders = []; // Inicialmente vacío
 
   if (filterType === "facturablesPendientes") {
-    console.log("Filtrando órdenes con 'facturablesPendientes'...");
+   
     filteredOrders = orders.filter((order) => {
       const isFacturable = order.isFacturable === true; // Verifica explícitamente que sea true
       const isStatusPendiente = order.status.trim().toLowerCase() === "pendiente"; // Normaliza el status
   
-      console.log(
-        `Evaluando orden: ID=${order.id}, isFacturable=${isFacturable}, isStatusPendiente=${isStatusPendiente}`
-      );
+      
   
       return isFacturable && isStatusPendiente;
     });
   } else {
     // Si no hay filtro, renderiza todas las órdenes
-    console.log("No se aplicó ningún filtro. Mostrando todas las órdenes.");
+   
     filteredOrders = orders;
   }
   
-  console.log("Órdenes filtradas:", filteredOrders);
+ 
 
   // const facturableOrders = orders.filter(
   //   (order) => order.isFacturable && order.status === "pendiente"

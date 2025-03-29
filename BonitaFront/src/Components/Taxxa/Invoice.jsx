@@ -74,7 +74,7 @@ const Invoice = () => {
     const fetchLastInvoiceNumber = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/invoice/lastInvoiceNumber`
+          `${BASE_URL}/invoice/lastNumber`
         );
 
         if (response.data.success) {

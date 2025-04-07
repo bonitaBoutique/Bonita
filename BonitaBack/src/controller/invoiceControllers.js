@@ -79,16 +79,16 @@ const getLastInvoiceNumber = async (req, res) => {
       attributes: ['invoiceNumber'] // Solo necesitamos este campo
     });
 
-    // Si no hay facturas, comenzar desde 2
+    // Si no hay facturas, comenzar desde 3
     if (!lastInvoice) {
       return res.status(200).json({ 
         success: true,
-        nextInvoiceNumber: "3"
+        nextInvoiceNumber: "4"
       });
     }
 
     // Si hay factura previa, convertir a número y sumar 1
-    const currentNumber = parseInt(lastInvoice.invoiceNumber.replace('FVB', '') || "1");
+    const currentNumber = parseInt(lastInvoice.invoiceNumber || "2");
     const nextNumber = (currentNumber + 1).toString();
 
     return res.status(200).json({ 

@@ -74,7 +74,7 @@ const Invoice = () => {
     const fetchLastInvoiceNumber = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/invoice/lastInvoiceNumber`
+          `${BASE_URL}/invoice/lastNumber`
         );
 
         if (response.data.success) {
@@ -89,14 +89,14 @@ const Invoice = () => {
           // Use 2 as default number
           setJDocumentData((prev) => ({
             ...prev,
-            sdocumentsuffix: 2,
+            sdocumentsuffix: 5,
           }));
         }
       } catch (error) {
         console.error("Error obteniendo número de factura:", error);
         setJDocumentData((prev) => ({
           ...prev,
-          sdocumentsuffix: 2,
+          sdocumentsuffix: 5,
         }));
       }
     };

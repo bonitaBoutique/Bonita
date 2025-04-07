@@ -29,7 +29,7 @@ const { createInvoice } = require("./Taxxa/TaxxaService");
 const  {postInvoice}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const {getLastInvoiceNumber} = require("./invoiceControllers.js");
-
+const {getAllInvoices} = require("./invoiceControllers.js");
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
   createCategory: catchedAsync(require("./Category/createCategory")),
@@ -85,6 +85,7 @@ module.exports = {
   applyingPayments: catchedAsync(applyingPayments),
   createInvoice: catchedAsync(createInvoice),
   postInvoice: catchedAsync(postInvoice),
+  getAllInvoices: catchedAsync(getAllInvoices),
   getInvoiceByStatus: catchedAsync(getInvoiceByStatus),
   getLastInvoiceNumber: catchedAsync(getLastInvoiceNumber)
 

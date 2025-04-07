@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require('../controller/invoiceControllers');
 //const taxxaController = require('../controller/Taxxa/TaxxaService');
 
+router.get('/:status', controller.getInvoicesByStatus);
 // Rutas específicas primero
 router.get('/lastNumber', controller.getLastInvoiceNumber);
 

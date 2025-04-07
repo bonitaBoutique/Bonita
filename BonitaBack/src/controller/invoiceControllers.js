@@ -106,8 +106,29 @@ const getLastInvoiceNumber = async (req, res) => {
   }
 };
 
+const getAllInvoices = async (req, res) => {
+  try {
+    // Recuperar todas las facturas de la base de datos
+    const invoices = await Invoice.findAll();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Facturas recuperadas con éxito',
+      invoices,
+    });
+  } catch (error) {
+    console.error('Error al recuperar las facturas:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al recuperar las facturas',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   postInvoice,
   getInvoicesByStatus, 
-  getLastInvoiceNumber
+  getLastInvoiceNumber,
+  getAllInvoices,
 };

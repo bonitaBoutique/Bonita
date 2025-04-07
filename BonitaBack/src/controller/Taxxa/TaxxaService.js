@@ -156,37 +156,48 @@ const createInvoice = async (req, res) => {
     console.log('Respuesta de Taxxa:', JSON.stringify(taxxaResponse, null, 2));
 
     // 12. Procesar respuesta
-    if (taxxaResponse && taxxaResponse.rerror === 0) {
-      console.log('=== Actualizando estado de la orden ===');
-      await orderDetail.update({ status: 'facturada' });
+// 12. Procesar respuesta
+if (taxxaResponse && taxxaResponse.rerror === 0) {
+  console.log('=== Actualizando estado de la orden ===');
+  await orderDetail.update({ status: 'facturada' });
 
-      return res.status(200).json({
-        message: 'Factura creada y enviada con éxito',
-        success: true,
-        response: taxxaResponse,
-        orderReference: id_orderDetail
-      });
-    }
+  console.log('=== Guardando factura en la base de datos ===');
+  const newInvoice = await Invoice.create({
+    buyerId: userData.n_document,
+    sellerId: sellerData.sdocno,
+    invoiceNumber: `${invoiceData.sdocumentprefix}${invoiceData.sdocumentsuffix}`,
+    status: 'sent',
+    totalAmount: invoiceData.npayableamount,
+    taxxaResponse: taxxaResponse,
+    taxxaId: taxxaResponse.jApiResponse?.taxxaId || null,
+    cufe: taxxaResponse.jApiResponse?.cufe || null,
+    qrCode: taxxaResponse.jApiResponse?.qrCode || null,
+    orderReference: id_orderDetail
+  });
 
-    throw new Error(`Error en la respuesta de Taxxa: ${JSON.stringify(taxxaResponse)}`);
+  console.log('Factura guardada:', newInvoice);
 
-  } catch (error) {
-    console.error('=== Error en el proceso de facturación ===');
-    console.error('Error:', error.message);
-    console.error('Stack:', error.stack);
+  return res.status(200).json({
+    message: 'Factura creada y enviada con éxito',
+    success: true,
+    response: taxxaResponse,
+    invoice: newInvoice,
+    orderReference: id_orderDetail
+  });
+}
 
-    if (error.response) {
-      console.error('Response data:', JSON.stringify(error.response.data, null, 2));
-      console.error('Response status:', error.response.status);
-    }
+throw new Error(`Error en la respuesta de Taxxa: ${JSON.stringify(taxxaResponse)}`);
+} catch (error) {
+console.error('=== Error en el proceso de facturación ===');
+console.error('Error:', error.message);
+console.error('Stack:', error.stack);
 
-    return res.status(500).json({
-      message: 'Error al procesar la factura',
-      success: false,
-      error: error.message,
-      details: error.response?.data
-    });
-  }
+return res.status(500).json({
+  message: 'Error al procesar la factura',
+  success: false,
+  error: error.message
+});
+}
 };
 
 module.exports = {

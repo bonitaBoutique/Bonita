@@ -1,57 +1,6 @@
 const { Invoice } = require('../data'); // Importa el modelo Invoice
 
-const postInvoice = async (req, res) => {
-  try {
-    const { 
-      buyerId, 
-      sellerId, 
-      invoiceNumber, 
-      totalAmount, 
-      response: taxxaResponse, // From Taxxa API
-      orderReference 
-    } = req.body;
 
-    // Validate required fields
-    if (!buyerId || !sellerId || !invoiceNumber || !totalAmount) {
-      return response(res, 400, {
-        success: false,
-        message: 'Faltan campos requeridos'
-      });
-    }
-
-    // Extract important fields from Taxxa response
-    const taxxaId = taxxaResponse?.jret?.rtaxxadocument;
-    const cufe = taxxaResponse?.jret?.scufe;
-    const qrCode = taxxaResponse?.jret?.sqr;
-
-    // Create invoice record
-    const invoice = await Invoice.create({
-      buyerId,
-      sellerId,
-      invoiceNumber,
-      totalAmount: parseFloat(totalAmount),
-      taxxaResponse,
-      taxxaId,
-      status: taxxaResponse?.jret?.yapprovedbytaxoffice === 'Y' ? 'sent' : 'pending',
-      orderReference,
-      cufe,
-      qrCode
-    });
-
-    return response(res, 201, {
-      success: true,
-      message: 'Factura creada con éxito',
-      invoice
-    });
-
-  } catch (error) {
-    console.error('Error al crear la factura:', error);
-    return response(res, 500, {
-      success: false,
-      error: error.message
-    });
-  }
-};
 
 const getInvoicesByStatus = async (req, res) => {
   try {
@@ -127,7 +76,7 @@ const getAllInvoices = async (req, res) => {
 };
 
 module.exports = {
-  postInvoice,
+  
   getInvoicesByStatus, 
   getLastInvoiceNumber,
   getAllInvoices,

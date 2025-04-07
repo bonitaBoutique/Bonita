@@ -73,9 +73,7 @@ const Invoice = () => {
   useEffect(() => {
     const fetchLastInvoiceNumber = async () => {
       try {
-        const response = await axios.get(
-          `${BASE_URL}/invoice/lastNumber`
-        );
+        const response = await axios.get(`${BASE_URL}/invoice/lastNumber`);
 
         if (response.data.success) {
           // Convert string to number

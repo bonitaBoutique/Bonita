@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controller/invoiceControllers');
+//const taxxaController = require('../controller/Taxxa/TaxxaService');
 
-// Specific routes first
+// Rutas específicas primero
 router.get('/lastNumber', controller.getLastInvoiceNumber);
 
-// Dynamic routes last
+// Rutas dinámicas al final
 router.get('/:status', controller.getInvoicesByStatus);
-router.post('/', controller.postInvoice);
+//router.post('/', taxxaController.createInvoice); // Cambia a createInvoice si es necesario
 
-module.exports = router;
+module.exports = router;  

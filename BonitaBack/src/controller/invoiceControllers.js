@@ -83,7 +83,7 @@ const getLastInvoiceNumber = async (req, res) => {
     if (!lastInvoice) {
       return res.status(200).json({ 
         success: true,
-        nextInvoiceNumber: "5"
+        nextInvoiceNumber: "6"
       });
     }
 

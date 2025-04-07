@@ -32,7 +32,7 @@ const getLastInvoiceNumber = async (req, res) => {
     if (!lastInvoice) {
       return res.status(200).json({ 
         success: true,
-        nextInvoiceNumber: "6"
+        nextInvoiceNumber: "7"
       });
     }
 

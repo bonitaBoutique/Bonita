@@ -209,7 +209,7 @@ const Invoice = () => {
       scustomizationid: "10",
       wcurrency: "COP",
       sdocumentprefix: "FVB",
-      sdocumentsuffix: 2,
+      sdocumentsuffix: 4,
       tissuedate: new Date().toISOString(),
       tduedate: new Date().toISOString().split("T")[0],
       wpaymentmeans: 1,

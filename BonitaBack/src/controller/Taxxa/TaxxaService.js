@@ -82,10 +82,10 @@ const createInvoice = async (req, res) => {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {
         wVersionUBL: "2.1",
-        wenvironment: "prod", // Cambiado a prod
+        wenvironment: "test", // Cambiado a prod
         jDocument: {
           wVersionUBL: "2.1",
-          wenvironment: "prod", // Cambiado a prod
+          wenvironment: "test", // Cambiado a prod
           wdocumenttype: invoiceData.wdocumenttype,
           wdocumenttypecode: invoiceData.wdocumenttypecode,
           scustomizationid: invoiceData.scustomizationid,

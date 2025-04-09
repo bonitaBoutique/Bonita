@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchBalance } from '../../Redux/Actions/actions';
-import * as XLSX from 'xlsx';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBalance } from "../../Redux/Actions/actions";
+import * as XLSX from "xlsx";
+import { useNavigate } from "react-router-dom";
 
 const Balance = () => {
   const dispatch = useDispatch();
@@ -16,10 +16,10 @@ const Balance = () => {
     income = { online: [], local: [] },
     expenses = [],
     cashierTotals = {}, // Add cashierTotals to the state
-    loading
-  } = useSelector(state => state);
+    loading,
+  } = useSelector((state) => state);
 
-  console.log('Redux State:', {
+  console.log("Redux State:", {
     balance,
     totalIncome,
     totalOnlineSales,
@@ -27,66 +27,96 @@ const Balance = () => {
     totalExpenses,
     income,
     expenses,
-    cashierTotals
+    cashierTotals,
   });
 
   const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    paymentMethod: '',
-    expenseType: '',
-    cashier: '' // Add cashier filter
+    startDate: "",
+    endDate: "",
+    paymentMethod: "",
+    expenseType: "",
+    cashier: "", // Add cashier filter
   });
 
   useEffect(() => {
+    console.log("Filters applied:", filters);
     dispatch(fetchBalance(filters));
   }, [dispatch, filters]);
 
   const getAllMovements = () => {
+    console.log("Income Online:", income.online);
+    console.log("Income Local:", income.local);
+    console.log("Expenses:", expenses);
+  
+    // Filtrar income.local para excluir duplicados basados en monto y fecha
+    const filteredLocal = income.local.filter((localSale) => {
+      return !income.online.some(
+        (onlineSale) =>
+          onlineSale.amount === localSale.total_amount &&
+          new Date(onlineSale.date).toISOString() ===
+            new Date(localSale.date).toISOString()
+      );
+    });
+  
+    console.log("Filtered Local (Excluding Duplicates):", filteredLocal);
+  
     const movements = [
-      ...(income.online || []).map(sale => ({
+      ...(income.online || []).map((sale) => ({
         ...sale,
-        type: 'Venta Online',
+        type: "Venta Online",
         amount: sale.amount,
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod,
-        pointOfSale: 'Online' // Agregar punto de venta
+        paymentMethod: sale.paymentMethod || "Wompi", // Método de pago para ventas online
+        pointOfSale: "Online",
+        id: sale.id,
       })),
-      ...(income.local || []).map(sale => ({
+      ...(filteredLocal || []).map((sale) => ({
         ...sale,
-        type: 'Venta Local',
+        type: "Venta Local",
         amount: sale.total_amount,
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod,
-        pointOfSale: 'Local' // Agregar punto de venta
+        paymentMethod: sale.payMethod || "Desconocido", // Método de pago para ventas locales
+        pointOfSale: "Local",
+        id: sale.id,
       })),
-      ...(Array.isArray(expenses) ? expenses : []).map(expense => ({
-        ...expense,
+      ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
         ...expense,
         type: `Gasto - ${expense.type}`,
         amount: -expense.amount,
         date: new Date(expense.date),
-        paymentMethod: expense.paymentMethods,
-        pointOfSale: 'Local' // Asumiendo que los gastos son locales
-      }))
+        paymentMethod: expense.paymentMethods || "Desconocido",
+        pointOfSale: "Local",
+        id: expense.id || Math.random().toString(36).substr(2, 9),
+      })),
     ];
   
-    let filteredMovements = movements;
+    console.log("Combined Movements (Before Deduplication):", movements);
+  
+    // Eliminar duplicados usando el campo `id`
+    const uniqueMovements = Array.from(new Set(movements.map((m) => m.id))).map(
+      (id) => movements.find((m) => m.id === id)
+    );
+  
+    console.log("Unique Movements (After Deduplication):", uniqueMovements);
+  
+    let filteredMovements = uniqueMovements;
   
     if (filters.expenseType) {
-      filteredMovements = filteredMovements.filter(movement =>
-        movement.type === `Gasto - ${filters.expenseType}`
+      filteredMovements = filteredMovements.filter(
+        (movement) => movement.type === `Gasto - ${filters.expenseType}`
       );
+      console.log("Filtered by Expense Type:", filteredMovements);
     }
   
     if (filters.pointOfSale) {
-      filteredMovements = filteredMovements.filter(movement =>
-        movement.pointOfSale === filters.pointOfSale
+      filteredMovements = filteredMovements.filter(
+        (movement) => movement.pointOfSale === filters.pointOfSale
       );
+      console.log("Filtered by Point of Sale:", filteredMovements);
     }
   
-    filteredMovements.forEach(movement => {
-      console.log('Movement:', movement);
+    filteredMovements.forEach((movement) => {
+      console.log("Final Movement:", movement);
     });
   
     return filteredMovements.sort((a, b) => b.date - a.date);
@@ -94,31 +124,63 @@ const Balance = () => {
 
   const handleExportExcel = () => {
     const movements = getAllMovements();
-    const ws = XLSX.utils.json_to_sheet(movements.map(m => ({
-      Fecha: m.date.toLocaleDateString(),
-      Tipo: m.type,
-      Descripción: m.description || '-',
-      'Método de Pago': m.paymentMethod,
-      Monto: Math.abs(m.amount).toLocaleString('es-CO', {
-        style: 'currency',
-        currency: 'COP'
-      })
-    })));
+    console.log("Exporting Movements to Excel:", movements);
+
+    const ws = XLSX.utils.json_to_sheet(
+      movements.map((m) => ({
+        Fecha: m.date.toLocaleDateString(),
+        Tipo: m.type,
+        Descripción: m.description || "-",
+        "Método de Pago": m.paymentMethod,
+        Monto: Math.abs(m.amount).toLocaleString("es-CO", {
+          style: "currency",
+          currency: "COP",
+        }),
+      }))
+    );
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Balance');
-    XLSX.writeFile(wb, `balance_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Balance");
+    XLSX.writeFile(
+      wb,
+      `balance_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
   };
 
   // Calcular ingresos por método de pago
-  const ingresosEfectivo = (income.local || []).filter(sale => sale.payMethod === 'Efectivo').reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosTarjeta = (income.local || []).filter(sale => sale.payMethod === 'Tarjeta').reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosNequi = (income.local || []).filter(sale => sale.payMethod === 'Nequi').reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosBancolombia = (income.local || []).filter(sale => sale.payMethod === 'Bancolombia').reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosAddi = (income.local || []).filter(sale => sale.payMethod === 'Addi').reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosSistecredito = (income.local || []).filter(sale => sale.payMethod === 'Sistecredito').reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosEfectivo = (income.local || [])
+    .filter((sale) => sale.payMethod === "Efectivo")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosTarjeta = (income.local || [])
+    .filter((sale) => sale.payMethod === "Tarjeta")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosNequi = (income.local || [])
+    .filter((sale) => sale.payMethod === "Nequi")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosBancolombia = (income.local || [])
+    .filter((sale) => sale.payMethod === "Bancolombia")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosAddi = (income.local || [])
+    .filter((sale) => sale.payMethod === "Addi")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  const ingresosSistecredito = (income.local || [])
+    .filter((sale) => sale.payMethod === "Sistecredito")
+    .reduce((acc, sale) => acc + sale.total_amount, 0);
+
+  console.log("Ingresos por método de pago:", {
+    Efectivo: ingresosEfectivo,
+    Tarjeta: ingresosTarjeta,
+    Nequi: ingresosNequi,
+    Bancolombia: ingresosBancolombia,
+    Addi: ingresosAddi,
+    Sistecredito: ingresosSistecredito,
+  });
+
   // Get unique cashiers for the filter
-  const cashiers = [...new Set((income.local || []).map(sale => sale.cashier_document))];
+  const cashiers = [
+    ...new Set((income.local || []).map((sale) => sale.cashier_document)),
+  ];
+  console.log("Unique Cashiers:", cashiers);
 
   if (loading) return <div>Cargando...</div>;
 
@@ -129,18 +191,22 @@ const Balance = () => {
         <input
           type="date"
           value={filters.startDate}
-          onChange={e => setFilters({ ...filters, startDate: e.target.value })}
+          onChange={(e) =>
+            setFilters({ ...filters, startDate: e.target.value })
+          }
           className="border rounded p-2"
         />
         <input
           type="date"
           value={filters.endDate}
-          onChange={e => setFilters({ ...filters, endDate: e.target.value })}
+          onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
           className="border rounded p-2"
         />
         <select
           value={filters.paymentMethod}
-          onChange={e => setFilters({ ...filters, paymentMethod: e.target.value })}
+          onChange={(e) =>
+            setFilters({ ...filters, paymentMethod: e.target.value })
+          }
           className="border rounded p-2"
         >
           <option value="">Todos los métodos</option>
@@ -150,17 +216,21 @@ const Balance = () => {
           <option value="Bancolombia">Bancolombia</option>
         </select>
         <select
-  value={filters.pointOfSale}
-  onChange={e => setFilters({ ...filters, pointOfSale: e.target.value })}
-  className="border rounded p-2"
->
-  <option value="">Todos los puntos de venta</option>
-  <option value="Local">Local</option>
-  <option value="Online">Online</option>
-</select>
+          value={filters.pointOfSale}
+          onChange={(e) =>
+            setFilters({ ...filters, pointOfSale: e.target.value })
+          }
+          className="border rounded p-2"
+        >
+          <option value="">Todos los puntos de venta</option>
+          <option value="Local">Local</option>
+          <option value="Online">Online</option>
+        </select>
         <select
           value={filters.expenseType}
-          onChange={e => setFilters({ ...filters, expenseType: e.target.value })}
+          onChange={(e) =>
+            setFilters({ ...filters, expenseType: e.target.value })
+          }
           className="border rounded p-2"
         >
           <option value="">Todos los tipos de gasto</option>
@@ -173,12 +243,14 @@ const Balance = () => {
         {/* Cashier Filter */}
         <select
           value={filters.cashier}
-          onChange={e => setFilters({ ...filters, cashier: e.target.value })}
+          onChange={(e) => setFilters({ ...filters, cashier: e.target.value })}
           className="border rounded p-2"
         >
           <option value="">Todos los cajeros</option>
-          {cashiers.map(cashier => (
-            <option key={cashier} value={cashier}>{cashier}</option>
+          {cashiers.map((cashier) => (
+            <option key={cashier} value={cashier}>
+              {cashier}
+            </option>
           ))}
         </select>
       </div>
@@ -193,7 +265,7 @@ const Balance = () => {
           <h3 className="text-lg font-semibold">Tarjeta</h3>
           <p className="text-2xl">${ingresosTarjeta}</p>
         </div>
-        
+
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-semibold">Nequi</h3>
           <p className="text-2xl">${ingresosNequi}</p>
@@ -202,7 +274,7 @@ const Balance = () => {
           <h3 className="text-lg font-semibold">Bancolombia</h3>
           <p className="text-2xl">${ingresosBancolombia}</p>
         </div>
-        
+
         <div className="bg-green-50 p-4 rounded">
           <h3 className="text-lg font-semibold">Addi</h3>
           <p className="text-2xl">${ingresosAddi}</p>
@@ -246,7 +318,9 @@ const Balance = () => {
         <h2 className="text-xl font-semibold mb-2">Ventas por Cajero</h2>
         <div className="grid grid-cols-3 gap-4">
           {Object.entries(cashierTotals)
-            .filter(([cashier]) => !filters.cashier || cashier === filters.cashier) // Apply cashier filter
+            .filter(
+              ([cashier]) => !filters.cashier || cashier === filters.cashier
+            ) // Apply cashier filter
             .map(([cashier, total]) => (
               <div key={cashier} className="bg-yellow-50 p-4 rounded">
                 <h3 className="text-lg font-semibold">{cashier}</h3>
@@ -261,21 +335,44 @@ const Balance = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fecha
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Descripción
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Método
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Monto
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {getAllMovements().map((movement, index) => (
-              <tr key={index} className={movement.amount < 0 ? 'bg-red-50' : 'bg-green-50'}>
-                <td className="px-6 py-4 whitespace-nowrap">{movement.date.toLocaleDateString()}</td>
+              <tr
+                key={index}
+                className={movement.amount < 0 ? "bg-red-50" : "bg-green-50"}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {movement.date.toLocaleDateString()}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">{movement.type}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{movement.description || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{movement.paymentMethod || 'Wompi'}</td>
-                <td className={`px-6 py-4 whitespace-nowrap font-semibold ${movement.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {movement.description || "-"}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {movement.paymentMethod || "Wompi"}
+                </td>
+                <td
+                  className={`px-6 py-4 whitespace-nowrap font-semibold ${
+                    movement.amount < 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
                   ${Math.abs(movement.amount)}
                 </td>
               </tr>

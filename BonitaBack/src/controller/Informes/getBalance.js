@@ -11,12 +11,11 @@ const getBalance = async (req, res) => {
       }
     };
 
-    // Get online sales
+    // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {
         ...dateFilter,
-       
-        
+        ...(pointOfSale && { pointOfSale }) // Filtrar por punto de venta si se proporciona
       },
       attributes: [
         'id_orderDetail',
@@ -27,26 +26,26 @@ const getBalance = async (req, res) => {
       ]
     });
 
-    // Get local sales from receipts
+    // Obtener ventas locales desde recibos
     const localSales = await Receipt.findAll({
       where: {
         ...dateFilter,
-        ...(paymentMethod && { payMethod: paymentMethod })
+        ...(paymentMethod && { payMethod: paymentMethod }) // Filtrar por método de pago si se proporciona
       },
       attributes: [
         'id_receipt',
         'date',
         'total_amount',
         'payMethod',
-        'cashier_document' // Use cashier_document instead of cashier
+        'cashier_document' // Documento del cajero
       ]
     });
 
-    // Get expenses
+    // Obtener gastos
     const expenses = await Expense.findAll({
       where: {
         ...dateFilter,
-        ...(paymentMethod && { paymentMethods: paymentMethod })
+        ...(paymentMethod && { paymentMethods: paymentMethod }) // Filtrar por método de pago si se proporciona
       },
       attributes: [
         'id',
@@ -58,20 +57,47 @@ const getBalance = async (req, res) => {
       ]
     });
 
-    // Calculate totals
-    const totalOnlineSales = onlineSales.reduce((sum, sale) => sum + sale.amount, 0);
-    const totalLocalSales = localSales.reduce((sum, sale) => sum + sale.total_amount, 0);
+    // Formatear ventas online
+    const formattedOnlineSales = onlineSales.map(sale => ({
+      id: sale.id_orderDetail,
+      date: sale.date,
+      amount: sale.amount,
+      pointOfSale: 'Online', // Forzar el valor a "Online"
+      transactionStatus: sale.transaction_status,
+      paymentMethod: 'Wompi' // Asignar Wompi como método de pago
+    }));
+
+    // Formatear ventas locales
+    const formattedLocalSales = localSales.map(sale => ({
+      id: sale.id_receipt,
+      date: sale.date,
+      amount: sale.total_amount,
+      pointOfSale: 'Local',
+      paymentMethod: sale.payMethod || 'Desconocido', // Usar método de pago o valor predeterminado
+      cashierDocument: sale.cashier_document
+    }));
+
+    // Calcular totales
+    const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
+    const totalLocalSales = formattedLocalSales.reduce((sum, sale) => sum + sale.amount, 0);
     const totalIncome = totalOnlineSales + totalLocalSales;
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
-    // Calculate cashier-wise totals
-    const cashierTotals = localSales.reduce((acc, sale) => {
-      const cashier = sale.cashier_document || 'Unknown'; // Use cashier_document
-      acc[cashier] = (acc[cashier] || 0) + sale.total_amount;
+    // Calcular totales por cajero
+    const cashierTotals = formattedLocalSales.reduce((acc, sale) => {
+      const cashier = sale.cashierDocument || 'Unknown'; // Usar documento del cajero
+      acc[cashier] = (acc[cashier] || 0) + sale.amount;
       return acc;
     }, {});
 
+    // Logs para depuración
+    console.log('Ventas Online:', formattedOnlineSales);
+    console.log('Ventas Locales:', formattedLocalSales);
+    console.log('Gastos:', expenses);
+    console.log('Balance:', balance);
+
+    // Respuesta al frontend
     return res.status(200).json({
       balance,
       totalIncome,
@@ -79,15 +105,15 @@ const getBalance = async (req, res) => {
       totalLocalSales,
       totalExpenses,
       income: {
-        online: onlineSales,
-        local: localSales
+        online: formattedOnlineSales,
+        local: formattedLocalSales
       },
       expenses,
-      cashierTotals // Send cashier totals to the frontend
+      cashierTotals // Totales por cajero
     });
 
   } catch (error) {
-    console.error("Error in getBalance:", error);
+    console.error("Error en getBalance:", error);
     return res.status(500).json({ error: error.message });
   }
 };

@@ -87,14 +87,14 @@ const Invoice = () => {
           // Use 2 as default number
           setJDocumentData((prev) => ({
             ...prev,
-            sdocumentsuffix: 2,
+            sdocumentsuffix: 5,
           }));
         }
       } catch (error) {
         console.error("Error obteniendo número de factura:", error);
         setJDocumentData((prev) => ({
           ...prev,
-          sdocumentsuffix: 2,
+          sdocumentsuffix: 5,
         }));
       }
     };

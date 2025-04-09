@@ -1061,21 +1061,19 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     try {
       dispatch({ type: FETCH_BALANCE_REQUEST });
   
-      const { startDate, endDate, paymentMethod, pointOfSale } = filters;
-      const queryParams = new URLSearchParams({
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(paymentMethod && { paymentMethod }),
-        ...(pointOfSale && { pointOfSale })
-      }).toString();
+      // Construir los parámetros de consulta
+      const queryParams = new URLSearchParams(filters).toString();
   
+      // Realizar la solicitud a la API
       const { data } = await axios.get(`${BASE_URL}/balance?${queryParams}`);
-      
+  
+      // Despachar la acción de éxito con los datos recibidos
       dispatch({ 
         type: FETCH_BALANCE_SUCCESS, 
         payload: data 
       });
     } catch (error) {
+      // Manejar errores y despachar la acción de error
       dispatch({ 
         type: FETCH_BALANCE_FAILURE, 
         payload: error.message 

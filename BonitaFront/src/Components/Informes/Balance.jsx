@@ -48,18 +48,7 @@ const Balance = () => {
     console.log("Income Local:", income.local);
     console.log("Expenses:", expenses);
   
-    // Filtrar income.local para excluir duplicados basados en monto y fecha
-    const filteredLocal = income.local.filter((localSale) => {
-      return !income.online.some(
-        (onlineSale) =>
-          onlineSale.amount === localSale.total_amount &&
-          new Date(onlineSale.date).toISOString() ===
-            new Date(localSale.date).toISOString()
-      );
-    });
-  
-    console.log("Filtered Local (Excluding Duplicates):", filteredLocal);
-  
+    // Combinar todos los movimientos
     const movements = [
       ...(income.online || []).map((sale) => ({
         ...sale,
@@ -70,12 +59,12 @@ const Balance = () => {
         pointOfSale: "Online",
         id: sale.id,
       })),
-      ...(filteredLocal || []).map((sale) => ({
+      ...(income.local || []).map((sale) => ({
         ...sale,
         type: "Venta Local",
-        amount: sale.total_amount,
+        amount: sale.amount || 0, // Asegurarse de que el monto sea válido
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod || "Desconocido", // Método de pago para ventas locales
+        paymentMethod: sale.paymentMethod || "Desconocido", // Método de pago para ventas locales
         pointOfSale: "Local",
         id: sale.id,
       })),
@@ -90,16 +79,10 @@ const Balance = () => {
       })),
     ];
   
-    console.log("Combined Movements (Before Deduplication):", movements);
+    console.log("Combined Movements:", movements);
   
-    // Eliminar duplicados usando el campo `id`
-    const uniqueMovements = Array.from(new Set(movements.map((m) => m.id))).map(
-      (id) => movements.find((m) => m.id === id)
-    );
-  
-    console.log("Unique Movements (After Deduplication):", uniqueMovements);
-  
-    let filteredMovements = uniqueMovements;
+    // Filtrar por filtros seleccionados
+    let filteredMovements = movements;
   
     if (filters.expenseType) {
       filteredMovements = filteredMovements.filter(

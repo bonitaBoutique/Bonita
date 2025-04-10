@@ -10,6 +10,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     n_document: '',
+    wdoctype: '',
+    phone: '',
     first_name: '',
     last_name: '',
     email: '',
@@ -124,6 +126,27 @@ const Register = () => {
             required
           />
         </div>
+        <div className="mb-4">
+        <label>
+        Tipo de Documento:
+        <select name="wdoctype" value={formData.wdoctype} onChange={handleChange}>
+          <option value="">Selecciona un tipo de documento</option>
+          <option value="RC">Registro civil</option>
+          <option value="TI">Tarjeta de identidad</option>
+          <option value="CC">Cédula de ciudadanía</option>
+          <option value="TE">Tarjeta de extranjería</option>
+          <option value="CE">Cédula de extranjería</option>
+          <option value="NIT">NIT</option>
+          <option value="PAS">Pasaporte</option>
+          <option value="DEX">Documento de identificación extranjero</option>
+          <option value="PEP">PEP (Permiso Especial de Permanencia)</option>
+          <option value="PPT">PPT (Permiso Protección Temporal)</option>
+          <option value="FI">NIT de otro país</option>
+          <option value="NUIP">NUIP</option>
+        </select>
+      </label>
+        </div>
+
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">
@@ -133,6 +156,19 @@ const Register = () => {
             type="text"
             name="n_document"
             value={formData.n_document}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Telefono
+          </label>
+          <input
+            type="text"
+            name="phone"
+            value={formData.phone}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required

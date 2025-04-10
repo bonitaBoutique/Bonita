@@ -1,66 +1,137 @@
-const { OrderDetail, Receipt, Expense, Payment } = require("../../data");
+const { OrderDetail, Receipt, Expense } = require("../../data");
 const { Op } = require("sequelize");
 
-const getAllMovements = () => {
-  console.log("Income Online:", income.online);
-  console.log("Income Local:", income.local);
-  console.log("Expenses:", expenses);
+const getBalance = async (req, res) => {
+  try {
+    const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
 
-  // Combinar todos los movimientos
-  const movements = [
-    ...(income.online || []).map((sale) => ({
-      ...sale,
-      type: "Venta Online",
+    const dateFilter = {
+      date: {
+        [Op.between]: [startDate || '2000-01-01', endDate || new Date()]
+      }
+    };
+
+    console.log("Filtros recibidos:", { startDate, endDate, paymentMethod, pointOfSale });
+
+    // Obtener ventas online
+    const onlineSales = await OrderDetail.findAll({
+      where: {
+        ...dateFilter,
+        pointOfSale: 'Online' // Asegurarse de que solo se incluyan ventas online
+      },
+      attributes: [
+        'id_orderDetail',
+        'date',
+        'amount',
+        'pointOfSale',
+        'transaction_status'
+      ]
+    });
+
+    console.log("Ventas Online desde OrderDetail:", onlineSales);
+
+    // Obtener ventas locales exclusivamente de Receipt
+    const localSales = await Receipt.findAll({
+      where: {
+        ...dateFilter,
+        ...(paymentMethod && { payMethod: paymentMethod }) // Filtrar por método de pago si se proporciona
+      },
+      attributes: [
+        'id_receipt',
+        'date',
+        'total_amount',
+        'payMethod',
+        'cashier_document' // Documento del cajero
+      ]
+    });
+
+    console.log("Ventas Locales desde Receipt:", localSales);
+
+    // Obtener gastos
+    const expenses = await Expense.findAll({
+      where: {
+        ...dateFilter,
+        ...(paymentMethod && { paymentMethods: paymentMethod }) // Filtrar por método de pago si se proporciona
+      },
+      attributes: [
+        'id',
+        'date',
+        'amount',
+        'type',
+        'paymentMethods',
+        'description'
+      ]
+    });
+
+    console.log("Gastos obtenidos:", expenses);
+
+    // Formatear ventas online
+    const formattedOnlineSales = onlineSales.map(sale => ({
+      id: sale.id_orderDetail,
+      date: sale.date,
       amount: sale.amount,
-      date: new Date(sale.date),
-      paymentMethod: sale.paymentMethod || "Wompi", // Método de pago para ventas online
-      pointOfSale: "Online",
-      id: sale.id,
-    })),
-    ...(income.local || []).map((sale) => ({
-      ...sale,
-      type: "Venta Local",
-      amount: sale.amount || 0, // Asegurarse de que el monto sea válido
-      date: new Date(sale.date),
-      paymentMethod: sale.paymentMethod || "Desconocido", // Método de pago para ventas locales
-      pointOfSale: "Local",
-      id: sale.id,
-    })),
-    ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
-      ...expense,
-      type: `Gasto - ${expense.type}`,
-      amount: -expense.amount,
-      date: new Date(expense.date),
-      paymentMethod: expense.paymentMethods || "Desconocido",
-      pointOfSale: "Local",
-      id: expense.id || Math.random().toString(36).substr(2, 9),
-    })),
-  ];
+      pointOfSale: 'Online',
+      transactionStatus: sale.transaction_status,
+      paymentMethod: 'Wompi'
+    }));
 
-  console.log("Combined Movements:", movements);
+    console.log("Ventas Online formateadas:", formattedOnlineSales);
 
-  // Filtrar por filtros seleccionados
-  let filteredMovements = movements;
+    // Formatear ventas locales
+    const formattedLocalSales = localSales.map(sale => ({
+      id: sale.id_receipt,
+      date: sale.date,
+      amount: sale.total_amount,
+      pointOfSale: 'Local',
+      paymentMethod: sale.payMethod || 'Desconocido',
+      cashierDocument: sale.cashier_document
+    }));
 
-  if (filters.expenseType) {
-    filteredMovements = filteredMovements.filter(
-      (movement) => movement.type === `Gasto - ${filters.expenseType}`
-    );
-    console.log("Filtered by Expense Type:", filteredMovements);
+    console.log("Ventas Locales formateadas:", formattedLocalSales);
+
+    // Calcular totales
+    const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
+    const totalLocalSales = formattedLocalSales.reduce((sum, sale) => sum + sale.amount, 0);
+    const totalIncome = totalOnlineSales + totalLocalSales;
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const balance = totalIncome - totalExpenses;
+
+    console.log("Totales calculados:", {
+      totalOnlineSales,
+      totalLocalSales,
+      totalIncome,
+      totalExpenses,
+      balance
+    });
+
+    // Calcular totales por cajero
+    const cashierTotals = formattedLocalSales.reduce((acc, sale) => {
+      const cashier = sale.cashierDocument || 'Unknown'; // Usar documento del cajero
+      acc[cashier] = (acc[cashier] || 0) + sale.amount;
+      return acc;
+    }, {});
+
+    console.log("Totales por cajero:", cashierTotals);
+
+    // Respuesta al frontend
+    return res.status(200).json({
+      balance,
+      totalIncome,
+      totalOnlineSales,
+      totalLocalSales,
+      totalExpenses,
+      income: {
+        online: formattedOnlineSales,
+        local: formattedLocalSales
+      },
+      expenses,
+      cashierTotals // Totales por cajero
+    });
+
+  } catch (error) {
+    console.error("Error en getBalance:", error);
+    return res.status(500).json({ error: error.message });
   }
-
-  if (filters.pointOfSale) {
-    filteredMovements = filteredMovements.filter(
-      (movement) => movement.pointOfSale === filters.pointOfSale
-    );
-    console.log("Filtered by Point of Sale:", filteredMovements);
-  }
-
-  filteredMovements.forEach((movement) => {
-    console.log("Final Movement:", movement);
-  });
-
-  return filteredMovements.sort((a, b) => b.date - a.date);
 };
 
 module.exports = getBalance;

@@ -233,7 +233,7 @@ const Recibo = () => {
   
     // Agregar productos al recibo
     doc.setFontSize(7);
-    doc.text("Productos:", 20, currentY);
+    //doc.text("Productos:", 20, currentY);
     currentY += 20;
   
     order.products.forEach((product, index) => {

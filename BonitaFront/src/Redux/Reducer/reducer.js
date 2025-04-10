@@ -1018,14 +1018,12 @@ case USER_REGISTER_FAIL:
         },
       };
 
-    case CREATE_RECEIPT_REQUEST:
-      return { ...state, loading: true, error: null };
-
     case CREATE_RECEIPT_SUCCESS:
       return {
         ...state,
         loading: false,
         receipts: [...state.receipts, action.payload],
+        error: null, // Añade esto para limpiar el error
       };
 
     case CREATE_RECEIPT_FAILURE:

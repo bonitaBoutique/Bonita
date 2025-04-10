@@ -47,19 +47,8 @@ const Balance = () => {
     console.log("Income Online:", income.online);
     console.log("Income Local:", income.local);
     console.log("Expenses:", expenses);
-  
-    // Filtrar income.local para excluir duplicados basados en monto y fecha
-    const filteredLocal = income.local.filter((localSale) => {
-      return !income.online.some(
-        (onlineSale) =>
-          onlineSale.amount === localSale.total_amount &&
-          new Date(onlineSale.date).toISOString() ===
-            new Date(localSale.date).toISOString()
-      );
-    });
-  
-    console.log("Filtered Local (Excluding Duplicates):", filteredLocal);
-  
+
+    // Combinar todos los movimientos
     const movements = [
       ...(income.online || []).map((sale) => ({
         ...sale,
@@ -70,12 +59,12 @@ const Balance = () => {
         pointOfSale: "Online",
         id: sale.id,
       })),
-      ...(filteredLocal || []).map((sale) => ({
+      ...(income.local || []).map((sale) => ({
         ...sale,
         type: "Venta Local",
-        amount: sale.total_amount,
+        amount: sale.amount || 0, // Asegurarse de que el monto sea válido
         date: new Date(sale.date),
-        paymentMethod: sale.payMethod || "Desconocido", // Método de pago para ventas locales
+        paymentMethod: sale.paymentMethod || "Desconocido", // Método de pago para ventas locales
         pointOfSale: "Local",
         id: sale.id,
       })),
@@ -89,42 +78,35 @@ const Balance = () => {
         id: expense.id || Math.random().toString(36).substr(2, 9),
       })),
     ];
-  
-    console.log("Combined Movements (Before Deduplication):", movements);
-  
-    // Eliminar duplicados usando el campo `id`
-    const uniqueMovements = Array.from(new Set(movements.map((m) => m.id))).map(
-      (id) => movements.find((m) => m.id === id)
-    );
-  
-    console.log("Unique Movements (After Deduplication):", uniqueMovements);
-  
-    let filteredMovements = uniqueMovements;
-  
+
+    console.log("Combined Movements:", movements);
+
+    // Filtrar por filtros seleccionados
+    let filteredMovements = movements;
+
     if (filters.expenseType) {
       filteredMovements = filteredMovements.filter(
         (movement) => movement.type === `Gasto - ${filters.expenseType}`
       );
       console.log("Filtered by Expense Type:", filteredMovements);
     }
-  
+
     if (filters.pointOfSale) {
       filteredMovements = filteredMovements.filter(
         (movement) => movement.pointOfSale === filters.pointOfSale
       );
       console.log("Filtered by Point of Sale:", filteredMovements);
     }
-  
+
     filteredMovements.forEach((movement) => {
       console.log("Final Movement:", movement);
     });
-  
+
     return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
   const handleExportExcel = () => {
     const movements = getAllMovements();
-    console.log("Exporting Movements to Excel:", movements);
 
     const ws = XLSX.utils.json_to_sheet(
       movements.map((m) => ({
@@ -176,7 +158,7 @@ const Balance = () => {
     Sistecredito: ingresosSistecredito,
   });
 
-  // Get unique cashiers for the filter
+  
   const cashiers = [
     ...new Set((income.local || []).map((sale) => sale.cashier_document)),
   ];

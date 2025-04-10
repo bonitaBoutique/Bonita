@@ -1061,52 +1061,22 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     try {
       dispatch({ type: FETCH_BALANCE_REQUEST });
   
-      // Desestructurar filtros
-      const { startDate, endDate, paymentMethod, pointOfSale } = filters;
+      // Construir los parámetros de consulta
+      const queryParams = new URLSearchParams(filters).toString();
   
-      // Validar filtros (opcional)
-      if (startDate && isNaN(Date.parse(startDate))) {
-        throw new Error('El formato de startDate no es válido');
-      }
-      if (endDate && isNaN(Date.parse(endDate))) {
-        throw new Error('El formato de endDate no es válido');
-      }
-  
-      // Construir parámetros de consulta
-      const queryParams = new URLSearchParams({
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(paymentMethod && { paymentMethod }),
-        ...(pointOfSale && { pointOfSale }),
-      }).toString();
-  
-      // Log para depuración
-      console.log('🔍 Filtros aplicados:', filters);
-      console.log('🌐 URL generada:', `${BASE_URL}/balance?${queryParams}`);
-  
-      // Realizar solicitud a la API
+      // Realizar la solicitud a la API
       const { data } = await axios.get(`${BASE_URL}/balance?${queryParams}`);
   
-      // Log de la respuesta
-      console.log('✅ Respuesta de la API:', data);
-  
-      // Despachar acción de éxito
-      dispatch({
-        type: FETCH_BALANCE_SUCCESS,
-        payload: data,
+      // Despachar la acción de éxito con los datos recibidos
+      dispatch({ 
+        type: FETCH_BALANCE_SUCCESS, 
+        payload: data 
       });
     } catch (error) {
-      // Manejo de errores
-      console.error('❌ Error en fetchBalance:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-  
-      // Despachar acción de error
-      dispatch({
-        type: FETCH_BALANCE_FAILURE,
-        payload: error.response?.data?.message || error.message,
+      // Manejar errores y despachar la acción de error
+      dispatch({ 
+        type: FETCH_BALANCE_FAILURE, 
+        payload: error.message 
       });
     }
   };

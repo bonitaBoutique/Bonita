@@ -1,4 +1,4 @@
-const { Receipt } = require("../../data");
+const { Receipt, OrderDetail, Product } = require("../../data");
 
 module.exports = async (req, res) => {
   try {
@@ -10,6 +10,18 @@ module.exports = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["id_receipt", "DESC"]], // Ordenar por ID descendente (más recientes primero)
+      include: [
+        {
+          model: OrderDetail,
+          include: [
+            {
+              model: Product,
+              as: "products", // Alias definido en la relación
+              through: { attributes: [] }, // Excluir atributos de la tabla intermedia
+            },
+          ],
+        },
+      ],
     });
 
     if (receipts.count === 0) {

@@ -185,63 +185,81 @@ const Recibo = () => {
       unit: "pt",
       format: [226.77, 839.28],
     });
-
+  
     doc.setFontSize(18);
     doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, { align: "center" });
-
+  
     doc.setFontSize(10);
     let currentY = 50;
-
+  
     doc.text("Bonita Boutique  S.A.S NIT:", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
     doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
     doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 30;
-
+  
     doc.text(`RECIBO # ${newReceiptNumber}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
     doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
     doc.text(`Estado de venta: ${order.state_order}`, doc.internal.pageSize.width / 2, currentY, { align: "center" });
-
+  
     currentY += 20;
     doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
     doc.setFontSize(10);
     doc.text(`Nombre del Comprador: ${buyerName}`, 20, currentY);
     currentY += 20;
-
+  
     doc.text(`Correo Electrónico: ${buyerEmail}`, 20, currentY);
     currentY += 20;
-
+  
     doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
     currentY += 20;
-
+  
     doc.text(`Monto Total: $${totalAmount}`, 20, currentY);
     currentY += 20;
     doc.text(`Metodo de Pago : ${paymentMethod}`, 20, currentY);
     currentY += 20;
-
+  
     doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
-
+  
+    // Agregar productos al recibo
+    doc.setFontSize(7);
+    doc.text("Productos:", 20, currentY);
+    currentY += 20;
+  
+    order.products.forEach((product, index) => {
+      doc.text(
+        `${index + 1}. ${product.description} - $${product.priceSell}`,
+        20,
+        currentY
+      );
+      currentY += 15;
+    });
+  
+    currentY += 20;
+    doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
+    currentY += 20;
+  
     doc.setFontSize(10);
     doc.text(`Atendido por: ${cashierInfo ? `${cashierInfo.first_name} ${cashierInfo.last_name}` : 'N/A'}`, 20, currentY);
     currentY += 15;
-   
+  
     doc.setFontSize(8);
     doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
     currentY += 30;
-
+  
     doc.setFontSize(12);
     doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, { align: "center" });
-
+  
     const fileName = `Recibo_${newReceiptNumber}.pdf`;
     doc.save(fileName);
   };

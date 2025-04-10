@@ -1,4 +1,4 @@
-const { Receipt, OrderDetail } = require("../../data");
+const { Receipt, OrderDetail, Product } = require("../../data");
 
 module.exports = async (req, res) => {
   const { id_orderDetail, buyer_name, buyer_email, buyer_phone, total_amount, date, payMethod } = req.body;
@@ -15,26 +15,24 @@ module.exports = async (req, res) => {
   }
 
   // Validar que el payMethod sea uno de los valores permitidos
-  const validPayMethods = [ "Efectivo",
-    "Sistecredito",
-    "Addi",
-    "Tarjeta",
-    "Crédito",
-    "Bancolombia",
-    "Otro"];
+  const validPayMethods = ["Efectivo", "Sistecredito", "Addi", "Tarjeta", "Crédito", "Bancolombia", "Otro"];
   if (!validPayMethods.includes(payMethod)) {
     return res.status(400).json({ message: "El método de pago no es válido" });
   }
 
   try {
-    // Buscar la orden de compra
-    const order = await OrderDetail.findByPk(id_orderDetail);
+    // Buscar la orden de compra junto con los productos relacionados
+    const order = await OrderDetail.findByPk(id_orderDetail, {
+      include: {
+        model: Product,
+        as: "products", // Nombre del alias definido en la relación
+        through: { attributes: [] }, // Excluir atributos de la tabla intermedia
+      },
+    });
 
     if (!order) {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
-
-   
 
     if (order.status === "facturada") {
       return res.status(400).json({ message: "La orden ya ha sido facturada" });
@@ -46,7 +44,7 @@ module.exports = async (req, res) => {
 
     // Buscar el último recibo para obtener el número de recibo más alto
     const lastReceipt = await Receipt.findOne({
-      order: [['id_receipt', 'DESC']],  // Orden descendente para obtener el último recibo
+      order: [["id_receipt", "DESC"]], // Orden descendente para obtener el último recibo
     });
 
     // Si no existe ningún recibo, asignamos el número de recibo a 1
@@ -62,14 +60,19 @@ module.exports = async (req, res) => {
       date,
       payMethod,
       receipt_number: receiptNumber,
-      cashier_document: req.body.cashier_document // Agregamos el número de documento del cajero
+      cashier_document: req.body.cashier_document, // Agregamos el número de documento del cajero
     });
 
     // Actualizar el estado de la orden
     order.status = "facturada";
     await order.save();
 
-    return res.status(201).json({ message: "Recibo creado exitosamente", receipt });
+    // Enviar el recibo junto con los productos de la orden
+    return res.status(201).json({
+      message: "Recibo creado exitosamente",
+      receipt,
+      products: order.products, // Productos asociados a la orden
+    });
   } catch (error) {
     console.error("Error al crear el recibo:", error.message);
     return res.status(500).json({ message: "Error al crear el recibo" });

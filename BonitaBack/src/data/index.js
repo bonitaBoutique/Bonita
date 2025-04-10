@@ -112,6 +112,8 @@ User.hasMany(Receipt, {
   sourceKey: 'n_document',
   as: 'receipts'
 });
+Payment.belongsTo(Receipt, { foreignKey: 'id_receipt' });
+Receipt.hasMany(Payment, { foreignKey: 'id_receipt' });
 
 //---------------------------------------------------------------------------------//
 module.exports = {

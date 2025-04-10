@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   try {
     const user = req.body;
 
-    if (!user.first_name || !user.last_name || !user.email || !user.password || !user.n_document) {
+    if (!user.first_name || !user.last_name || !user.email || !user.password || !user.n_document ||!user.wdoctype ||!user.phone) {
       return response(res, 400, "Todos los campos son obligatorios");
     }
 
@@ -30,6 +30,7 @@ module.exports = async (req, res) => {
     const newUser = await User.create({
       first_name: user.first_name,
       last_name: user.last_name,
+      wdoctype: user.wdoctype,
       n_document: user.n_document,
       email: user.email,
       password: hash,

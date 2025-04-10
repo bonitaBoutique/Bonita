@@ -30,13 +30,23 @@ module.exports = async (req, res) => {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
 
+    // Validación de pointOfSale
+    if (!["Local", "Online"].includes(pointOfSale)) {
+      return response(res, 400, { error: "Invalid pointOfSale value" });
+    }
+
+    // Validación adicional de datos
+    if (amount <= 0 || quantity <= 0 || !Array.isArray(products) || products.length === 0) {
+      return response(res, 400, { error: "Invalid Ordering Data" });
+    }
+
     const totalAmount = Number(amount) + Number(shippingCost);
 
     // Verificar el stock de los productos
     const productIds = products.map(p => p.id_product);
     const dbProducts = await Product.findAll({
       where: { id_product: productIds },
-      attributes: ["id_product", "stock", 'isDian'],
+      attributes: ["id_product", "stock", "isDian"],
     });
 
     // Verificar stock disponible
@@ -113,13 +123,22 @@ module.exports = async (req, res) => {
       },
     });
 
+    // Logs para depuración
+    console.log("Creando orden con los siguientes datos:", {
+      date,
+      amount: totalAmount,
+      pointOfSale,
+      products,
+      address,
+      deliveryAddress: finalDeliveryAddress
+    });
     console.log("Orden creada:", updatedOrderDetail);
 
     const responseData = { 
       orderDetail: updatedOrderDetail
     };
 
-    if (pointOfSale !== "Local") {
+    if (pointOfSale === "Online") {
       responseData.wompiData = {
         referencia,
         integritySignature,
@@ -133,4 +152,4 @@ module.exports = async (req, res) => {
     console.error("Error creating orderDetail:", error);
     return response(res, 500, { error: error.message });
   }
-};      
+};

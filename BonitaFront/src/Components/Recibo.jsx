@@ -24,6 +24,8 @@ const Recibo = () => {
   const [buyerPhone, setBuyerPhone] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [date, setDate] = useState("");
+  const [cashGiven, setCashGiven] = useState(""); // Dinero entregado por el cliente
+const [change, setChange] = useState(0); // Vuelto calculado
   const [receiptCreated, setReceiptCreated] = useState(false);
   const [payMethod, setPayMethod] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -41,12 +43,16 @@ const Recibo = () => {
 
   const resetForm = () => {
     setFormData(initialFormState);
-    setPayMethod("");
+    setPayMethod("Efectivo"); // Restablecer el método de pago a su valor predeterminado
     setBuyerName("");
     setBuyerEmail("");
     setBuyerPhone("");
     setTotalAmount("");
     setDate("");
+    setCashGiven(""); // Reiniciar el dinero entregado
+    setChange(0); // Reiniciar el vuelto
+    setIsSubmitted(false); // Permitir que se genere un nuevo recibo
+    setReceiptCreated(false); // Reiniciar el estado del recibo creado
   };
 
   useEffect(() => {
@@ -120,7 +126,7 @@ const Recibo = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!userInfo || !order || !cashierInfo) {
       Swal.fire({
         icon: 'error',
@@ -129,12 +135,7 @@ const Recibo = () => {
       });
       return;
     }
-
-    console.log("Datos del cajero:", {
-      documento: userInfo.n_document,
-      nombre: `${cashierInfo.first_name} ${cashierInfo.last_name}`
-    });
-
+  
     const receiptData = {
       receiptNumber: newReceiptNumber,
       total_amount: parseFloat(totalAmount),
@@ -147,14 +148,12 @@ const Recibo = () => {
       cashier_document: userInfo.n_document,
       cashier_name: `${cashierInfo.first_name} ${cashierInfo.last_name}`,
     };
-
-    console.log("Enviando datos al backend:", receiptData);
+  
     try {
       await dispatch(createReceipt(receiptData));
       setReceiptCreated(true);
       setIsSubmitted(true);
-      resetForm();
-
+  
       Swal.fire({
         icon: 'success',
         title: '¡Éxito!',
@@ -167,9 +166,10 @@ const Recibo = () => {
         if (result.isConfirmed) {
           generatePDF();
         }
+        resetForm(); // Reiniciar el formulario después de generar el PDF
         navigate(`/receipt/${order.id_orderDetail}`);
       });
-
+  
     } catch (error) {
       console.error("Error creating receipt:", error);
       Swal.fire({
@@ -262,6 +262,9 @@ const Recibo = () => {
   
     const fileName = `Recibo_${newReceiptNumber}.pdf`;
     doc.save(fileName);
+  
+    // Reiniciar los datos del formulario después de guardar el PDF
+    resetForm();
   };
 
   return (
@@ -368,7 +371,34 @@ const Recibo = () => {
               <option value="Otro">Otro</option>
             </select>
           </div>
-
+          {paymentMethod === "Efectivo" && (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700">Dinero Entregado</label>
+    <input
+      type="number"
+      value={cashGiven}
+      onChange={(e) => {
+        const value = parseFloat(e.target.value) || 0;
+        setCashGiven(value);
+        setChange(value - totalAmount); // Calcular el vuelto automáticamente
+      }}
+      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+    />
+  </div>
+)}
+{paymentMethod === "Efectivo" && (
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700">Vuelto</label>
+    <input
+      type="text"
+      value={change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"}
+      readOnly
+      className={`mt-1 block w-full px-3 py-2 border ${
+        change >= 0 ? "border-gray-300" : "border-red-500"
+      } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+    />
+  </div>
+)}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Fecha</label>
             <input

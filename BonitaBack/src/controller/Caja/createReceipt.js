@@ -63,9 +63,9 @@ module.exports = async (req, res) => {
       cashier_document: req.body.cashier_document, // Agregamos el número de documento del cajero
     });
 
-    // Actualizar el estado de la orden
-    order.status = "facturada";
-    await order.save();
+    // // Actualizar el estado de la orden
+    // order.status = "facturada";
+    // await order.save();
 
     // Enviar el recibo junto con los productos de la orden
     return res.status(201).json({

@@ -11,11 +11,13 @@ const getBalance = async (req, res) => {
       }
     };
 
+    console.log("Filtros recibidos:", { startDate, endDate, paymentMethod, pointOfSale });
+
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {
         ...dateFilter,
-        ...(pointOfSale && { pointOfSale }) // Filtrar por punto de venta si se proporciona
+        pointOfSale: 'Online' // Asegurarse de que solo se incluyan ventas online
       },
       attributes: [
         'id_orderDetail',
@@ -26,7 +28,9 @@ const getBalance = async (req, res) => {
       ]
     });
 
-    // Obtener ventas locales desde recibos
+    console.log("Ventas Online desde OrderDetail:", onlineSales);
+
+    // Obtener ventas locales exclusivamente de Receipt
     const localSales = await Receipt.findAll({
       where: {
         ...dateFilter,
@@ -40,6 +44,8 @@ const getBalance = async (req, res) => {
         'cashier_document' // Documento del cajero
       ]
     });
+
+    console.log("Ventas Locales desde Receipt:", localSales);
 
     // Obtener gastos
     const expenses = await Expense.findAll({
@@ -57,15 +63,19 @@ const getBalance = async (req, res) => {
       ]
     });
 
+    console.log("Gastos obtenidos:", expenses);
+
     // Formatear ventas online
     const formattedOnlineSales = onlineSales.map(sale => ({
       id: sale.id_orderDetail,
       date: sale.date,
       amount: sale.amount,
-      pointOfSale: 'Online', // Forzar el valor a "Online"
+      pointOfSale: 'Online',
       transactionStatus: sale.transaction_status,
-      paymentMethod: 'Wompi' // Asignar Wompi como método de pago
+      paymentMethod: 'Wompi'
     }));
+
+    console.log("Ventas Online formateadas:", formattedOnlineSales);
 
     // Formatear ventas locales
     const formattedLocalSales = localSales.map(sale => ({
@@ -73,9 +83,11 @@ const getBalance = async (req, res) => {
       date: sale.date,
       amount: sale.total_amount,
       pointOfSale: 'Local',
-      paymentMethod: sale.payMethod || 'Desconocido', // Usar método de pago o valor predeterminado
+      paymentMethod: sale.payMethod || 'Desconocido',
       cashierDocument: sale.cashier_document
     }));
+
+    console.log("Ventas Locales formateadas:", formattedLocalSales);
 
     // Calcular totales
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
@@ -84,6 +96,14 @@ const getBalance = async (req, res) => {
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
+    console.log("Totales calculados:", {
+      totalOnlineSales,
+      totalLocalSales,
+      totalIncome,
+      totalExpenses,
+      balance
+    });
+
     // Calcular totales por cajero
     const cashierTotals = formattedLocalSales.reduce((acc, sale) => {
       const cashier = sale.cashierDocument || 'Unknown'; // Usar documento del cajero
@@ -91,11 +111,7 @@ const getBalance = async (req, res) => {
       return acc;
     }, {});
 
-    // Logs para depuración
-    console.log('Ventas Online:', formattedOnlineSales);
-    console.log('Ventas Locales:', formattedLocalSales);
-    console.log('Gastos:', expenses);
-    console.log('Balance:', balance);
+    console.log("Totales por cajero:", cashierTotals);
 
     // Respuesta al frontend
     return res.status(200).json({

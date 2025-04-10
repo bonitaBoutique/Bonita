@@ -47,7 +47,7 @@ const Balance = () => {
     console.log("Income Online:", income.online);
     console.log("Income Local:", income.local);
     console.log("Expenses:", expenses);
-  
+
     // Combinar todos los movimientos
     const movements = [
       ...(income.online || []).map((sale) => ({
@@ -78,36 +78,35 @@ const Balance = () => {
         id: expense.id || Math.random().toString(36).substr(2, 9),
       })),
     ];
-  
+
     console.log("Combined Movements:", movements);
-  
+
     // Filtrar por filtros seleccionados
     let filteredMovements = movements;
-  
+
     if (filters.expenseType) {
       filteredMovements = filteredMovements.filter(
         (movement) => movement.type === `Gasto - ${filters.expenseType}`
       );
       console.log("Filtered by Expense Type:", filteredMovements);
     }
-  
+
     if (filters.pointOfSale) {
       filteredMovements = filteredMovements.filter(
         (movement) => movement.pointOfSale === filters.pointOfSale
       );
       console.log("Filtered by Point of Sale:", filteredMovements);
     }
-  
+
     filteredMovements.forEach((movement) => {
       console.log("Final Movement:", movement);
     });
-  
+
     return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
   const handleExportExcel = () => {
     const movements = getAllMovements();
-    console.log("Exporting Movements to Excel:", movements);
 
     const ws = XLSX.utils.json_to_sheet(
       movements.map((m) => ({
@@ -159,7 +158,7 @@ const Balance = () => {
     Sistecredito: ingresosSistecredito,
   });
 
-  // Get unique cashiers for the filter
+  
   const cashiers = [
     ...new Set((income.local || []).map((sale) => sale.cashier_document)),
   ];

@@ -1,25 +1,30 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Agregar la columna 'payMethod' a la tabla 'Payments'
-    await queryInterface.addColumn('Payments', 'payMethod', {
-      type: Sequelize.ENUM(
-        'Efectivo',
-        'Sistecredito',
-        'Addi',
-        'Tarjeta',
-        'Crédito',
-        'Bancolombia',
-        'Otro'
-      ),
-      allowNull: true, // Método de pago opcional
-    });
+    // Verificar si la columna ya existe antes de agregarla
+    const tableDescription = await queryInterface.describeTable('Payments');
+    if (!tableDescription.payMethod) {
+      await queryInterface.addColumn('Payments', 'payMethod', {
+        type: Sequelize.ENUM(
+          'Efectivo',
+          'Sistecredito',
+          'Addi',
+          'Tarjeta',
+          'Crédito',
+          'Bancolombia',
+          'Otro'
+        ),
+        allowNull: true,
+      });
+    }
   },
 
   async down(queryInterface, Sequelize) {
-    // Eliminar la columna 'payMethod' de la tabla 'Payments'
-    await queryInterface.removeColumn('Payments', 'payMethod');
-  }
+    // Verificar si la columna existe antes de eliminarla
+    const tableDescription = await queryInterface.describeTable('Payments');
+    if (tableDescription.payMethod) {
+      await queryInterface.removeColumn('Payments', 'payMethod');
+    }
+  },
 };

@@ -1,11 +1,11 @@
 const fs = require('fs');
-const { Product } = require('../src/data'); // Ajusta la ruta al modelo Product
-const { conn } = require('../src/data'); // Importa la instancia de Sequelize
+const { Product } = require('./src/data'); // Ajusta la ruta al modelo Product
+const { conn } = require('./src/data'); // Importa la instancia de Sequelize
 
 const loadProducts = async () => {
   try {
     // Lee el archivo productos.json
-    const productsData = fs.readFileSync('C:/Users/yaniz/Documents/Bonita/Bonita/BonitaBack/productos.json', 'utf8'); // Ajusta la ruta al archivo JSON
+    const productsData = fs.readFileSync('C:/Users/merce/Desktop/desarrollo/Bonita/BonitaBack/productos.json', 'utf8'); // Ajusta la ruta al archivo JSON
     const products = JSON.parse(productsData);
 
     // Inicia una transacción para asegurar la atomicidad

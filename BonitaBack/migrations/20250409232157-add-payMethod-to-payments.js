@@ -2,29 +2,47 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Verificar si la columna ya existe antes de agregarla
-    const tableDescription = await queryInterface.describeTable('Payments');
-    if (!tableDescription.payMethod) {
-      await queryInterface.addColumn('Payments', 'payMethod', {
-        type: Sequelize.ENUM(
-          'Efectivo',
-          'Sistecredito',
-          'Addi',
-          'Tarjeta',
-          'Crédito',
-          'Bancolombia',
-          'Otro'
-        ),
-        allowNull: true,
-      });
+    const tableInfo = await queryInterface.describeTable('Invoices');
+
+    // Solo agregar columnas si no existen
+    const columnsToAdd = [];
+
+    if (!tableInfo.cufe) {
+      columnsToAdd.push(
+        queryInterface.addColumn('Invoices', 'cufe', {
+          type: Sequelize.STRING,
+          allowNull: true,
+        })
+      );
     }
+
+    if (!tableInfo.qrCode) {
+      columnsToAdd.push(
+        queryInterface.addColumn('Invoices', 'qrCode', {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        })
+      );
+    }
+
+    if (!tableInfo.orderReference) {
+      columnsToAdd.push(
+        queryInterface.addColumn('Invoices', 'orderReference', {
+          type: Sequelize.STRING,
+          allowNull: true,
+        })
+      );
+    }
+
+    // Ejecutar todas las promesas de manera segura
+    return Promise.all(columnsToAdd);
   },
 
   async down(queryInterface, Sequelize) {
-    // Verificar si la columna existe antes de eliminarla
-    const tableDescription = await queryInterface.describeTable('Payments');
-    if (tableDescription.payMethod) {
-      await queryInterface.removeColumn('Payments', 'payMethod');
-    }
+    return Promise.all([
+      queryInterface.removeColumn('Invoices', 'cufe'),
+      queryInterface.removeColumn('Invoices', 'qrCode'),
+      queryInterface.removeColumn('Invoices', 'orderReference'),
+    ]);
   },
 };

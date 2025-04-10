@@ -11,7 +11,7 @@ module.exports = {
       columnsToAdd.push(
         queryInterface.addColumn('Invoices', 'cufe', {
           type: Sequelize.STRING,
-          allowNull: true
+          allowNull: true,
         })
       );
     }
@@ -20,7 +20,7 @@ module.exports = {
       columnsToAdd.push(
         queryInterface.addColumn('Invoices', 'qrCode', {
           type: Sequelize.TEXT,
-          allowNull: true
+          allowNull: true,
         })
       );
     }
@@ -29,7 +29,7 @@ module.exports = {
       columnsToAdd.push(
         queryInterface.addColumn('Invoices', 'orderReference', {
           type: Sequelize.STRING,
-          allowNull: true
+          allowNull: true,
         })
       );
     }
@@ -42,7 +42,7 @@ module.exports = {
     return Promise.all([
       queryInterface.removeColumn('Invoices', 'cufe'),
       queryInterface.removeColumn('Invoices', 'qrCode'),
-      queryInterface.removeColumn('Invoices', 'orderReference')
+      queryInterface.removeColumn('Invoices', 'orderReference'),
     ]);
-  }
+  },
 };

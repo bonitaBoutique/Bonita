@@ -40,6 +40,10 @@ const BillingForm = () => {
       }
     });
 
+    const handleSelectDocument = (selectedDocument) => {
+      setNDocument(selectedDocument); // Actualizar el estado con el documento seleccionado
+    };
+
   const handleProceedToDocument = () => {
     if (jbuyer.scostumername === "CONSUMIDOR FINAL") {
       alert("Completa los datos del comprador antes de continuar.");
@@ -124,7 +128,11 @@ const BillingForm = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 bg-gray-900">
-      <OrdenesPendientes filterType="facturablesPendientes" />
+      <OrdenesPendientes
+          filterType="facturablesPendientes"
+          mode="billingForm"
+          onSelectOrder={handleSelectDocument} // Pasar la función de callback
+        />
     </div>
 
       <div className="p-6 max-w-lg mx-auto pt-16 grid-cols-4">

@@ -70,6 +70,11 @@ const Invoice = () => {
     }
   }, [dispatch, sellerId, sellerData]);
 
+  const handleSelectOrder = (selectedOrderId) => {
+    setOrderId(selectedOrderId); // Actualizar el estado con el ID de la orden seleccionada
+  };
+  
+
   useEffect(() => {
     const fetchLastInvoiceNumber = async () => {
       try {
@@ -103,6 +108,7 @@ const Invoice = () => {
 
     fetchLastInvoiceNumber();
   }, []);
+  
 
   useEffect(() => {
     if (order && order.amount) {
@@ -346,7 +352,7 @@ const Invoice = () => {
         </div>
       )}
 
-      <OrdenesPendientes filterType="facturablesPendientes" />
+      <OrdenesPendientes filterType="facturablesPendientes" mode="invoice"  onSelectOrder={handleSelectOrder} />
       <div className="mb-4">
         <label className="block mb-2">Buscar Orden por ID:</label>
         <div className="flex gap-2">

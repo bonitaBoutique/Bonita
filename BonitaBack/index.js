@@ -7,7 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 // Syncing all the models at once.
-conn.sync({ alter: false }).then(async () => {
+conn.sync({ alter: true }).then(async () => {
   const umzug = new Umzug({
     migrations: {
       glob: 'migrations/*.js', // Changed from pattern to glob

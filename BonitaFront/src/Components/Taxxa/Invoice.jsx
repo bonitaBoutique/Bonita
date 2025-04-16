@@ -78,9 +78,7 @@ const Invoice = () => {
   useEffect(() => {
     const fetchLastInvoiceNumber = async () => {
       try {
-        const response = await axios.get(
-          `${BASE_URL}/invoice/lastNumber`
-        );
+        const response = await axios.get(`${BASE_URL}/invoice/lastNumber`);
 
         if (response.data.success) {
           // Convert string to number
@@ -94,14 +92,14 @@ const Invoice = () => {
           // Use 2 as default number
           setJDocumentData((prev) => ({
             ...prev,
-            sdocumentsuffix: 5,
+            sdocumentsuffix: nextNumber,
           }));
         }
       } catch (error) {
         console.error("Error obteniendo número de factura:", error);
         setJDocumentData((prev) => ({
           ...prev,
-          sdocumentsuffix: 5,
+          sdocumentsuffix: nextNumber,
         }));
       }
     };
@@ -208,6 +206,37 @@ const Invoice = () => {
       console.error("Error fetching order:", err);
     }
   };
+  const resetForm = () => {
+    setJDocumentData({
+      wVersionUBL: "2.1",
+      wenvironment: "test",
+      wdocumenttype: "Invoice",
+      wdocumenttypecode: "01",
+      scustomizationid: "10",
+      wcurrency: "COP",
+      sdocumentprefix: "FVB",
+      sdocumentsuffix: 4,
+      tissuedate: new Date().toISOString(),
+      tduedate: new Date().toISOString().split("T")[0],
+      wpaymentmeans: 1,
+      wpaymentmethod: "10",
+      nlineextensionamount: 0,
+      ntaxexclusiveamount: 0,
+      ntaxinclusiveamount: 0,
+      npayableamount: 0,
+      sorderreference: "",
+      snotes: "",
+      snotetop: "",
+      jextrainfo: {
+        ntotalinvoicepayment: 0,
+        stotalinvoicewords: "",
+        iitemscount: "0",
+      },
+      jdocumentitems: [],
+      jbuyer: buyer,
+    });
+    setOrderId("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -302,6 +331,7 @@ const Invoice = () => {
 
       const response = await dispatch(sendInvoice(invoiceDataToSend));
       console.log("✅ Factura enviada con éxito:", response);
+      resetForm(); // Llama a la función para restablecer el formulario
     } catch (err) {
       console.error("❌ Error:", err);
       setErrorMessage(err.message);

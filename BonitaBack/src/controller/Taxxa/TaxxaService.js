@@ -1,4 +1,4 @@
-const { SellerData, User, OrderDetail } = require('../../data');
+const { SellerData, User, OrderDetail, Invoice } = require('../../data');
 const { generateToken, sendDocument } = require('./taxxaUtils');
 
 const createInvoice = async (req, res) => {

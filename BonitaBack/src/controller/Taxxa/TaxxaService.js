@@ -1,4 +1,4 @@
-const { SellerData, User, OrderDetail } = require('../../data');
+const { SellerData, User, OrderDetail,Invoice } = require('../../data');
 const { generateToken, sendDocument } = require('./taxxaUtils');
 
 const createInvoice = async (req, res) => {
@@ -169,12 +169,12 @@ if (taxxaResponse && taxxaResponse.rerror === 0) {
       buyerId: userData.n_document,
       sellerId: sellerData.sdocno,
       invoiceNumber: `${invoiceData.sdocumentprefix}${invoiceData.sdocumentsuffix}`,
-      status: 'sent', // Asegúrate que este valor sea uno de los ENUM permitidos
+      status: taxxaResponse.jret?.yapprovedbytaxoffice === 'Y' ? 'sent' : 'pending', // <-- Usa la respuesta real para el status
       totalAmount: invoiceData.npayableamount,
-      taxxaResponse: taxxaResponse, // Asegúrate que esto sea un JSON válido si tu DB lo requiere
-      taxxaId: taxxaResponse.jApiResponse?.taxxaId || null,
-      cufe: taxxaResponse.jApiResponse?.cufe || null,
-      qrCode: taxxaResponse.jApiResponse?.qrCode || null,
+      taxxaResponse: taxxaResponse,
+      taxxaId: taxxaResponse.jret?.rtaxxadocument || null, // <-- Corregido: usa jret
+      cufe: taxxaResponse.jret?.scufe || null,           // <-- Corregido: usa jret
+      qrCode: taxxaResponse.jret?.sqr?.replace(/;$/, '') || null, // <-- Corregido: usa jret y limpia el ';'
       orderReference: id_orderDetail
     };
     console.log('Datos a guardar en Invoice:', JSON.stringify(dataToSave, null, 2));
@@ -182,7 +182,10 @@ if (taxxaResponse && taxxaResponse.rerror === 0) {
     newInvoice = await Invoice.create(dataToSave); // Intenta guardar
   
     console.log('Factura guardada exitosamente en DB:', newInvoice.toJSON()); // Loguea el resultado
-  
+    console.log('=== Actualizando estado de la orden a facturada ===');
+    await orderDetail.update({ status: 'facturada' });
+    console.log('Estado de la orden actualizado.');
+
   } catch (dbError) {
     // ¡Error específico al guardar en la base de datos!
     console.error('!!! Error al guardar la factura en la base de datos !!!');
@@ -196,12 +199,12 @@ if (taxxaResponse && taxxaResponse.rerror === 0) {
   }
 
   return res.status(200).json({
-    message: 'Factura creada y enviada con éxito',
-    success: true,
-    response: taxxaResponse,
-    invoice: newInvoice,
-    orderReference: id_orderDetail
-  });
+  message: 'Factura creada, enviada, guardada y orden actualizada con éxito', // Mensaje más preciso
+  success: true,
+  response: taxxaResponse,
+  invoice: newInvoice,
+  orderReference: id_orderDetail
+});
 }
 
 throw new Error(`Error en la respuesta de Taxxa: ${JSON.stringify(taxxaResponse)}`);

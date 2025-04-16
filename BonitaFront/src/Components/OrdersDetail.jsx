@@ -9,6 +9,8 @@ const OrdersDetails = () => {
   const { n_document } = useParams();
   const orderDetails = useSelector((state) => state.orders);
   const { loading, error, orders } = orderDetails;
+console.log(orderDetails)
+
 
   useEffect(() => {
     console.log("Fetching orders for n_document:", n_document);
@@ -61,6 +63,22 @@ const OrdersDetails = () => {
                       Código de Barra: {product.codigoBarra}
                     </p>
                   </div>
+                  {order.images && order.images.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-md font-semibold">Imágenes de la Orden:</h3>
+                <div className="flex flex-wrap gap-2 mt-2"> {/* Contenedor para mostrar imágenes */}
+                  {order.images.map((imageUrl, imgIndex) => (
+                    <img
+                      key={imgIndex} // Usa el índice como key si las URLs son únicas
+                      src={imageUrl}
+                      alt={`Imagen de la orden ${order.id_orderDetail} - ${imgIndex + 1}`}
+                      className="w-24 h-24 object-cover rounded-md border" // Ajusta tamaño y estilo
+                      onError={(e) => { e.target.style.display = 'none'; }} // Opcional: Oculta si la imagen falla al cargar
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
                 </div>
               ))}
             </div>

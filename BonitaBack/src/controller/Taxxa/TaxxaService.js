@@ -82,7 +82,7 @@ const createInvoice = async (req, res) => {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {
         wVersionUBL: "2.1",
-        wenvironment: "test", // Cambiado a prod
+        wenvironment: "test", // Cambiado a test
         jDocument: {
           wVersionUBL: "2.1",
           wenvironment: "test", // Cambiado a prod
@@ -156,37 +156,67 @@ const createInvoice = async (req, res) => {
     console.log('Respuesta de Taxxa:', JSON.stringify(taxxaResponse, null, 2));
 
     // 12. Procesar respuesta
-    if (taxxaResponse && taxxaResponse.rerror === 0) {
-      console.log('=== Actualizando estado de la orden ===');
-      await orderDetail.update({ status: 'facturada' });
-
-      return res.status(200).json({
-        message: 'Factura creada y enviada con éxito',
-        success: true,
-        response: taxxaResponse,
-        orderReference: id_orderDetail
-      });
-    }
-
-    throw new Error(`Error en la respuesta de Taxxa: ${JSON.stringify(taxxaResponse)}`);
-
-  } catch (error) {
-    console.error('=== Error en el proceso de facturación ===');
-    console.error('Error:', error.message);
-    console.error('Stack:', error.stack);
-
-    if (error.response) {
-      console.error('Response data:', JSON.stringify(error.response.data, null, 2));
-      console.error('Response status:', error.response.status);
-    }
-
-    return res.status(500).json({
-      message: 'Error al procesar la factura',
-      success: false,
-      error: error.message,
-      details: error.response?.data
-    });
+// 12. Procesar respuesta
+if (taxxaResponse && taxxaResponse.rerror === 0) {
+  console.log('=== Actualizando estado de la orden ===');
+  await orderDetail.update({ status: 'facturada' });
+  
+  console.log('=== Intentando guardar factura en la base de datos ===');
+  let newInvoice; // Declara fuera del try
+  try {
+    // Loguea los datos justo antes de crear
+    const dataToSave = {
+      buyerId: userData.n_document,
+      sellerId: sellerData.sdocno,
+      invoiceNumber: `${invoiceData.sdocumentprefix}${invoiceData.sdocumentsuffix}`,
+      status: 'sent', // Asegúrate que este valor sea uno de los ENUM permitidos
+      totalAmount: invoiceData.npayableamount,
+      taxxaResponse: taxxaResponse, // Asegúrate que esto sea un JSON válido si tu DB lo requiere
+      taxxaId: taxxaResponse.jApiResponse?.taxxaId || null,
+      cufe: taxxaResponse.jApiResponse?.cufe || null,
+      qrCode: taxxaResponse.jApiResponse?.qrCode || null,
+      orderReference: id_orderDetail
+    };
+    console.log('Datos a guardar en Invoice:', JSON.stringify(dataToSave, null, 2));
+  
+    newInvoice = await Invoice.create(dataToSave); // Intenta guardar
+  
+    console.log('Factura guardada exitosamente en DB:', newInvoice.toJSON()); // Loguea el resultado
+  
+  } catch (dbError) {
+    // ¡Error específico al guardar en la base de datos!
+    console.error('!!! Error al guardar la factura en la base de datos !!!');
+    console.error('Error Sequelize:', dbError); // Loguea el error completo de Sequelize
+    console.error('Mensaje:', dbError.message);
+    console.error('Stack:', dbError.stack);
+    // Decide cómo manejar este error. ¿Deberías revertir el estado de la orden?
+    // Por ahora, lanzamos un error para que lo capture el catch principal,
+    // pero con más información.
+    throw new Error(`Error al guardar en DB: ${dbError.message}`);
   }
+
+  return res.status(200).json({
+    message: 'Factura creada y enviada con éxito',
+    success: true,
+    response: taxxaResponse,
+    invoice: newInvoice,
+    orderReference: id_orderDetail
+  });
+}
+
+throw new Error(`Error en la respuesta de Taxxa: ${JSON.stringify(taxxaResponse)}`);
+} catch (error) {
+console.error('=== Error en el proceso de facturación ===');
+console.error('Error General:', error);
+console.error('Error:', error.message);
+console.error('Stack:', error.stack);
+
+return res.status(500).json({
+  message: 'Error al procesar la factura',
+  success: false,
+  error: error.message
+});
+}
 };
 
 module.exports = {

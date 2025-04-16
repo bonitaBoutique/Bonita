@@ -75,34 +75,31 @@ const Invoice = () => {
   };
   
 
- useEffect(() => {
+  useEffect(() => {
     const fetchLastInvoiceNumber = async () => {
-      let defaultSuffix = "2"; // Define un default inicial como string
       try {
         const response = await axios.get(`${BASE_URL}/invoice/lastNumber`);
 
-        if (response.data.success && response.data.nextInvoiceNumber) {
-          // Usa directamente el string recibido del backend
-          const nextNumberStr = response.data.nextInvoiceNumber;
+        if (response.data.success) {
+          // Convert string to number
+          const nextNumber = parseInt(response.data.nextInvoiceNumber);
 
           setJDocumentData((prev) => ({
             ...prev,
-            sdocumentsuffix: nextNumberStr, // Almacena como STRING
+            sdocumentsuffix: nextNumber, // Store as number
           }));
         } else {
-          // Si falla la petición o no viene el número, usa el default
-          console.warn('No se pudo obtener el siguiente número de factura, usando default:', defaultSuffix);
+          // Use 2 as default number
           setJDocumentData((prev) => ({
             ...prev,
-            sdocumentsuffix: defaultSuffix, // Almacena el default como STRING
+            sdocumentsuffix: nextNumber,
           }));
         }
       } catch (error) {
         console.error("Error obteniendo número de factura:", error);
-        // Si hay un error en la petición, usa el default
         setJDocumentData((prev) => ({
           ...prev,
-          sdocumentsuffix: defaultSuffix, // Almacena el default como STRING
+          sdocumentsuffix: nextNumber,
         }));
       }
     };

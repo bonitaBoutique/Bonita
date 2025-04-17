@@ -7,119 +7,132 @@ import { useNavigate } from "react-router-dom";
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Get data from Redux state
   const {
-    balance = 0,
-    totalIncome = 0,
+    balance: backendBalance = 0, // Renamed backend value
+    totalIncome: backendTotalIncome = 0, // Renamed backend value
     totalOnlineSales = 0,
-    totalLocalSales = 0,
+    totalLocalSales: backendTotalLocalSales = 0, // Renamed backend value
     totalExpenses = 0,
-    income = { online: [], local: [] },
-    expenses = [],
-    cashierTotals = {}, // Add cashierTotals to the state
+    income = { online: [], local: [] }, // Default to empty arrays
+    expenses = [], // Default to empty array
+    cashierTotals = {}, // Default to empty object
     loading,
   } = useSelector((state) => state);
 
-  console.log("Redux State:", {
-    balance,
-    totalIncome,
-    totalOnlineSales,
-    totalLocalSales,
-    totalExpenses,
-    income,
-    expenses,
-    cashierTotals,
-  });
-
+  // State for filters
   const [filters, setFilters] = useState({
     startDate: "",
     endDate: "",
     paymentMethod: "",
+    pointOfSale: "", // Added pointOfSale filter
     expenseType: "",
-    cashier: "", // Add cashier filter
+    cashier: "",
   });
 
+  // Fetch balance data when filters change
   useEffect(() => {
-    console.log("Filters applied:", filters);
     dispatch(fetchBalance(filters));
   }, [dispatch, filters]);
 
+  // --- Function to combine and filter all movements ---
   const getAllMovements = () => {
-    console.log("Income Online:", income.online);
-    console.log("Income Local:", income.local);
-    console.log("Expenses:", expenses);
-
-    // Combinar todos los movimientos
+    // Combine sales and expenses into a single array
     const movements = [
+      // Map online sales
       ...(income.online || []).map((sale) => ({
-        ...sale,
+        ...sale, // Spread original sale properties
         type: "Venta Online",
-        amount: sale.amount,
+        amount: sale.amount || 0, // Ensure amount is a number
         date: new Date(sale.date),
-        paymentMethod: sale.paymentMethod || "Wompi", // Método de pago para ventas online
+        paymentMethod: sale.paymentMethod || "Wompi", // Default payment method if needed
         pointOfSale: "Online",
-        id: sale.id,
+        id: `online-${sale.id_orderDetail}`, // Create a unique ID
+        description: `Pedido #${sale.id_orderDetail}` || "-", // Use order ID for description
+        cashier_document: null, // No cashier for online sales
       })),
+      // Map local sales
       ...(income.local || []).map((sale) => ({
-        ...sale,
+        ...sale, // Spread original sale properties
         type: "Venta Local",
-        amount: sale.amount || 0, // Asegurarse de que el monto sea válido
+        amount: sale.amount || 0, // Ensure amount is a number
         date: new Date(sale.date),
-        paymentMethod: sale.paymentMethod || "Desconocido", // Método de pago para ventas locales
+        paymentMethod: sale.paymentMethod || "Desconocido",
         pointOfSale: "Local",
-        id: sale.id,
+        id: `local-${sale.id}`, // Use receipt ID, ensure it's unique
+        description: sale.buyerName || "Desconocido", // Use buyer name for description
+        cashier_document: sale.cashierDocument, // Keep cashier document
       })),
+      // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
-        ...expense,
+        ...expense, // Spread original expense properties
         type: `Gasto - ${expense.type}`,
-        amount: -expense.amount,
+        amount: -(expense.amount || 0), // Expenses are negative, ensure amount is number
         date: new Date(expense.date),
-        paymentMethod: expense.paymentMethods || "Desconocido",
-        pointOfSale: "Local",
-        id: expense.id || Math.random().toString(36).substr(2, 9),
+        paymentMethod: expense.paymentMethods || "N/A", // Payment method for expenses
+        pointOfSale: "N/A", // Point of sale might not apply to expenses
+        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`, // Ensure unique ID
+        description: expense.description || expense.type || "-", // Use expense description or type
+        cashier_document: null, // No specific cashier for expenses usually
       })),
     ];
 
-    console.log("Combined Movements:", movements);
-
-    // Filtrar por filtros seleccionados
+    // Apply filters
     let filteredMovements = movements;
-
-    if (filters.expenseType) {
-      filteredMovements = filteredMovements.filter(
-        (movement) => movement.type === `Gasto - ${filters.expenseType}`
-      );
-      console.log("Filtered by Expense Type:", filteredMovements);
-    }
 
     if (filters.pointOfSale) {
       filteredMovements = filteredMovements.filter(
-        (movement) => movement.pointOfSale === filters.pointOfSale
+        (m) => m.pointOfSale === filters.pointOfSale
       );
-      console.log("Filtered by Point of Sale:", filteredMovements);
+    }
+    if (filters.paymentMethod) {
+      // Filter incomes only, as expenses might not have the same payment methods
+      filteredMovements = filteredMovements.filter(
+        (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
+      );
+    }
+    if (filters.expenseType) {
+      // Filter only expenses by their specific type
+      filteredMovements = filteredMovements.filter(
+        (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
+      );
+    }
+    if (filters.cashier) {
+      // Filter local sales by cashier
+      filteredMovements = filteredMovements.filter(
+        (m) => m.type !== "Venta Local" || m.cashier_document === filters.cashier
+      );
     }
 
-    filteredMovements.forEach((movement) => {
-      console.log("Final Movement:", movement);
-    });
-
+    // Sort movements by date, most recent first
     return filteredMovements.sort((a, b) => b.date - a.date);
   };
 
+  // --- Function to handle Excel export ---
   const handleExportExcel = () => {
-    const movements = getAllMovements();
+    const movementsToExport = getAllMovements(); // Get filtered movements
 
-    const ws = XLSX.utils.json_to_sheet(
-      movements.map((m) => ({
-        Fecha: m.date.toLocaleDateString(),
-        Tipo: m.type,
-        Descripción: m.description || "-",
-        "Método de Pago": m.paymentMethod,
-        Monto: Math.abs(m.amount).toLocaleString("es-CO", {
-          style: "currency",
-          currency: "COP",
-        }),
-      }))
-    );
+    // Map data for the Excel sheet, ensuring correct description
+    const wsData = movementsToExport.map((m) => ({
+      Fecha: m.date.toLocaleDateString("es-CO"), // Format date
+      Tipo: m.type,
+      Descripción: m.description || "-", // Use the description generated in getAllMovements
+      "Método de Pago": m.paymentMethod || "N/A",
+      Monto: m.amount, // Use the raw amount (positive for income, negative for expense)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(wsData);
+
+    // Format the 'Monto' column as Colombian Currency
+    ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }]; // Adjust column widths
+    Object.keys(ws).forEach(cell => {
+        if (cell.startsWith('E') && cell !== 'E1') { // Target 'Monto' column, skip header
+            ws[cell].z = '$ #,##0;[Red]$ -#,##0'; // Colombian Peso format
+            ws[cell].t = 'n'; // Set cell type to number
+        }
+    });
+
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
@@ -129,243 +142,266 @@ const Balance = () => {
     );
   };
 
-  // Calcular ingresos por método de pago
-  const ingresosEfectivo = (income.local || [])
-    .filter((sale) => sale.payMethod === "Efectivo")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosTarjeta = (income.local || [])
-    .filter((sale) => sale.payMethod === "Tarjeta")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosNequi = (income.local || [])
-    .filter((sale) => sale.payMethod === "Nequi")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosBancolombia = (income.local || [])
-    .filter((sale) => sale.payMethod === "Bancolombia")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosAddi = (income.local || [])
-    .filter((sale) => sale.payMethod === "Addi")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
-  const ingresosSistecredito = (income.local || [])
-    .filter((sale) => sale.payMethod === "Sistecredito")
-    .reduce((acc, sale) => acc + sale.total_amount, 0);
+  // --- Calculate income totals per payment method (for individual cards) ---
+  const calculateIncomeByMethod = (method) => {
+    return (income.local || [])
+      .filter((sale) => sale.paymentMethod === method)
+      .reduce((acc, sale) => acc + (sale.amount || 0), 0);
+  };
 
-  console.log("Ingresos por método de pago:", {
-    Efectivo: ingresosEfectivo,
-    Tarjeta: ingresosTarjeta,
-    Nequi: ingresosNequi,
-    Bancolombia: ingresosBancolombia,
-    Addi: ingresosAddi,
-    Sistecredito: ingresosSistecredito,
-  });
+  const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
+  const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
+  const ingresosNequi = calculateIncomeByMethod("Nequi");
+  const ingresosBancolombia = calculateIncomeByMethod("Bancolombia");
+  const ingresosAddi = calculateIncomeByMethod("Addi");
+  const ingresosSistecredito = calculateIncomeByMethod("Sistecredito");
 
-  
+  // --- Calculate Total Income to DISPLAY (excluding Addi and Sistecredito) ---
+  const displayTotalIncome =
+    ingresosEfectivo +
+    ingresosTarjeta +
+    ingresosNequi +
+    ingresosBancolombia +
+    totalOnlineSales; // Sum only desired local methods + online sales
+
+  // --- Calculate Balance to DISPLAY ---
+  const displayBalance = displayTotalIncome - totalExpenses;
+
+  // --- Get unique cashiers for the filter dropdown ---
   const cashiers = [
-    ...new Set((income.local || []).map((sale) => sale.cashier_document)),
+    ...new Set(
+      (income.local || [])
+        .map((sale) => sale.cashierDocument)
+        .filter(Boolean) // Remove null/undefined cashier documents
+    ),
   ];
-  console.log("Unique Cashiers:", cashiers);
 
-  if (loading) return <div>Cargando...</div>;
+  // --- Render loading state ---
+  if (loading) return <div className="text-center mt-40">Cargando...</div>;
 
+  // --- Render Component ---
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
-      {/* Filters */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        <input
-          type="date"
-          value={filters.startDate}
-          onChange={(e) =>
-            setFilters({ ...filters, startDate: e.target.value })
-          }
-          className="border rounded p-2"
-        />
-        <input
-          type="date"
-          value={filters.endDate}
-          onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-          className="border rounded p-2"
-        />
-        <select
-          value={filters.paymentMethod}
-          onChange={(e) =>
-            setFilters({ ...filters, paymentMethod: e.target.value })
-          }
-          className="border rounded p-2"
-        >
-          <option value="">Todos los métodos</option>
-          <option value="Efectivo">Efectivo</option>
-          <option value="Tarjeta">Tarjeta</option>
-          <option value="Nequi">Nequi</option>
-          <option value="Bancolombia">Bancolombia</option>
-        </select>
-        <select
-          value={filters.pointOfSale}
-          onChange={(e) =>
-            setFilters({ ...filters, pointOfSale: e.target.value })
-          }
-          className="border rounded p-2"
-        >
-          <option value="">Todos los puntos de venta</option>
-          <option value="Local">Local</option>
-          <option value="Online">Online</option>
-        </select>
-        <select
-          value={filters.expenseType}
-          onChange={(e) =>
-            setFilters({ ...filters, expenseType: e.target.value })
-          }
-          className="border rounded p-2"
-        >
-          <option value="">Todos los tipos de gasto</option>
-          <option value="Nomina Colaboradores">Nómina Colaboradores</option>
-          <option value="Servicios">Servicios</option>
-          <option value="Arriendo">Arriendo</option>
-          <option value="Proveedores">Proveedores</option>
-          <option value="Otros">Otros</option>
-        </select>
-        {/* Cashier Filter */}
-        <select
-          value={filters.cashier}
-          onChange={(e) => setFilters({ ...filters, cashier: e.target.value })}
-          className="border rounded p-2"
-        >
-          <option value="">Todos los cajeros</option>
-          {cashiers.map((cashier) => (
-            <option key={cashier} value={cashier}>
-              {cashier}
-            </option>
+      <h1 className="text-3xl font-bold mb-6 text-center">Balance Financiero</h1>
+
+      {/* Filters Section */}
+      <div className="mb-6 p-4 border rounded shadow-sm bg-gray-50">
+        <h2 className="text-xl font-semibold mb-3">Filtros</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input
+            type="date"
+            value={filters.startDate}
+            onChange={(e) =>
+              setFilters({ ...filters, startDate: e.target.value })
+            }
+            className="border rounded p-2"
+            title="Fecha Inicio"
+          />
+          <input
+            type="date"
+            value={filters.endDate}
+            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+            className="border rounded p-2"
+            title="Fecha Fin"
+          />
+          <select
+            value={filters.paymentMethod}
+            onChange={(e) =>
+              setFilters({ ...filters, paymentMethod: e.target.value })
+            }
+            className="border rounded p-2"
+          >
+            <option value="">Todos los Métodos (Ingresos)</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Nequi">Nequi</option>
+            <option value="Bancolombia">Bancolombia</option>
+            <option value="Addi">Addi</option>
+            <option value="Sistecredito">Sistecredito</option>
+            <option value="Wompi">Wompi (Online)</option>
+          </select>
+          <select
+            value={filters.pointOfSale}
+            onChange={(e) =>
+              setFilters({ ...filters, pointOfSale: e.target.value })
+            }
+            className="border rounded p-2"
+          >
+            <option value="">Todos los Puntos de Venta</option>
+            <option value="Local">Local</option>
+            <option value="Online">Online</option>
+          </select>
+          <select
+            value={filters.expenseType}
+            onChange={(e) =>
+              setFilters({ ...filters, expenseType: e.target.value })
+            }
+            className="border rounded p-2"
+          >
+            <option value="">Todos los Tipos de Gasto</option>
+            <option value="Nomina Colaboradores">Nómina Colaboradores</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Arriendo">Arriendo</option>
+            <option value="Proveedores">Proveedores</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <select
+            value={filters.cashier}
+            onChange={(e) => setFilters({ ...filters, cashier: e.target.value })}
+            className="border rounded p-2"
+          >
+            <option value="">Todos los Cajeros (Ventas Locales)</option>
+            {cashiers.map((cashier) => (
+              <option key={cashier} value={cashier}>
+                {cashier}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Income by Payment Method Section */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-3">Ingresos por Método (Detalle)</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {/* Cards for each payment method */}
+          {[
+            { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50" },
+            { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50" },
+            { name: "Nequi", value: ingresosNequi, color: "bg-green-50" },
+            { name: "Bancolombia", value: ingresosBancolombia, color: "bg-green-50" },
+            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50" }, // Different color
+            { name: "Sistecredito", value: ingresosSistecredito, color: "bg-yellow-50" }, // Different color
+            { name: "Venta Online", value: totalOnlineSales, color: "bg-blue-50" },
+          ].map((method) => (
+            <div key={method.name} className={`${method.color} p-4 rounded shadow-sm text-center`}>
+              <h3 className="text-md font-semibold text-gray-700">{method.name}</h3>
+              <p className="text-xl font-bold text-gray-900">
+                {method.value.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+              </p>
+            </div>
           ))}
-        </select>
+        </div>
+         <p className="text-xs text-gray-500 mt-2">* Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se incluyen en el cálculo de 'Ingresos Totales' del resumen.</p>
       </div>
 
-      {/* Ingresos por Método de Pago */}
-      <div className="grid grid-cols-5 gap-4 mb-6">
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Efectivo</h3>
-          <p className="text-2xl">${ingresosEfectivo}</p>
+      {/* Summary Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-green-100 p-4 rounded shadow-md text-center">
+          <h3 className="text-lg font-semibold text-green-800">Ingresos Totales*</h3>
+          <p className="text-2xl font-bold text-green-900">
+            {displayTotalIncome.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+          </p>
         </div>
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Tarjeta</h3>
-          <p className="text-2xl">${ingresosTarjeta}</p>
+        <div className="bg-red-100 p-4 rounded shadow-md text-center">
+          <h3 className="text-lg font-semibold text-red-800">Gastos Totales</h3>
+          <p className="text-2xl font-bold text-red-900">
+            {totalExpenses.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+          </p>
         </div>
-
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Nequi</h3>
-          <p className="text-2xl">${ingresosNequi}</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Bancolombia</h3>
-          <p className="text-2xl">${ingresosBancolombia}</p>
-        </div>
-
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Addi</h3>
-          <p className="text-2xl">${ingresosAddi}</p>
-        </div>
-
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Sistecredito</h3>
-          <p className="text-2xl">${ingresosSistecredito}</p>
-        </div>
-
-        <div className="bg-green-50 p-4 rounded">
-          <h3 className="text-lg font-semibold">Venta Online</h3>
-          <p className="text-2xl">${totalOnlineSales}</p>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-green-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Ingresos Totales</h3>
-          <p className="text-2xl">${totalIncome}</p>
-        </div>
-        <div className="bg-red-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Gastos Totales</h3>
-          <p className="text-2xl">${totalExpenses}</p>
-        </div>
-        <div className="bg-blue-100 p-4 rounded">
-          <h3 className="text-lg font-semibold">Balance</h3>
-          <p className="text-2xl">${balance}</p>
+        <div className="bg-blue-100 p-4 rounded shadow-md text-center">
+          <h3 className="text-lg font-semibold text-blue-800">Balance*</h3>
+          <p className="text-2xl font-bold text-blue-900">
+            {displayBalance.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+          </p>
         </div>
         <button
           onClick={handleExportExcel}
-          className="bg-indigo-600 text-white p-4 rounded hover:bg-indigo-700"
+          className="bg-indigo-600 text-white p-4 rounded shadow-md hover:bg-indigo-700 transition duration-200 flex items-center justify-center"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
           Exportar Excel
         </button>
       </div>
 
-      {/* Cashier Totals */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">Ventas por Cajero</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {Object.entries(cashierTotals)
-            .filter(
-              ([cashier]) => !filters.cashier || cashier === filters.cashier
-            ) // Apply cashier filter
-            .map(([cashier, total]) => (
-              <div key={cashier} className="bg-yellow-50 p-4 rounded">
-                <h3 className="text-lg font-semibold">{cashier}</h3>
-                <p className="text-2xl">${total}</p>
-              </div>
-            ))}
-        </div>
-      </div>
+      {/* Cashier Totals Section */}
+      {Object.keys(cashierTotals).length > 0 && (
+         <div className="mb-6">
+           <h2 className="text-xl font-semibold mb-3">Ventas por Cajero (Local)</h2>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             {Object.entries(cashierTotals)
+               .filter(
+                 ([cashier]) => !filters.cashier || cashier === filters.cashier
+               )
+               .map(([cashier, total]) => (
+                 <div key={cashier} className="bg-purple-50 p-4 rounded shadow-sm text-center">
+                   <h3 className="text-md font-semibold text-purple-800">{cashier}</h3>
+                   <p className="text-xl font-bold text-purple-900">
+                     {total.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                   </p>
+                 </div>
+               ))}
+           </div>
+         </div>
+      )}
 
-      {/* Movements Table */}
-      <div className="overflow-x-auto">
+
+      {/* Movements Table Section */}
+      <div className="overflow-x-auto shadow-md rounded-lg">
+        <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg">Detalle de Movimientos</h2>
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                 Fecha
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                 Tipo
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                 Descripción
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                 Método
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
                 Monto
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {getAllMovements().map((movement, index) => (
-              <tr
-                key={index}
-                className={movement.amount < 0 ? "bg-red-50" : "bg-green-50"}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {movement.date.toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{movement.type}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {movement.description || "-"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {movement.paymentMethod || "Wompi"}
-                </td>
-                <td
-                  className={`px-6 py-4 whitespace-nowrap font-semibold ${
-                    movement.amount < 0 ? "text-red-600" : "text-green-600"
-                  }`}
+            {getAllMovements().length > 0 ? (
+              getAllMovements().map((movement) => (
+                <tr
+                  key={movement.id} // Use the unique ID generated
+                  className={movement.amount < 0 ? "hover:bg-red-50" : "hover:bg-green-50"}
                 >
-                  ${Math.abs(movement.amount)}
-                </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {movement.date.toLocaleDateString("es-CO")}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{movement.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {movement.description || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {movement.paymentMethod || "N/A"}
+                  </td>
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
+                      movement.amount < 0 ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {/* Format amount as currency */}
+                    {movement.amount.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="text-center py-4 text-gray-500">No hay movimientos para mostrar con los filtros seleccionados.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
-      <div className="mt-6">
+
+      {/* Back Button */}
+      <div className="mt-8 text-center">
         <button
-          onClick={() => navigate(-1)}
-          className="bg-gray-600 text-white p-4 rounded hover:bg-gray-700"
+          onClick={() => navigate(-1)} // Go back to the previous page
+          className="bg-gray-600 text-white py-2 px-5 rounded shadow-md hover:bg-gray-700 transition duration-200"
         >
           Volver
         </button>

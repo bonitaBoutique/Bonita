@@ -35,7 +35,7 @@ module.exports = (sequelize) => {
         comment: 'MiPaquete shipping provider'
       },
       address: {
-        type: DataTypes.ENUM("Envio a domicilio", "Retira en Local"),
+        type: DataTypes.ENUM("Envio a domicilio", "Retira en Local", "Coordinar por WhatsApp"),
         allowNull: false,
       },
       deliveryAddress: {

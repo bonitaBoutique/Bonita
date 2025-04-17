@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react'; // Quita useState si ya no se usa para nada más
 import { useDispatch, useSelector } from 'react-redux';
 import { incrementQuantity, removeFromCart, clearCart, decrementQuantity } from '../Redux/Actions/actions';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,8 +6,9 @@ import { SlTrash, SlMinus, SlPlus } from "react-icons/sl";
 import backgroundImage from '../assets/img/BannerPrincipal/banner3.png';
 import Navbar from './Navbar';
 import Swal from 'sweetalert2';
-import ShippingOptionsPopup from './ShippingOptionsPopup';
-import ShippingPopup from './ShippingPopup';
+// Elimina las importaciones de los popups si ya no se usan
+// import ShippingOptionsPopup from './ShippingOptionsPopup';
+// import ShippingPopup from './ShippingPopup';
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -15,12 +16,14 @@ const Cart = () => {
   console.log(cart);
   const { userInfo } = useSelector((state) => state.userLogin);
   const navigate = useNavigate();
-  
-  const [showShippingOptions, setShowShippingOptions] = useState(false);
-  const [showShippingPopup, setShowShippingPopup] = useState(false);
-  const [shippingType, setShippingType] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState(null);
- 
+
+  // --- Elimina estos estados ---
+  // const [showShippingOptions, setShowShippingOptions] = useState(false);
+  // const [showShippingPopup, setShowShippingPopup] = useState(false);
+  // const [shippingType, setShippingType] = useState('');
+  // const [deliveryAddress, setDeliveryAddress] = useState(null);
+  // ---------------------------
+
   const handleIncrementQuantity = (productId, stock) => {
     const item = cart.items.find((item) => item.id_product === productId);
     if (item.quantity < stock) {
@@ -36,6 +39,7 @@ const Cart = () => {
     dispatch(removeFromCart(productId));
   };
 
+  // --- Modifica handleCheckout ---
   const handleCheckout = () => {
     if (!userInfo) {
       Swal.fire({
@@ -46,41 +50,26 @@ const Cart = () => {
         cancelButtonText: 'Cancelar'
       }).then((result) => {
         if (result.isConfirmed) {
-          navigate('/login'); 
+          navigate('/login');
         }
       });
     } else {
-      console.log('Continuar con el proceso de compra');
-      setShowShippingOptions(true);
-    }
-  };
-  
-  const handleShippingSelect = (option) => {
-    setShowShippingOptions(false);
-    setShippingType(option);
-    
-    if (option === 'pickup') {
-      navigate('/checkout', { 
-        state: { 
-          shippingType: 'Retira en Local',
-          deliveryAddress: "Bonita por Defecto" 
-        } 
+      // Navega directamente a Checkout con el tipo de envío por defecto
+      console.log('Usuario logueado, navegando a checkout...');
+      navigate('/checkout', {
+        state: {
+          shippingType: 'Coordinar por WhatsApp', // El envío se coordina después del pago
+          deliveryAddress: null // No es necesario ahora
+        }
       });
-    } else {
-      setShowShippingPopup(true);
     }
   };
+  // -----------------------------
 
-  const handleSaveShippingAddress = (address) => {
-    setShowShippingPopup(false);
-    setDeliveryAddress(address);
-    navigate('/checkout', { 
-      state: { 
-        shippingType: 'Envio a Domicilio',
-        deliveryAddress: address 
-      } 
-    });
-  };
+  // --- Elimina estas funciones ---
+  // const handleShippingSelect = (option) => { ... };
+  // const handleSaveShippingAddress = (address) => { ... };
+  // -----------------------------
 
   return (
     <>
@@ -103,6 +92,7 @@ const Cart = () => {
             ) : (
               <div>
                 {cart.items.map((item) => (
+                  // ... (código del item del carrito sin cambios) ...
                   <div key={item.id_product} className="flex items-center justify-between mb-6 border-b pb-4 bg-gray-300 p-6">
                     <div className="flex items-center space-x-4">
                       <img src={item.Images[0]?.url} alt={item.name} className="w-28 h-28 object-cover rounded-lg" />
@@ -147,25 +137,15 @@ const Cart = () => {
                     Seguir Comprando
                   </Link>
                   <button
-                    onClick={handleCheckout}
+                    onClick={handleCheckout} // Esta función ahora navega directamente
                     className="px-4 py-2 bg-pink-400 text-white rounded-md"
                   >
                     Proceder al pago
                   </button>
-                  {showShippingOptions && (
-                    <ShippingOptionsPopup
-                      onClose={() => setShowShippingOptions(false)}
-                      onSelect={handleShippingSelect}
-                    />
-                  )}
-                  {showShippingPopup && (
-                    <ShippingPopup
-                      isShippingPopupOpen={showShippingPopup}
-                      onClose={() => setShowShippingPopup(false)}
-                      onSave={handleSaveShippingAddress}
-                      id_orderDetail="ID_NO_DISPONIBLE"
-                    />
-                  )}
+                  {/* --- Elimina la renderización de los popups --- */}
+                  {/* {showShippingOptions && ( ... )} */}
+                  {/* {showShippingPopup && ( ... )} */}
+                  {/* --------------------------------------------- */}
                 </div>
               </div>
             )}
@@ -177,5 +157,3 @@ const Cart = () => {
 };
 
 export default Cart;
-
-

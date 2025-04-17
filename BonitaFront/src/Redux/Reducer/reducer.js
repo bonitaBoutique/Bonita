@@ -490,17 +490,25 @@ const rootReducer = (state = initialState, action) => {
           error: null,
         },
       };
-    case ORDER_CREATE_SUCCESS:
-      return {
-        ...state,
-        order: {
-          ...state.order,
-          loading: false,
-          success: true,
-          order: action.payload,
-          error: null,
-        },
-      };
+      case ORDER_CREATE_SUCCESS:
+        console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Received Payload:', action.payload); // Keep this log
+      
+        // *** CORRECCIÓN AQUÍ ***
+        // Extraer el objeto 'order' desde action.payload.message.order
+        const orderDataFromPayload = action.payload?.message?.order;
+      
+        const newState = {
+          ...state,
+          order: { // Referencia al slice 'order' del estado global
+            loading: false,
+            success: true,
+            // Asigna el objeto 'order' extraído a la propiedad 'order' dentro de este slice
+            order: orderDataFromPayload,
+            error: null,
+          },
+        };
+        console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Returning New State:', JSON.stringify(newState.order)); // Keep this log
+        return newState;
     case ORDER_CREATE_FAIL:
       return {
         ...state,

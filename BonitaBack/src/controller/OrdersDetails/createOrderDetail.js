@@ -3,79 +3,73 @@ const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
 
-const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD";
+const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD"; // Asegúrate que esta sea tu clave de PRODUCCIÓN
 
-function generarFirmaIntegridad(id_orderDetail, monto, moneda, secretoIntegridad) {
-  const cadenaConcatenada = `${id_orderDetail}${monto}${moneda}${secretoIntegridad}`;
+function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoIntegridad) {
+  const cadenaConcatenada = `${referencia}${montoEnCentavos}${moneda}${secretoIntegridad}`;
+  console.log("Cadena para firma:", cadenaConcatenada); // Log para depurar firma
   return crypto.createHash("sha256").update(cadenaConcatenada).digest("hex");
 }
 
 module.exports = async (req, res) => {
   try {
-    const { 
-      date, 
+    const {
+      date,
       amount,
       quantity,
       state_order,
-      products, // Array de objetos con id_product y quantity
+      products,
       address,
       deliveryAddress,
       shippingCost = 0,
       n_document,
-      pointOfSale 
+      pointOfSale
     } = req.body;
 
-    // Validación de datos requeridos
+    // --- Validaciones (sin cambios) ---
     if (!date || !amount || !quantity || !state_order || !products || !address) {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
-
-    // Validación de pointOfSale
-    if (!["Local", "Online"].includes(pointOfSale)) {
-      return response(res, 400, { error: "Invalid pointOfSale value" });
+    if (!["Local", "Online", "Coordinar por Whatsapp"].includes(pointOfSale)) { // Corregido Whatsapp -> WhatsApp si es necesario
+       return response(res, 400, { error: "Invalid pointOfSale value" });
     }
-
-    // Validación adicional de datos
-    if (amount <= 0 || quantity <= 0 || !Array.isArray(products) || products.length === 0) {
-      return response(res, 400, { error: "Invalid Ordering Data" });
-    }
+     if (amount <= 0 || quantity <= 0 || !Array.isArray(products) || products.length === 0) {
+       return response(res, 400, { error: "Invalid Ordering Data" });
+     }
+    // ---------------------------------
 
     const totalAmount = Number(amount) + Number(shippingCost);
+    const amountInCents = Math.round(totalAmount * 100); // Asegurar que sea entero
 
-    // Verificar el stock de los productos
+    // --- Verificación de stock (sin cambios) ---
     const productIds = products.map(p => p.id_product);
-    const dbProducts = await Product.findAll({
-      where: { id_product: productIds },
-      attributes: ["id_product", "stock", "isDian"],
-    });
-
-    // Verificar stock disponible
+    const dbProducts = await Product.findAll({ where: { id_product: productIds }, attributes: ["id_product", "stock", "isDian"] });
     const productosSinStock = dbProducts.filter((dbProduct) => {
-      const ordenProducto = products.find(p => p.id_product === dbProduct.id_product);
-      return dbProduct.stock < ordenProducto.quantity;
+       const ordenProducto = products.find(p => p.id_product === dbProduct.id_product);
+       return dbProduct.stock < ordenProducto.quantity;
     });
-
     if (productosSinStock.length > 0) {
-      return response(res, 400, { 
-        error: "Not enough stock for some products", 
-        productosSinStock 
-      });
+       return response(res, 400, { error: "Not enough stock for some products", productosSinStock });
     }
-
-    const referencia = `SO-${uuidv4()}`;
-    const integritySignature = generarFirmaIntegridad(
-      referencia, 
-      totalAmount * 100, 
-      "COP", 
-      secretoIntegridad
-    );
+    // ---------------------------------------
 
     const isFacturable = dbProducts.some(product => product.isDian);
     const finalDeliveryAddress = address === "Envio a domicilio" ? deliveryAddress : null;
 
-    // Crear la orden
+    // *** PASO 1: Generar ID y Firma ANTES de crear ***
+    const newOrderId = uuidv4(); // Genera el ID que se usará
+    const firmaReal = generarFirmaIntegridad(
+        newOrderId, // Usa el ID que se va a guardar
+        amountInCents,
+        "COP",
+        secretoIntegridad
+    );
+    console.log("ID generado:", newOrderId);
+    console.log("Firma generada:", firmaReal);
+
+    // *** PASO 2: Crear la orden CON el ID y la Firma ***
     const orderDetail = await OrderDetail.create({
-      id_orderDetail: uuidv4(),
+      id_orderDetail: newOrderId, // Usa el ID generado
       date,
       amount: totalAmount,
       shippingCost,
@@ -85,71 +79,54 @@ module.exports = async (req, res) => {
       deliveryAddress: finalDeliveryAddress,
       n_document,
       pointOfSale,
-      integritySignature,
+      integritySignature: firmaReal, // Incluye la firma aquí
       isFacturable
     });
 
-    // Asociar productos y actualizar stock
+    // --- Asociar productos y actualizar stock (sin cambios) ---
     await Promise.all(
       products.map(async (product) => {
-        // Registrar movimiento de stock
-        await StockMovement.create({
-          id_movement: uuidv4(),
-          id_product: product.id_product,
-          type: "OUT",
-          quantity: product.quantity,
-        });
-
-        // Actualizar el stock del producto
-        await Product.decrement("stock", {
-          by: product.quantity,
-          where: { id_product: product.id_product },
-        });
-
-        // Asociar producto con la orden
-        await orderDetail.addProduct(product.id_product, { 
-          through: { quantity: product.quantity } 
-        });
+        await StockMovement.create({ id_movement: uuidv4(), id_product: product.id_product, type: "OUT", quantity: product.quantity });
+        await Product.decrement("stock", { by: product.quantity, where: { id_product: product.id_product } });
+        await orderDetail.addProduct(product.id_product, { through: { quantity: product.quantity } });
       })
     );
+    // -------------------------------------------------------
 
     // Obtener la orden actualizada con los productos
     const updatedOrderDetail = await OrderDetail.findOne({
-      where: { id_orderDetail: orderDetail.id_orderDetail },
-      include: {
-        model: Product,
-        as: "products",
-        attributes: ["id_product", "stock", "description", "price"],
-      },
+      where: { id_orderDetail: orderDetail.id_orderDetail }, // Usa el ID real
+      include: { model: Product, as: "products", attributes: ["id_product", "stock", "description", "price"] },
     });
 
     // Logs para depuración
-    console.log("Creando orden con los siguientes datos:", {
-      date,
-      amount: totalAmount,
-      pointOfSale,
-      products,
-      address,
-      deliveryAddress: finalDeliveryAddress
-    });
-    console.log("Orden creada:", updatedOrderDetail);
+    console.log("Creando orden con los siguientes datos:", { date, amount: totalAmount, pointOfSale, products, address, deliveryAddress: finalDeliveryAddress });
+    console.log("Orden creada:", updatedOrderDetail.toJSON());
 
-    const responseData = { 
-      orderDetail: updatedOrderDetail
+    // Estructura de respuesta (sin cambios respecto a la corrección anterior)
+    const responseData = {
+        order: updatedOrderDetail.toJSON()
     };
 
+    // Añadir wompiData si es Online (sin cambios respecto a la corrección anterior)
     if (pointOfSale === "Online") {
-      responseData.wompiData = {
-        referencia,
-        integritySignature,
-        amount: totalAmount * 100 // Amount in cents for Wompi
+      responseData.order.wompiData = {
+        referencia: orderDetail.id_orderDetail, // ID real
+        integritySignature: firmaReal,          // Firma real
+        amount: amountInCents                   // Monto en centavos
       };
     }
 
+    console.log("Enviando respuesta:", responseData);
     return response(res, 201, responseData);
 
   } catch (error) {
+    // Loguea el error completo para más detalles
     console.error("Error creating orderDetail:", error);
-    return response(res, 500, { error: error.message });
+    // Devuelve un mensaje de error genérico o específico si es una validación
+    const errorMessage = error.name === 'SequelizeValidationError'
+      ? error.errors.map(e => e.message).join(', ')
+      : error.message;
+    return response(res, 500, { error: errorMessage });
   }
 };

@@ -4,7 +4,7 @@ const {getOrderDetailID} =  require("./getOrderDetailID");
 const {getOrderByOrderId} =  require("./getOrderByOrderId");
 const {createOrderWithReservation} = require("./createOrderWithReservation");
 const {updateReservation} = require("../ReservationController/updateReservation");
-
+const {deleteOrderDetail} = require("./deleteOrderDetail");
 
 
 module.exports = {
@@ -13,5 +13,7 @@ module.exports = {
   getOrderDetailID,
   getOrderByOrderId,
   createOrderWithReservation,
-updateReservation
+updateReservation,
+  deleteOrderDetail,
+  // Otros controladores que necesites importar
 }

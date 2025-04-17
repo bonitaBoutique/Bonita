@@ -125,7 +125,10 @@ import {
   CREATE_SENDING_FAILURE,
   FETCH_SENDINGTRACKING_REQUEST,
 FETCH_SENDINGTRACKING_SUCCESS,
-FETCH_SENDINGTRACKING_FAILURE
+FETCH_SENDINGTRACKING_FAILURE,
+DELETE_ORDER_DETAIL_REQUEST,
+  DELETE_ORDER_DETAIL_SUCCESS,
+  DELETE_ORDER_DETAIL_FAILURE,
 
 } from "../Actions/actions-type";
 
@@ -1400,6 +1403,40 @@ case CREATE_SENDING_FAILURE:
       error: action.payload
     }
   };
+  case DELETE_ORDER_DETAIL_REQUEST:
+    return {
+      ...state,
+      ordersGeneral: { // Actualiza el estado de carga dentro de ordersGeneral
+        ...state.ordersGeneral,
+        loading: true, // Indica que la operación de borrado está en curso
+        error: null,   // Limpia errores previos
+      },
+    };
+
+  case DELETE_ORDER_DETAIL_SUCCESS:
+    // Filtra la orden eliminada del array 'orders' en 'ordersGeneral'
+    const updatedOrdersList = state.ordersGeneral.orders.filter(
+      (order) => order.id_orderDetail !== action.payload // action.payload es el ID de la orden borrada
+    );
+    return {
+      ...state,
+      ordersGeneral: {
+        ...state.ordersGeneral,
+        loading: false, // Termina el estado de carga
+        orders: updatedOrdersList, // Actualiza la lista de órdenes
+        error: null, // Limpia errores
+      },
+    };
+
+  case DELETE_ORDER_DETAIL_FAILURE:
+    return {
+      ...state,
+      ordersGeneral: { // Actualiza el estado de error dentro de ordersGeneral
+        ...state.ordersGeneral,
+        loading: false, // Termina el estado de carga
+        error: action.payload, // Guarda el mensaje de error
+      },
+    };
 
           
     default:

@@ -38,10 +38,11 @@ const getBalance = async (req, res) => {
       },
       attributes: [
         'id_receipt',
+        'buyer_name',
         'date',
         'total_amount',
         'payMethod',
-        'cashier_document' // Documento del cajero
+        'cashier_document' 
       ]
     });
 
@@ -64,7 +65,7 @@ const getBalance = async (req, res) => {
     });
 
     console.log("Gastos obtenidos:", expenses);
-
+    console.log("Ventas Locales desde Receipt (Raw):", localSales);
     // Formatear ventas online
     const formattedOnlineSales = onlineSales.map(sale => ({
       id: sale.id_orderDetail,
@@ -84,7 +85,8 @@ const getBalance = async (req, res) => {
       amount: sale.total_amount,
       pointOfSale: 'Local',
       paymentMethod: sale.payMethod || 'Desconocido',
-      cashierDocument: sale.cashier_document
+      cashierDocument: sale.cashier_document,
+      buyerName: sale.buyer_name || 'Desconocido',
     }));
 
     console.log("Ventas Locales formateadas:", formattedLocalSales);

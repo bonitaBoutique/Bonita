@@ -129,7 +129,10 @@ import {
   CREATE_SENDING_FAILURE,
   FETCH_SENDINGTRACKING_REQUEST,
 FETCH_SENDINGTRACKING_SUCCESS,
-FETCH_SENDINGTRACKING_FAILURE
+FETCH_SENDINGTRACKING_FAILURE,
+DELETE_ORDER_DETAIL_REQUEST,
+DELETE_ORDER_DETAIL_SUCCESS,
+DELETE_ORDER_DETAIL_FAILURE,
 
   
 } from "./actions-type";
@@ -1282,7 +1285,38 @@ export const getSendingTracking = () => async (dispatch) => {
 };
 
 
+export const deleteOrderDetail = (id_orderDetail) => async (dispatch) => {
+  dispatch({ type: DELETE_ORDER_DETAIL_REQUEST });
 
+  try {
+    // Llama al endpoint DELETE que creaste en el backend
+    // Ajusta la URL si tu endpoint es diferente (ej: /order/details/:id)
+    const response = await axios.delete(`${BASE_URL}/order/${id_orderDetail}`);
+
+    // Verifica si la respuesta es exitosa (204 No Content o 200 OK)
+    if (response.status === 204 || response.status === 200) {
+      dispatch({
+        type: DELETE_ORDER_DETAIL_SUCCESS,
+        payload: id_orderDetail, // Envía el ID para que el reducer lo elimine del estado
+      });
+      // No mostramos Swal aquí, lo manejamos en el componente que llama a la acción
+      // después de la confirmación inicial.
+    } else {
+      // Si el backend devuelve un status diferente pero no lanza error
+      throw new Error(response.data?.message || 'Error inesperado al borrar la orden');
+    }
+
+  } catch (error) {
+    console.error("Error deleting order detail:", error);
+    const errorMessage = error.response?.data?.error || error.message || "No se pudo borrar la orden.";
+    dispatch({
+      type: DELETE_ORDER_DETAIL_FAILURE,
+      payload: errorMessage,
+    });
+    // No mostramos Swal aquí tampoco, el componente manejará el error.
+    throw new Error(errorMessage); // Re-lanzamos el error para que el componente lo capture
+  }
+};
 
 
 

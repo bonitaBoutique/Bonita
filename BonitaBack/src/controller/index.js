@@ -49,6 +49,7 @@ module.exports = {
   getOrderDetailID: catchedAsync(require("./OrdersDetails/getOrderDetailID")),
   getOrderByOrderId: catchedAsync(require("./OrdersDetails/getOrderByOrderId")),
   updateOrderDetail: catchedAsync(require("./OrdersDetails/updateOrderDetail")),
+  deleteOrderDetail: catchedAsync(require("./OrdersDetails/deleteOrderDetail")),
   webhook: catchedAsync(require("./webhook")),
   getOrCreateSellerData: catchedAsync(getOrCreateSellerData),
   getSellerDataBySdocno: catchedAsync(getSellerDataBySdocno),

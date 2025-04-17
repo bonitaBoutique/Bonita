@@ -216,10 +216,10 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
            <h4 className="font-bold mb-2 border-b pb-1">
              Detalle Pedido: {hoveredOrderId}
            </h4>
-           {currentOrderDetail.user_info ? (
+           {currentOrderDetail.userData ? (
              <p className="mb-1">
-               Cliente: {currentOrderDetail.user_info.first_name}{" "}
-               {currentOrderDetail.user_info.last_name} (
+               Cliente: {currentOrderDetail.userData.first_name}{" "}
+               {currentOrderDetail.userData.last_name} (
                {currentOrderDetail.n_document})
              </p>
            ) : (

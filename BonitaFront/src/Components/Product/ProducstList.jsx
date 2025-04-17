@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react"; // Importa useCallback
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, deleteProduct } from "../../Redux/Actions/actions";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,21 +11,26 @@ const ProductsList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 6;
-  const maxPagesToShow = 5;
+  // --- Estado para Scroll Infinito ---
+  const initialLoadCount = 12; // Número inicial de grupos a mostrar
+  const loadMoreCount = 6; // Número de grupos a añadir cada vez
+  const [visibleCount, setVisibleCount] = useState(initialLoadCount);
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Para indicar carga
+  // ---------------------------------
 
   // Selecciona los datos del estado global
   const products = useSelector((state) => state.products || []);
   const searchResults = useSelector((state) => state.searchResults || []);
-  const loading = useSelector((state) => state.loading);
+  const loading = useSelector((state) => state.loading); // Loading inicial de fetchProducts
   const error = useSelector((state) => state.error);
   const userInfo = useSelector((state) => state.userLogin?.userInfo);
 
   useEffect(() => {
-    // Cargar todos los productos al inicio
-    dispatch(fetchProducts());
-  }, [dispatch]);
+    // Cargar todos los productos al inicio si no hay ya
+    if (products.length === 0) {
+        dispatch(fetchProducts());
+    }
+  }, [dispatch, products.length]);
 
   // Mostrar productos filtrados si existen, de lo contrario, mostrar todos.
   // Filtramos por stock y que sea tiendaOnLine.
@@ -35,59 +40,52 @@ const ProductsList = () => {
 
   // Agrupamos productos por descripción para mostrar solo uno por grupo.
   const groupedProducts = {};
-activeProducts.forEach((product) => {
-  // Normalizamos la descripción usando trim() (y opcionalmente toUpperCase())
-  const key = product.description.trim();
-  if (groupedProducts[key]) {
-    groupedProducts[key].push(product);
-  } else {
-    groupedProducts[key] = [product];
-  }
-});
+  activeProducts.forEach((product) => {
+    const key = product.description.trim();
+    if (groupedProducts[key]) {
+      groupedProducts[key].push(product);
+    } else {
+      groupedProducts[key] = [product];
+    }
+  });
 
-  // Convertimos el objeto en un arreglo donde cada elemento es un grupo (array) de productos con la misma descripción.
+  // Convertimos el objeto en un arreglo donde cada elemento es un grupo.
   const uniqueGroups = Object.values(groupedProducts);
 
-  // Para la paginación, usamos uniqueGroups y mostramos el primer producto de cada grupo.
-  const indexOfLastGroup = currentPage * productsPerPage;
-  const indexOfFirstGroup = indexOfLastGroup - productsPerPage;
-  const currentGroups = uniqueGroups.slice(indexOfFirstGroup, indexOfLastGroup);
-
-  const getPageNumbers = () => {
-    const totalPages = Math.ceil(uniqueGroups.length / productsPerPage);
-    if (totalPages <= maxPagesToShow) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+  // --- Lógica de Scroll Infinito ---
+  const handleScroll = useCallback(() => {
+    // window.innerHeight: Altura visible del viewport.
+    // document.documentElement.scrollTop: Cuánto se ha scrolleado desde arriba.
+    // document.documentElement.offsetHeight: Altura total del contenido de la página.
+    // Umbral: Un pequeño margen antes de llegar al fondo exacto.
+    const threshold = 100;
+    if (
+      window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - threshold &&
+      !isLoadingMore && // Evita cargas múltiples si ya está cargando
+      visibleCount < uniqueGroups.length // Solo carga si hay más items por mostrar
+    ) {
+      setIsLoadingMore(true); // Marca como cargando
+      // Simula un pequeño delay para la carga (opcional, mejora UX)
+      setTimeout(() => {
+        setVisibleCount((prevCount) => prevCount + loadMoreCount);
+        setIsLoadingMore(false); // Marca como terminado
+      }, 500); // 500ms delay
     }
+  }, [isLoadingMore, visibleCount, uniqueGroups.length]); // Dependencias del useCallback
 
-    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    // Limpieza: remover el listener al desmontar
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]); // El listener depende de la función handleScroll
 
-    const pageNumbers = Array.from(
-      { length: endPage - startPage + 1 },
-      (_, i) => startPage + i
-    );
+  // ---------------------------------
 
-    if (startPage > 1) {
-      pageNumbers.unshift(1);
-      if (startPage > 2) {
-        pageNumbers.unshift("...");
-      }
-    }
+  // Productos a mostrar basados en visibleCount
+  const currentGroups = uniqueGroups.slice(0, visibleCount);
 
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        pageNumbers.push("...");
-      }
-      pageNumbers.push(totalPages);
-    }
-
-    return pageNumbers;
-  };
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
+  // --- Funciones existentes (handleButtonClick, handleEdit, handleDelete) sin cambios ---
   const handleButtonClick = (product) => {
-    // Navega a la vista de detalles donde se podrán mostrar todas las variantes.
     navigate(`/product/${product.id_product}`);
   };
 
@@ -107,13 +105,22 @@ activeProducts.forEach((product) => {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        dispatch(deleteProduct(id_product));
-        Swal.fire("¡Eliminado!", "El producto ha sido eliminado.", "success");
+        // Optimista: Actualiza UI antes de confirmar backend (opcional)
+        // O espera a que la acción termine y actualice el estado global
+        dispatch(deleteProduct(id_product)).then(() => {
+             Swal.fire("¡Eliminado!", "El producto ha sido eliminado.", "success");
+             // Podrías necesitar forzar recarga o confiar en que el estado se actualiza
+             // setVisibleCount(initialLoadCount); // Opcional: resetear vista
+        }).catch(err => {
+             Swal.fire("Error", "No se pudo eliminar el producto.", "error");
+        });
       }
     });
   };
+  // ------------------------------------------------------------------------------------
 
-  if (loading) {
+  // --- Renderizado ---
+  if (loading && products.length === 0) { // Muestra loading solo en la carga inicial
     return (
       <div className="min-h-screen flex items-center justify-center">
         Cargando...
@@ -132,22 +139,25 @@ activeProducts.forEach((product) => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen flex flex-col justify-center items-center bg-colorBeige opacity-95 py-40">
+      {/* Ajusta padding si es necesario */}
+      <div className="min-h-screen flex flex-col items-center bg-colorBeige opacity-95 pt-24 pb-10">
         <SearchComponent />
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-          {uniqueGroups.length === 0 ? (
-            <p className="text-white text-lg">No hay productos disponibles.</p>
+        <div className="mx-auto max-w-7xl w-full px-4 py-16 sm:px-6 lg:px-8">
+          {uniqueGroups.length === 0 && !loading ? ( // Muestra si no hay productos y no está cargando
+            <p className="text-center text-gray-500 text-lg">No hay productos disponibles.</p>
           ) : (
             <>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 uppercase font-nunito font-semibold">
-                {currentGroups.map((group, index) => {
-                  const representative = group[0]; // El primero representará al grupo.
+                {/* Mapea sobre currentGroups (los visibles) */}
+                {currentGroups.map((group) => {
+                  const representative = group[0];
                   return (
                     <div
-                      key={representative.id_product}
+                      key={representative.id_product} // Usa ID único
                       className="group relative bg-colorBeigeClaro shadow-2xl rounded-2xl overflow-hidden flex flex-col"
                     >
-                      {representative.stock <= 5 && (
+                      {/* ... (contenido de la tarjeta del producto - sin cambios) ... */}
+                       {representative.stock <= 5 && (
                         <div className="absolute top-2 left-2 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                           ¡Últimas {representative.stock} unidades!
                         </div>
@@ -226,56 +236,19 @@ activeProducts.forEach((product) => {
                   );
                 })}
               </div>
-              <div className="flex justify-center mt-8 w-full overflow-x-auto">
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => paginate(1)}
-                    disabled={currentPage === 1}
-                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    {"<<"}
-                  </button>
-                  <button
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    {"<"}
-                  </button>
-                  {getPageNumbers().map((pageNumber, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        if (typeof pageNumber === "number") {
-                          paginate(pageNumber);
-                        }
-                      }}
-                      disabled={typeof pageNumber === "string"}
-                      className={`mx-1 px-2 py-1 rounded-md ${
-                        currentPage === pageNumber
-                          ? "bg-amber-100 text-slate-700"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      } ${typeof pageNumber === "string" ? "cursor-default" : ""}`}
-                    >
-                      {pageNumber}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === Math.ceil(uniqueGroups.length / productsPerPage)}
-                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    {">"}
-                  </button>
-                  <button
-                    onClick={() => paginate(Math.ceil(uniqueGroups.length / productsPerPage))}
-                    disabled={currentPage === Math.ceil(uniqueGroups.length / productsPerPage)}
-                    className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-                  >
-                    {">>"}
-                  </button>
+              {/* Indicador de carga al hacer scroll */}
+              {isLoadingMore && (
+                <div className="text-center py-4 text-gray-500">
+                  Cargando más productos...
                 </div>
-              </div>
+              )}
+              {/* Mensaje cuando no hay más productos por cargar */}
+              {visibleCount >= uniqueGroups.length && uniqueGroups.length > 0 && !isLoadingMore && (
+                 <div className="text-center py-4 text-gray-400">
+                   Has llegado al final.
+                 </div>
+              )}
+              {/* --- Eliminar la sección de botones de paginación --- */}
             </>
           )}
         </div>

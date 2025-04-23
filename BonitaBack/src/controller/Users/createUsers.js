@@ -7,6 +7,10 @@ module.exports = async (req, res) => {
   try {
     const user = req.body;
 
+    if (user.email) {
+      user.email = user.email.toLowerCase();
+    }
+
     if (!user.first_name || !user.last_name || !user.email || !user.password || !user.n_document ||!user.wdoctype ||!user.phone) {
       return response(res, 400, "Todos los campos son obligatorios");
     }

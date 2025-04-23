@@ -34,10 +34,20 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => {
+      if (name === "n_document") {
+        return {
+          ...prev,
+          n_document: value,
+          password: value,
+          confirmPassword: value,
+        };
+      }
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
   };
 
   // Consolidated success/error handling
@@ -130,7 +140,7 @@ const Register = () => {
         <label>
         Tipo de Documento:
         <select name="wdoctype" value={formData.wdoctype} onChange={handleChange}>
-          <option value="">Selecciona un tipo de documento</option>
+          <option value="">Cédula de ciudadanía</option>
           <option value="RC">Registro civil</option>
           <option value="TI">Tarjeta de identidad</option>
           <option value="CC">Cédula de ciudadanía</option>

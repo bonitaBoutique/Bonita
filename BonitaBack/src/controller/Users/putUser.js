@@ -4,9 +4,15 @@ const bcrypt = require("bcrypt");
 
 module.exports = async (req, res) => {
   try {
-    const nDocument = req.params.n_document; // Corregido a n_document
+    const nDocument = req.params.n_document;
     const userUpdates = req.body;
 
+    // Normalizar email a minúsculas si viene en la actualización
+    if (userUpdates.email) {
+      userUpdates.email = userUpdates.email.toLowerCase();
+    }
+
+    // Hashear la contraseña si viene en la actualización
     if (userUpdates.password) {
       userUpdates.password = await bcrypt.hash(userUpdates.password, 10);
     }

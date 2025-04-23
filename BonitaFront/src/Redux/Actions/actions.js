@@ -237,21 +237,38 @@ export const decrementQuantity = (productId) => ({
 });
 
 export const createOrder = (orderData) => async (dispatch) => {
+  // *** PASO 1: Despachar REQUEST ***
+  dispatch({ type: ORDER_CREATE_REQUEST }); // Establece loading = true
+
   try {
+    console.log(">>> Action: createOrder - Sending data:", orderData); // Log antes de enviar
     const response = await axios.post(`${BASE_URL}/order/create/`, orderData);
-    //console.log("Response data from createOrder:", response.data); // Agrega este log
+    console.log(">>> Action: createOrder - Received response:", response.data); // Log de la respuesta completa
+
+    // *** PASO 2: Despachar SUCCESS con el payload correcto ***
+    // El backend envía { order: { ... } }, así que el payload es response.data
     dispatch({
-      type: "CREATE_ORDER_SUCCESS",
-      payload: response.data.message.orderDetail,
+      type: ORDER_CREATE_SUCCESS, // <--- Usa la constante
+      payload: response.data,     // <--- Usa response.data (que contiene 'order')
     });
-    return response.data.message.orderDetail; // Retorna la data para que el componente pueda acceder al id
+
+    // Opcional: puedes retornar si es útil, pero el estado se actualiza vía dispatch
+    // return response.data.order;
+
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error(">>> Action: createOrder - Error:", error.response ? error.response.data : error.message); // Log de error más detallado
+
+    // *** PASO 3: Despachar FAIL con el payload correcto ***
     dispatch({
-      type: "CREATE_ORDER_ERROR",
-      payload: error.message,
+      type: ORDER_CREATE_FAIL, // <--- Usa la constante
+      // Envía el mensaje de error específico del backend si existe, o el mensaje genérico
+      payload: error.response && error.response.data && error.response.data.error
+                 ? error.response.data.error
+                 : error.message,
     });
-    throw error; // Re-lanza el error para que el componente pueda manejarlo
+
+    // No es necesario re-lanzar el error si el componente no lo necesita manejar directamente
+    // throw error;
   }
 };
 

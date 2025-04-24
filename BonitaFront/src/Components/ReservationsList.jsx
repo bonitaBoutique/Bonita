@@ -14,7 +14,7 @@ import Swal from "sweetalert2";
 
 const ReservationList = () => {
   const dispatch = useDispatch();
-  const reservations = useSelector((state) => state.reservation.list);
+  const reservations = useSelector((state) => state.reservation.list) || [];
   const loading = useSelector((state) => state.reservation.loading);
   const error = useSelector((state) => state.reservation.error);
   const latestReceipt = useSelector((state) => state.receiptNumber);
@@ -34,7 +34,7 @@ const ReservationList = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!loading && (!reservations || reservations.length === 0)) {
+    if (!loading && !error && reservations && reservations.length === 0) {
       Swal.fire({
         title: 'Sin Reservas',
         text: 'No hay reservas para mostrar en este momento',
@@ -42,8 +42,7 @@ const ReservationList = () => {
         confirmButtonText: 'Aceptar'
       });
     }
-  }, [reservations, loading]);
-
+  }, [reservations, loading, error]);
   console.log(latestReceipt);
 
   const calculatePendingDebt = (totalAmount, paidAmount) => {
@@ -266,13 +265,13 @@ const ReservationList = () => {
 
     // Detalles del recibo
     doc.setFontSize(10); // Tamaño de fuente más pequeño para los detalles
-    doc.text(`Nombre del Comprador: ${buyer_name}`, 20, currentY);
+    doc.text(` ${buyer_name}`, 20, currentY);
     currentY += 20;
 
-    doc.text(`Correo Electrónico: ${buyer_email}`, 20, currentY);
+    doc.text(` ${buyer_email}`, 20, currentY);
     currentY += 20;
 
-    doc.text(`Teléfono: ${buyer_phone || "N/A"}`, 20, currentY);
+    doc.text(` ${buyer_phone || "N/A"}`, 20, currentY);
     currentY += 20;
 
     doc.text(`Pago Parcial: $${total_amount}`, 20, currentY);
@@ -307,6 +306,10 @@ const ReservationList = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
+
+  console.log("RESERVATIONS:", reservations);
+console.log("CURRENT RESERVATIONS:", currentReservations);
+
   return (
     <div className="container mx-auto p-4 mt-12">
       <h1 className="text-2xl font-bold mb-4">Reservas</h1>
@@ -316,6 +319,7 @@ const ReservationList = () => {
           <thead>
             <tr>
               <th className="py-2 px-4 border-b">Id Orden</th>
+              <th className="py-2 px-4 border-b">Cliente </th>
               <th className="py-2 px-4 border-b">Vencimiento</th>
               <th className="py-2 px-4 border-b">Parcial</th>
               <th className="py-2 px-4 border-b">Monto Orden</th>
@@ -386,6 +390,11 @@ const ReservationList = () => {
                       </div>
                     )}
                   </td>
+                  <td className="py-2 px-4 border-b">
+          {reservation.OrderDetail?.User
+            ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
+            : 'N/A'}
+        </td>
                   <td className="py-2 px-4 border-b">
                     {new Date(reservation.dueDate).toLocaleDateString()}
                   </td>

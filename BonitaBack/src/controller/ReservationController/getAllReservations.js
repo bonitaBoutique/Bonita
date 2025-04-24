@@ -22,10 +22,7 @@ module.exports = async (req, res) => {
 
     console.log('Found reservations:', JSON.stringify(reservations, null, 2));
 
-    if (!reservations.length) {
-      return response(res, 404, { error: "No reservations found" });
-    }
-
+   
     return response(res, 200, { reservations });
   } catch (error) {
     console.error("Error fetching reservations:", error);

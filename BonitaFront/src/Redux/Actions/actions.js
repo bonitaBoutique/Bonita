@@ -133,6 +133,9 @@ FETCH_SENDINGTRACKING_FAILURE,
 DELETE_ORDER_DETAIL_REQUEST,
 DELETE_ORDER_DETAIL_SUCCESS,
 DELETE_ORDER_DETAIL_FAILURE,
+REMOVE_PRODUCT_FROM_ORDER_REQUEST,
+REMOVE_PRODUCT_FROM_ORDER_SUCCESS,
+REMOVE_PRODUCT_FROM_ORDER_FAILURE
 
   
 } from "./actions-type";
@@ -1334,6 +1337,28 @@ export const deleteOrderDetail = (id_orderDetail) => async (dispatch) => {
     throw new Error(errorMessage); // Re-lanzamos el error para que el componente lo capture
   }
 };
+
+export const removeProductFromOrder = (id_orderDetail, id_product) => async (dispatch) => {
+  dispatch({ type: REMOVE_PRODUCT_FROM_ORDER_REQUEST });
+  try {
+    const { data } = await axios.post(
+      `${BASE_URL}/order/remove-product`,
+      { id_orderDetail, id_product }
+    );
+    dispatch({ type: REMOVE_PRODUCT_FROM_ORDER_SUCCESS, payload: { id_orderDetail, id_product } });
+    Swal.fire('Éxito', 'Producto eliminado de la orden', 'success');
+    return data;
+  } catch (error) {
+    dispatch({
+      type: REMOVE_PRODUCT_FROM_ORDER_FAILURE,
+      payload: error.response?.data || 'No se pudo eliminar el producto',
+    });
+    Swal.fire('Error', error.response?.data || 'No se pudo eliminar el producto', 'error');
+    throw error;
+  }
+};
+
+
 
 
 

@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { User } = require('../../data');
 const response = require('../../utils/response');
 const sendMail = require('../../utils/transporter');
+const transporter = require('../../utils/transporter');
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -21,7 +22,8 @@ exports.forgotPassword = async (req, res) => {
     user.passwordResetExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const resetUrl = `${req.protocol}://${req.get('host')}/resetPassword/${resetToken}`;
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${FRONTEND_URL}/reset-password/${resetToken}`;
 
     const message = `Recibió este correo electrónico porque usted (o alguien más) solicitó restablecer la contraseña. Haga clic en el siguiente enlace para restablecer su contraseña: \n\n ${resetUrl}`;
 

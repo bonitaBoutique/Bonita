@@ -34,4 +34,6 @@ module.exports = {
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_SECURE: process.env.SMTP_SECURE,
   SMTP_USER: process.env.SMTP_USER,
+  FRONT_URL:process.env.FRONT_URL,
+FRONT_URL_PROD:process.env.FRONT_URL_PROD,
 };

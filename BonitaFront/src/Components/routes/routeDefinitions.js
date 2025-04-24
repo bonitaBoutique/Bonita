@@ -41,8 +41,9 @@ export const publicRoutes = [
     path: '/recuperar', 
     component: lazy(() => import('../Users/RequestPasswordReset')) 
   },
+  
   { 
-    path: '/resetPassword/:token', 
+    path: '/reset-password/:token', 
     component: lazy(() => import('../Users/ResetPassword')) 
   }
 ];
@@ -129,7 +130,8 @@ export const adminRoutes = [
   { 
     path: '/creditN', 
     component: lazy(() => import('../Taxxa/CreditN')) 
-  },
+  }
+ 
   
   
 

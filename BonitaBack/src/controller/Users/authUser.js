@@ -1,15 +1,17 @@
+const { User } = require("../../data");
+const response = require("../../utils/response");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
 module.exports = async (req, res) => {
   try {
-    let { email, password } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return response(res, 400, "Email y contraseña son obligatorios");
     }
 
-    // Normalizar email a minúsculas
-    email = email.toLowerCase();
-
-    // Buscar usuario por email (ya en minúsculas)
+    // Buscar usuario por email
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
@@ -25,7 +27,7 @@ module.exports = async (req, res) => {
 
     // Crear token
     const token = jwt.sign(
-      { id: user.id, role: user.role, n_document: user.n_document },
+      { id: user.id, role: user.role, n_document: user.n_document }, // Incluir n_document en el payload del token
       process.env.JWT_SECRET_KEY,
       { expiresIn: '1h' }
     );

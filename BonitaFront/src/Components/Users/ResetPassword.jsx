@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const { token } = useParams();
+  const navigate = useNavigate();
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -15,8 +16,12 @@ const ResetPassword = () => {
       return;
     }
     try {
-      const { data } = await axios.post(`/user/resetPassword/${token}`, { password });
+      const { data } = await axios.post(`/correo/resetPassword/${token}`, { password });
       setMessage(data.message);
+      // Redirigir al login después de 2 segundos
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
       setMessage(error.response.data.message);
     }

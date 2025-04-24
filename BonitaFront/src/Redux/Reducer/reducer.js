@@ -494,24 +494,22 @@ const rootReducer = (state = initialState, action) => {
         },
       };
       case ORDER_CREATE_SUCCESS:
-        console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Received Payload:', action.payload); // Keep this log
-      
-        // *** CORRECCIÓN AQUÍ ***
-        // Extraer el objeto 'order' desde action.payload.message.order
-        const orderDataFromPayload = action.payload?.message?.order;
-      
-        const newState = {
-          ...state,
-          order: { // Referencia al slice 'order' del estado global
-            loading: false,
-            success: true,
-            // Asigna el objeto 'order' extraído a la propiedad 'order' dentro de este slice
-            order: orderDataFromPayload,
-            error: null,
-          },
-        };
-        console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Returning New State:', JSON.stringify(newState.order)); // Keep this log
-        return newState;
+  console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Received Payload:', action.payload);
+
+  // Aquí el payload YA ES el objeto de la orden
+  const orderDataFromPayload = action.payload;
+
+  const newState = {
+    ...state,
+    order: {
+      loading: false,
+      success: true,
+      order: orderDataFromPayload,
+      error: null,
+    },
+  };
+  console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Returning New State:', JSON.stringify(newState.order));
+  return newState;
     case ORDER_CREATE_FAIL:
       return {
         ...state,
@@ -1242,16 +1240,16 @@ case USER_REGISTER_FAIL:
               error: null,
             },
           };
-        case GET_ALL_RESERVATIONS_SUCCESS:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              list: action.payload,
-              loading: false,
-              error: null,
-            },
-          };
+          case GET_ALL_RESERVATIONS_SUCCESS:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      list: action.payload || [], // <-- Aquí va el array directamente
+      loading: false,
+      error: null,
+    },
+  };
         case GET_ALL_RESERVATIONS_FAILURE:
           return {
             ...state,

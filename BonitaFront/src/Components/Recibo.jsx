@@ -214,10 +214,10 @@ const [change, setChange] = useState(0); // Vuelto calculado
     currentY += 20;
   
     doc.setFontSize(10);
-    doc.text(`Nombre del Comprador: ${buyerName}`, 20, currentY);
+    doc.text(` ${buyerName}`, 20, currentY);
     currentY += 20;
   
-    doc.text(`Correo Electrónico: ${buyerEmail}`, 20, currentY);
+    doc.text(` ${buyerEmail}`, 20, currentY);
     currentY += 20;
   
     doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);

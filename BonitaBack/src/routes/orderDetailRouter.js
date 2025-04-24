@@ -6,7 +6,7 @@ const router = Router();
 // --- Rutas POST ---
 router.post('/create', controller.createOrderDetail);
 router.post("/reservations/:id_orderDetail", controller.createOrderWithReservation);
-
+router.post('/remove-product', controller.removedProduct);
 // --- Rutas GET ---
 router.get('/', controller.getOrdersDetails);
 router.get('/products/:id_orderDetail',controller.getOrderByOrderId);

@@ -18,7 +18,7 @@ const {
   deleteDirection,
 } = require("./MiPaquete/createDirection");
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
-
+const removedProduct = require("./OrdersDetails/removedProduct");
 const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
@@ -44,6 +44,7 @@ module.exports = {
   getSB: catchedAsync(require("./SubCategory/getSB")),
   createOrderDetail: catchedAsync(require("./OrdersDetails/createOrderDetail")),
   getOrdersDetails: catchedAsync(require("./OrdersDetails/getOrdersDetails")),
+  removedProduct: catchedAsync(removedProduct),
   createOrderWithReservation: catchedAsync(createOrderWithReservation),
   createUsers: catchedAsync(require("./Users/createUsers")),
   getOrderDetailID: catchedAsync(require("./OrdersDetails/getOrderDetailID")),

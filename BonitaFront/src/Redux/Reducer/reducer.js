@@ -129,6 +129,9 @@ FETCH_SENDINGTRACKING_FAILURE,
 DELETE_ORDER_DETAIL_REQUEST,
   DELETE_ORDER_DETAIL_SUCCESS,
   DELETE_ORDER_DETAIL_FAILURE,
+  REMOVE_PRODUCT_FROM_ORDER_REQUEST,
+  REMOVE_PRODUCT_FROM_ORDER_SUCCESS,
+  REMOVE_PRODUCT_FROM_ORDER_FAILURE,
 
 } from "../Actions/actions-type";
 
@@ -1445,6 +1448,35 @@ case CREATE_SENDING_FAILURE:
         error: action.payload, // Guarda el mensaje de error
       },
     };
+    case REMOVE_PRODUCT_FROM_ORDER_REQUEST:
+      return {
+        ...state,
+        ordersGeneral: {
+          ...state.ordersGeneral,
+          loading: true,
+          error: null,
+        },
+      };
+    case REMOVE_PRODUCT_FROM_ORDER_SUCCESS:
+      return {
+        ...state,
+        ordersGeneral: {
+          ...state.ordersGeneral,
+          loading: false,
+          // Opcional: puedes actualizar el array de órdenes si quieres quitar el producto del estado
+          // Aquí solo se marca como éxito, pero puedes actualizar el detalle de la orden si lo necesitas
+          error: null,
+        },
+      };
+    case REMOVE_PRODUCT_FROM_ORDER_FAILURE:
+      return {
+        ...state,
+        ordersGeneral: {
+          ...state.ordersGeneral,
+          loading: false,
+          error: action.payload,
+        },
+      };
 
           
     default:

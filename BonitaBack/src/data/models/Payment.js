@@ -1,8 +1,8 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
   sequelize.define(
-    'Payment',
+    "Payment",
     {
       id_payment: {
         type: DataTypes.INTEGER,
@@ -12,6 +12,11 @@ module.exports = (sequelize) => {
       },
       payment_state: {
         type: DataTypes.ENUM("Pago", "Pendiente"),
+        allowNull: false,
+      },
+
+      amount: {
+        type: DataTypes.FLOAT,
         allowNull: false,
       },
       payMethod: {
@@ -24,7 +29,7 @@ module.exports = (sequelize) => {
           "Bancolombia",
           "Otro"
         ),
-        allowNull: true, // Método de pago (opcional)
+        allowNull: true,
       },
       deletedAt: {
         type: DataTypes.DATE,

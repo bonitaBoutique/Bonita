@@ -17,6 +17,9 @@ const Recibo = () => {
   const { receiptNumber, latestOrder } = useSelector((state) => state);
   const { userInfo, loading: userLoading, error: userError } = useSelector((state) => state.userLogin);
   const { userInfo: cashierInfo, loading: cashierLoading, error: cashierError } = useSelector((state) => state.userTaxxa); // Obtén el estado del cajero
+  const [showSecondPayment, setShowSecondPayment] = useState(false);
+const [paymentMethod2, setPaymentMethod2] = useState("");
+const [amount2, setAmount2] = useState("");
   const [loadingCashier, setLoadingCashier] = useState(true);
 
   const [buyerName, setBuyerName] = useState("");
@@ -147,6 +150,8 @@ const [change, setChange] = useState(0); // Vuelto calculado
       payMethod: paymentMethod,
       cashier_document: userInfo.n_document,
       cashier_name: `${cashierInfo.first_name} ${cashierInfo.last_name}`,
+      payMethod2: paymentMethod2 || null,
+      amount2: amount2 ? parseFloat(amount2) : null,
     };
   
     try {
@@ -227,6 +232,13 @@ const [change, setChange] = useState(0); // Vuelto calculado
     currentY += 20;
     doc.text(`Metodo de Pago : ${paymentMethod}`, 20, currentY);
     currentY += 20;
+
+    doc.text(`Metodo de Pago : ${paymentMethod}`, 20, currentY);
+currentY += 20;
+if (showSecondPayment && paymentMethod2 && amount2) {
+  doc.text(`Metodo de Pago 2: ${paymentMethod2} $${amount2}`, 20, currentY);
+  currentY += 20;
+}
   
     doc.text("***************************", doc.internal.pageSize.width / 2, currentY, { align: "center" });
     currentY += 20;
@@ -277,10 +289,10 @@ const [change, setChange] = useState(0); // Vuelto calculado
           ← Volver
         </button>
       </div>
-
+  
       <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-16">
         <h2 className="text-2xl font-semibold text-center mb-4">Formulario de Recibo</h2>
-
+  
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Número de Recibo</label>
@@ -288,10 +300,10 @@ const [change, setChange] = useState(0); // Vuelto calculado
               type="number"
               value={newReceiptNumber}
               readOnly
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Cajero</label>
             {loadingCashier ? (
@@ -299,18 +311,18 @@ const [change, setChange] = useState(0); // Vuelto calculado
                 type="text"
                 value="Cargando..."
                 readOnly
-                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
               />
             ) : (
               <input
                 type="text"
                 value={cashierInfo ? `${cashierInfo.first_name} ${cashierInfo.last_name}` : 'N/A'}
                 readOnly
-                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
               />
             )}
           </div>
-
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Nombre del Comprador</label>
             <input
@@ -318,10 +330,10 @@ const [change, setChange] = useState(0); // Vuelto calculado
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
             <input
@@ -329,20 +341,20 @@ const [change, setChange] = useState(0); // Vuelto calculado
               value={buyerEmail}
               onChange={(e) => setBuyerEmail(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Teléfono</label>
             <input
               type="tel"
               value={buyerPhone}
               onChange={(e) => setBuyerPhone(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Monto Total</label>
             <input
@@ -350,16 +362,18 @@ const [change, setChange] = useState(0); // Vuelto calculado
               value={totalAmount}
               onChange={(e) => setTotalAmount(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
+  
+          {/* Primer método de pago y monto */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Método de Pago</label>
             <select
               value={paymentMethod}
               onChange={handlePaymentMethodChange}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             >
               <option value="" disabled>Seleccione un método</option>
               <option value="Efectivo">Efectivo</option>
@@ -371,34 +385,85 @@ const [change, setChange] = useState(0); // Vuelto calculado
               <option value="Otro">Otro</option>
             </select>
           </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Monto Método de Pago</label>
+            <input
+              type="number"
+              value={formData.amount || ""}
+              onChange={e => setFormData({ ...formData, amount: e.target.value })}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+            />
+          </div>
+  
+          {/* Segundo método de pago */}
+          {!showSecondPayment && (
+            <button
+              type="button"
+              className="mt-2 text-blue-600 underline text-xs"
+              onClick={() => setShowSecondPayment(true)}
+            >
+              + Agregar otro método de pago
+            </button>
+          )}
+  
+          {showSecondPayment && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Segundo Método de Pago</label>
+              <select
+                value={paymentMethod2}
+                onChange={e => setPaymentMethod2(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              >
+                <option value="">Seleccione</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+                <option value="Crédito">Reserva Crédito</option>
+                <option value="Addi">Addi</option>
+                <option value="Sistecredito">Sistecredito</option>
+                <option value="Bancolombia">Bancolombia</option>
+                <option value="Otro">Otro</option>
+              </select>
+              <input
+                type="number"
+                value={amount2}
+                onChange={e => setAmount2(e.target.value)}
+                placeholder="Monto"
+                className="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              />
+            </div>
+          )}
+  
+          {/* Efectivo: Dinero entregado y vuelto */}
           {paymentMethod === "Efectivo" && (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700">Dinero Entregado</label>
-    <input
-      type="number"
-      value={cashGiven}
-      onChange={(e) => {
-        const value = parseFloat(e.target.value) || 0;
-        setCashGiven(value);
-        setChange(value - totalAmount); // Calcular el vuelto automáticamente
-      }}
-      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-    />
-  </div>
-)}
-{paymentMethod === "Efectivo" && (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700">Vuelto</label>
-    <input
-      type="text"
-      value={change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"}
-      readOnly
-      className={`mt-1 block w-full px-3 py-2 border ${
-        change >= 0 ? "border-gray-300" : "border-red-500"
-      } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
-    />
-  </div>
-)}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Dinero Entregado</label>
+              <input
+                type="number"
+                value={cashGiven}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  setCashGiven(value);
+                  setChange(value - totalAmount); // Calcular el vuelto automáticamente
+                }}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              />
+            </div>
+          )}
+          {paymentMethod === "Efectivo" && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Vuelto</label>
+              <input
+                type="text"
+                value={change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"}
+                readOnly
+                className={`mt-1 block w-full px-3 py-2 border ${
+                  change >= 0 ? "border-gray-300" : "border-red-500"
+                } rounded-md shadow-sm`}
+              />
+            </div>
+          )}
+  
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Fecha</label>
             <input
@@ -406,10 +471,10 @@ const [change, setChange] = useState(0); // Vuelto calculado
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
+  
           <div className="flex gap-4">
             <button
               type="submit"
@@ -418,7 +483,7 @@ const [change, setChange] = useState(0); // Vuelto calculado
             >
               Generar Recibo
             </button>
-
+  
             {isSubmitted && (
               <button
                 type="button"
@@ -430,6 +495,7 @@ const [change, setChange] = useState(0); // Vuelto calculado
             )}
           </div>
         </form>
+  
         {showReservationPopup && (
           <ReservationPopup
             orderId={order.id_orderDetail}

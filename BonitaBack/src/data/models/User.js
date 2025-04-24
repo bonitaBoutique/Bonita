@@ -1,8 +1,8 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
   sequelize.define(
-    'User',
+    "User",
     {
       n_document: {
         type: DataTypes.STRING,
@@ -10,7 +10,20 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       wdoctype: {
-        type: DataTypes.ENUM('RC', 'TI', 'CC','TE', 'CE', 'NIT','PAS', 'DEX', 'PEP','PPT', 'FI', 'NUIP'),
+        type: DataTypes.ENUM(
+          "RC",
+          "TI",
+          "CC",
+          "TE",
+          "CE",
+          "NIT",
+          "PAS",
+          "DEX",
+          "PEP",
+          "PPT",
+          "FI",
+          "NUIP"
+        ),
         allowNull: true,
       },
       first_name: {
@@ -19,7 +32,7 @@ module.exports = (sequelize) => {
       last_name: {
         type: DataTypes.STRING,
       },
-     
+
       email: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -39,36 +52,41 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
       },
       role: {
-        type: DataTypes.ENUM('User', 'Admin', 'Cajero'),
-        defaultValue: 'User',
+        type: DataTypes.ENUM("User", "Admin", "Cajero"),
+        defaultValue: "User",
       },
       wlegalorganizationtype: {
-        type: DataTypes.ENUM('person', 'company'),
+        type: DataTypes.ENUM("person", "company"),
         allowNull: true,
-        defaultValue: 'person',
+        defaultValue: "person",
       },
       scostumername: {
         type: DataTypes.STRING,
         allowNull: true,
-        
       },
       stributaryidentificationkey: {
-        type: DataTypes.ENUM('O-1', 'O-4', 'ZZ', 'ZA'),
+        type: DataTypes.ENUM("O-1", "O-4", "ZZ", "ZA"),
         allowNull: true,
-        defaultValue: 'O-1',
-        
+        defaultValue: "O-1",
       },
       sfiscalresponsibilities: {
-        type: DataTypes.ENUM('O-13', 'O-15', 'O-23', 'O-47', 'R-99-PN'),
+        type: DataTypes.ENUM("O-13", "O-15", "O-23", "O-47", "R-99-PN"),
         allowNull: true,
-        defaultValue: 'R-99-PN',
+        defaultValue: "R-99-PN",
       },
       sfiscalregime: {
-        type: DataTypes.ENUM('48', "49"),
+        type: DataTypes.ENUM("48", "49"),
         allowNull: true,
-        defaultValue: '48',
+        defaultValue: "48",
       },
-      
+      passwordResetToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      passwordResetExpires: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
+      },
 
       deletedAt: {
         type: DataTypes.DATE,

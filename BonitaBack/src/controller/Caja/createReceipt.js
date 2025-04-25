@@ -9,8 +9,9 @@ module.exports = async (req, res) => {
     total_amount,
     date,
     payMethod,
-    amount2,        
-    payMethod2,     
+    amount,         
+    amount2,
+    payMethod2,
     cashier_document
   } = req.body;
 
@@ -64,7 +65,6 @@ module.exports = async (req, res) => {
 
     const receiptNumber = lastReceipt ? lastReceipt.id_receipt + 1 : 1001;
 
-    // Crear el nuevo recibo con ambos métodos de pago si existen
     const receipt = await Receipt.create({
       id_orderDetail,
       buyer_name,
@@ -73,8 +73,9 @@ module.exports = async (req, res) => {
       total_amount: order.amount,
       date,
       payMethod,
-      amount2: amount2 || null,         // <-- Nuevo
-      payMethod2: payMethod2 || null,   // <-- Nuevo
+      amount,                
+      amount2: amount2 || null,
+      payMethod2: payMethod2 || null,
       receipt_number: receiptNumber,
       cashier_document,
     });
@@ -89,7 +90,6 @@ module.exports = async (req, res) => {
     return res.status(500).json({ message: "Error al crear el recibo" });
   }
 };
-
 
 
 

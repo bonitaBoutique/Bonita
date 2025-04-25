@@ -84,12 +84,15 @@ const Recibo = () => {
 
   // Maneja el cambio del método de pago principal
   const handlePaymentMethodChange = (e) => {
-    setPaymentMethod(e.target.value);
-    // Opcional: Resetear segundo pago si cambia el primero
+    const value = e.target.value; // <-- Agrega esto
+    setPaymentMethod(value);
     setShowSecondPayment(false);
     setPaymentMethod2("");
     setAmount1("");
     setAmount2("");
+    if (value === "Crédito") {
+      setShowReservationPopup(true);
+    }
   };
 
   
@@ -545,7 +548,7 @@ const Recibo = () => {
           </div>
         </form>
 
-        {/* ... ReservationPopup ... */}
+        
          {showReservationPopup && (
           <ReservationPopup
             orderId={order.id_orderDetail}

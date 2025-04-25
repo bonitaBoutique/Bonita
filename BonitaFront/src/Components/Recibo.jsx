@@ -294,9 +294,6 @@ const Recibo = () => {
     doc.setFontSize(12);
     doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, { align: "center" });
 
-    // const fileName = `Recibo_${newReceiptNumber}.pdf`;
-    // doc.save(fileName);
-
     doc.output('dataurlnewwindow');
   };
 

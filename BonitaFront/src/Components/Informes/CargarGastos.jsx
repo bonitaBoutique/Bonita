@@ -10,6 +10,7 @@ const CargarGastos = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [paymentMethods, setPaymentMethods] = useState("");
+  const [destinatario, setDestinatario] = useState(""); // <-- 1. Nuevo estado
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, success, error } = useSelector((state) => state.expenses);
@@ -21,7 +22,8 @@ const CargarGastos = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await dispatch(createExpense({ date, type, amount, paymentMethods, description }));
+      // <-- 3. Incluir destinatario en el dispatch
+      await dispatch(createExpense({ date, type, amount, paymentMethods, description, destinatario }));
 
       Swal.fire({
         icon: "success",
@@ -30,11 +32,13 @@ const CargarGastos = () => {
         confirmButtonText: "Ok",
       });
 
+      // <-- 4. Resetear todos los campos
       setDate("");
       setType("");
       setAmount("");
       setDescription("");
       setPaymentMethods("");
+      setDestinatario(""); // <-- Resetear destinatario
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -49,6 +53,7 @@ const CargarGastos = () => {
     <div className="max-w-4xl mx-auto mt-20 p-6 bg-gray-300 rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6">Crear Gasto</h2>
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+        {/* ... Campos Fecha, Tipo, Descripción, Monto ... */}
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">
             Fecha
@@ -84,7 +89,6 @@ const CargarGastos = () => {
             <option value="Servicio Internet">Servicio Internet</option>
             <option value="Suministros">Suministros</option>
             <option value="Viaticos y Transportes">
-              
               Viaticos y Transportes
             </option>
             <option value="Inventario">Inventario</option>
@@ -131,6 +135,22 @@ const CargarGastos = () => {
             <option value="Otro">Otro</option>
           </select>
         </div>
+
+        {/* <-- 2. Nuevo Input para Destinatario --> */}
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Destinatario (Opcional)
+          </label>
+          <input
+            type="text"
+            value={destinatario}
+            onChange={(e) => setDestinatario(e.target.value)}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Nombre o entidad a quien se dirige el gasto"
+          />
+        </div>
+
+        {/* ... Botones ... */}
         <div className="col-span-2">
           <button
             type="submit"

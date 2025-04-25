@@ -186,8 +186,13 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
                   onMouseLeave={handleMouseLeave}
                 >
                   <td className="px-6 py-4 font-medium text-black">
-                    {order.id_orderDetail}
-                  </td>
+  {order.id_orderDetail}
+  {order.user_info && (
+    <span className="block text-xs text-gray-600">
+      {order.user_info.first_name} {order.user_info.last_name}
+    </span>
+  )}
+</td>
                   <td className="px-6 py-4">{order.date}</td>
                   <td className="px-6 py-4">{order.quantity}</td>
                   <td className="px-6 py-4">${order.amount?.toLocaleString('es-CO')}</td>

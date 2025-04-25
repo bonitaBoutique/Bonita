@@ -20,15 +20,6 @@ const {
 //   }
 // );
 
-// const sequelize = new Sequelize(
-//   `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-//   {
-//     logging: false, // set to console.log to see the raw SQL queries
-//     native: false, // lets Sequelize know we can use pg-native for ~30% more speed
-//     timezone: '-05:00', // UTC-5
-//   }
-// );
-
 //-------------------------------------CONFIGURACION PARA EL DEPLOY---------------------------------------------------------------------
 const sequelize = new Sequelize(DB_DEPLOY , {
       logging: false, // set to console.log to see the raw SQL queries

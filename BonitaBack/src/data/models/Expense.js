@@ -36,5 +36,9 @@ module.exports = (sequelize) => {
       type: DataTypes.FLOAT,
       allowNull: false,
     },
+    destinatario: { // <-- NUEVO CAMPO
+      type: DataTypes.STRING,
+      allowNull: true, // O false si siempre debe tener un valor
+    },
   });
 };

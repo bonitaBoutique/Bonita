@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFilteredExpenses } from '../../Redux/Actions/actions';
-import ExpenseList from './ExpenseList';
+import ExpenseList from './ExpenseList'; // Asegúrate que este componente no interfiera o úsalo si es relevante
 
 const FilterExpenses = () => {
   const [type, setType] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [destinatario, setDestinatario] = useState(''); // <-- 1. Nuevo estado
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { data, loading, error } = useSelector(state => state.expenses);
+  const { data, loading, error } = useSelector(state => state.expenses); // Asumiendo que los gastos filtrados se guardan aquí
 
   const handleBack = () => {
     navigate(-1);
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,21 +23,26 @@ const FilterExpenses = () => {
     if (type) filters.type = type;
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
+    if (destinatario) filters.destinatario = destinatario; // <-- 3. Incluir destinatario en filtros
     dispatch(getFilteredExpenses(filters));
   };
 
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Date(dateString).toLocaleDateString('en-CA', options);
+    if (!dateString) return 'N/A';
+    // Asegurarse que la fecha se interpreta correctamente (puede necesitar ajustar zona horaria si hay problemas)
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }; // Usar UTC para evitar problemas de zona horaria
+    return date.toLocaleDateString('es-CO', options); // Formato Colombiano
   };
 
   // Calcular subtotales
-  const totalAmount = data ? data.reduce((acc, expense) => acc + expense.amount, 0) : 0;
+  const totalAmount = data ? data.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0) : 0;
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-6">Filtrar Gastos</h2>
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+        {/* ... Tipo, Fecha Inicio, Fecha Fin ... */}
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700">Tipo de Gasto</label>
           <select
@@ -45,10 +50,11 @@ const FilterExpenses = () => {
             onChange={(e) => setType(e.target.value)}
             className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           >
-            <option value="">Seleccione un tipo</option>
+            <option value="">Todos los tipos</option> {/* Cambiado para permitir "todos" */}
             <option value="Impuestos">Impuestos</option>
             <option value="Nomina Colaboradores">Nomina Colaboradores</option>
             <option value="Nomina Contratistas Externos">Nomina Contratistas Externos</option>
+            <option value="Seguridad Social">Seguridad Social</option> {/* Agregado si falta */}
             <option value="Publicidad">Publicidad</option>
             <option value="Servicio Agua">Servicio Agua</option>
             <option value="Servicio Energia">Servicio Energia</option>
@@ -76,46 +82,65 @@ const FilterExpenses = () => {
             className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
+
+        {/* <-- 2. Nuevo Input para Destinatario --> */}
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700">Destinatario</label>
+          <input
+            type="text"
+            value={destinatario}
+            onChange={(e) => setDestinatario(e.target.value)}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Filtrar por nombre de destinatario..."
+          />
+        </div>
+
         <div className="col-span-2">
           <button
             type="submit"
             className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-300 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             disabled={loading}
           >
-            {loading ? 'Cargando...' : 'Filtrar Gastos'}
+            {loading ? 'Filtrando...' : 'Filtrar Gastos'}
           </button>
         </div>
-        {error && <div className="col-span-2 text-red-500">{error}</div>}
+        {error && <div className="col-span-2 text-red-500">Error: {typeof error === 'object' ? JSON.stringify(error) : error}</div>}
       </form>
+
+      {/* Resultados */}
       <div className="mt-6">
         <h3 className="text-xl font-bold mb-4">Resultados</h3>
-        {data && data.length > 0 ? (
+        {loading && <p>Cargando resultados...</p>}
+        {!loading && data && data.length > 0 ? (
           <>
-            <ul>
+            <ul className="space-y-3"> {/* Añadido espacio entre elementos */}
               {data.map(expense => (
-                <li key={expense.id} className="mb-2">
-                  <div className="p-4 bg-white rounded-lg shadow-md">
-                    <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>
-                    <p><strong>Tipo:</strong> {expense.type}</p>
-                    <p><strong>Monto:</strong> {expense.amount}</p>
-                  </div>
+                <li key={expense.id} className="p-4 bg-white rounded-lg shadow"> {/* Mejorado estilo de lista */}
+                  <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>
+                  <p><strong>Tipo:</strong> {expense.type}</p>
+                  {/* <-- 4. Mostrar Destinatario --> */}
+                  <p><strong>Destinatario:</strong> {expense.destinatario || 'N/A'}</p>
+                  <p><strong>Descripción:</strong> {expense.description || 'N/A'}</p>
+                  <p><strong>Método Pago:</strong> {expense.paymentMethods || 'N/A'}</p>
+                  <p><strong>Monto:</strong> ${ (parseFloat(expense.amount) || 0).toLocaleString('es-CO')}</p> {/* Formato moneda */}
                 </li>
               ))}
             </ul>
-            <div className="mt-4 p-4 bg-white rounded-lg shadow-md">
-              <p><strong>Total:</strong> {totalAmount}</p>
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-inner font-bold text-lg"> {/* Estilo para el total */}
+              <p>Total Gastos Filtrados: ${totalAmount.toLocaleString('es-CO')}</p>
             </div>
-           
           </>
         ) : (
-          <p>No se encontraron gastos.</p>
+          !loading && <p>No se encontraron gastos con los filtros aplicados.</p> // Mensaje si no hay datos y no está cargando
         )}
       </div>
-      <ExpenseList/>
+
+      {/* <ExpenseList/> */} {/* Comentado si no se usa o si muestra datos diferentes */}
+
       <button
             type="button"
             onClick={handleBack}
-            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 mt-4 hover:bg-pink-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 mt-4 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
             Volver
           </button>

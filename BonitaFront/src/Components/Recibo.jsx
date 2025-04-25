@@ -559,4 +559,4 @@ const Recibo = () => {
   );
 };
 
-export default Recibo;
+export default Recibo; //prueba

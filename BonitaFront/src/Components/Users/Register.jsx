@@ -10,7 +10,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     n_document: '',
-    wdoctype: '',
+    wdoctype: 'CC',
     phone: '',
     first_name: '',
     last_name: '',
@@ -87,7 +87,12 @@ const Register = () => {
       });
       return;
     }
-    await dispatch(registerUser(formData));
+    // Asegura que wdoctype siempre tenga un valor (por defecto "CC")
+    const dataToSend = {
+      ...formData,
+      wdoctype: formData.wdoctype || "CC"
+    };
+    await dispatch(registerUser(dataToSend));
   };
 
   // Handle success/error effects
@@ -140,7 +145,7 @@ const Register = () => {
         <label>
         Tipo de Documento:
         <select name="wdoctype" value={formData.wdoctype} onChange={handleChange}>
-          <option value="">Cédula de ciudadanía</option>
+          <option value="CC">Cédula de ciudadanía</option>
           <option value="RC">Registro civil</option>
           <option value="TI">Tarjeta de identidad</option>
           <option value="CC">Cédula de ciudadanía</option>

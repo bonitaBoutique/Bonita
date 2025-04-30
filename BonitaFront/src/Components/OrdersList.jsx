@@ -79,8 +79,15 @@ const OrdersList = () => {
   };
 
   const filteredOrders = orders.filter((order) => {
-    const matchesState = !filterState || order.state_order === filterState;
-
+    // Normaliza el estado para evitar problemas de mayúsculas/minúsculas o espacios
+    const orderState = (order.state_order || "").trim().toLowerCase();
+    const filterStateNormalized = filterState.trim().toLowerCase();
+  
+    const matchesState =
+      filterState === ""
+        ? orderState !== "retirado"
+        : orderState === filterStateNormalized;
+  
     const fullName = order.user_info
       ? `${order.user_info.first_name} ${order.user_info.last_name}`.toLowerCase()
       : "";

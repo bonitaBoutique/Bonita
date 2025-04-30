@@ -573,16 +573,16 @@ const rootReducer = (state = initialState, action) => {
         categoryFilter: action.payload,
       };
 
-    case CLEAR_ORDER_STATE:
-      return {
-        ...state,
-        order: {
-          loading: false,
-          success: false,
-          order: null,
-          error: null,
-        },
-      };
+      case CLEAR_ORDER_STATE:
+        return {
+          ...state,
+          order: {
+            loading: false,
+            success: false,
+            order: null,
+            error: null,
+          },
+        };
     case FETCH_ORDERS_REQUEST:
       return {
         ...state,
@@ -1042,13 +1042,23 @@ case USER_REGISTER_FAIL:
       return { ...state, loading: false, error: action.payload };
 
       case RESET_RECEIPT_STATE:
-      return {
-        ...state,
-        receipts: [],
-        receiptNumber: null,
-        // restablecer otros estados relacionados con el recibo si es necesario...
-      };
-
+  return {
+    ...state,
+    receipts: [],
+    receiptNumber: null,
+    orderById: {
+      loading: false,
+      error: null,
+      order: {},
+    },
+    order: {
+      loading: false,
+      success: false,
+      order: {},
+      error: null,
+    },
+    // Limpia otros estados relacionados si lo necesitas
+  };
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };
 

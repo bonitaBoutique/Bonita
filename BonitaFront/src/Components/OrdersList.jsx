@@ -122,7 +122,7 @@ const OrdersList = () => {
                 type="text"
                 value={filterName}
                 onChange={(e) => setFilterName(e.target.value)}
-                className="bg-gray-600 text-gray-200 font-nunito px-2 py-1 rounded"
+                className="bg-gray-600 text-gray-200 font-nunito px-3 py-1 rounded"
                 placeholder="Nombre o apellido"
               />
             </div>

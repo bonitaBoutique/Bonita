@@ -7,6 +7,7 @@ import {
   fetchFilteredProducts,
   createOrder,
   updateOrderState,
+  clearOrderState
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
 
@@ -35,7 +36,28 @@ const Caja = () => {
   const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
   const [nDocument, setNDocument] = useState(""); // Estado para el número de documento
 
+
+  useEffect(() => {
+    setSelectedProducts([]);
+    setOrderData({
+      date: new Date().toISOString(),
+      amount: 0,
+      quantity: 0,
+      state_order: "Pedido Realizado",
+      n_document: "",
+      id_product: [],
+      address: "Retira en Local",
+      deliveryAddress: null,
+      pointOfSale: "Local",
+    });
+    setProductCodes("");
+    setNDocument("");
+    // Limpia el estado de la orden en Redux también
+    dispatch(clearOrderState());
+  }, [dispatch]);
   // Efecto para cargar productos según el filtro o búsqueda
+
+  
   useEffect(() => {
     if (searchTerm) {
       dispatch(fetchFilteredProducts(searchTerm));

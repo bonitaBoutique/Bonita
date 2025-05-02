@@ -2,19 +2,15 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "../../Config";
 
+
 const InvoicesList = () => {
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState({});
   const [loading, setLoading] = useState(true);
 
-
-  // Filtros
   const [searchFactura, setSearchFactura] = useState("");
   const [searchCliente, setSearchCliente] = useState("");
   const [searchFecha, setSearchFecha] = useState("");
-
-  // Paginación
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -130,9 +126,7 @@ const InvoicesList = () => {
             <tbody>
               {paginatedInvoices.map((inv) => {
                 const client = clients[inv.buyerId];
-
                 const dianLink = getDianLink(inv.taxxaResponse);
-
                 return (
                   <tr key={inv.id}>
                     <td className="py-2 px-4 border">{inv.invoiceNumber}</td>

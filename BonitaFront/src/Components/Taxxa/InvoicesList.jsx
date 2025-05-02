@@ -7,12 +7,14 @@ const InvoicesList = () => {
   const [clients, setClients] = useState({});
   const [loading, setLoading] = useState(true);
 
+
   // Filtros
   const [searchFactura, setSearchFactura] = useState("");
   const [searchCliente, setSearchCliente] = useState("");
   const [searchFecha, setSearchFecha] = useState("");
 
   // Paginación
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -43,16 +45,12 @@ const InvoicesList = () => {
     fetchInvoices();
   }, []);
 
-  const getDianLink = (sqr) => {
-    if (!sqr) return null;
-    const match = sqr.match(/documentkey=([a-zA-Z0-9]+)/);
-    if (match && match[1]) {
-      return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic/${match[1]}`;
-    }
-    return null;
+  const getDianLink = (taxxaResponse) => {
+    const scufe = taxxaResponse?.jret?.scufe;
+    if (!scufe) return null;
+    return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic/${scufe}`;
   };
 
-  // Filtrado
   const filteredInvoices = invoices.filter((inv) => {
     const client = clients[inv.buyerId];
     const clienteNombre = client ? `${client.first_name || ""} ${client.last_name || ""}` : "";
@@ -132,7 +130,9 @@ const InvoicesList = () => {
             <tbody>
               {paginatedInvoices.map((inv) => {
                 const client = clients[inv.buyerId];
-                const dianLink = getDianLink(inv.taxxaResponse?.jret?.sqr);
+
+                const dianLink = getDianLink(inv.taxxaResponse);
+
                 return (
                   <tr key={inv.id}>
                     <td className="py-2 px-4 border">{inv.invoiceNumber}</td>

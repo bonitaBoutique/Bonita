@@ -17,6 +17,8 @@ import ReservationPopup from "./ReservationPopup";
 
 const Recibo = () => {
   const { idOrder } = useParams();
+  const { n_document } = useParams();
+   
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
@@ -125,8 +127,17 @@ const Recibo = () => {
   }
 
   if (error || userError || cashierError) {
+    // Si es objeto, muestra el campo 'message' o 'error'
+    const getErrorMsg = (err) =>
+      typeof err === "string"
+        ? err
+        : err?.message || err?.error || JSON.stringify(err);
+  
     return (
-      <p>Error al cargar la orden: {error || userError || cashierError}</p>
+      <p>
+        Error al cargar la orden:{" "}
+        {getErrorMsg(error) || getErrorMsg(userError) || getErrorMsg(cashierError)}
+      </p>
     );
   }
 
@@ -576,6 +587,7 @@ const Recibo = () => {
                 <option value="Addi">Addi</option>
                 <option value="Sistecredito">Sistecredito</option>
                 <option value="Bancolombia">Bancolombia</option>
+                <option value="GiftCard">GiftCard</option>
                 <option value="Otro">Otro</option>
               </select>
               <input

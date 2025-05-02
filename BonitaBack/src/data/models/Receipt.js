@@ -45,7 +45,8 @@ module.exports = (sequelize) => {
           "Tarjeta",
           "Crédito",
           "Bancolombia",
-          "Otro"
+          "Otro",
+          "GiftCard"
         ),
         allowNull: false,
       },
@@ -65,7 +66,8 @@ module.exports = (sequelize) => {
           "Tarjeta",
           "Crédito",
           "Bancolombia",
-          "Otro"
+          "Otro",
+          "GiftCard"
         ),
         allowNull: true, // <-- Opcional
       },

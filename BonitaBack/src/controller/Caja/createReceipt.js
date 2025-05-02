@@ -1,4 +1,4 @@
-const { Receipt, OrderDetail, Product } = require("../../data");
+const { Receipt, OrderDetail, Product, Payment } = require("../../data");
 
 module.exports = async (req, res) => {
   const {
@@ -9,14 +9,33 @@ module.exports = async (req, res) => {
     total_amount,
     date,
     payMethod,
-    amount,         
+    amount,
     amount2,
     payMethod2,
-    cashier_document
+    cashier_document,
+    actualPaymentMethod,
   } = req.body;
 
   // Validaciones iniciales
-  if (!id_orderDetail || !buyer_name || !buyer_email || !total_amount || !date || !payMethod) {
+  const validPayMethods = [
+    "Efectivo",
+    "Sistecredito",
+    "Addi",
+    "Tarjeta",
+    "Crédito",
+    "Bancolombia",
+    "Otro",
+    "GiftCard"
+  ];
+
+  if (
+    (!id_orderDetail && payMethod !== "GiftCard") ||
+    !buyer_name ||
+    !buyer_email ||
+    !total_amount ||
+    !date ||
+    !payMethod
+  ) {
     return res.status(400).json({ message: "Todos los campos son obligatorios" });
   }
 
@@ -26,16 +45,63 @@ module.exports = async (req, res) => {
     return res.status(400).json({ message: "El email no tiene un formato válido" });
   }
 
-  // Validar que el payMethod sea uno de los valores permitidos
-  const validPayMethods = ["Efectivo", "Sistecredito", "Addi", "Tarjeta", "Crédito", "Bancolombia", "Otro"];
+  // Validar métodos de pago
   if (!validPayMethods.includes(payMethod)) {
     return res.status(400).json({ message: "El método de pago no es válido" });
   }
-
   if (payMethod2 && !validPayMethods.includes(payMethod2)) {
     return res.status(400).json({ message: "El segundo método de pago no es válido" });
   }
-  
+
+  // Lógica para GiftCard (saldo a favor)
+  if (payMethod === "GiftCard") {
+    try {
+      const lastReceipt = await Receipt.findOne({
+        order: [["id_receipt", "DESC"]],
+      });
+      const receiptNumber = lastReceipt ? lastReceipt.id_receipt + 1 : 1001;
+
+      const receipt = await Receipt.create({
+        buyer_name,
+        buyer_email,
+        buyer_phone,
+        total_amount, // Este es el valor de la GiftCard
+        date,
+        payMethod: "GiftCard", // El tipo de recibo es GiftCard
+        amount, // El monto pagado (debería ser igual a total_amount para GiftCard)
+        // amount2 y payMethod2 no aplican para la compra de GiftCard
+        amount2: null,
+        payMethod2: null,
+        receipt_number: receiptNumber,
+        cashier_document,
+      });
+
+      // Crear el Payment asociado
+      await Payment.create({
+        buyer_name,
+        buyer_email,
+        buyer_phone,
+        amount,
+        payMethod: actualPaymentMethod,
+        payment_state: "Pago",
+        date,
+        receipt_number: receiptNumber,
+        cashier_document,
+        // Agrega otros campos necesarios según tu modelo
+      });
+
+      return res.status(201).json({
+        message: "Recibo de GiftCard creado exitosamente",
+        receipt,
+        products: [],
+      });
+    } catch (error) {
+      console.error("Error al crear el recibo GiftCard:", error.message);
+      return res.status(500).json({ message: "Error al crear el recibo GiftCard" });
+    }
+  }
+
+  // Lógica para recibos normales (con orden)
   try {
     // Buscar la orden de compra junto con los productos relacionados
     const order = await OrderDetail.findByPk(id_orderDetail, {
@@ -73,7 +139,7 @@ module.exports = async (req, res) => {
       total_amount: order.amount,
       date,
       payMethod,
-      amount,                
+      amount,
       amount2: amount2 || null,
       payMethod2: payMethod2 || null,
       receipt_number: receiptNumber,
@@ -81,15 +147,17 @@ module.exports = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Recibo creado exitosamente",
+      message: "Recibo de GiftCard creado exitosamente",
       receipt,
-      products: order.products,
+      products: [], // No hay productos asociados a la compra de GiftCard
     });
+
   } catch (error) {
-    console.error("Error al crear el recibo:", error.message);
-    return res.status(500).json({ message: "Error al crear el recibo" });
+    console.error("Error al crear el recibo GiftCard:", error.message);
+    return res.status(500).json({ message: "Error al crear el recibo GiftCard" });
   }
-};
+}
+
 
 
 

@@ -84,6 +84,17 @@ const PanelGeneral = () => {
                   Listado de Reservas 
                 </p>
               </div>
+              <div className="text-center space-y-2">
+                <Link
+                  to="/active-giftcards"
+                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                >
+                  Gift Cards
+                </Link>
+                <p className="text-sm text-slate-600">
+                  Listado de Gift Cards Activas 
+                </p>
+              </div>
             </>
           </div>
         </div>

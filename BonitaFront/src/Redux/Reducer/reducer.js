@@ -697,16 +697,21 @@ const rootReducer = (state = initialState, action) => {
           loading: true,
         },
       };
-    case UPDATE_PRODUCT_SUCCESS:
-      return {
-        ...state,
-        products: state.products.map(
-          (product) =>
+      case UPDATE_PRODUCT_SUCCESS:
+        return {
+          ...state,
+          updateProduct: {
+            ...state.updateProduct,
+            loading: false,
+            error: null,
+            product: action.payload,
+          },
+          products: state.products.map(product =>
             product.id_product === action.payload.id_product
-              ? { ...product, ...action.payload } // Solo actualiza el producto correspondiente
-              : product // Los demás productos permanecen iguales
-        ),
-      };
+              ? { ...product, ...action.payload }
+              : product
+          ),
+        };
 
     case UPDATE_PRODUCT_FAILURE:
       return {

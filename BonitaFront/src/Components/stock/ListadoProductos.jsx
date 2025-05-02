@@ -18,6 +18,8 @@ const ListadoProductos = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectAll, setSelectAll] = useState(false);
+  const [editRowId, setEditRowId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   const [selectedProducts, setSelectedProducts] = useState([]);
 
@@ -26,10 +28,13 @@ const ListadoProductos = () => {
       if (uploadedImageUrl) {
         console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
         // Busca el producto actual en el arreglo de productos
-        const productToUpdate = products.find(p => p.id_product === productId);
-        const newImages = productToUpdate && productToUpdate.images 
-          ? [...productToUpdate.images, uploadedImageUrl]
-          : [uploadedImageUrl];
+        const productToUpdate = products.find(
+          (p) => p.id_product === productId
+        );
+        const newImages =
+          productToUpdate && productToUpdate.images
+            ? [...productToUpdate.images, uploadedImageUrl]
+            : [uploadedImageUrl];
         dispatch(updateProduct(productId, { images: newImages }));
       } else {
         console.error("Error al subir la imagen.");
@@ -37,8 +42,11 @@ const ListadoProductos = () => {
     });
   };
 
-  const handleDeleteImage = (productId) => {
-    dispatch(updateProduct(productId, { image: null }));
+  const handleDeleteImage = (productId, imageUrl) => {
+    const productToUpdate = products.find((p) => p.id_product === productId);
+    if (!productToUpdate || !productToUpdate.images) return;
+    const newImages = productToUpdate.images.filter((img) => img !== imageUrl);
+    dispatch(updateProduct(productId, { images: newImages }));
   };
 
   useEffect(() => {
@@ -47,6 +55,28 @@ const ListadoProductos = () => {
 
   const handleFiltroChange = (e) => {
     setFiltro(e.target.value.toLowerCase());
+  };
+
+  const handleEditClick = (producto) => {
+    setEditRowId(producto.id_product);
+    setEditForm({ ...producto });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSave = (id) => {
+    dispatch(updateProduct(id, editForm));
+    setEditRowId(null);
+  };
+
+  const handleCancel = () => {
+    setEditRowId(null);
   };
 
   const toggleProductSelection = (productId) => {
@@ -74,7 +104,7 @@ const ListadoProductos = () => {
   const handleSelectAll = () => {
     setSelectAll(!selectAll);
     if (!selectAll) {
-      setSelectedProducts(productosFiltrados.map(p => p.id_product));
+      setSelectedProducts(productosFiltrados.map((p) => p.id_product));
     } else {
       setSelectedProducts([]);
     }
@@ -118,7 +148,10 @@ const ListadoProductos = () => {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = productosFiltrados.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = productosFiltrados.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
   const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
 
   // Función para cambiar de página
@@ -188,25 +221,32 @@ const ListadoProductos = () => {
             <tbody>
               {currentItems.map((producto) => (
                 <tr key={producto.id_product} className="hover:bg-gray-50">
+                  {/* Imágenes */}
                   <td className="px-4 py-2 border border-gray-300">
-                    {producto.image ? (
+                    {producto.images && producto.images.length > 0 ? (
                       <div className="flex flex-col items-center gap-2">
-                        <img
-                          src={producto.image}
-                          alt={producto.description}
-                          className="w-20 h-20 object-cover"
-                        />
+                        {producto.images.map((img, idx) => (
+                          <div key={idx} className="flex flex-col items-center">
+                            <img
+                              src={img}
+                              alt={producto.description}
+                              className="w-20 h-20 object-cover"
+                            />
+                            <button
+                              onClick={() =>
+                                handleDeleteImage(producto.id_product, img)
+                              }
+                              className="px-2 py-1 bg-red-500 text-white text-sm rounded mt-1"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        ))}
                         <button
                           onClick={() => handleImageUpload(producto.id_product)}
                           className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
                         >
-                          Modificar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteImage(producto.id_product)}
-                          className="px-2 py-1 bg-red-500 text-white text-sm rounded"
-                        >
-                          Eliminar
+                          Agregar Imagen
                         </button>
                       </div>
                     ) : (
@@ -218,42 +258,203 @@ const ListadoProductos = () => {
                       </button>
                     )}
                   </td>
+                  {/* Seleccionar */}
                   <td className="px-4 py-2 border border-gray-300">
                     <input
                       type="checkbox"
                       checked={selectedProducts.includes(producto.id_product)}
-                      onChange={() => toggleProductSelection(producto.id_product)}
+                      onChange={() =>
+                        toggleProductSelection(producto.id_product)
+                      }
                       className="form-checkbox h-5 w-5"
                     />
                   </td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.codigoBarra}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.marca}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.codigoProv}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.description}</td>
-                  <td className="px-4 py-2 border border-gray-300">${producto.price}</td>
-                  <td className="px-4 py-2 border border-gray-300">${producto.priceSell}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.stock}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.sizes}</td>
-                  <td className="px-4 py-2 border border-gray-300">{producto.colors}</td>
+                  {/* Código Barra */}
                   <td className="px-4 py-2 border border-gray-300">
-                    <button
-                      onClick={() => toggleTiendaOnline(producto)}
-                      className={`px-4 py-2 rounded-lg ${
-                        producto.tiendaOnLine
-                          ? "bg-green-500 text-white"
-                          : "bg-gray-300 text-black"
-                      }`}
-                    >
-                      {producto.tiendaOnLine ? "Activo" : "Inactivo"}
-                    </button>
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="codigoBarra"
+                        value={editForm.codigoBarra || ""}
+                        onChange={handleEditChange}
+                        className="w-24 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.codigoBarra
+                    )}
                   </td>
+                  {/* Marca */}
                   <td className="px-4 py-2 border border-gray-300">
-                    <button
-                      onClick={() => handleDeleteProduct(producto.id_product)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg"
-                    >
-                      Eliminar
-                    </button>
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="marca"
+                        value={editForm.marca || ""}
+                        onChange={handleEditChange}
+                        className="w-24 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.marca
+                    )}
+                  </td>
+                  {/* Código Proveedor */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="codigoProv"
+                        value={editForm.codigoProv || ""}
+                        onChange={handleEditChange}
+                        className="w-24 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.codigoProv
+                    )}
+                  </td>
+                  {/* Descripción */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="description"
+                        value={editForm.description || ""}
+                        onChange={handleEditChange}
+                        className="w-32 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.description
+                    )}
+                  </td>
+                  {/* Costo */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="price"
+                        type="number"
+                        value={editForm.price || ""}
+                        onChange={handleEditChange}
+                        className="w-20 px-2 py-1 border rounded"
+                        min={0}
+                      />
+                    ) : (
+                      `$${producto.price}`
+                    )}
+                  </td>
+                  {/* Precio Venta */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="priceSell"
+                        type="number"
+                        value={editForm.priceSell || ""}
+                        onChange={handleEditChange}
+                        className="w-20 px-2 py-1 border rounded"
+                        min={0}
+                      />
+                    ) : (
+                      `$${producto.priceSell}`
+                    )}
+                  </td>
+                  {/* Stock */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="stock"
+                        type="number"
+                        value={editForm.stock || ""}
+                        onChange={handleEditChange}
+                        className="w-16 px-2 py-1 border rounded"
+                        min={0}
+                      />
+                    ) : (
+                      producto.stock
+                    )}
+                  </td>
+                  {/* Tamaños */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="sizes"
+                        value={editForm.sizes || ""}
+                        onChange={handleEditChange}
+                        className="w-24 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.sizes
+                    )}
+                  </td>
+                  {/* Colores */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <input
+                        name="colors"
+                        value={editForm.colors || ""}
+                        onChange={handleEditChange}
+                        className="w-24 px-2 py-1 border rounded"
+                      />
+                    ) : (
+                      producto.colors
+                    )}
+                  </td>
+                  {/* Tienda Online */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <select
+                        name="tiendaOnLine"
+                        value={editForm.tiendaOnLine ? "true" : "false"}
+                        onChange={e =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            tiendaOnLine: e.target.value === "true",
+                          }))
+                        }
+                        className="w-24 px-2 py-1 border rounded"
+                      >
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                      </select>
+                    ) : (
+                      <button
+                        onClick={() => toggleTiendaOnline(producto)}
+                        className={`px-4 py-2 rounded-lg ${
+                          producto.tiendaOnLine
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-300 text-black"
+                        }`}
+                      >
+                        {producto.tiendaOnLine ? "Activo" : "Inactivo"}
+                      </button>
+                    )}
+                  </td>
+                  {/* Acciones */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {editRowId === producto.id_product ? (
+                      <>
+                        <button
+                          onClick={() => handleSave(producto.id_product)}
+                          className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          className="bg-gray-400 text-white px-2 py-1 rounded"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleEditClick(producto)}
+                          className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(producto.id_product)}
+                          className="bg-red-500 text-white px-2 py-1 rounded"
+                        >
+                          Eliminar
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -277,7 +478,7 @@ const ListadoProductos = () => {
               >
                 {"<"}
               </button>
-
+  
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
                 <button
                   key={i + 1}
@@ -291,7 +492,7 @@ const ListadoProductos = () => {
                   {i + 1}
                 </button>
               ))}
-
+  
               <button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -308,9 +509,11 @@ const ListadoProductos = () => {
               </button>
             </div>
           </div>
-
+  
           <div className="mt-2 text-sm text-gray-600">
-            Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, productosFiltrados.length)} de {productosFiltrados.length} productos
+            Mostrando {indexOfFirstItem + 1} -{" "}
+            {Math.min(indexOfLastItem, productosFiltrados.length)} de{" "}
+            {productosFiltrados.length} productos
           </div>
         </div>
       </div>

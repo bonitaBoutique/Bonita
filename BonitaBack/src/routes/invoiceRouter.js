@@ -5,7 +5,7 @@ const controller = require('../controller/invoiceControllers');
 
 // Rutas específicas primero
 router.get('/lastNumber', controller.getLastInvoiceNumber);
-
+router.get('/allInvoices', controller.getAllInvoices);
 // Rutas dinámicas al final
 router.get('/:status', controller.getInvoicesByStatus);
 //router.post('/', taxxaController.createInvoice); // Cambia a createInvoice si es necesario

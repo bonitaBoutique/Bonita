@@ -148,6 +148,19 @@ export const cashierRoutes = [
     component: lazy(() => import('../Recibo')) 
   },
   { 
+    path: '/recibo/giftcard/:n_document', 
+    component: lazy(() => import('../GiftCard')) 
+  },
+  { 
+    path: '/active-giftcards', 
+    component: lazy(() => import('../ActiveGiftCards')) 
+  },
+  { 
+    path: '/giftcard/redeem/:n_document', 
+    component: lazy(() => import('../RedeemGiftCard')) 
+  },
+
+  { 
     path: '/accountClient', 
     component: lazy(() => import('../ClientAccountBalance')) 
   },

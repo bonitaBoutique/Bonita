@@ -6,7 +6,7 @@ const {
   getOrCreateSellerData,getSellerDataBySdocno
 } = require("./Taxxa/sellerDataControllers");
 const { getProductStock, createProduct } = require("./Products");
-const { createReceipt, lastReceipt, getReceipts } = require("./Caja");
+const { createReceipt, lastReceipt, getReceipts,redeemGiftCard, getGiftCardReceipts, getActiveGiftCards } = require("./Caja");
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
 const generateApiKey = require("./MiPaquete/generateApiKey");
@@ -19,6 +19,8 @@ const {
 } = require("./MiPaquete/createDirection");
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
 const removedProduct = require("./OrdersDetails/removedProduct");
+const createGiftCard = require("./Caja/createGiftCard");
+const getGiftCardBalance = require("./Caja/createGiftCard");
 const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
@@ -29,7 +31,12 @@ const { createInvoice } = require("./Taxxa/TaxxaService");
 const  {postInvoice}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const {getLastInvoiceNumber} = require("./invoiceControllers.js");
+
 const {getAllInvoices} = require("./invoiceControllers.js");
+
+
+
+
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
   createCategory: catchedAsync(require("./Category/createCategory")),
@@ -89,7 +96,11 @@ module.exports = {
   postInvoice: catchedAsync(postInvoice),
   getAllInvoices: catchedAsync(getAllInvoices),
   getInvoiceByStatus: catchedAsync(getInvoiceByStatus),
-  getLastInvoiceNumber: catchedAsync(getLastInvoiceNumber)
-
+  getLastInvoiceNumber: catchedAsync(getLastInvoiceNumber),
+  getGiftCardReceipts: catchedAsync(getGiftCardReceipts),
+  getActiveGiftCards: catchedAsync(getActiveGiftCards),
+  redeemGiftCard: catchedAsync(redeemGiftCard),
+  createGiftCard: catchedAsync(createGiftCard),
+  getGiftCardBalance: catchedAsync(getGiftCardBalance),
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

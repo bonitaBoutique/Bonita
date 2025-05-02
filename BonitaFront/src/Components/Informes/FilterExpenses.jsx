@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getFilteredExpenses } from '../../Redux/Actions/actions';
+import { getFilteredExpenses, deleteExpense } from '../../Redux/Actions/actions';
 import ExpenseList from './ExpenseList'; // Asegúrate que este componente no interfiera o úsalo si es relevante
+import Swal from 'sweetalert2';
 
 const FilterExpenses = () => {
   const [type, setType] = useState('');
@@ -37,6 +38,29 @@ const FilterExpenses = () => {
 
   // Calcular subtotales
   const totalAmount = data ? data.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0) : 0;
+
+  // Función para eliminar gasto con confirmación
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: "No podrás revertir esto!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar!',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteExpense(id));
+        Swal.fire(
+          'Eliminado!',
+          'El gasto ha sido eliminado.',
+          'success'
+        );
+      }
+    });
+  };
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-300 rounded-lg shadow-xl">
@@ -113,25 +137,32 @@ const FilterExpenses = () => {
         {loading && <p>Cargando resultados...</p>}
         {!loading && data && data.length > 0 ? (
           <>
-            <ul className="space-y-3"> {/* Añadido espacio entre elementos */}
+            <ul className="space-y-3">
               {data.map(expense => (
-                <li key={expense.id} className="p-4 bg-white rounded-lg shadow"> {/* Mejorado estilo de lista */}
-                  <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>
-                  <p><strong>Tipo:</strong> {expense.type}</p>
-                  {/* <-- 4. Mostrar Destinatario --> */}
-                  <p><strong>Destinatario:</strong> {expense.destinatario || 'N/A'}</p>
-                  <p><strong>Descripción:</strong> {expense.description || 'N/A'}</p>
-                  <p><strong>Método Pago:</strong> {expense.paymentMethods || 'N/A'}</p>
-                  <p><strong>Monto:</strong> ${ (parseFloat(expense.amount) || 0).toLocaleString('es-CO')}</p> {/* Formato moneda */}
+                <li key={expense.id} className="p-4 bg-white rounded-lg shadow flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>
+                    <p><strong>Tipo:</strong> {expense.type}</p>
+                    <p><strong>Destinatario:</strong> {expense.destinatario || 'N/A'}</p>
+                    <p><strong>Descripción:</strong> {expense.description || 'N/A'}</p>
+                    <p><strong>Método Pago:</strong> {expense.paymentMethods || 'N/A'}</p>
+                    <p><strong>Monto:</strong> ${ (parseFloat(expense.amount) || 0).toLocaleString('es-CO')}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(expense.id)}
+                    className="mt-2 md:mt-0 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                  >
+                    Eliminar
+                  </button>
                 </li>
               ))}
             </ul>
-            <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-inner font-bold text-lg"> {/* Estilo para el total */}
+            <div className="mt-4 p-4 bg-gray-100 rounded-lg shadow-inner font-bold text-lg">
               <p>Total Gastos Filtrados: ${totalAmount.toLocaleString('es-CO')}</p>
             </div>
           </>
         ) : (
-          !loading && <p>No se encontraron gastos con los filtros aplicados.</p> // Mensaje si no hay datos y no está cargando
+          !loading && <p>No se encontraron gastos con los filtros aplicados.</p>
         )}
       </div>
 

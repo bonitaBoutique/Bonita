@@ -914,28 +914,39 @@ export const sendInvoice = (payload) => async (dispatch) => {
 
 export const createReceipt = (receipt) => async (dispatch) => {
   dispatch({ type: CREATE_RECEIPT_REQUEST });
-  console.log("Dispatching createReceipt with data:", receipt); // Verificar los datos
+  console.log("Dispatching createReceipt with data:", receipt);
 
   try {
+    // Intenta crear el recibo
     const response = await axios.post(`${BASE_URL}/caja/createReceipt`, receipt, {
       headers: { "Content-Type": "application/json" },
     });
-    const data = response.data;
 
-    if (response.status === 200) {
-      dispatch({ type: CREATE_RECEIPT_SUCCESS, payload: data });
-    } else {
-      dispatch({
-        type: CREATE_RECEIPT_FAILURE,
-        payload: data.error || "Error al crear el recibo",
-      });
-    }
+    // Si la petición fue exitosa (status 2xx), Axios no lanza error
+    const data = response.data;
+    dispatch({ type: CREATE_RECEIPT_SUCCESS, payload: data });
+    // Opcional: podrías retornar data si necesitas la respuesta en el componente
+     return data;
+
   } catch (error) {
-    console.error("Error:", error); // Agrega más detalles para entender el error
-    dispatch({ type: CREATE_RECEIPT_FAILURE, payload: error.message });
+    // Axios lanza un error para respuestas no exitosas (4xx, 5xx)
+    console.error("Error creating receipt:", error.response || error);
+
+    // Extrae el mensaje de error más específico del backend si está disponible
+    const message =
+      error.response && error.response.data && error.response.data.message
+        ? error.response.data.message // Mensaje específico del backend
+        : error.message; // Mensaje genérico del error
+
+    dispatch({
+      type: CREATE_RECEIPT_FAILURE,
+      payload: message, // Envía el mensaje de error al reducer
+    });
+
+    // Opcional: Re-lanzar el error si quieres que el componente sepa que falló
+     throw new Error(message);
   }
 };
-
 export const resetReceiptState = () => ({
   type: RESET_RECEIPT_STATE,
 });
@@ -1340,6 +1351,7 @@ export const removeProductFromOrder = (id_orderDetail, id_product) => async (dis
     throw error;
   }
 };
+
 
 
 

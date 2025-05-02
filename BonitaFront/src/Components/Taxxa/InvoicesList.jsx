@@ -126,7 +126,7 @@ const InvoicesList = () => {
             <tbody>
               {paginatedInvoices.map((inv) => {
                 const client = clients[inv.buyerId];
-                const dianLink = getDianLink(inv.taxxaResponse?.jret?.sqr);
+                const dianLink = getDianLink(inv.taxxaResponse);
                 return (
                   <tr key={inv.id}>
                     <td className="py-2 px-4 border">{inv.invoiceNumber}</td>

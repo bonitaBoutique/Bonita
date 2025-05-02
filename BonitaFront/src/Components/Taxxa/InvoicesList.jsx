@@ -41,10 +41,10 @@ const InvoicesList = () => {
     fetchInvoices();
   }, []);
 
-  const getDianLink = (sqr) => {
-    if (!sqr) return null;
-    const match = sqr.match(/https:\/\/catalogo-vpfe\.dian\.gov\.co\/document\/searchqr\?documentkey=[a-zA-Z0-9]+/);
-    return match ? match[0] : null;
+  const getDianLink = (taxxaResponse) => {
+    const scufe = taxxaResponse?.jret?.scufe;
+    if (!scufe) return null;
+    return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic/${scufe}`;
   };
 
   const filteredInvoices = invoices.filter((inv) => {
@@ -126,7 +126,7 @@ const InvoicesList = () => {
             <tbody>
               {paginatedInvoices.map((inv) => {
                 const client = clients[inv.buyerId];
-                const dianLink = getDianLink(inv.taxxaResponse?.jret?.sqr);
+                const dianLink = getDianLink(inv.taxxaResponse);
                 return (
                   <tr key={inv.id}>
                     <td className="py-2 px-4 border">{inv.invoiceNumber}</td>
@@ -145,7 +145,7 @@ const InvoicesList = () => {
                           href={dianLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                          className="bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-700"
                         >
                           Ver DIAN
                         </a>

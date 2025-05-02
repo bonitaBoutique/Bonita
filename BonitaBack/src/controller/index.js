@@ -32,7 +32,6 @@ const  {postInvoice, getAllInvoices}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const {getLastInvoiceNumber} = require("./invoiceControllers.js");
 
-const {getAllInvoices} = require("./invoiceControllers.js");
 
 
 

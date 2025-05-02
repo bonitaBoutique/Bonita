@@ -128,6 +128,10 @@ export const adminRoutes = [
     component: lazy(() => import('../Taxxa/Invoice')) 
   },
   { 
+    path: '/panel/listado', 
+    component: lazy(() => import('../Taxxa/InvoicesList')) 
+  },
+  { 
     path: '/creditN', 
     component: lazy(() => import('../Taxxa/CreditN')) 
   }

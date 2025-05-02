@@ -2,17 +2,15 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { BASE_URL } from "../../Config";
 
+
 const InvoicesList = () => {
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Filtros
   const [searchFactura, setSearchFactura] = useState("");
   const [searchCliente, setSearchCliente] = useState("");
   const [searchFecha, setSearchFecha] = useState("");
-
-  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -45,14 +43,10 @@ const InvoicesList = () => {
 
   const getDianLink = (sqr) => {
     if (!sqr) return null;
-    const match = sqr.match(/documentkey=([a-zA-Z0-9]+)/);
-    if (match && match[1]) {
-      return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic/${match[1]}`;
-    }
-    return null;
+    const match = sqr.match(/https:\/\/catalogo-vpfe\.dian\.gov\.co\/document\/searchqr\?documentkey=[a-zA-Z0-9]+/);
+    return match ? match[0] : null;
   };
 
-  // Filtrado
   const filteredInvoices = invoices.filter((inv) => {
     const client = clients[inv.buyerId];
     const clienteNombre = client ? `${client.first_name || ""} ${client.last_name || ""}` : "";
@@ -151,7 +145,7 @@ const InvoicesList = () => {
                           href={dianLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-700"
+                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
                         >
                           Ver DIAN
                         </a>

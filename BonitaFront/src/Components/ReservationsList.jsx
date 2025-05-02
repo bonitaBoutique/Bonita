@@ -27,7 +27,7 @@ const ReservationList = () => {
   const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false); // Estado para el popup de pago
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const [reservationsPerPage] = useState(7); // Estado para el número de reservas por página
-
+  const { userInfo } = useSelector((state) => state.userLogin);
   useEffect(() => {
     dispatch(getAllReservations());
     dispatch(fetchLatestReceipt());
@@ -87,20 +87,17 @@ const ReservationList = () => {
 
       // Crear y enviar el recibo
       const receiptData = {
-        receiptNumber, // Usar el número de recibo actualizado
+        receiptNumber,
         id_orderDetail: updatedReservation.id_orderDetail,
         total_amount: amount,
-        buyer_name:
-          updatedReservation.OrderDetail.User.first_name +
-          " " +
-          updatedReservation.OrderDetail.User.last_name,
+        amount, // <--- este campo es obligatorio para el backend
+        buyer_name: updatedReservation.OrderDetail.User.first_name + " " + updatedReservation.OrderDetail.User.last_name,
         buyer_email: updatedReservation.OrderDetail.User.email,
         buyer_phone: updatedReservation.OrderDetail.User.phone,
-        payMethod: paymentMethod, // Usar el tipo de pago seleccionado
-        date: new Date().toISOString().split("T")[0], // Usar la fecha del día en formato YYYY-MM-DD
+        payMethod: paymentMethod,
+        date: new Date().toISOString().split("T")[0],
+        cashier_document: userInfo?.n_document || "ADMIN",
       };
-      console.log("Creating receipt with data:", receiptData);
-      await dispatch(createReceipt(receiptData));
 
       // Mostrar alerta de que el recibo está listo para descargar
       Swal.fire({

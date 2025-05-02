@@ -29,6 +29,12 @@ const Panel = () => {
             Facturación
           </Link>
           <Link
+            to="/panel/listado"
+            className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
+          >
+            Listado de Facturas
+          </Link>
+          <Link
             to="/panel/ordenesPendientes"
             className="bg-pink-300 text-white px-4 py-8 rounded-lg hover:bg-pink-600 flex items-center justify-center text-center"
           >

@@ -135,7 +135,10 @@ DELETE_ORDER_DETAIL_SUCCESS,
 DELETE_ORDER_DETAIL_FAILURE,
 REMOVE_PRODUCT_FROM_ORDER_REQUEST,
 REMOVE_PRODUCT_FROM_ORDER_SUCCESS,
-REMOVE_PRODUCT_FROM_ORDER_FAILURE
+REMOVE_PRODUCT_FROM_ORDER_FAILURE,
+FETCH_ACCOUNT_SUMMARY_REQUEST,
+FETCH_ACCOUNT_SUMMARY_SUCCESS,
+FETCH_ACCOUNT_SUMMARY_FAILURE,
 
   
 } from "./actions-type";
@@ -1352,14 +1355,19 @@ export const removeProductFromOrder = (id_orderDetail, id_product) => async (dis
   }
 };
 
+export const fetchAccountSummary = (n_document) => async (dispatch) => {
+  dispatch({ type: FETCH_ACCOUNT_SUMMARY_REQUEST });
+  try {
+    const res = await axios.get(`${BASE_URL}/userAccount/resumenDeCuenta/${n_document}`);
+    dispatch({
+      type: FETCH_ACCOUNT_SUMMARY_SUCCESS,
+      payload: res.data, // Puedes ajustar según la estructura de tu backend
+    });
+  } catch (error) {
+    dispatch({
+      type: FETCH_ACCOUNT_SUMMARY_FAILURE,
+      payload: error.message,
+    });
 
-
-
-
-
-
-
-
-
-
-
+  }
+}

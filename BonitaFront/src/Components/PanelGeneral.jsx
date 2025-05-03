@@ -95,6 +95,7 @@ const PanelGeneral = () => {
                   Listado de Gift Cards Activas 
                 </p>
               </div>
+             
             </>
           </div>
         </div>

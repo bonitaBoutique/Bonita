@@ -25,7 +25,7 @@ const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
 const { sendEmail } = require("./nodemailerController/index.js");
-const { getClientAccountBalance, getAllClientAccounts } = require("./AccountBalance/index.js");
+const { getClientAccountBalance, getAllClientAccounts, resumenDeCuenta } = require("./AccountBalance/index.js");
 const { getAllReservations, updateReservation, reservationByDocument, applyingPayments } = require("./ReservationController");
 const { createInvoice } = require("./Taxxa/TaxxaService");
 const  {postInvoice, getAllInvoices}  = require("./invoiceControllers.js");
@@ -83,6 +83,8 @@ module.exports = {
   deleteDirection: catchedAsync(deleteDirection),
   updateReservation: catchedAsync(updateReservation),
   getBalance: catchedAsync(getBalance),
+  resumenDeCuenta: catchedAsync(resumenDeCuenta),
+  createReceipt: catchedAsync(createReceipt),
   forgotPassword: catchedAsync(forgotPassword),
   resetPassword: catchedAsync(resetPassword),
   sendEmail: catchedAsync(sendEmail),

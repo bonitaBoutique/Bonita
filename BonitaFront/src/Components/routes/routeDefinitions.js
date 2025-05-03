@@ -87,6 +87,11 @@ export const adminRoutes = [
     component: lazy(() => import('../PanelGeneral')) 
   },
   { 
+    path: '/resumenDeCuenta/:n_document',
+    component: lazy(() => import('../Informes/AccountSummary')) 
+    
+  },
+  { 
     path: '/panel/facturacion', 
     component: lazy(() => import('../Taxxa/BillingForm')) 
   },

@@ -132,6 +132,9 @@ DELETE_ORDER_DETAIL_REQUEST,
   REMOVE_PRODUCT_FROM_ORDER_REQUEST,
   REMOVE_PRODUCT_FROM_ORDER_SUCCESS,
   REMOVE_PRODUCT_FROM_ORDER_FAILURE,
+  FETCH_ACCOUNT_SUMMARY_REQUEST,
+  FETCH_ACCOUNT_SUMMARY_SUCCESS,
+  FETCH_ACCOUNT_SUMMARY_FAILURE,
 
 } from "../Actions/actions-type";
 
@@ -279,7 +282,13 @@ const initialState = {
     error: null,
     data: {},
   },
+  accountSummary: {
+  loading: false,
+  data: null,
+  error: null,
+},
 };
+
 
 const rootReducer = (state = initialState, action) => {
   switch (action.type) {
@@ -1490,6 +1499,34 @@ case CREATE_SENDING_FAILURE:
           error: action.payload,
         },
       };
+
+      case FETCH_ACCOUNT_SUMMARY_REQUEST:
+        return {
+          ...state,
+          accountSummary: {
+            loading: true,
+            data: null,
+            error: null,
+          },
+        };
+      case FETCH_ACCOUNT_SUMMARY_SUCCESS:
+        return {
+          ...state,
+          accountSummary: {
+            loading: false,
+            data: action.payload,
+            error: null,
+          },
+        };
+      case FETCH_ACCOUNT_SUMMARY_FAILURE:
+        return {
+          ...state,
+          accountSummary: {
+            loading: false,
+            data: null,
+            error: action.payload,
+          },
+        };   
 
           
     default:

@@ -44,24 +44,24 @@ const ClientAccountBalance = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-const getPageNumbers = () => {
-  let start = Math.max(1, currentPage - 2);
-  let end = Math.min(totalPages, currentPage + 2);
+  const getPageNumbers = () => {
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, currentPage + 2);
 
-  // Ajustar para siempre mostrar 5 si es posible
-  if (currentPage <= 2) {
-    end = Math.min(5, totalPages);
-  }
-  if (currentPage >= totalPages - 1) {
-    start = Math.max(1, totalPages - 4);
-  }
+    // Ajustar para siempre mostrar 5 si es posible
+    if (currentPage <= 2) {
+      end = Math.min(5, totalPages);
+    }
+    if (currentPage >= totalPages - 1) {
+      start = Math.max(1, totalPages - 4);
+    }
 
-  const pages = [];
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-  return pages;
-};
+    const pages = [];
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
   // Suma total del saldo de todas las órdenes
   const totalAmount = orderDetails
     ? orderDetails.reduce((acc, order) => acc + (Number(order.amount) || 0), 0)
@@ -158,6 +158,14 @@ const getPageNumbers = () => {
                     >
                       GiftCard
                     </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/resumenDeCuenta/${client.n_document}`)
+                      }
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+                    >
+                      Resumen de cuenta
+                    </button>
                     {giftCardClients[client.n_document] && (
                       <span className="text-green-600 font-bold ml-2">
                         GiftCard activa
@@ -172,48 +180,48 @@ const getPageNumbers = () => {
 
         {/* Paginación */}
         <div className="flex justify-center mt-8">
-  <button
-    onClick={() => paginate(1)}
-    disabled={currentPage === 1}
-    className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {"<<"}
-  </button>
-  <button
-    onClick={() => paginate(currentPage - 1)}
-    disabled={currentPage === 1}
-    className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {"<"}
-  </button>
-  {getPageNumbers().map((page) => (
-    <button
-      key={page}
-      onClick={() => paginate(page)}
-      className={`mx-1 px-3 py-1 rounded ${
-        currentPage === page
-          ? "bg-pink-500 text-white"
-          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-      }`}
-    >
-      {page}
-    </button>
-  ))}
-  <button
-    onClick={() => paginate(currentPage + 1)}
-    disabled={currentPage === totalPages}
-    className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {">"}
-  </button>
-  <button
-    onClick={() => paginate(totalPages)}
-    disabled={currentPage === totalPages}
-    className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-  >
-    {">>"}
-  </button>
-</div>
+          <button
+            onClick={() => paginate(1)}
+            disabled={currentPage === 1}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {"<<"}
+          </button>
+          <button
+            onClick={() => paginate(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {"<"}
+          </button>
+          {getPageNumbers().map((page) => (
+            <button
+              key={page}
+              onClick={() => paginate(page)}
+              className={`mx-1 px-3 py-1 rounded ${
+                currentPage === page
+                  ? "bg-pink-500 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {">"}
+          </button>
+          <button
+            onClick={() => paginate(totalPages)}
+            disabled={currentPage === totalPages}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {">>"}
+          </button>
+        </div>
         {/* Información del cliente seleccionado */}
         {user && (
           <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 mt-8">

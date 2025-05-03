@@ -162,6 +162,10 @@ const Balance = () => {
       .reduce((acc, sale) => acc + (sale.amount || 0), 0);
   };
 
+  const ingresosPagosParciales = (income.local || [])
+  .filter((sale) => sale.type === "Pago Parcial Reserva")
+  .reduce((acc, sale) => acc + (sale.amount || 0), 0);
+
   const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
   const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
   const ingresosNequi = calculateIncomeByMethod("Nequi");
@@ -175,8 +179,8 @@ const Balance = () => {
     ingresosTarjeta +
     ingresosNequi +
     ingresosBancolombia +
-    totalOnlineSales; // Sum only desired local methods + online sales
-
+    totalOnlineSales+ // Sum only desired local methods + online sales
+    ingresosPagosParciales
   // --- Calculate Balance to DISPLAY ---
   const displayBalance = displayTotalIncome - totalExpenses;
 
@@ -313,6 +317,7 @@ const Balance = () => {
               value: totalOnlineSales,
               color: "bg-blue-50",
             },
+            { name: "Pagos Parciales Reserva", value: ingresosPagosParciales, color: "bg-purple-50" }, // Nueva tarjeta
           ].map((method) => (
             <div
               key={method.name}

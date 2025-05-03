@@ -158,9 +158,10 @@ const Balance = () => {
   // --- Calculate income totals per payment method (for individual cards) ---
   const calculateIncomeByMethod = (method) => {
     return (income.local || [])
-      .filter((sale) => sale.paymentMethod === method)
+      .filter((sale) => sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva")
       .reduce((acc, sale) => acc + (sale.amount || 0), 0);
   };
+
 
   const ingresosPagosParciales = (income.local || [])
   .filter((sale) => sale.type === "Pago Parcial Reserva")
@@ -179,7 +180,7 @@ const Balance = () => {
     ingresosTarjeta +
     ingresosNequi +
     ingresosBancolombia +
-    totalOnlineSales+ // Sum only desired local methods + online sales
+    totalOnlineSales + // Sum only desired local methods + online sales
     ingresosPagosParciales
   // --- Calculate Balance to DISPLAY ---
   const displayBalance = displayTotalIncome - totalExpenses;

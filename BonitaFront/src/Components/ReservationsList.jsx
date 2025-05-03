@@ -36,10 +36,10 @@ const ReservationList = () => {
   useEffect(() => {
     if (!loading && !error && reservations && reservations.length === 0) {
       Swal.fire({
-        title: 'Sin Reservas',
-        text: 'No hay reservas para mostrar en este momento',
-        icon: 'info',
-        confirmButtonText: 'Aceptar'
+        title: "Sin Reservas",
+        text: "No hay reservas para mostrar en este momento",
+        icon: "info",
+        confirmButtonText: "Aceptar",
       });
     }
   }, [reservations, loading, error]);
@@ -51,7 +51,7 @@ const ReservationList = () => {
 
   useEffect(() => {
     if (orderDetails) {
-      console.log('OrderDetails actualizado:', orderDetails);
+      console.log("OrderDetails actualizado:", orderDetails);
       setCurrentOrderDetail(orderDetails);
     }
   }, [orderDetails]);
@@ -67,7 +67,11 @@ const ReservationList = () => {
   };
 
   const handlePayment = async (id_reservation, amount, paymentMethod) => {
-    console.log("Sending payment request:", { id_reservation, amount, paymentMethod });
+    console.log("Sending payment request:", {
+      id_reservation,
+      amount,
+      paymentMethod,
+    });
     try {
       await dispatch(applyPayment(id_reservation, amount, paymentMethod));
 
@@ -78,7 +82,9 @@ const ReservationList = () => {
 
       // Si la reserva actualizada no se encuentra en el estado global, no hacer nada
       if (!updatedReservation) {
-        console.warn(`Reserva con ID ${id_reservation} no encontrada en el estado global.`);
+        console.warn(
+          `Reserva con ID ${id_reservation} no encontrada en el estado global.`
+        );
         return;
       }
 
@@ -91,7 +97,10 @@ const ReservationList = () => {
         id_orderDetail: updatedReservation.id_orderDetail,
         total_amount: amount,
         amount, // <--- este campo es obligatorio para el backend
-        buyer_name: updatedReservation.OrderDetail.User.first_name + " " + updatedReservation.OrderDetail.User.last_name,
+        buyer_name:
+          updatedReservation.OrderDetail.User.first_name +
+          " " +
+          updatedReservation.OrderDetail.User.last_name,
         buyer_email: updatedReservation.OrderDetail.User.email,
         buyer_phone: updatedReservation.OrderDetail.User.phone,
         payMethod: paymentMethod,
@@ -100,21 +109,23 @@ const ReservationList = () => {
       };
 
       // Mostrar alerta de que el recibo está listo para descargar
-      const saldoPendiente = updatedReservation.OrderDetail.amount - (updatedReservation.totalPaid + amount);
+      const saldoPendiente =
+        updatedReservation.OrderDetail.amount -
+        (updatedReservation.totalPaid + amount);
 
-Swal.fire({
-  title: "Recibo Creado",
-  text: "El recibo está listo para descargar.",
-  icon: "success",
-  confirmButtonText: "Descargar",
-}).then((result) => {
-  if (result.isConfirmed) {
-    generatePDF({
-      ...receiptData,
-      saldoPendiente, 
-    });
-  }
-});
+      Swal.fire({
+        title: "Recibo Creado",
+        text: "El recibo está listo para descargar.",
+        icon: "success",
+        confirmButtonText: "Descargar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          generatePDF({
+            ...receiptData,
+            saldoPendiente,
+          });
+        }
+      });
 
       // Verificar si el total pagado es igual al monto de la orden
       if (
@@ -148,7 +159,7 @@ Swal.fire({
       const rect = event.currentTarget.getBoundingClientRect();
       setTooltipPosition({
         x: rect.left,
-        y: rect.bottom + window.scrollY + 5
+        y: rect.bottom + window.scrollY + 5,
       });
       setHoveredOrderId(id_orderDetail);
 
@@ -156,13 +167,13 @@ Swal.fire({
       setCurrentOrderDetail(null);
 
       const result = await dispatch(fetchOrdersByIdOrder(id_orderDetail));
-      console.log('Fetched order details:', result);
+      console.log("Fetched order details:", result);
 
       if (result) {
         setCurrentOrderDetail(result);
       }
     } catch (error) {
-      console.error('Error en handleMouseEnter:', error);
+      console.error("Error en handleMouseEnter:", error);
       setCurrentOrderDetail(null);
     }
   };
@@ -172,16 +183,15 @@ Swal.fire({
     if (orderDetails) {
       const orderData = {
         userData: {
-          first_name: orderDetails.userData?.first_name || '',
-          last_name: orderDetails.userData?.last_name || ''
+          first_name: orderDetails.userData?.first_name || "",
+          last_name: orderDetails.userData?.last_name || "",
         },
         n_document: orderDetails.n_document,
-        products: orderDetails.products || []
+        products: orderDetails.products || [],
       };
       setCurrentOrderDetail(orderData);
     }
   }, [orderDetails]);
-
 
   const handleMouseLeave = () => {
     setHoveredOrderId(null);
@@ -225,12 +235,12 @@ Swal.fire({
     currentY += 20; // Espacio mayor entre líneas
 
     doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
-      align: "center"
+      align: "center",
     });
     currentY += 20;
 
     doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center"
+      align: "center",
     });
     currentY += 30; // Más espacio antes de la sección siguiente
 
@@ -245,7 +255,7 @@ Swal.fire({
 
     // Fecha y estado de la venta
     doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-      align: "center"
+      align: "center",
     });
     currentY += 20;
 
@@ -278,11 +288,11 @@ Swal.fire({
     currentY += 20;
 
     doc.text(`Pago Parcial: $${total_amount}`, 20, currentY);
-currentY += 20;
-doc.text(`Saldo Pendiente: $${saldoPendiente}`, 20, currentY); // <-- agrega esta línea
-currentY += 20;
-doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
-currentY += 20;
+    currentY += 20;
+    doc.text(`Saldo Pendiente: $${saldoPendiente}`, 20, currentY); // <-- agrega esta línea
+    currentY += 20;
+    doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
+    currentY += 20;
     doc.text(`${id_orderDetail}`, 20, currentY);
 
     // Agregar texto final centrado
@@ -298,22 +308,24 @@ currentY += 20;
     // Guardar el PDF con un nombre personalizado que incluye el número de recibo
     const fileName = `Recibo_${receiptNumber}.pdf`; // Nombre del archivo
     doc.autoPrint();
-    window.open(doc.output('bloburl'), '_blank');
+    window.open(doc.output("bloburl"), "_blank");
   };
 
   // Lógica para la paginación
   const indexOfLastReservation = currentPage * reservationsPerPage;
   const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
-  const currentReservations = reservations.slice(indexOfFirstReservation, indexOfLastReservation);
+  const currentReservations = reservations.slice(
+    indexOfFirstReservation,
+    indexOfLastReservation
+  );
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
-
   console.log("RESERVATIONS:", reservations);
-console.log("CURRENT RESERVATIONS:", currentReservations);
+  console.log("CURRENT RESERVATIONS:", currentReservations);
 
   return (
     <div className="container mx-auto p-4 mt-12">
@@ -333,128 +345,176 @@ console.log("CURRENT RESERVATIONS:", currentReservations);
             </tr>
           </thead>
           <tbody>
-            {currentReservations && currentReservations.map((reservation) => {
-              const pendingDebt = calculatePendingDebt(
-                reservation.OrderDetail?.amount || 0,
-                reservation.totalPaid || 0
-              );
+            {currentReservations &&
+              currentReservations.map((reservation) => {
+                const pendingDebt = calculatePendingDebt(
+                  reservation.OrderDetail?.amount || 0,
+                  reservation.totalPaid || 0
+                );
 
-              return (
-                <tr key={reservation.id_reservation}>
-  <td className="py-2 px-4 border-b relative">
-    <button
-      onMouseEnter={(e) => handleMouseEnter(reservation.id_orderDetail, e)}
-      onMouseLeave={handleMouseLeave}
-      className="text-blue-500 underline hover:text-blue-700"
-    >
-      {reservation.id_orderDetail}
-    </button>
+                return (
+                  <tr key={reservation.id_reservation}>
+                    <td className="py-2 px-4 border-b relative">
+                      <button
+                        onMouseEnter={(e) =>
+                          handleMouseEnter(reservation.id_orderDetail, e)
+                        }
+                        onMouseLeave={handleMouseLeave}
+                        className="text-blue-500 underline hover:text-blue-700"
+                      >
+                        {reservation.id_orderDetail}
+                      </button>
 
-    {hoveredOrderId === reservation.id_orderDetail && (
-      <div
-        style={{
-          position: "fixed",
-          left: `${tooltipPosition.x}px`,
-          top: `${tooltipPosition.y}px`,
-          zIndex: 1000,
-        }}
-        className="bg-gray-700 text-white p-3 rounded-md shadow-lg min-w-[300px]"
-      >
-        <div className="space-y-2">
-          <p className="font-semibold border-b pb-1">Detalles de la Orden:</p>
+                      {hoveredOrderId === reservation.id_orderDetail && (
+                        <div
+                          style={{
+                            position: "fixed",
+                            left: `${tooltipPosition.x}px`,
+                            top: `${tooltipPosition.y}px`,
+                            zIndex: 1000,
+                          }}
+                          className="bg-gray-700 text-white p-3 rounded-md shadow-lg min-w-[300px]"
+                        >
+                          <div className="space-y-2">
+                            <p className="font-semibold border-b pb-1">
+                              Detalles de la Orden:
+                            </p>
 
-          {currentOrderDetail ? (
-            <>
-              <div className="mb-2">
-                <p className="font-medium text-gray-300">Cliente:</p>
-                <p>{`${currentOrderDetail.userData?.first_name || 'N/A'} ${currentOrderDetail.userData?.last_name || 'N/A'}`}</p>
-                <p className="text-sm text-gray-400">Doc: {currentOrderDetail.n_document || 'N/A'}</p>
-              </div>
+                            {currentOrderDetail ? (
+                              <>
+                                <div className="mb-2">
+                                  <p className="font-medium text-gray-300">
+                                    Cliente:
+                                  </p>
+                                  <p>{`${
+                                    currentOrderDetail.userData?.first_name ||
+                                    "N/A"
+                                  } ${
+                                    currentOrderDetail.userData?.last_name ||
+                                    "N/A"
+                                  }`}</p>
+                                  <p className="text-sm text-gray-400">
+                                    Doc:{" "}
+                                    {currentOrderDetail.n_document || "N/A"}
+                                  </p>
+                                </div>
 
-              {currentOrderDetail.products && currentOrderDetail.products.length > 0 ? (
-                <div>
-                  <p className="font-medium text-gray-300 border-b pb-1">Productos:</p>
-                  {currentOrderDetail.products.map((product, index) => (
-                    <div key={index} className="pl-2 py-1">
-                      <p className="text-sm">{product.description || 'Sin descripción'}</p>
-                      <div className="text-xs text-gray-400">
-                        <p>Código: {product.codigoBarra || 'N/A'}</p>
-                        <p>Precio: ${product.priceSell?.toLocaleString() || '0'}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">No hay productos disponibles</p>
-              )}
-            </>
-                          ) : (
-                            <p className="text-sm text-gray-400">Cargando detalles...</p>
-                          )}
+                                {currentOrderDetail.products &&
+                                currentOrderDetail.products.length > 0 ? (
+                                  <div>
+                                    <p className="font-medium text-gray-300 border-b pb-1">
+                                      Productos:
+                                    </p>
+                                    {currentOrderDetail.products.map(
+                                      (product, index) => (
+                                        <div key={index} className="pl-2 py-1">
+                                          <p className="text-sm">
+                                            {product.description ||
+                                              "Sin descripción"}
+                                          </p>
+                                          <div className="text-xs text-gray-400">
+                                            <p>
+                                              Código:{" "}
+                                              {product.codigoBarra || "N/A"}
+                                            </p>
+                                            <p>
+                                              Precio: $
+                                              {product.priceSell?.toLocaleString() ||
+                                                "0"}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-400">
+                                    No hay productos disponibles
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-400">
+                                Cargando detalles...
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-          {reservation.OrderDetail?.User
-            ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
-            : 'N/A'}
-        </td>
-                  <td className="py-2 px-4 border-b">
-                    {new Date(reservation.dueDate).toLocaleDateString()}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    ${reservation.totalPaid?.toLocaleString()}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    ${reservation.OrderDetail?.amount?.toLocaleString() || 'N/A'}
-                  </td>
-                  <td className="py-2 px-4 border-b text-red-600 font-semibold">
-                    ${pendingDebt?.toLocaleString()}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    <button
-                      onClick={() => handleOpenPaymentPopup(reservation)}
-                      className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2"
-                    >
-                      Aplicar Pago
-                    </button>
-                    <button
-                      onClick={() => generatePDF({
-                        receiptNumber: reservation.receiptNumber || 1001,
-                        date: new Date().toISOString().split('T')[0],
-                        buyer_name: reservation.OrderDetail.User.first_name + ' ' + reservation.OrderDetail.User.last_name,
-                        buyer_email: reservation.OrderDetail.User.email,
-                        buyer_phone: reservation.OrderDetail.User.phone,
-                        total_amount: reservation.totalPaid,
-                        payMethod: "Crédito",
-                        id_orderDetail: reservation.id_orderDetail
-                      })}
-                      className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
-                    >
-                      Generar Recibo
-                    </button>
-                    <button
-                      onClick={() => handleDelete(reservation.id_reservation)}
-                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                      )}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      {reservation.OrderDetail?.User
+                        ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
+                        : "N/A"}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      {new Date(reservation.dueDate).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      ${reservation.totalPaid?.toLocaleString()}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      $
+                      {reservation.OrderDetail?.amount?.toLocaleString() ||
+                        "N/A"}
+                    </td>
+                    <td className="py-2 px-4 border-b text-red-600 font-semibold">
+                      ${pendingDebt?.toLocaleString()}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      <button
+                        onClick={() => handleOpenPaymentPopup(reservation)}
+                        className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2"
+                      >
+                        Aplicar Pago
+                      </button>
+                      <button
+                        onClick={() =>
+                          generatePDF({
+                            receiptNumber: reservation.receiptNumber || 1001,
+                            date: new Date().toISOString().split("T")[0],
+                            buyer_name:
+                              reservation.OrderDetail.User.first_name +
+                              " " +
+                              reservation.OrderDetail.User.last_name,
+                            buyer_email: reservation.OrderDetail.User.email,
+                            buyer_phone: reservation.OrderDetail.User.phone,
+                            total_amount: reservation.totalPaid,
+                            payMethod: "Crédito",
+                            id_orderDetail: reservation.id_orderDetail,
+                          })
+                        }
+                        className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
+                      >
+                        Generar Recibo
+                      </button>
+                      <button
+                        onClick={() => handleDelete(reservation.id_reservation)}
+                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
       <div className="flex justify-center mt-4">
-        {Array.from({ length: Math.ceil(reservations.length / reservationsPerPage) }).map((_, index) => (
+        {Array.from({
+          length: Math.ceil(reservations.length / reservationsPerPage),
+        }).map((_, index) => (
           <button
             key={index}
             onClick={() => paginate(index + 1)}
-            className={`mx-1 px-3 py-1 rounded ${currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentPage === index + 1
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
           >
             {index + 1}
           </button>
@@ -475,8 +535,8 @@ console.log("CURRENT RESERVATIONS:", currentReservations);
 
 // Componente para el Popup de Pago
 const PaymentPopup = ({ reservation, onClose, onPayment }) => {
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Efectivo");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -490,7 +550,9 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
         <h2 className="text-2xl font-bold mb-4">Aplicar Pago</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Monto a Pagar</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Monto a Pagar
+            </label>
             <input
               type="number"
               value={paymentAmount}
@@ -500,7 +562,9 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Tipo de Pago</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Tipo de Pago
+            </label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}

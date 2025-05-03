@@ -3,6 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchBalance } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const Balance = () => {
   const dispatch = useDispatch();
@@ -101,7 +106,8 @@ const Balance = () => {
     if (filters.cashier) {
       // Filter local sales by cashier
       filteredMovements = filteredMovements.filter(
-        (m) => m.type !== "Venta Local" || m.cashier_document === filters.cashier
+        (m) =>
+          m.type !== "Venta Local" || m.cashier_document === filters.cashier
       );
     }
 
@@ -125,14 +131,20 @@ const Balance = () => {
     const ws = XLSX.utils.json_to_sheet(wsData);
 
     // Format the 'Monto' column as Colombian Currency
-    ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }]; // Adjust column widths
-    Object.keys(ws).forEach(cell => {
-        if (cell.startsWith('E') && cell !== 'E1') { // Target 'Monto' column, skip header
-            ws[cell].z = '$ #,##0;[Red]$ -#,##0'; // Colombian Peso format
-            ws[cell].t = 'n'; // Set cell type to number
-        }
+    ws["!cols"] = [
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 15 },
+    ]; // Adjust column widths
+    Object.keys(ws).forEach((cell) => {
+      if (cell.startsWith("E") && cell !== "E1") {
+        // Target 'Monto' column, skip header
+        ws[cell].z = "$ #,##0;[Red]$ -#,##0"; // Colombian Peso format
+        ws[cell].t = "n"; // Set cell type to number
+      }
     });
-
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
@@ -170,9 +182,7 @@ const Balance = () => {
   // --- Get unique cashiers for the filter dropdown ---
   const cashiers = [
     ...new Set(
-      (income.local || [])
-        .map((sale) => sale.cashierDocument)
-        .filter(Boolean) // Remove null/undefined cashier documents
+      (income.local || []).map((sale) => sale.cashierDocument).filter(Boolean) // Remove null/undefined cashier documents
     ),
   ];
 
@@ -182,7 +192,9 @@ const Balance = () => {
   // --- Render Component ---
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
-      <h1 className="text-3xl font-bold mb-6 text-center">Balance Financiero</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        Balance Financiero
+      </h1>
 
       {/* Filters Section */}
       <div className="mb-6 p-4 border rounded shadow-sm bg-gray-50">
@@ -200,7 +212,9 @@ const Balance = () => {
           <input
             type="date"
             value={filters.endDate}
-            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, endDate: e.target.value })
+            }
             className="border rounded p-2"
             title="Fecha Fin"
           />
@@ -247,7 +261,9 @@ const Balance = () => {
           </select>
           <select
             value={filters.cashier}
-            onChange={(e) => setFilters({ ...filters, cashier: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, cashier: e.target.value })
+            }
             className="border rounded p-2"
           >
             <option value="">Todos los Cajeros (Ventas Locales)</option>
@@ -262,55 +278,100 @@ const Balance = () => {
 
       {/* Income by Payment Method Section */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3">Ingresos por Método (Detalle)</h2>
+        <h2 className="text-xl font-semibold mb-3">
+          Ingresos por Método (Detalle)
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           {/* Cards for each payment method */}
           {[
             { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50" },
             { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50" },
             { name: "Nequi", value: ingresosNequi, color: "bg-green-50" },
-            { name: "Bancolombia", value: ingresosBancolombia, color: "bg-green-50" },
+            {
+              name: "Bancolombia",
+              value: ingresosBancolombia,
+              color: "bg-green-50",
+            },
             { name: "Addi", value: ingresosAddi, color: "bg-yellow-50" }, // Different color
-            { name: "Sistecredito", value: ingresosSistecredito, color: "bg-yellow-50" }, // Different color
-            { name: "Venta Online", value: totalOnlineSales, color: "bg-blue-50" },
+            {
+              name: "Sistecredito",
+              value: ingresosSistecredito,
+              color: "bg-yellow-50",
+            }, // Different color
+            {
+              name: "Venta Online",
+              value: totalOnlineSales,
+              color: "bg-blue-50",
+            },
           ].map((method) => (
-            <div key={method.name} className={`${method.color} p-4 rounded shadow-sm text-center`}>
-              <h3 className="text-md font-semibold text-gray-700">{method.name}</h3>
+            <div
+              key={method.name}
+              className={`${method.color} p-4 rounded shadow-sm text-center`}
+            >
+              <h3 className="text-md font-semibold text-gray-700">
+                {method.name}
+              </h3>
               <p className="text-xl font-bold text-gray-900">
-                {method.value.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                {method.value.toLocaleString("es-CO", {
+                  style: "currency",
+                  currency: "COP",
+                })}
               </p>
             </div>
           ))}
         </div>
-         <p className="text-xs text-gray-500 mt-2">* Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se incluyen en el cálculo de 'Ingresos Totales' del resumen.</p>
+        <p className="text-xs text-gray-500 mt-2">
+          * Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se
+          incluyen en el cálculo de 'Ingresos Totales' del resumen.
+        </p>
       </div>
 
       {/* Summary Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-100 p-4 rounded shadow-md text-center">
-          <h3 className="text-lg font-semibold text-green-800">Ingresos Totales*</h3>
+          <h3 className="text-lg font-semibold text-green-800">
+            Ingresos Totales*
+          </h3>
           <p className="text-2xl font-bold text-green-900">
-            {displayTotalIncome.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+            {displayTotalIncome.toLocaleString("es-CO", {
+              style: "currency",
+              currency: "COP",
+            })}
           </p>
         </div>
         <div className="bg-red-100 p-4 rounded shadow-md text-center">
           <h3 className="text-lg font-semibold text-red-800">Gastos Totales</h3>
           <p className="text-2xl font-bold text-red-900">
-            {totalExpenses.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+            {totalExpenses.toLocaleString("es-CO", {
+              style: "currency",
+              currency: "COP",
+            })}
           </p>
         </div>
         <div className="bg-blue-100 p-4 rounded shadow-md text-center">
           <h3 className="text-lg font-semibold text-blue-800">Balance*</h3>
           <p className="text-2xl font-bold text-blue-900">
-            {displayBalance.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+            {displayBalance.toLocaleString("es-CO", {
+              style: "currency",
+              currency: "COP",
+            })}
           </p>
         </div>
         <button
           onClick={handleExportExcel}
           className="bg-indigo-600 text-white p-4 rounded shadow-md hover:bg-indigo-700 transition duration-200 flex items-center justify-center"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
           Exportar Excel
         </button>
@@ -318,29 +379,40 @@ const Balance = () => {
 
       {/* Cashier Totals Section */}
       {Object.keys(cashierTotals).length > 0 && (
-         <div className="mb-6">
-           <h2 className="text-xl font-semibold mb-3">Ventas por Cajero (Local)</h2>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             {Object.entries(cashierTotals)
-               .filter(
-                 ([cashier]) => !filters.cashier || cashier === filters.cashier
-               )
-               .map(([cashier, total]) => (
-                 <div key={cashier} className="bg-purple-50 p-4 rounded shadow-sm text-center">
-                   <h3 className="text-md font-semibold text-purple-800">{cashier}</h3>
-                   <p className="text-xl font-bold text-purple-900">
-                     {total.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
-                   </p>
-                 </div>
-               ))}
-           </div>
-         </div>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-3">
+            Ventas por Cajero (Local)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Object.entries(cashierTotals)
+              .filter(
+                ([cashier]) => !filters.cashier || cashier === filters.cashier
+              )
+              .map(([cashier, total]) => (
+                <div
+                  key={cashier}
+                  className="bg-purple-50 p-4 rounded shadow-sm text-center"
+                >
+                  <h3 className="text-md font-semibold text-purple-800">
+                    {cashier}
+                  </h3>
+                  <p className="text-xl font-bold text-purple-900">
+                    {total.toLocaleString("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                    })}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </div>
       )}
-
 
       {/* Movements Table Section */}
       <div className="overflow-x-auto shadow-md rounded-lg">
-        <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg">Detalle de Movimientos</h2>
+        <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg">
+          Detalle de Movimientos
+        </h2>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-200">
             <tr>
@@ -366,12 +438,20 @@ const Balance = () => {
               getAllMovements().map((movement) => (
                 <tr
                   key={movement.id} // Use the unique ID generated
-                  className={movement.amount < 0 ? "hover:bg-red-50" : "hover:bg-green-50"}
+                  className={
+                    movement.amount < 0
+                      ? "hover:bg-red-50"
+                      : "hover:bg-green-50"
+                  }
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {movement.date.toLocaleDateString("es-CO")}
+                    {dayjs(movement.date)
+                      .tz("America/Bogota")
+                      .format("DD/MM/YYYY HH:mm")}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{movement.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {movement.type}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.description || "-"}
                   </td>
@@ -384,13 +464,18 @@ const Balance = () => {
                     }`}
                   >
                     {/* Format amount as currency */}
-                    {movement.amount.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                    {movement.amount.toLocaleString("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                    })}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="text-center py-4 text-gray-500">No hay movimientos para mostrar con los filtros seleccionados.</td>
+                <td colSpan="5" className="text-center py-4 text-gray-500">
+                  No hay movimientos para mostrar con los filtros seleccionados.
+                </td>
               </tr>
             )}
           </tbody>

@@ -100,16 +100,21 @@ const ReservationList = () => {
       };
 
       // Mostrar alerta de que el recibo está listo para descargar
-      Swal.fire({
-        title: "Recibo Creado",
-        text: "El recibo está listo para descargar.",
-        icon: "success",
-        confirmButtonText: "Descargar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          generatePDF(receiptData);
-        }
-      });
+      const saldoPendiente = updatedReservation.OrderDetail.amount - (updatedReservation.totalPaid + amount);
+
+Swal.fire({
+  title: "Recibo Creado",
+  text: "El recibo está listo para descargar.",
+  icon: "success",
+  confirmButtonText: "Descargar",
+}).then((result) => {
+  if (result.isConfirmed) {
+    generatePDF({
+      ...receiptData,
+      saldoPendiente, 
+    });
+  }
+});
 
       // Verificar si el total pagado es igual al monto de la orden
       if (
@@ -192,6 +197,7 @@ const ReservationList = () => {
       total_amount,
       payMethod,
       id_orderDetail,
+      saldoPendiente,
     } = receiptData;
 
     // Crear un nuevo documento PDF con tamaño 80x297 mm
@@ -272,11 +278,12 @@ const ReservationList = () => {
     currentY += 20;
 
     doc.text(`Pago Parcial: $${total_amount}`, 20, currentY);
-    currentY += 20;
-    doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
-    currentY += 20;
-    doc.setFontSize(8);
-    doc.text(`Orden: ${id_orderDetail}`, 20, currentY);
+currentY += 20;
+doc.text(`Saldo Pendiente: $${saldoPendiente}`, 20, currentY); // <-- agrega esta línea
+currentY += 20;
+doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
+currentY += 20;
+    doc.text(`${id_orderDetail}`, 20, currentY);
 
     // Agregar texto final centrado
     currentY += 40; // Espacio mayor antes del mensaje final
@@ -290,7 +297,8 @@ const ReservationList = () => {
 
     // Guardar el PDF con un nombre personalizado que incluye el número de recibo
     const fileName = `Recibo_${receiptNumber}.pdf`; // Nombre del archivo
-    doc.save(fileName);
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
   };
 
   // Lógica para la paginación

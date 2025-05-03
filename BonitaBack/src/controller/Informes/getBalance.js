@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation } = require("../../data");
 const { Op } = require("sequelize");
 
 const getBalance = async (req, res) => {
@@ -11,13 +11,11 @@ const getBalance = async (req, res) => {
       }
     };
 
-    console.log("Filtros recibidos:", { startDate, endDate, paymentMethod, pointOfSale });
-
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {
         ...dateFilter,
-        pointOfSale: 'Online' // Asegurarse de que solo se incluyan ventas online
+        pointOfSale: 'Online'
       },
       attributes: [
         'id_orderDetail',
@@ -28,13 +26,11 @@ const getBalance = async (req, res) => {
       ]
     });
 
-    console.log("Ventas Online desde OrderDetail:", onlineSales);
-
     // Obtener ventas locales exclusivamente de Receipt
     const localSales = await Receipt.findAll({
       where: {
         ...dateFilter,
-        ...(paymentMethod && { payMethod: paymentMethod }) // Filtrar por método de pago si se proporciona
+        ...(paymentMethod && { payMethod: paymentMethod })
       },
       attributes: [
         'id_receipt',
@@ -42,17 +38,35 @@ const getBalance = async (req, res) => {
         'date',
         'total_amount',
         'payMethod',
-        'cashier_document' 
+        'cashier_document'
       ]
     });
 
-    console.log("Ventas Locales desde Receipt:", localSales);
+    // Obtener pagos parciales de reservas
+    const partialPayments = await CreditPayment.findAll({
+      where: {
+        ...dateFilter,
+        // Puedes filtrar por método de pago si tu modelo lo tiene
+      },
+      attributes: [
+        'id_payment',
+        'id_reservation',
+        'amount',
+        'date'
+      ],
+      include: [
+        {
+          model: Reservation,
+          attributes: ['n_document', 'id_orderDetail'],
+        }
+      ]
+    });
 
     // Obtener gastos
     const expenses = await Expense.findAll({
       where: {
         ...dateFilter,
-        ...(paymentMethod && { paymentMethods: paymentMethod }) // Filtrar por método de pago si se proporciona
+        ...(paymentMethod && { paymentMethods: paymentMethod })
       },
       attributes: [
         'id',
@@ -64,8 +78,6 @@ const getBalance = async (req, res) => {
       ]
     });
 
-    console.log("Gastos obtenidos:", expenses);
-    console.log("Ventas Locales desde Receipt (Raw):", localSales);
     // Formatear ventas online
     const formattedOnlineSales = onlineSales.map(sale => ({
       id: sale.id_orderDetail,
@@ -75,8 +87,6 @@ const getBalance = async (req, res) => {
       transactionStatus: sale.transaction_status,
       paymentMethod: 'Wompi'
     }));
-
-    console.log("Ventas Online formateadas:", formattedOnlineSales);
 
     // Formatear ventas locales
     const formattedLocalSales = localSales.map(sale => ({
@@ -89,31 +99,38 @@ const getBalance = async (req, res) => {
       buyerName: sale.buyer_name || 'Desconocido',
     }));
 
-    console.log("Ventas Locales formateadas:", formattedLocalSales);
+    // Formatear pagos parciales de reservas
+    const formattedPartialPayments = partialPayments.map(payment => ({
+      id: payment.id_payment,
+      date: payment.date,
+      amount: payment.amount,
+      pointOfSale: 'Local',
+      paymentMethod: 'Crédito',
+      type: 'Pago Parcial Reserva',
+      reservationId: payment.id_reservation,
+      n_document: payment.Reservation ? payment.Reservation.n_document : null,
+      id_orderDetail: payment.Reservation ? payment.Reservation.id_orderDetail : null,
+    }));
+
+    // Unir ventas locales y pagos parciales de reservas
+    const allLocalIncome = [
+      ...formattedLocalSales,
+      ...formattedPartialPayments
+    ];
 
     // Calcular totales
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
-    const totalLocalSales = formattedLocalSales.reduce((sum, sale) => sum + sale.amount, 0);
+    const totalLocalSales = allLocalIncome.reduce((sum, sale) => sum + sale.amount, 0);
     const totalIncome = totalOnlineSales + totalLocalSales;
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
-    console.log("Totales calculados:", {
-      totalOnlineSales,
-      totalLocalSales,
-      totalIncome,
-      totalExpenses,
-      balance
-    });
-
-    // Calcular totales por cajero
+    // Calcular totales por cajero (solo ventas locales, no pagos parciales)
     const cashierTotals = formattedLocalSales.reduce((acc, sale) => {
-      const cashier = sale.cashierDocument || 'Unknown'; // Usar documento del cajero
+      const cashier = sale.cashierDocument || 'Unknown';
       acc[cashier] = (acc[cashier] || 0) + sale.amount;
       return acc;
     }, {});
-
-    console.log("Totales por cajero:", cashierTotals);
 
     // Respuesta al frontend
     return res.status(200).json({
@@ -124,10 +141,10 @@ const getBalance = async (req, res) => {
       totalExpenses,
       income: {
         online: formattedOnlineSales,
-        local: formattedLocalSales
+        local: allLocalIncome // Incluye ventas locales y pagos parciales
       },
       expenses,
-      cashierTotals // Totales por cajero
+      cashierTotals
     });
 
   } catch (error) {

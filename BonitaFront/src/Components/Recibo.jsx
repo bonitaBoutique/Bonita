@@ -27,7 +27,7 @@ const Recibo = () => {
   const [amount1, setAmount1] = useState(""); // Primer monto
   const [amount2, setAmount2] = useState(""); // Segundo monto
   const [loadingCashier, setLoadingCashier] = useState(true);
-
+  const [discount, setDiscount] = useState(0);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { order, loading, error } = useSelector((state) => state.orderById);
@@ -209,7 +209,7 @@ const Recibo = () => {
 
     const receiptData = {
       receiptNumber: newReceiptNumber,
-      total_amount: parseFloat(totalAmount),
+      total_amount: totalWithDiscount,
       date: date,
       id_orderDetail: order.id_orderDetail,
       buyer_name: buyerName,
@@ -237,6 +237,14 @@ const Recibo = () => {
       }).then((result) => {
         if (result.isConfirmed) {
           generatePDF(finalAmount1, finalAmount2);
+        }
+        if (discount < 0 || discount > Number(totalAmount)) {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "El descuento no puede ser mayor al monto total ni negativo.",
+          });
+          return;
         }
         resetForm();
         dispatch(resetReceiptState());
@@ -328,11 +336,11 @@ const Recibo = () => {
     doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
     currentY += 20;
 
-    doc.text(`Monto Total: $${totalAmount}`, 20, currentY);
+    doc.text(`Monto Total: $${totalWithDiscount}`, 20, currentY);
     currentY += 20;
     doc.text(
       `Metodo de Pago : ${paymentMethod} $${
-        showSecondPayment ? monto1 : totalAmount
+        showSecondPayment ? monto1 : totalWithDiscount
       }`,
       20,
       currentY
@@ -358,7 +366,7 @@ const Recibo = () => {
     currentY += 20;
 
     order.products.forEach((product, index) => {
-      const productLine = `${index + 1}. ${product.description} - $${product.priceSell}`;
+      const productLine = `${index + 1}. ${product.description} `;
       // Divide el texto si excede el ancho de 170 puntos (ajusta según tu recibo)
       const lines = doc.splitTextToSize(productLine, 170);
       doc.text(lines, 20, currentY);
@@ -400,6 +408,9 @@ const Recibo = () => {
 
     doc.output("dataurlnewwindow");
   };
+
+  const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
+const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
 
   return (
     <div>
@@ -492,18 +503,43 @@ const Recibo = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
-
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Monto Total
-            </label>
-            <input
-              type="number"
-              value={totalAmount}
-              readOnly // Hacerlo readOnly para evitar cambios manuales
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
-            />
-          </div>
+  <label className="block text-sm font-medium text-gray-700">
+    Descuento (%)
+  </label>
+  <input
+    type="number"
+    min="0"
+    max="100"
+    value={discount}
+    onChange={(e) => setDiscount(Number(e.target.value))}
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+    placeholder="0"
+  />
+</div>
+<div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700">
+    Monto de Descuento
+  </label>
+  <input
+    type="number"
+    value={discountAmount.toFixed(2)}
+    readOnly
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+  />
+</div>
+<div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700">
+    Monto Total
+  </label>
+  <input
+    type="number"
+    value={totalWithDiscount.toFixed(2)}
+    readOnly
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+  />
+</div>
+          
 
           {/* Primer método de pago */}
           <div className="mb-4">
@@ -733,4 +769,4 @@ const Recibo = () => {
   );
 };
 
-export default Recibo; //prueba
+export default Recibo; 

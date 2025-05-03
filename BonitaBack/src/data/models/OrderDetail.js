@@ -114,6 +114,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Online",
       },
+      discount: {
+  type: DataTypes.FLOAT,
+  allowNull: true,
+  defaultValue: 0,
+  comment: 'Descuento aplicado al total de la orden'
+},
     },
     {
       paranoid: true,

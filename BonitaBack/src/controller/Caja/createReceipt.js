@@ -14,6 +14,7 @@ module.exports = async (req, res) => {
     payMethod2,
     cashier_document,
     actualPaymentMethod,
+    discount = 0, // <-- Nuevo campo
   } = req.body;
 
   // Validaciones iniciales
@@ -67,9 +68,8 @@ module.exports = async (req, res) => {
         buyer_phone,
         total_amount, // Este es el valor de la GiftCard
         date,
-        payMethod: "GiftCard", // El tipo de recibo es GiftCard
-        amount, // El monto pagado (debería ser igual a total_amount para GiftCard)
-        // amount2 y payMethod2 no aplican para la compra de GiftCard
+        payMethod: "GiftCard",
+        amount,
         amount2: null,
         payMethod2: null,
         receipt_number: receiptNumber,
@@ -87,7 +87,6 @@ module.exports = async (req, res) => {
         date,
         receipt_number: receiptNumber,
         cashier_document,
-        // Agrega otros campos necesarios según tu modelo
       });
 
       return res.status(201).json({
@@ -124,6 +123,13 @@ module.exports = async (req, res) => {
       return res.status(400).json({ message: "La orden está cancelada y no se puede facturar" });
     }
 
+    // Actualizar el descuento en la orden
+    order.discount = discount;
+    await order.save();
+
+    // Calcular el total con descuento
+    const totalConDescuento = order.amount - discount;
+
     // Buscar el último recibo para obtener el número de recibo más alto
     const lastReceipt = await Receipt.findOne({
       order: [["id_receipt", "DESC"]],
@@ -136,7 +142,7 @@ module.exports = async (req, res) => {
       buyer_name,
       buyer_email,
       buyer_phone,
-      total_amount: order.amount,
+      total_amount: totalConDescuento, // <-- Aplica el descuento aquí
       date,
       payMethod,
       amount,
@@ -144,17 +150,18 @@ module.exports = async (req, res) => {
       payMethod2: payMethod2 || null,
       receipt_number: receiptNumber,
       cashier_document,
+      discount, // Opcional: guarda el descuento también en el recibo si quieres
     });
 
     return res.status(201).json({
-      message: "Recibo de GiftCard creado exitosamente",
+      message: "Recibo creado exitosamente",
       receipt,
-      products: [], // No hay productos asociados a la compra de GiftCard
+      products: order.products || [],
     });
 
   } catch (error) {
-    console.error("Error al crear el recibo GiftCard:", error.message);
-    return res.status(500).json({ message: "Error al crear el recibo GiftCard" });
+    console.error("Error al crear el recibo:", error.message);
+    return res.status(500).json({ message: "Error al crear el recibo" });
   }
 }
 

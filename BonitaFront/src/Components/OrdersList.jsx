@@ -213,6 +213,10 @@ const OrdersList = () => {
                               <p className="text-sm font-medium">
                                 {product.description}
                               </p>
+                              <p className="text-sm font-medium">
+                                {product.priceSell}
+                              </p>
+
                               <p className="text-xs text-gray-600">
                                 Cod: {product.codigoBarra}
                               </p>

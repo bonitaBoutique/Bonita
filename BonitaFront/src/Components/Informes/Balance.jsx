@@ -13,7 +13,8 @@ const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Get data from Redux state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const {
     balance: backendBalance = 0, // Renamed backend value
     totalIncome: backendTotalIncome = 0, // Renamed backend value
@@ -189,7 +190,16 @@ const Balance = () => {
   // --- Render loading state ---
   if (loading) return <div className="text-center mt-40">Cargando...</div>;
 
-  // --- Render Component ---
+  const allMovements = getAllMovements();
+  const totalPages = Math.ceil(allMovements.length / itemsPerPage);
+
+  // Movimientos a mostrar en la página actual
+  const paginatedMovements = allMovements.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  
+ 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       <h1 className="text-3xl font-bold mb-6 text-center">
@@ -415,39 +425,15 @@ const Balance = () => {
         </h2>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                Fecha
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                Tipo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                Descripción
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                Método
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
-                Monto
-              </th>
-            </tr>
+            {/* ...cabecera de la tabla... */}
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {getAllMovements().length > 0 ? (
-              getAllMovements().map((movement) => (
-                <tr
-                  key={movement.id} // Use the unique ID generated
-                  className={
-                    movement.amount < 0
-                      ? "hover:bg-red-50"
-                      : "hover:bg-green-50"
-                  }
-                >
+            {paginatedMovements.length > 0 ? (
+              paginatedMovements.map((movement) => (
+                <tr key={movement.id} className={movement.amount < 0 ? "hover:bg-red-50" : "hover:bg-green-50"}>
+                  {/* ...celdas de la fila... */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {dayjs(movement.date)
-                      .tz("America/Bogota")
-                      .format("DD/MM/YYYY HH:mm")}
+                    {dayjs(movement.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.type}
@@ -458,16 +444,8 @@ const Balance = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.paymentMethod || "N/A"}
                   </td>
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
-                      movement.amount < 0 ? "text-red-600" : "text-green-600"
-                    }`}
-                  >
-                    {/* Format amount as currency */}
-                    {movement.amount.toLocaleString("es-CO", {
-                      style: "currency",
-                      currency: "COP",
-                    })}
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${movement.amount < 0 ? "text-red-600" : "text-green-600"}`}>
+                    {movement.amount.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
                   </td>
                 </tr>
               ))
@@ -480,6 +458,38 @@ const Balance = () => {
             )}
           </tbody>
         </table>
+        {/* Controles de paginación */}
+        <div className="flex justify-center gap-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {"<<"}
+          </button>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {"<"}
+          </button>
+          <span className="px-2 py-1">{currentPage} / {totalPages || 1}</span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {">"}
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            {">>"}
+          </button>
+        </div>
       </div>
 
       {/* Back Button */}

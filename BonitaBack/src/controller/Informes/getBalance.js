@@ -5,11 +5,15 @@ const getBalance = async (req, res) => {
   try {
     const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
 
-    const dateFilter = {
-      date: {
-        [Op.between]: [startDate || '2000-01-01', endDate || new Date()]
-      }
-    };
+// Si hay fechas, ajusta el rango para incluir todo el día
+const start = startDate ? new Date(`${startDate}T00:00:00`) : new Date('2000-01-01T00:00:00');
+const end = endDate ? new Date(`${endDate}T23:59:59.999`) : new Date();
+
+const dateFilter = {
+  date: {
+    [Op.between]: [start, end]
+  }
+};
 
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
@@ -44,16 +48,8 @@ const getBalance = async (req, res) => {
 
     // Obtener pagos parciales de reservas
     const partialPayments = await CreditPayment.findAll({
-      where: {
-        ...dateFilter,
-        // Puedes filtrar por método de pago si tu modelo lo tiene
-      },
-      attributes: [
-        'id_payment',
-        'id_reservation',
-        'amount',
-        'date'
-      ],
+      where: { ...dateFilter },
+      attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
       include: [
         {
           model: Reservation,

@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
     }
 
     const newExpense = await Expense.create({
-        date,
+        date: new Date(),
         type,
         description,
         paymentMethods,

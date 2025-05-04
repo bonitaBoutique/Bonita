@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
           'isFacturable',
           'status',
           'pointOfSale',
+           'discount',
           'n_document',
           'createdAt' // Ensure createdAt is included
         ],
@@ -83,6 +84,7 @@ module.exports = async (req, res) => {
           'estimated_delivery_date',
           'isFacturable',
           'status',
+          'discount',
           'pointOfSale',
           'n_document',
           'createdAt' // Ensure createdAt is included

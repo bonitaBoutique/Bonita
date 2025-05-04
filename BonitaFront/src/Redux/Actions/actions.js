@@ -498,18 +498,18 @@ export const fetchAllOrders = () => async (dispatch) => {
 };
 
 export const updateOrderState =
-  (id_orderDetail, newState, trackingNumber) => async (dispatch) => {
+  (id_orderDetail, newState, trackingNumber, amount, discount) => async (dispatch) => {
     try {
       const { data } = await axios.put(`${BASE_URL}/order/${id_orderDetail}`, {
         state_order: newState,
         trackingNumber,
+        amount,     // <-- agrega amount
+        discount,   // <-- agrega discount
       });
 
       dispatch({ type: UPDATE_ORDER_STATE_SUCCESS, payload: data.orderDetail });
-      // Puedes manejar un mensaje de éxito o hacer otras acciones después de actualizar el estado
     } catch (error) {
       dispatch({ type: UPDATE_ORDER_STATE_FAILURE, payload: error.message });
-      // Manejar errores o mostrar mensajes de error al usuario si es necesario
     }
   };
 

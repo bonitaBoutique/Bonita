@@ -3,7 +3,7 @@ const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
   const { id_orderDetail } = req.params;
-  const { state_order, trackingNumber, transaction_status, shipping_status, status } = req.body;
+  const { state_order, trackingNumber, transaction_status, shipping_status, status, amount, discount } = req.body; // <-- agrega amount y discount
 
   try {
     const orderDetail = await OrderDetail.findByPk(id_orderDetail);
@@ -61,6 +61,8 @@ module.exports = async (req, res) => {
     if (shipping_status) orderDetail.shipping_status = shipping_status;
     if (trackingNumber) orderDetail.tracking_number = trackingNumber;
     if (status) orderDetail.status = status;
+    if (amount !== undefined) orderDetail.amount = amount; // <-- actualiza amount
+    if (discount !== undefined) orderDetail.discount = discount; // <-- actualiza discount
 
     await orderDetail.save();
 

@@ -11,14 +11,15 @@ import {
   fetchUserByDocument,
   createReservation,
   resetReceiptState,
-  clearOrderState
+  clearOrderState,
+  updateOrderState
 } from "../Redux/Actions/actions";
 import ReservationPopup from "./ReservationPopup";
 
 const Recibo = () => {
   const { idOrder } = useParams();
   const { n_document } = useParams();
-   
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
@@ -72,8 +73,6 @@ const Recibo = () => {
     dispatch(clearOrderState());
     navigate("/caja");
   };
-
-  
 
   useEffect(() => {
     if (!order || order.id_orderDetail !== idOrder) {
@@ -132,11 +131,13 @@ const Recibo = () => {
       typeof err === "string"
         ? err
         : err?.message || err?.error || JSON.stringify(err);
-  
+
     return (
       <p>
         Error al cargar la orden:{" "}
-        {getErrorMsg(error) || getErrorMsg(userError) || getErrorMsg(cashierError)}
+        {getErrorMsg(error) ||
+          getErrorMsg(userError) ||
+          getErrorMsg(cashierError)}
       </p>
     );
   }
@@ -221,10 +222,21 @@ const Recibo = () => {
       cashier_name: `${cashierInfo.first_name} ${cashierInfo.last_name}`,
       payMethod2: finalPayMethod2, // Usar el método final
       amount2: finalAmount2, // Usar el monto final
+      discount: discount, // Usar el descuento
     };
 
     try {
       await dispatch(createReceipt(receiptData));
+      await dispatch(
+        updateOrderState(
+          order.id_orderDetail,
+          order.state_order,
+          null,
+          totalWithDiscount,
+          discount
+        )
+      );
+      setIsSubmitted(true);
       setIsSubmitted(true);
       Swal.fire({
         icon: "success",
@@ -410,7 +422,7 @@ const Recibo = () => {
   };
 
   const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
-const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
+  const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
 
   return (
     <div>
@@ -504,42 +516,41 @@ const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
             />
           </div>
           <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">
-    Descuento (%)
-  </label>
-  <input
-    type="number"
-    min="0"
-    max="100"
-    value={discount}
-    onChange={(e) => setDiscount(Number(e.target.value))}
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-    placeholder="0"
-  />
-</div>
-<div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">
-    Monto de Descuento
-  </label>
-  <input
-    type="number"
-    value={discountAmount.toFixed(2)}
-    readOnly
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
-  />
-</div>
-<div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">
-    Monto Total
-  </label>
-  <input
-    type="number"
-    value={totalWithDiscount.toFixed(2)}
-    readOnly
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
-  />
-</div>
-          
+            <label className="block text-sm font-medium text-gray-700">
+              Descuento (%)
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={discount}
+              onChange={(e) => setDiscount(Number(e.target.value))}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              placeholder="0"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Monto de Descuento
+            </label>
+            <input
+              type="number"
+              value={discountAmount.toFixed(2)}
+              readOnly
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Monto Total
+            </label>
+            <input
+              type="number"
+              value={totalWithDiscount.toFixed(2)}
+              readOnly
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+            />
+          </div>
 
           {/* Primer método de pago */}
           <div className="mb-4">
@@ -696,7 +707,7 @@ const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
                   type="text"
                   value={
                     change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   }
+                  }
                   readOnly
                   className={`mt-1 block w-full px-3 py-2 border ${
                     change >= 0 ? "border-gray-300" : "border-red-500"
@@ -769,4 +780,4 @@ const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
   );
 };
 
-export default Recibo; 
+export default Recibo;

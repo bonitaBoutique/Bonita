@@ -12,6 +12,7 @@ dayjs.extend(timezone);
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const today = dayjs().format("YYYY-MM-DD");
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -29,10 +30,10 @@ const Balance = () => {
 
   // State for filters
   const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
+    startDate: today,
+    endDate: today,
     paymentMethod: "",
-    pointOfSale: "", // Added pointOfSale filter
+    pointOfSale: "",
     expenseType: "",
     cashier: "",
   });
@@ -61,14 +62,14 @@ const Balance = () => {
       // Map local sales
       ...(income.local || []).map((sale) => ({
         ...sale, // Spread original sale properties
-        type: "Venta Local",
-        amount: sale.amount || 0, // Ensure amount is a number
-        date: new Date(sale.date),
-        paymentMethod: sale.paymentMethod || "Desconocido",
-        pointOfSale: "Local",
-        id: `local-${sale.id}`, // Use receipt ID, ensure it's unique
-        description: sale.buyerName || "Desconocido", // Use buyer name for description
-        cashier_document: sale.cashierDocument, // Keep cashier document
+        type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
+  amount: sale.amount || 0,
+  date: new Date(sale.date),
+  paymentMethod: sale.paymentMethod || "Desconocido",
+  pointOfSale: "Local",
+  id: `local-${sale.id}`,
+  description: sale.buyerName || "Desconocido",
+  cashier_document: sale.cashierDocument, // Keep cashier document
       })),
       // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({

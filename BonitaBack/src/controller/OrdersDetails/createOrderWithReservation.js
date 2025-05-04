@@ -1,4 +1,4 @@
-const { Reservation, OrderDetail } = require("../../data");
+const { Reservation, CreditPayment, OrderDetail } = require("../../data");
 const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
@@ -15,12 +15,18 @@ module.exports = async (req, res) => {
     // Create new reservation
     const reservation = await Reservation.create({
       id_orderDetail,
-      n_document: order.n_document, // Include n_document from order
+      n_document: order.n_document,
       partialPayment,
       totalPaid: partialPayment,
       dueDate,
       status: "Pendiente",
-      
+    });
+
+    // Registrar el pago inicial como CreditPayment
+    await CreditPayment.create({
+      id_reservation: reservation.id_reservation,
+      amount: partialPayment,
+      date: new Date(),
     });
 
     return response(res, 201, { reservation });

@@ -23,7 +23,8 @@ module.exports = async (req, res) => {
       deliveryAddress,
       shippingCost = 0,
       n_document,
-      pointOfSale
+      pointOfSale,
+      discount = 0 // Asegúrate de que discount tenga un valor por defecto
     } = req.body;
 
     // --- Validaciones (sin cambios) ---
@@ -38,8 +39,8 @@ module.exports = async (req, res) => {
      }
     // ---------------------------------
 
-    const totalAmount = Number(amount) + Number(shippingCost);
-    const amountInCents = Math.round(totalAmount * 100); // Asegurar que sea entero
+    const totalAmount = Math.max(0, Number(amount) - Number(discount) + Number(shippingCost)); // Aplica descuento
+const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
 
     // --- Verificación de stock (sin cambios) ---
     const productIds = products.map(p => p.id_product);
@@ -69,9 +70,9 @@ module.exports = async (req, res) => {
 
     // *** PASO 2: Crear la orden CON el ID y la Firma ***
     const orderDetail = await OrderDetail.create({
-      id_orderDetail: newOrderId, // Usa el ID generado
-      date,
-      amount: totalAmount,
+      id_orderDetail: newOrderId,
+      date: new Date(),
+      amount: totalAmount, // Guarda el monto ya con descuento aplicado
       shippingCost,
       quantity,
       state_order,
@@ -79,8 +80,9 @@ module.exports = async (req, res) => {
       deliveryAddress: finalDeliveryAddress,
       n_document,
       pointOfSale,
-      integritySignature: firmaReal, // Incluye la firma aquí
-      isFacturable
+      integritySignature: firmaReal,
+      isFacturable,
+      discount // Guarda el descuento aplicado
     });
 
     // --- Asociar productos y actualizar stock (sin cambios) ---

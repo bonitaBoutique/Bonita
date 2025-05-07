@@ -9,16 +9,16 @@ const OrdersDetails = () => {
   const { n_document } = useParams();
   const orderDetails = useSelector((state) => state.orders);
   const { loading, error, orders } = orderDetails;
-console.log(orderDetails)
+
 
 
   useEffect(() => {
-    console.log("Fetching orders for n_document:", n_document);
+    
     dispatch(fetchOrdersByDocument(n_document));
   }, [dispatch, n_document]);
 
   useEffect(() => {
-    console.log("Orders state:", orderDetails);
+   
   }, [orderDetails]);
 
   return (

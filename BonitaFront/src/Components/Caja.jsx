@@ -316,7 +316,18 @@ const Caja = () => {
           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-
+      <div className="mb-4">
+  <h3 className="text-lg font-semibold">Subtotal</h3>
+  <p>
+    Total productos: <span className="font-bold">{calculateTotals().totalQuantity}</span>
+  </p>
+  <p>
+    Subtotal:{" "}
+    <span className="font-bold">
+      ${calculateTotals().totalPrice.toLocaleString("es-CO")}
+    </span>
+  </p>
+</div>
       {/* Botón para enviar la orden */}
       <form onSubmit={handleSubmit}>
         <button

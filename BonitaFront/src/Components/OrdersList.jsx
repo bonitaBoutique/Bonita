@@ -116,30 +116,30 @@ const OrdersList = () => {
       <Navbar2 />
       <div className="bg-gray-400 min-h-screen pt-16 pb-16">
         <div className="container mx-auto px-4 py-8 mt-20">
-          <h2 className="text-2xl font-semibold mb-4 font-nunito text-gray-700 bg-slate-300 p-2 rounded">
+          <h2 className="text-2xl font-semibold mb-4 font-monserrat text-gray-700 bg-slate-300 p-2 rounded">
             Lista de Pedidos
           </h2>
           {/* ... (Filtro de estado) ... */}
           <div className="mb-4">
             <div className="mb-4">
-              <label className="mr-2 text-gray-200 font-nunito font-semibold">
+              <label className="mr-2 text-gray-200 font-monserrat font-semibold">
                 Buscar por cliente:
               </label>
               <input
                 type="text"
                 value={filterName}
                 onChange={(e) => setFilterName(e.target.value)}
-                className="bg-gray-600 text-gray-200 font-nunito px-3 py-1 rounded"
+                className="bg-gray-600 text-gray-200 font-monserrat px-3 py-1 rounded"
                 placeholder="Nombre o apellido"
               />
             </div>
-            <label className="mr-2 text-gray-200 font-nunito font-semibold">
+            <label className="mr-2 text-gray-200 font-monserrat font-semibold">
               Filtrar por estado:
             </label>
             <select
               onChange={handleFilterChange}
               value={filterState}
-              className="bg-gray-600 text-gray-200 font-nunito px-2 py-1 rounded"
+              className="bg-gray-600 text-gray-200 font-monserrat px-2 py-1 rounded"
             >
               <option value="">Todos</option>
               <option value="Pedido Realizado">Pedido Realizado</option>
@@ -279,7 +279,7 @@ const OrdersList = () => {
                             trackingNumbers[order.id_orderDetail]
                           )
                         }
-                        className="bg-slate-600 text-gray-200 px-4 py-1 rounded font-nunito font-semibold"
+                        className="bg-slate-600 text-gray-200 px-4 py-1 rounded font-monserrat font-semibold"
                         disabled={
                           order.state_order === "Envío Realizado" ||
                           !selectedStates[order.id_orderDetail] ||

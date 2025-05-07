@@ -128,7 +128,7 @@ module.exports = async (req, res) => {
     await order.save();
 
     // Calcular el total con descuento
-    const totalConDescuento = order.amount - discount;
+    const totalConDescuento = order.amount - (order.amount * discount / 100);
 
     // Buscar el último recibo para obtener el número de recibo más alto
     const lastReceipt = await Receipt.findOne({

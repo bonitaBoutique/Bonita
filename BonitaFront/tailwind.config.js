@@ -16,8 +16,10 @@ export default {
         colorFooter: '#111827',  // Agregado para tu componente
       },
       fontFamily: {
-        nunito: ['Nunito', 'sans-serif'], 
-      },
+  nunito: ['Nunito', 'sans-serif'],
+  montserrat: ['Montserrat', 'sans-serif'],
+  lato: ['Lato', 'sans-serif'],
+},
       animation: {
         'infinite-scroll': 'scroll 40s linear infinite',
       },

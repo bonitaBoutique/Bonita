@@ -157,7 +157,7 @@ const ProductsList = () => {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 uppercase font-nunito font-semibold">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 uppercase font-monserrat font-semibold">
                 {/* Mapea sobre currentGroups (los visibles) */}
                 {currentGroups.map((group) => {
                   const representative = group[0];
@@ -193,7 +193,7 @@ const ProductsList = () => {
                         </Link>
                       </div>
                       <div className="flex flex-col justify-between p-6 flex-grow">
-                        <h3 className="text-2xl font-semibold font-nunito text-stone-700">
+                        <h3 className="text-2xl font-semibold font-monserrat text-stone-700">
                           <Link
                             to={`/product/${representative.id_product}`}
                             state={{ group }}

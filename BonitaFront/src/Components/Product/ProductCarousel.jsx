@@ -51,13 +51,13 @@ const ProductCarousel = () => {
                         OFERTA
                       </span>
                     )}
-                    <h3 className="mt-2 -mb-4 text-lg font-semibold font-nunito text-slate-800 bg-yellow-600 p-2 rounded">{product.name}</h3>
+                    <h3 className="mt-2 -mb-4 text-lg font-semibold font-monserrat text-slate-800 bg-yellow-600 p-2 rounded">{product.name}</h3>
                     <img
                       src={product.Images[0]?.url || 'https://via.placeholder.com/150'}
                       alt={product.name}
                       className="w-full h-80 object-contain rounded-2xl mb-2" // object-contain asegura que la imagen no se recorte
                     />
-                    <p className="text-gray-400 font-nunito text-3xl font-semibold">${product.priceSell}</p>
+                    <p className="text-gray-400 font-monserrat text-3xl font-semibold">${product.priceSell}</p>
                   </div>
                 </Link>
               </SwiperSlide>
@@ -70,7 +70,7 @@ const ProductCarousel = () => {
                   alt="Placeholder"
                   className="w-full h-72 object-contain rounded-2xl mb-4"
                 />
-                <h3 className="mt-2 text-lg font-semibold text-white font-nunito">Producto no disponible</h3>
+                <h3 className="mt-2 text-lg font-semibold text-white font-monserrat">Producto no disponible</h3>
                 <p className="text-gray-400">$0.00</p>
               </div>
             </SwiperSlide>

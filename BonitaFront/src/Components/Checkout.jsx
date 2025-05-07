@@ -15,9 +15,7 @@ import imgFondo from '../assets/img/BannerPrincipal/banner3.png'
 import Navbar from "./Navbar";
 import PropTypes from 'prop-types';
 
-// Declare WidgetCheckout globally if it's loaded via script tag
-// This helps linters and clarifies intent.
-/* global WidgetCheckout */
+
 
 const Checkout = () => {
   const currentDate = new Date().toISOString().split("T")[0];
@@ -251,7 +249,7 @@ const Checkout = () => {
         style={{ backgroundImage: `url(${imgFondo})`, paddingTop: '4rem' }}
       >
         <div className="max-w-lg w-full mx-auto p-10 bg-white rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold font-nunito mb-4 text-center">
+          <h2 className="text-2xl font-semibold font-monserrat mb-4 text-center">
             Finalizar Compra
           </h2>
 
@@ -261,7 +259,7 @@ const Checkout = () => {
           <form onSubmit={handleSubmit}>
             {/* Date Input */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold font-nunito text-gray-700">Fecha</label>
+              <label className="block text-sm font-semibold font-monserrat text-gray-700">Fecha</label>
               <input
                 type="date"
                 name="date"
@@ -275,7 +273,7 @@ const Checkout = () => {
 
             {/* Shipping Type Display */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold font-nunito text-gray-700">
+              <label className="block text-sm font-semibold font-monserrat text-gray-700">
                 Tipo de entrega:
               </label>
               <input
@@ -289,7 +287,7 @@ const Checkout = () => {
             {/* Conditional Delivery Address Input */}
             {orderData.address === "Envio a domicilio" && (
               <div className="mb-4">
-                <label className="block text-sm font-nunito font-semibold text-gray-700">
+                <label className="block text-sm font-monserrat font-semibold text-gray-700">
                   Dirección de envío:
                 </label>
                 <input
@@ -306,7 +304,7 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div className="mb-4 border-t pt-4">
-              <h3 className="text-xl font-semibold font-nunito mb-2">
+              <h3 className="text-xl font-semibold font-monserrat mb-2">
                 Resumen del Pedido
               </h3>
               <ul className="divide-y divide-gray-200">

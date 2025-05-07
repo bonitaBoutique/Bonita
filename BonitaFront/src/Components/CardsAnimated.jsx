@@ -75,7 +75,7 @@ const CardsAnimated = () => {
     <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-20 p-6 md:p-60">
       {/* Columna izquierda: Texto */}
       <div className="flex flex-col justify-center">
-        <h2 className="text-3xl md:text-4xl font-nunito font-semibold mb-4 text-center">
+        <h2 className="text-3xl md:text-4xl font-monserrat font-semibold mb-4 text-center">
           Por qué comprar nuestros<br /> accesorios
         </h2>
 
@@ -87,7 +87,7 @@ const CardsAnimated = () => {
         />
 
         <div className="flex items-center justify-center mb-6">
-          <p className="text-xl md:text-2xl font-nunito font-semibold text-center">
+          <p className="text-xl md:text-2xl font-monserrat font-semibold text-center">
             Productos de calidad<br />
             Sabemos que necesitas accesorios<br />
             de alta calidad y nosotros te<br />

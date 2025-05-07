@@ -348,6 +348,12 @@ const Recibo = () => {
     doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
     currentY += 20;
 
+    doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
+currentY += 20;
+doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
+currentY += 20;
+
+
     doc.text(`Monto Total: $${totalWithDiscount}`, 20, currentY);
     currentY += 20;
     doc.text(

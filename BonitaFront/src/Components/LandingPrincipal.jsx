@@ -13,6 +13,8 @@ import master from "../assets/img/pagos/master.png";
 import ProductsList from "./Product/ProducstList";
 import Navbar from "./Navbar";
 
+
+
 const LandingPrincipal = () => {
   const logos = [
     { src: efecti, alt: "Efecti" },
@@ -45,7 +47,7 @@ const LandingPrincipal = () => {
                 />
                 {/* Frase sobre la imagen */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-rose-200 text-end">
-                  <h1 className="text-3xl sm:text-4xl md:text-4xl font-extrabold leading-tight font-nunito">
+                  <h1 className="text-3xl sm:text-4xl md:text-4xl font-extrabold leading-tight font-monserrat">
                     ENCUENTRA EL MEJOR OUTFIT EN <br />
                     <span className="text-3xl sm:text-5xl md:text-6xl">
                       BONITA BOUTIQUE
@@ -61,7 +63,7 @@ const LandingPrincipal = () => {
                 />
                 {/* Frase sobre la imagen */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-rose-200 text-end">
-                  <h1 className="text-3xl sm:text-4xl md:text-4xl font-extrabold leading-tight font-nunito">
+                  <h1 className="text-3xl sm:text-4xl md:text-4xl font-extrabold leading-tight font-monserrat">
                     ENCUENTRA EL MEJOR OUTFIT EN <br />
                     <span className="text-3xl sm:text-5xl md:text-6xl">
                       BONITA BOUTIQUE

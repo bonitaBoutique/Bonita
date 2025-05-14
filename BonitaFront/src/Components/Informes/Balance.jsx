@@ -62,14 +62,17 @@ const Balance = () => {
       // Map local sales
       ...(income.local || []).map((sale) => ({
         ...sale, // Spread original sale properties
-        type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
-  amount: sale.amount || 0,
-  date: new Date(sale.date),
-  paymentMethod: sale.paymentMethod || "Desconocido",
-  pointOfSale: "Local",
-  id: `local-${sale.id}`,
-  description: sale.buyerName || "Desconocido",
-  cashier_document: sale.cashierDocument, // Keep cashier document
+        type:
+          sale.type === "Pago Parcial Reserva"
+            ? "Pago Parcial Reserva"
+            : "Venta Local",
+        amount: sale.amount || 0,
+        date: sale.date,
+        paymentMethod: sale.paymentMethod || "Desconocido",
+        pointOfSale: "Local",
+        id: `local-${sale.id}`,
+        description: sale.buyerName || "Desconocido",
+        cashier_document: sale.cashierDocument, // Keep cashier document
       })),
       // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
@@ -159,14 +162,16 @@ const Balance = () => {
   // --- Calculate income totals per payment method (for individual cards) ---
   const calculateIncomeByMethod = (method) => {
     return (income.local || [])
-      .filter((sale) => sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva")
+      .filter(
+        (sale) =>
+          sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva"
+      )
       .reduce((acc, sale) => acc + (sale.amount || 0), 0);
   };
 
-
   const ingresosPagosParciales = (income.local || [])
-  .filter((sale) => sale.type === "Pago Parcial Reserva")
-  .reduce((acc, sale) => acc + (sale.amount || 0), 0);
+    .filter((sale) => sale.type === "Pago Parcial Reserva")
+    .reduce((acc, sale) => acc + (sale.amount || 0), 0);
 
   const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
   const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
@@ -182,7 +187,7 @@ const Balance = () => {
     ingresosNequi +
     ingresosBancolombia +
     totalOnlineSales + // Sum only desired local methods + online sales
-    ingresosPagosParciales
+    ingresosPagosParciales;
   // --- Calculate Balance to DISPLAY ---
   const displayBalance = displayTotalIncome - totalExpenses;
 
@@ -204,8 +209,7 @@ const Balance = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
- 
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       <h1 className="text-3xl font-bold mb-6 text-center">
@@ -319,7 +323,11 @@ const Balance = () => {
               value: totalOnlineSales,
               color: "bg-blue-50",
             },
-            { name: "Pagos Parciales Reserva", value: ingresosPagosParciales, color: "bg-purple-50" }, // Nueva tarjeta
+            {
+              name: "Pagos Parciales Reserva",
+              value: ingresosPagosParciales,
+              color: "bg-purple-50",
+            }, // Nueva tarjeta
           ].map((method) => (
             <div
               key={method.name}
@@ -437,10 +445,19 @@ const Balance = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedMovements.length > 0 ? (
               paginatedMovements.map((movement) => (
-                <tr key={movement.id} className={movement.amount < 0 ? "hover:bg-red-50" : "hover:bg-green-50"}>
+                <tr
+                  key={movement.id}
+                  className={
+                    movement.amount < 0
+                      ? "hover:bg-red-50"
+                      : "hover:bg-green-50"
+                  }
+                >
                   {/* ...celdas de la fila... */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {dayjs(movement.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm")}
+                    {dayjs(movement.date)
+                      .tz("America/Bogota")
+                      .format("DD/MM/YYYY HH:mm")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.type}
@@ -451,8 +468,15 @@ const Balance = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.paymentMethod || "N/A"}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${movement.amount < 0 ? "text-red-600" : "text-green-600"}`}>
-                    {movement.amount.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
+                      movement.amount < 0 ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {movement.amount.toLocaleString("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                    })}
                   </td>
                 </tr>
               ))
@@ -481,9 +505,13 @@ const Balance = () => {
           >
             {"<"}
           </button>
-          <span className="px-2 py-1">{currentPage} / {totalPages || 1}</span>
+          <span className="px-2 py-1">
+            {currentPage} / {totalPages || 1}
+          </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages || totalPages === 0}
             className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
           >

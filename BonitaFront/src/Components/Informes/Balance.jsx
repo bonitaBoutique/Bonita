@@ -52,7 +52,7 @@ const Balance = () => {
         ...sale, // Spread original sale properties
         type: "Venta Online",
         amount: sale.amount || 0, // Ensure amount is a number
-        date: new Date(sale.date),
+        date: sale.date,
         paymentMethod: sale.paymentMethod || "Wompi", // Default payment method if needed
         pointOfSale: "Online",
         id: `online-${sale.id_orderDetail}`, // Create a unique ID
@@ -79,7 +79,7 @@ const Balance = () => {
         ...expense, // Spread original expense properties
         type: `Gasto - ${expense.type}`,
         amount: -(expense.amount || 0), // Expenses are negative, ensure amount is number
-        date: new Date(expense.date),
+        date: expense.date,
         paymentMethod: expense.paymentMethods || "N/A", // Payment method for expenses
         pointOfSale: "N/A", // Point of sale might not apply to expenses
         id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`, // Ensure unique ID
@@ -126,12 +126,12 @@ const Balance = () => {
 
     // Map data for the Excel sheet, ensuring correct description
     const wsData = movementsToExport.map((m) => ({
-      Fecha: m.date.toLocaleDateString("es-CO"), // Format date
-      Tipo: m.type,
-      Descripción: m.description || "-", // Use the description generated in getAllMovements
-      "Método de Pago": m.paymentMethod || "N/A",
-      Monto: m.amount, // Use the raw amount (positive for income, negative for expense)
-    }));
+  Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
+  Tipo: m.type,
+  Descripción: m.description || "-",
+  "Método de Pago": m.paymentMethod || "N/A",
+  Monto: m.amount,
+}));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
 

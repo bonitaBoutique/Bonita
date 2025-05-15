@@ -68,10 +68,14 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     console.log("ID generado:", newOrderId);
     console.log("Firma generada:", firmaReal);
 
+    const dateColombia = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Bogota" })
+    );
+
     // *** PASO 2: Crear la orden CON el ID y la Firma ***
     const orderDetail = await OrderDetail.create({
       id_orderDetail: newOrderId,
-      date: new Date(),
+      date: dateColombia, // <-- Ahora guarda la fecha local de Colombia
       amount: totalAmount, // Guarda el monto ya con descuento aplicado
       shippingCost,
       quantity,
@@ -84,7 +88,6 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
       isFacturable,
       discount // Guarda el descuento aplicado
     });
-
     // --- Asociar productos y actualizar stock (sin cambios) ---
     await Promise.all(
       products.map(async (product) => {

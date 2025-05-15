@@ -126,12 +126,12 @@ const Balance = () => {
 
     // Map data for the Excel sheet, ensuring correct description
     const wsData = movementsToExport.map((m) => ({
-  Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
-  Tipo: m.type,
-  Descripción: m.description || "-",
-  "Método de Pago": m.paymentMethod || "N/A",
-  Monto: m.amount,
-}));
+      Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
+      Tipo: m.type,
+      Descripción: m.description || "-",
+      "Método de Pago": m.paymentMethod || "N/A",
+      Monto: m.amount,
+    }));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
 
@@ -146,7 +146,7 @@ const Balance = () => {
     Object.keys(ws).forEach((cell) => {
       if (cell.startsWith("E") && cell !== "E1") {
         // Target 'Monto' column, skip header
-        ws[cell].z = "$ #,##0;[Red]$ -#,##0"; // Colombian Peso format
+        ws[cell].z = "$ #,##0;[Red]$ -#,##0";
         ws[cell].t = "n"; // Set cell type to number
       }
     });

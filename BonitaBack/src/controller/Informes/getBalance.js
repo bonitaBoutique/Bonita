@@ -6,8 +6,13 @@ const getBalance = async (req, res) => {
     const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
 
 // Si hay fechas, ajusta el rango para incluir todo el día
-const start = startDate ? new Date(`${startDate}T00:00:00`) : new Date('2000-01-01T00:00:00');
-const end = endDate ? new Date(`${endDate}T23:59:59.999`) : new Date();
+const start = startDate 
+  ? new Date(new Date(`${startDate}T00:00:00`).toLocaleString("en-US", { timeZone: "America/Bogota" }))
+  : new Date('2000-01-01T00:00:00');
+
+const end = endDate 
+  ? new Date(new Date(`${endDate}T23:59:59.999`).toLocaleString("en-US", { timeZone: "America/Bogota" }))
+  : new Date();
 
 const dateFilter = {
   date: {

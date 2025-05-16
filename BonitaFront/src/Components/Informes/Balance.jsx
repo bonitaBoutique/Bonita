@@ -117,7 +117,9 @@ const Balance = () => {
     }
 
     // Sort movements by date, most recent first
-    return filteredMovements.sort((a, b) => b.date - a.date);
+    return filteredMovements.sort((a, b) => 
+  dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
+);
   };
 
   // --- Function to handle Excel export ---

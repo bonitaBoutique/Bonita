@@ -90,7 +90,7 @@ console.log("Filtro de fecha aplicado:", dateFilter);
         }
       ]
     });
-
+console.log("Filtro de fecha para Expense:", dateFilter);
     // Obtener gastos
     const expenses = await Expense.findAll({
       where: {
@@ -106,7 +106,7 @@ console.log("Filtro de fecha aplicado:", dateFilter);
         'description'
       ]
     });
-
+console.log("Expenses encontrados:", expenses.map(e => ({ id: e.id, date: e.date })));
     // Formatear ventas online
     const formattedOnlineSales = onlineSales.map(sale => ({
       id: sale.id_orderDetail,

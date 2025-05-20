@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense, CreditPayment, Reservation } = require("../../data");
+const { OrderDetail, Receipt, Expense, conn, CreditPayment, Reservation } = require("../../data");
 const { Op } = require("sequelize");
 
 const getBalance = async (req, res) => {

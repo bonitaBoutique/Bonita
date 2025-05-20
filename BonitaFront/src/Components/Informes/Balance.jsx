@@ -37,14 +37,30 @@ const Balance = () => {
 
   // State for filters
   const [filters, setFilters] = useState({
-    startDate: today,
-    endDate: today,
-    paymentMethod: "",
-    pointOfSale: "",
-    expenseType: "",
-    cashier: "",
-  });
-
+  startDate: "",
+  endDate: "",
+  paymentMethod: "",
+  pointOfSale: "",
+  expenseType: "",
+  cashier: "",
+});
+useEffect(() => {
+  // Asegurarnos que las fechas están en formato YYYY-MM-DD
+  const formattedFilters = {
+  ...filters,
+  startDate: filters.startDate
+    ? dayjs(filters.startDate).tz("America/Bogota").format("YYYY-MM-DD")
+    : undefined,
+  endDate: filters.endDate
+    ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
+    : undefined,
+};
+  
+  // Opcional: puedes agregar un log para depuración
+  console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
+  
+  dispatch(fetchBalance(formattedFilters));
+}, [dispatch, filters]);
  
 
   // --- Function to combine and filter all movements ---
@@ -126,23 +142,7 @@ const Balance = () => {
 );
   };
 
-  useEffect(() => {
-  // Asegurarnos que las fechas están en formato YYYY-MM-DD
-  const formattedFilters = {
-  ...filters,
-  startDate: filters.startDate
-    ? dayjs(filters.startDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-  endDate: filters.endDate
-    ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-};
   
-  // Opcional: puedes agregar un log para depuración
-  console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
-  
-  dispatch(fetchBalance(formattedFilters));
-}, [dispatch, filters]);
 
   // --- Function to handle Excel export ---
   const handleExportExcel = () => {
@@ -255,14 +255,23 @@ const Balance = () => {
             title="Fecha Inicio"
           />
           <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) =>
-              setFilters({ ...filters, endDate: e.target.value })
-            }
-            className="border rounded p-2"
-            title="Fecha Fin"
-          />
+  type="date"
+  value={filters.startDate}
+  onChange={(e) =>
+    setFilters({ ...filters, startDate: e.target.value })
+  }
+  className="border rounded p-2"
+  title="Fecha Inicio"
+/>
+<input
+  type="date"
+  value={filters.endDate}
+  onChange={(e) =>
+    setFilters({ ...filters, endDate: e.target.value })
+  }
+  className="border rounded p-2"
+  title="Fecha Fin"
+/>
           <select
             value={filters.paymentMethod}
             onChange={(e) =>

@@ -27,6 +27,13 @@ const Balance = () => {
     cashierTotals = {}, // Default to empty object
     loading,
   } = useSelector((state) => state);
+  console.log("Datos del backend:", {
+  income,
+  expenses,
+  cashierTotals,
+  totalOnlineSales,
+  totalExpenses,
+});
 
   // State for filters
   const [filters, setFilters] = useState({

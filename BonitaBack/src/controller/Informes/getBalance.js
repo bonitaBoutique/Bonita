@@ -12,12 +12,12 @@ const getBalance = async (req, res) => {
     if (startDate || endDate) {
       // Si es el mismo día, usamos estrategia especial
       if (startDate && endDate && startDate === endDate) {
-        // Para campos DATEONLY, usamos DATE(field) para extraer solo la fecha
-        dateFilter = Sequelize.where(
-          Sequelize.fn('DATE', Sequelize.col('date')),
-          startDate
-        );
-      } else {
+      // Usar conn en lugar de Sequelize
+      dateFilter = conn.where(
+        conn.fn('DATE', conn.col('date')),
+        startDate
+      );
+    } else {
         // Comportamiento normal para rangos diferentes
         dateFilter.date = {};
         

@@ -78,8 +78,7 @@ console.log("Filtro de fecha aplicado:", dateFilter);
         'cashier_document'
       ]
     });
-console.log("OnlineSales enviados:", formattedOnlineSales);
-console.log("LocalSales enviados:", formattedLocalSales);
+
     // Obtener pagos parciales de reservas
     const partialPayments = await CreditPayment.findAll({
       where: { ...dateFilter },
@@ -128,6 +127,9 @@ console.log("Expenses encontrados:", expenses.map(e => ({ id: e.id, date: e.date
       cashierDocument: sale.cashier_document,
       buyerName: sale.buyer_name || 'Desconocido',
     }));
+
+    console.log("OnlineSales enviados:", formattedOnlineSales);
+console.log("LocalSales enviados:", formattedLocalSales);
 
     // Formatear pagos parciales de reservas
     const formattedPartialPayments = partialPayments.map(payment => ({

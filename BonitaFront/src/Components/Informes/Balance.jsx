@@ -8,6 +8,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+import axios from "axios";
 
 
 
@@ -41,31 +42,43 @@ console.log("Offset navegador:", new Date().getTimezoneOffset());
 });
 
   // State for filters
+  const [loadingFecha, setLoadingFecha] = useState(true);
   const [filters, setFilters] = useState({
-  startDate: today,
-  endDate: today,
-  paymentMethod: "",
-  pointOfSale: "",
-  expenseType: "",
-  cashier: "",
-});
+    startDate: "",
+    endDate: "",
+    paymentMethod: "",
+    pointOfSale: "",
+    expenseType: "",
+    cashier: "",
+  });
+   
+ useEffect(() => {
+    if (!filters.startDate && !filters.endDate) {
+      axios.get("/hora/now-colombia") // Ajusta la ruta si tu backend la expone diferente
+        .then(res => {
+          setFilters(f => ({
+            ...f,
+            startDate: res.data.today,
+            endDate: res.data.today
+          }));
+        })
+        .finally(() => setLoadingFecha(false));
+    } else {
+      setLoadingFecha(false);
+    }
+  }, []);
+
 useEffect(() => {
-  // Asegurarnos que las fechas están en formato YYYY-MM-DD
+  if (loadingFecha) return; // Espera a tener la fecha de Colombia
+
   const formattedFilters = {
-  ...filters,
-  startDate: filters.startDate
-    ? dayjs(filters.startDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-  endDate: filters.endDate
-    ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-};
+    ...filters,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+  };
   console.log("Filtros enviados al backend:", formattedFilters);
-  // Opcional: puedes agregar un log para depuración
-  console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
-  
   dispatch(fetchBalance(formattedFilters));
-}, [dispatch, filters]);
+}, [dispatch, filters, loadingFecha]);
  
 
   // --- Function to combine and filter all movements ---

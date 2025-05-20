@@ -9,10 +9,15 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+
+
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const today = dayjs().tz("America/Bogota").format("YYYY-MM-DD");
+console.log("Fecha local navegador:", new Date());
+console.log("Fecha Colombia calculada con dayjs:", today);
+console.log("Offset navegador:", new Date().getTimezoneOffset());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;

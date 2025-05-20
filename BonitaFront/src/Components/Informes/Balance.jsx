@@ -37,8 +37,8 @@ const Balance = () => {
 
   // State for filters
   const [filters, setFilters] = useState({
-  startDate: "",
-  endDate: "",
+  startDate: today,
+  endDate: today,
   paymentMethod: "",
   pointOfSale: "",
   expenseType: "",

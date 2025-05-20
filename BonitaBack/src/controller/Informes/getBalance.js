@@ -4,19 +4,25 @@ const { Op } = require("sequelize");
 const getBalance = async (req, res) => {
   try {
     const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
-    
+
     console.log("Fechas recibidas:", startDate, endDate);
-    
+
     let dateFilter = {};
-    
-    if (startDate || endDate) {
+
+    // Si no hay fechas, filtra por el día actual en Colombia
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+      const todayColombia = dateColombia.toISOString().split('T')[0];
+      dateFilter.date = todayColombia;
+    } else if (startDate || endDate) {
       // Si es el mismo día, usamos estrategia especial
       if (startDate && endDate && startDate === endDate) {
         // Configurar para filtrar exactamente un día completo
         const nextDay = new Date(endDate);
         nextDay.setDate(nextDay.getDate() + 1);
         const nextDayString = nextDay.toISOString().split('T')[0];
-        
+
         dateFilter.date = {
           [Op.gte]: startDate,
           [Op.lt]: nextDayString
@@ -24,11 +30,11 @@ const getBalance = async (req, res) => {
       } else {
         // Comportamiento normal para rangos diferentes
         dateFilter.date = {};
-        
+
         if (startDate) {
           dateFilter.date[Op.gte] = startDate;
         }
-        
+
         if (endDate) {
           // Sumamos un día para incluir todo el endDate
           const nextDay = new Date(endDate);
@@ -38,9 +44,8 @@ const getBalance = async (req, res) => {
         }
       }
     }
-    
-    console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
 
+    console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
 
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({

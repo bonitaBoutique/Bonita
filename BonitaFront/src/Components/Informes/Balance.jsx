@@ -38,10 +38,7 @@ const Balance = () => {
     cashier: "",
   });
 
-  // Fetch balance data when filters change
-  useEffect(() => {
-    dispatch(fetchBalance(filters));
-  }, [dispatch, filters]);
+ 
 
   // --- Function to combine and filter all movements ---
   const getAllMovements = () => {
@@ -121,6 +118,20 @@ const Balance = () => {
   dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
 );
   };
+
+  useEffect(() => {
+  // Asegurarnos que las fechas están en formato YYYY-MM-DD
+  const formattedFilters = {
+    ...filters,
+    startDate: filters.startDate ? dayjs(filters.startDate).format('YYYY-MM-DD') : undefined,
+    endDate: filters.endDate ? dayjs(filters.endDate).format('YYYY-MM-DD') : undefined
+  };
+  
+  // Opcional: puedes agregar un log para depuración
+  console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
+  
+  dispatch(fetchBalance(formattedFilters));
+}, [dispatch, filters]);
 
   // --- Function to handle Excel export ---
   const handleExportExcel = () => {
@@ -211,6 +222,7 @@ const Balance = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">

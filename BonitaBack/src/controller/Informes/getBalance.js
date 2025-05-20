@@ -4,16 +4,44 @@ const { Op } = require("sequelize");
 const getBalance = async (req, res) => {
   try {
     const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
+    
+    console.log("Fechas recibidas:", startDate, endDate);
+    
+    let dateFilter = {};
+    
+    if (startDate || endDate) {
+      // Si es el mismo día, usamos estrategia especial
+      if (startDate && endDate && startDate === endDate) {
+        // Configurar para filtrar exactamente un día completo
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayString = nextDay.toISOString().split('T')[0];
+        
+        dateFilter.date = {
+          [Op.gte]: startDate,
+          [Op.lt]: nextDayString
+        };
+      } else {
+        // Comportamiento normal para rangos diferentes
+        dateFilter.date = {};
+        
+        if (startDate) {
+          dateFilter.date[Op.gte] = startDate;
+        }
+        
+        if (endDate) {
+          // Sumamos un día para incluir todo el endDate
+          const nextDay = new Date(endDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayString = nextDay.toISOString().split('T')[0];
+          dateFilter.date[Op.lt] = nextDayString;
+        }
+      }
+    }
+    
+    console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
 
-// Si hay fechas, ajusta el rango para incluir todo el día
-const start = startDate || '2000-01-01'; 
-const end = endDate || new Date().toISOString().split('T')[0]; // Hoy en formato YYYY-MM-DD
 
-const dateFilter = {
-  date: {
-    [Op.between]: [start, end]
-  }
-};
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {

@@ -72,9 +72,10 @@ module.exports = (sequelize) => {
         allowNull: true, // <-- Opcional
       },
       date: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
-      },
+  type: DataTypes.DATEONLY,
+  
+  defaultValue: null
+},
     },
     {
       timestamps: true,

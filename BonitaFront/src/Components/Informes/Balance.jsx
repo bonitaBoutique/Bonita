@@ -120,16 +120,13 @@ const Balance = () => {
   };
 
   useEffect(() => {
-  // Asegurarnos que las fechas están en formato YYYY-MM-DD
   const formattedFilters = {
-  ...filters,
-  startDate: filters.startDate
-    ? dayjs(filters.startDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-  endDate: filters.endDate
-    ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
-    : undefined,
-};
+    ...filters,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+  };
+  dispatch(fetchBalance(formattedFilters));
+}, [dispatch, filters]);
   
   // Opcional: puedes agregar un log para depuración
   console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);

@@ -54,6 +54,13 @@ module.exports = async (req, res) => {
     return res.status(400).json({ message: "El segundo método de pago no es válido" });
   }
 
+  // Crear fecha correcta en zona horaria Colombia
+  const now = new Date();
+  const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const dateOnlyColombia = dateColombia.toISOString().split('T')[0];
+  
+  console.log("Fecha Colombia para recibo:", dateOnlyColombia);
+
   // Lógica para GiftCard (saldo a favor)
   if (payMethod === "GiftCard") {
     try {
@@ -67,7 +74,7 @@ module.exports = async (req, res) => {
         buyer_email,
         buyer_phone,
         total_amount, // Este es el valor de la GiftCard
-        date: new Date(),
+        date: dateOnlyColombia, // Uso de fecha con zona horaria correcta
         payMethod: "GiftCard",
         amount,
         amount2: null,
@@ -84,7 +91,7 @@ module.exports = async (req, res) => {
         amount,
         payMethod: actualPaymentMethod,
         payment_state: "Pago",
-        date: new Date(),
+        date: dateOnlyColombia, // Uso de fecha con zona horaria correcta
         receipt_number: receiptNumber,
         cashier_document,
       });
@@ -143,7 +150,7 @@ module.exports = async (req, res) => {
       buyer_email,
       buyer_phone,
       total_amount: totalConDescuento, // <-- Aplica el descuento aquí
-      date: new Date(),
+      date: dateOnlyColombia, // Uso de fecha con zona horaria correcta 
       payMethod,
       amount,
       amount2: amount2 || null,
@@ -152,6 +159,10 @@ module.exports = async (req, res) => {
       cashier_document,
       discount, // Opcional: guarda el descuento también en el recibo si quieres
     });
+
+    // Actualizar estado de la orden a "facturada"
+    order.status = "facturada";
+    await order.save();
 
     return res.status(201).json({
       message: "Recibo creado exitosamente",
@@ -164,7 +175,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ message: "Error al crear el recibo" });
   }
 }
-
-
-
-

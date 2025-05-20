@@ -31,16 +31,16 @@ module.exports = async (req, res) => {
     if (!date || !amount || !quantity || !state_order || !products || !address) {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
-    if (!["Local", "Online", "Coordinar por Whatsapp"].includes(pointOfSale)) { // Corregido Whatsapp -> WhatsApp si es necesario
+    if (!["Local", "Online", "Coordinar por Whatsapp"].includes(pointOfSale)) {
        return response(res, 400, { error: "Invalid pointOfSale value" });
     }
-     if (amount <= 0 || quantity <= 0 || !Array.isArray(products) || products.length === 0) {
+    if (amount <= 0 || quantity <= 0 || !Array.isArray(products) || products.length === 0) {
        return response(res, 400, { error: "Invalid Ordering Data" });
-     }
+    }
     // ---------------------------------
 
     const totalAmount = Math.max(0, Number(amount) - Number(discount) + Number(shippingCost)); // Aplica descuento
-const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
+    const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
 
     // --- Verificación de stock (sin cambios) ---
     const productIds = products.map(p => p.id_product);
@@ -58,9 +58,9 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     const finalDeliveryAddress = address === "Envio a domicilio" ? deliveryAddress : null;
 
     // *** PASO 1: Generar ID y Firma ANTES de crear ***
-    const newOrderId = uuidv4(); // Genera el ID que se usará
+    const newOrderId = uuidv4();
     const firmaReal = generarFirmaIntegridad(
-        newOrderId, // Usa el ID que se va a guardar
+        newOrderId,
         amountInCents,
         "COP",
         secretoIntegridad
@@ -68,15 +68,20 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     console.log("ID generado:", newOrderId);
     console.log("Firma generada:", firmaReal);
 
-    const dateColombia = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Bogota" })
-    );
+    // CORRECCIÓN: Manejo adecuado de la fecha con zona horaria Colombia
+    const now = new Date();
+    // Crear un objeto Date correcto para la zona horaria de Colombia
+    const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+    // Para DATEONLY solo necesitamos el componente de fecha en formato YYYY-MM-DD
+    const dateOnlyColombia = dateColombia.toISOString().split('T')[0];
+
+    console.log("Fecha Colombia:", dateOnlyColombia); // Log para depuración
 
     // *** PASO 2: Crear la orden CON el ID y la Firma ***
     const orderDetail = await OrderDetail.create({
       id_orderDetail: newOrderId,
-      date: dateColombia, // <-- Ahora guarda la fecha local de Colombia
-      amount: totalAmount, // Guarda el monto ya con descuento aplicado
+      date: dateOnlyColombia, // Guardar solo la parte de fecha como string YYYY-MM-DD
+      amount: totalAmount,
       shippingCost,
       quantity,
       state_order,
@@ -86,7 +91,7 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
       pointOfSale,
       integritySignature: firmaReal,
       isFacturable,
-      discount // Guarda el descuento aplicado
+      discount
     });
     // --- Asociar productos y actualizar stock (sin cambios) ---
     await Promise.all(
@@ -100,25 +105,32 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
 
     // Obtener la orden actualizada con los productos
     const updatedOrderDetail = await OrderDetail.findOne({
-      where: { id_orderDetail: orderDetail.id_orderDetail }, // Usa el ID real
+      where: { id_orderDetail: orderDetail.id_orderDetail },
       include: { model: Product, as: "products", attributes: ["id_product", "stock", "description", "price"] },
     });
 
     // Logs para depuración
-    console.log("Creando orden con los siguientes datos:", { date, amount: totalAmount, pointOfSale, products, address, deliveryAddress: finalDeliveryAddress });
+    console.log("Creando orden con los siguientes datos:", { 
+      date: dateOnlyColombia,
+      amount: totalAmount, 
+      pointOfSale, 
+      products, 
+      address, 
+      deliveryAddress: finalDeliveryAddress 
+    });
     console.log("Orden creada:", updatedOrderDetail.toJSON());
 
-    // Estructura de respuesta (sin cambios respecto a la corrección anterior)
+    // Estructura de respuesta
     const responseData = {
         order: updatedOrderDetail.toJSON()
     };
 
-    // Añadir wompiData si es Online (sin cambios respecto a la corrección anterior)
+    // Añadir wompiData si es Online
     if (pointOfSale === "Online") {
       responseData.order.wompiData = {
-        referencia: orderDetail.id_orderDetail, // ID real
-        integritySignature: firmaReal,          // Firma real
-        amount: amountInCents                   // Monto en centavos
+        referencia: orderDetail.id_orderDetail,
+        integritySignature: firmaReal,
+        amount: amountInCents
       };
     }
 

@@ -38,8 +38,6 @@ const Balance = () => {
     cashier: "",
   });
 
- 
-
   // --- Function to combine and filter all movements ---
   const getAllMovements = () => {
     // Combine sales and expenses into a single array
@@ -114,25 +112,10 @@ const Balance = () => {
     }
 
     // Sort movements by date, most recent first
-    return filteredMovements.sort((a, b) => 
-  dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
-);
+    return filteredMovements.sort(
+      (a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
+    );
   };
-
-  useEffect(() => {
-  const formattedFilters = {
-    ...filters,
-    startDate: filters.startDate || undefined,
-    endDate: filters.endDate || undefined,
-  };
-  dispatch(fetchBalance(formattedFilters));
-}, [dispatch, filters]);
-  
-  // Opcional: puedes agregar un log para depuración
-  console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
-  
-  dispatch(fetchBalance(formattedFilters));
-}, [dispatch, filters]);
 
   // --- Function to handle Excel export ---
   const handleExportExcel = () => {
@@ -223,7 +206,6 @@ const Balance = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
@@ -470,9 +452,10 @@ const Balance = () => {
                 >
                   {/* ...celdas de la fila... */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {dayjs(movement.date)
-                      .tz("America/Bogota")
-                      .format("DD/MM/YYYY HH:mm")}
+                    {(() => {
+                      const [y, m, d] = movement.date.split("-");
+                      return `${d}/${m}/${y}`;
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.type}

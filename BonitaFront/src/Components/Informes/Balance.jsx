@@ -60,7 +60,7 @@ useEffect(() => {
     ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
     : undefined,
 };
-  
+  console.log("Filtros enviados al backend:", formattedFilters);
   // Opcional: puedes agregar un log para depuración
   console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);
   

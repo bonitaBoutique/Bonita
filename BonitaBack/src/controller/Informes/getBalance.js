@@ -46,7 +46,8 @@ const getBalance = async (req, res) => {
     }
 
     console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
-
+console.log("Fechas recibidas en backend:", startDate, endDate);
+console.log("Filtro de fecha aplicado:", dateFilter);
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {

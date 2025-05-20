@@ -12,7 +12,7 @@ dayjs.extend(timezone);
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = dayjs().tz("America/Bogota").format("YYYY-MM-DD");
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -122,10 +122,14 @@ const Balance = () => {
   useEffect(() => {
   // Asegurarnos que las fechas están en formato YYYY-MM-DD
   const formattedFilters = {
-    ...filters,
-    startDate: filters.startDate ? dayjs(filters.startDate).format('YYYY-MM-DD') : undefined,
-    endDate: filters.endDate ? dayjs(filters.endDate).format('YYYY-MM-DD') : undefined
-  };
+  ...filters,
+  startDate: filters.startDate
+    ? dayjs(filters.startDate).tz("America/Bogota").format("YYYY-MM-DD")
+    : undefined,
+  endDate: filters.endDate
+    ? dayjs(filters.endDate).tz("America/Bogota").format("YYYY-MM-DD")
+    : undefined,
+};
   
   // Opcional: puedes agregar un log para depuración
   console.log("Enviando fechas al backend:", formattedFilters.startDate, formattedFilters.endDate);

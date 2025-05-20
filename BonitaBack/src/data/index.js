@@ -24,11 +24,9 @@ const {
 const sequelize = new Sequelize(DB_DEPLOY , {
       logging: false, // set to console.log to see the raw SQL queries
       native: false, // lets Sequelize know we can use pg-native for ~30% more speed
-       timezone: '-05:00', // Zona horaria de Colombia
+      timezone: '+00:00', // Usar UTC en la base de datos
   dialectOptions: {
-    useUTC: false,
-    dateStrings: true,
-    typeCast: true
+    useUTC: true, // Usar UTC para operaciones de fecha/hora
   }
 });
     

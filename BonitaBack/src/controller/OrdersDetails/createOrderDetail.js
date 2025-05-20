@@ -68,13 +68,9 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     console.log("ID generado:", newOrderId);
     console.log("Firma generada:", firmaReal);
 
-    const now = new Date();
-    // Crear un objeto Date correcto para la zona horaria de Colombia
-    const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-    // Para DATEONLY solo necesitamos el componente de fecha en formato YYYY-MM-DD
-    const dateOnlyColombia = dateColombia.toISOString().split('T')[0];
-
-    console.log("Fecha Colombia:", dateOnlyColombia); 
+    const dateColombia = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Bogota" })
+    );
 
     // *** PASO 2: Crear la orden CON el ID y la Firma ***
     const orderDetail = await OrderDetail.create({

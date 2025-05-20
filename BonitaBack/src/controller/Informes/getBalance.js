@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense, conn, CreditPayment, Reservation } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation } = require("../../data");
 const { Op } = require("sequelize");
 
 const getBalance = async (req, res) => {
@@ -12,12 +12,16 @@ const getBalance = async (req, res) => {
     if (startDate || endDate) {
       // Si es el mismo día, usamos estrategia especial
       if (startDate && endDate && startDate === endDate) {
-      // Usar conn en lugar de Sequelize
-      dateFilter = conn.where(
-        conn.fn('DATE', conn.col('date')),
-        startDate
-      );
-    } else {
+        // Configurar para filtrar exactamente un día completo
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayString = nextDay.toISOString().split('T')[0];
+        
+        dateFilter.date = {
+          [Op.gte]: startDate,
+          [Op.lt]: nextDayString
+        };
+      } else {
         // Comportamiento normal para rangos diferentes
         dateFilter.date = {};
         
@@ -37,10 +41,11 @@ const getBalance = async (req, res) => {
     
     console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
 
+
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {
-        ...(dateFilter instanceof Sequelize.Where ? { [Op.and]: [dateFilter] } : dateFilter),
+        ...dateFilter,
         pointOfSale: 'Online'
       },
       attributes: [
@@ -55,7 +60,7 @@ const getBalance = async (req, res) => {
     // Obtener ventas locales exclusivamente de Receipt
     const localSales = await Receipt.findAll({
       where: {
-        ...(dateFilter instanceof Sequelize.Where ? { [Op.and]: [dateFilter] } : dateFilter),
+        ...dateFilter,
         ...(paymentMethod && { payMethod: paymentMethod })
       },
       attributes: [
@@ -67,7 +72,6 @@ const getBalance = async (req, res) => {
         'cashier_document'
       ]
     });
-
 
     // Obtener pagos parciales de reservas
     const partialPayments = await CreditPayment.findAll({

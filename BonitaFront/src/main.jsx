@@ -7,9 +7,9 @@ import { store } from "./Redux/Store/store";
 import { Provider } from "react-redux";
 
 
-//axios.defaults.baseURL = "https://bonita-production-9dee.up.railway.app";
+axios.defaults.baseURL = "https://bonita-production-9dee.up.railway.app";
 
-axios.defaults.baseURL = "http://localhost:3001";
+//axios.defaults.baseURL = "http://localhost:3001";
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(

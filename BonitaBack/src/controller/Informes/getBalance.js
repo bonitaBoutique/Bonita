@@ -5,16 +5,49 @@ const getBalance = async (req, res) => {
   try {
     const { startDate, endDate, paymentMethod, pointOfSale } = req.query;
 
-// Si hay fechas, ajusta el rango para incluir todo el día
-const start = startDate ? new Date(`${startDate}T00:00:00`) : new Date('2000-01-01T00:00:00');
-const end = endDate ? new Date(`${endDate}T23:59:59.999`) : new Date();
+    console.log("Fechas recibidas:", startDate, endDate);
 
-const dateFilter = {
-  date: {
-    [Op.between]: [start, end]
-  }
-};
+    let dateFilter = {};
 
+    // Si no hay fechas, filtra por el día actual en Colombia
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+      const todayColombia = dateColombia.toISOString().split('T')[0];
+      dateFilter.date = todayColombia;
+    } else if (startDate || endDate) {
+      // Si es el mismo día, usamos estrategia especial
+      if (startDate && endDate && startDate === endDate) {
+        // Configurar para filtrar exactamente un día completo
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayString = nextDay.toISOString().split('T')[0];
+
+        dateFilter.date = {
+          [Op.gte]: startDate,
+          [Op.lt]: nextDayString
+        };
+      } else {
+        // Comportamiento normal para rangos diferentes
+        dateFilter.date = {};
+
+        if (startDate) {
+          dateFilter.date[Op.gte] = startDate;
+        }
+
+        if (endDate) {
+          // Sumamos un día para incluir todo el endDate
+          const nextDay = new Date(endDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayString = nextDay.toISOString().split('T')[0];
+          dateFilter.date[Op.lt] = nextDayString;
+        }
+      }
+    }
+
+    console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
+console.log("Fechas recibidas en backend:", startDate, endDate);
+console.log("Filtro de fecha aplicado:", dateFilter);
     // Obtener ventas online
     const onlineSales = await OrderDetail.findAll({
       where: {
@@ -57,7 +90,7 @@ const dateFilter = {
         }
       ]
     });
-
+console.log("Filtro de fecha para Expense:", dateFilter);
     // Obtener gastos
     const expenses = await Expense.findAll({
       where: {
@@ -73,7 +106,7 @@ const dateFilter = {
         'description'
       ]
     });
-
+console.log("Expenses encontrados:", expenses.map(e => ({ id: e.id, date: e.date })));
     // Formatear ventas online
     const formattedOnlineSales = onlineSales.map(sale => ({
       id: sale.id_orderDetail,
@@ -94,6 +127,9 @@ const dateFilter = {
       cashierDocument: sale.cashier_document,
       buyerName: sale.buyer_name || 'Desconocido',
     }));
+
+    console.log("OnlineSales enviados:", formattedOnlineSales);
+console.log("LocalSales enviados:", formattedLocalSales);
 
     // Formatear pagos parciales de reservas
     const formattedPartialPayments = partialPayments.map(payment => ({

@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
           deletedAt: null
         }
       },
-      order: [['createdAt', 'DESC']],
+      order: [['date', 'DESC']],
     });
 
     console.log(`Found ${orders.length} orders for document ${n_document}`);
@@ -43,7 +43,6 @@ module.exports = async (req, res) => {
       state_order: order.state_order,
       trackingNumber: order.trackingNumber,
       status: order.status,
-      createdAt: order.createdAt,
       products: order.products.map(product => ({
         id_product: product.id_product,
         description: product.description,

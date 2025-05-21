@@ -4,6 +4,7 @@ const { PORT } = require('./src/config/envs.js');
 const { Sequelize } = require('sequelize');
 const { Umzug, SequelizeStorage } = require('umzug');
 const path = require('path');
+require('./src/utils/dbBackup.js');
 require('dotenv').config();
 
 // Syncing all the models at once.

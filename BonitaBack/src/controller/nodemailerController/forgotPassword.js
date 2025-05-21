@@ -22,7 +22,7 @@ exports.forgotPassword = async (req, res) => {
     user.passwordResetExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+    const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.bonitaboutiquecumaral.com";
     const resetUrl = `${FRONTEND_URL}/reset-password/${resetToken}`;
 
     const message = `Recibió este correo electrónico porque usted (o alguien más) solicitó restablecer la contraseña. Haga clic en el siguiente enlace para restablecer su contraseña: \n\n ${resetUrl}`;

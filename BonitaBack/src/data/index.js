@@ -11,6 +11,7 @@ const {
   DB_DEPLOY
   } = require('../config/envs');
 //-------------------------------- CONFIGURACION PARA TRABAJAR LOCALMENTE-----------------------------------
+
 const sequelize = new Sequelize(
   `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
   {
@@ -19,13 +20,18 @@ const sequelize = new Sequelize(
    
   }
 );
+
+
 //-------------------------------------CONFIGURACION PARA EL DEPLOY---------------------------------------------------------------------
 // const sequelize = new Sequelize(DB_DEPLOY , {
-//       logging: false, // set to console.log to see the raw SQL queries
+//        logging: false, // set to console.log to see the raw SQL queries
 //       native: false, // lets Sequelize know we can use pg-native for ~30% more speed
-//     }
-//   );
-
+//       timezone: '+00:00', // Usar UTC en la base de datos
+//       dialectOptions: {
+//       useUTC: true, // Usar UTC para operaciones de fecha/hora
+//   }
+// });
+    
 const basename = path.basename(__filename);
 
 const modelDefiners = [];

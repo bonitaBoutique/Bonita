@@ -8,11 +8,17 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+import axios from "axios";
+
+
 
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = dayjs().tz("America/Bogota").format("YYYY-MM-DD");
+console.log("Fecha local navegador:", new Date());
+console.log("Fecha Colombia calculada con dayjs:", today);
+console.log("Offset navegador:", new Date().getTimezoneOffset());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -27,21 +33,53 @@ const Balance = () => {
     cashierTotals = {}, // Default to empty object
     loading,
   } = useSelector((state) => state);
+  console.log("Datos del backend:", {
+  income,
+  expenses,
+  cashierTotals,
+  totalOnlineSales,
+  totalExpenses,
+});
 
   // State for filters
+  const [loadingFecha, setLoadingFecha] = useState(true);
   const [filters, setFilters] = useState({
-    startDate: today,
-    endDate: today,
+    startDate: "",
+    endDate: "",
     paymentMethod: "",
     pointOfSale: "",
     expenseType: "",
     cashier: "",
   });
+   
+ useEffect(() => {
+    if (!filters.startDate && !filters.endDate) {
+      axios.get("/hora/now-colombia") // Ajusta la ruta si tu backend la expone diferente
+        .then(res => {
+          setFilters(f => ({
+            ...f,
+            startDate: res.data.today,
+            endDate: res.data.today
+          }));
+        })
+        .finally(() => setLoadingFecha(false));
+    } else {
+      setLoadingFecha(false);
+    }
+  }, []);
 
-  // Fetch balance data when filters change
-  useEffect(() => {
-    dispatch(fetchBalance(filters));
-  }, [dispatch, filters]);
+useEffect(() => {
+  if (loadingFecha) return; // Espera a tener la fecha de Colombia
+
+  const formattedFilters = {
+    ...filters,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+  };
+  console.log("Filtros enviados al backend:", formattedFilters);
+  dispatch(fetchBalance(formattedFilters));
+}, [dispatch, filters, loadingFecha]);
+ 
 
   // --- Function to combine and filter all movements ---
   const getAllMovements = () => {
@@ -52,7 +90,7 @@ const Balance = () => {
         ...sale, // Spread original sale properties
         type: "Venta Online",
         amount: sale.amount || 0, // Ensure amount is a number
-        date: new Date(sale.date),
+        date: sale.date,
         paymentMethod: sale.paymentMethod || "Wompi", // Default payment method if needed
         pointOfSale: "Online",
         id: `online-${sale.id_orderDetail}`, // Create a unique ID
@@ -62,21 +100,24 @@ const Balance = () => {
       // Map local sales
       ...(income.local || []).map((sale) => ({
         ...sale, // Spread original sale properties
-        type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
-  amount: sale.amount || 0,
-  date: new Date(sale.date),
-  paymentMethod: sale.paymentMethod || "Desconocido",
-  pointOfSale: "Local",
-  id: `local-${sale.id}`,
-  description: sale.buyerName || "Desconocido",
-  cashier_document: sale.cashierDocument, // Keep cashier document
+        type:
+          sale.type === "Pago Parcial Reserva"
+            ? "Pago Parcial Reserva"
+            : "Venta Local",
+        amount: sale.amount || 0,
+        date: sale.date,
+        paymentMethod: sale.paymentMethod || "Desconocido",
+        pointOfSale: "Local",
+        id: `local-${sale.id}`,
+        description: sale.buyerName || "Desconocido",
+        cashier_document: sale.cashierDocument, // Keep cashier document
       })),
       // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
         ...expense, // Spread original expense properties
         type: `Gasto - ${expense.type}`,
         amount: -(expense.amount || 0), // Expenses are negative, ensure amount is number
-        date: new Date(expense.date),
+        date: expense.date,
         paymentMethod: expense.paymentMethods || "N/A", // Payment method for expenses
         pointOfSale: "N/A", // Point of sale might not apply to expenses
         id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`, // Ensure unique ID
@@ -114,8 +155,12 @@ const Balance = () => {
     }
 
     // Sort movements by date, most recent first
-    return filteredMovements.sort((a, b) => b.date - a.date);
+    return filteredMovements.sort((a, b) => 
+  dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
+);
   };
+
+  
 
   // --- Function to handle Excel export ---
   const handleExportExcel = () => {
@@ -123,11 +168,11 @@ const Balance = () => {
 
     // Map data for the Excel sheet, ensuring correct description
     const wsData = movementsToExport.map((m) => ({
-      Fecha: m.date.toLocaleDateString("es-CO"), // Format date
+      Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
       Tipo: m.type,
-      Descripción: m.description || "-", // Use the description generated in getAllMovements
+      Descripción: m.description || "-",
       "Método de Pago": m.paymentMethod || "N/A",
-      Monto: m.amount, // Use the raw amount (positive for income, negative for expense)
+      Monto: m.amount,
     }));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
@@ -143,7 +188,7 @@ const Balance = () => {
     Object.keys(ws).forEach((cell) => {
       if (cell.startsWith("E") && cell !== "E1") {
         // Target 'Monto' column, skip header
-        ws[cell].z = "$ #,##0;[Red]$ -#,##0"; // Colombian Peso format
+        ws[cell].z = "$ #,##0;[Red]$ -#,##0";
         ws[cell].t = "n"; // Set cell type to number
       }
     });
@@ -159,14 +204,16 @@ const Balance = () => {
   // --- Calculate income totals per payment method (for individual cards) ---
   const calculateIncomeByMethod = (method) => {
     return (income.local || [])
-      .filter((sale) => sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva")
+      .filter(
+        (sale) =>
+          sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva"
+      )
       .reduce((acc, sale) => acc + (sale.amount || 0), 0);
   };
 
-
   const ingresosPagosParciales = (income.local || [])
-  .filter((sale) => sale.type === "Pago Parcial Reserva")
-  .reduce((acc, sale) => acc + (sale.amount || 0), 0);
+    .filter((sale) => sale.type === "Pago Parcial Reserva")
+    .reduce((acc, sale) => acc + (sale.amount || 0), 0);
 
   const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
   const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
@@ -182,7 +229,7 @@ const Balance = () => {
     ingresosNequi +
     ingresosBancolombia +
     totalOnlineSales + // Sum only desired local methods + online sales
-    ingresosPagosParciales
+    ingresosPagosParciales;
   // --- Calculate Balance to DISPLAY ---
   const displayBalance = displayTotalIncome - totalExpenses;
 
@@ -205,7 +252,7 @@ const Balance = () => {
     currentPage * itemsPerPage
   );
   
- 
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       <h1 className="text-3xl font-bold mb-6 text-center">
@@ -225,15 +272,16 @@ const Balance = () => {
             className="border rounded p-2"
             title="Fecha Inicio"
           />
-          <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) =>
-              setFilters({ ...filters, endDate: e.target.value })
-            }
-            className="border rounded p-2"
-            title="Fecha Fin"
-          />
+         
+<input
+  type="date"
+  value={filters.endDate}
+  onChange={(e) =>
+    setFilters({ ...filters, endDate: e.target.value })
+  }
+  className="border rounded p-2"
+  title="Fecha Fin"
+/>
           <select
             value={filters.paymentMethod}
             onChange={(e) =>
@@ -319,7 +367,11 @@ const Balance = () => {
               value: totalOnlineSales,
               color: "bg-blue-50",
             },
-            { name: "Pagos Parciales Reserva", value: ingresosPagosParciales, color: "bg-purple-50" }, // Nueva tarjeta
+            {
+              name: "Pagos Parciales Reserva",
+              value: ingresosPagosParciales,
+              color: "bg-purple-50",
+            }, // Nueva tarjeta
           ].map((method) => (
             <div
               key={method.name}
@@ -437,10 +489,19 @@ const Balance = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedMovements.length > 0 ? (
               paginatedMovements.map((movement) => (
-                <tr key={movement.id} className={movement.amount < 0 ? "hover:bg-red-50" : "hover:bg-green-50"}>
+                <tr
+                  key={movement.id}
+                  className={
+                    movement.amount < 0
+                      ? "hover:bg-red-50"
+                      : "hover:bg-green-50"
+                  }
+                >
                   {/* ...celdas de la fila... */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {dayjs(movement.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm")}
+                    {dayjs(movement.date)
+                      .tz("America/Bogota")
+                      .format("DD/MM/YYYY HH:mm")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.type}
@@ -451,8 +512,15 @@ const Balance = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.paymentMethod || "N/A"}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${movement.amount < 0 ? "text-red-600" : "text-green-600"}`}>
-                    {movement.amount.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm font-semibold text-right ${
+                      movement.amount < 0 ? "text-red-600" : "text-green-600"
+                    }`}
+                  >
+                    {movement.amount.toLocaleString("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                    })}
                   </td>
                 </tr>
               ))
@@ -481,9 +549,13 @@ const Balance = () => {
           >
             {"<"}
           </button>
-          <span className="px-2 py-1">{currentPage} / {totalPages || 1}</span>
+          <span className="px-2 py-1">
+            {currentPage} / {totalPages || 1}
+          </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages || totalPages === 0}
             className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
           >

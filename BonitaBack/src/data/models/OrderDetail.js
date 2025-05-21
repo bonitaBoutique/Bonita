@@ -89,21 +89,7 @@ module.exports = (sequelize) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      deletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: null,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
+      
       status: {
         type: DataTypes.ENUM("pendiente", "facturada", "cancelada", "completada"),
         allowNull: false,
@@ -123,6 +109,7 @@ module.exports = (sequelize) => {
     },
     {
       paranoid: true,
+      timestamps: true
     }
   );
 };

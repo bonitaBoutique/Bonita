@@ -272,15 +272,7 @@ useEffect(() => {
             className="border rounded p-2"
             title="Fecha Inicio"
           />
-          <input
-  type="date"
-  value={filters.startDate}
-  onChange={(e) =>
-    setFilters({ ...filters, startDate: e.target.value })
-  }
-  className="border rounded p-2"
-  title="Fecha Inicio"
-/>
+         
 <input
   type="date"
   value={filters.endDate}

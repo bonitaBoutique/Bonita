@@ -22,7 +22,7 @@ const {
 
 //-------------------------------------CONFIGURACION PARA EL DEPLOY---------------------------------------------------------------------
 const sequelize = new Sequelize(DB_DEPLOY , {
-       logging: console.log, // set to console.log to see the raw SQL queries
+       logging: false, // set to console.log to see the raw SQL queries
       native: false, // lets Sequelize know we can use pg-native for ~30% more speed
       timezone: '+00:00', // Usar UTC en la base de datos
       dialectOptions: {

@@ -43,9 +43,9 @@ module.exports = async (req, res) => {
           'pointOfSale',
            'discount',
           'n_document',
-          'createdAt' // Ensure createdAt is included
+         
         ],
-        order: [['createdAt', 'DESC']],
+        order: [['date', 'DESC']],
         limit: 1
       });
       console.log('Latest order found:', latestOrder);
@@ -87,9 +87,9 @@ module.exports = async (req, res) => {
           'discount',
           'pointOfSale',
           'n_document',
-          'createdAt' // Ensure createdAt is included
+          
         ],
-        order: [['createdAt', 'DESC']]
+        order: [['date', 'DESC']]
       });
     }
 

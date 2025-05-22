@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://localhost:3001';
+export const BASE_URL = 'https://bonita-production-9dee.up.railway.app';
 
 
 const Config = {

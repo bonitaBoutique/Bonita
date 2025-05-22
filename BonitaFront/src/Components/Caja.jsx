@@ -19,23 +19,13 @@ const Caja = () => {
   const error = useSelector((state) => state.error);
   const searchTerm = useSelector((state) => state.searchTerm);
 
+  const [orderDate, setOrderDate] = useState(
+    () => new Date().toISOString().split("T")[0]
+  );
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [orderData, setOrderData] = useState({
-    date: new Date().toISOString(),
-    amount: 0,
-    quantity: 0,
-    state_order: "Pedido Realizado",
-    n_document: "",
-    id_product: [],
-    address: "Retira en Local",
-    deliveryAddress: null,
-    pointOfSale: "Local",
-  });
+  const [productCodes, setProductCodes] = useState("");
+  const [nDocument, setNDocument] = useState("");
 
-  const [productCodes, setProductCodes] = useState(""); // Input para los códigos de producto
-  const [nDocument, setNDocument] = useState(""); // Estado para el número de documento
-
-  // Efecto para cargar productos según el filtro o búsqueda
   useEffect(() => {
     if (searchTerm) {
       dispatch(fetchFilteredProducts(searchTerm));
@@ -44,38 +34,31 @@ const Caja = () => {
     }
   }, [dispatch, searchTerm]);
 
-  // Filtrar los productos disponibles (que tengan stock)
   const filteredProducts = products.filter((product) => product.stock > 0);
 
-  // Manejar cambio de códigos de producto en el input
   const handleProductCodesChange = (e) => {
     const codes = e.target.value;
     setProductCodes(codes);
   };
 
-  // Verificar stock y agregar productos seleccionados
   const handleAddProducts = () => {
     if (!productCodes) {
       alert("Por favor, ingresa al menos un código de producto.");
       return;
     }
-
-    // Asegurarse de que productCodes sea una cadena de texto antes de usar split
     const codes = productCodes
       .trim()
       .split(",")
       .map((code) => code.trim().toUpperCase());
     const productsToAdd = [];
-
     codes.forEach((id_product) => {
-      const product = filteredProducts.find((p) => p.id_product === id_product); // Verifica que id_product sea el correcto
+      const product = filteredProducts.find((p) => p.id_product === id_product);
       if (product) {
         if (product.stock > 0) {
           if (product.stock === 1) {
             Swal.fire("Advertencia", "Último en stock", "warning");
           }
-          // Solo agregar el producto si tiene stock disponible
-          productsToAdd.push({ ...product, quantity: 1 }); // Agrega la cantidad inicial como 1
+          productsToAdd.push({ ...product, quantity: 1 });
         } else {
           Swal.fire(
             "Error",
@@ -91,18 +74,15 @@ const Caja = () => {
         );
       }
     });
-    // Si hay productos para agregar, los agregamos al estado
     if (productsToAdd.length > 0) {
       setSelectedProducts((prevSelected) => [
         ...prevSelected,
         ...productsToAdd,
       ]);
     }
-
-    setProductCodes(""); // Limpiar input después de agregar productos
+    setProductCodes("");
   };
 
-  // Actualizar la cantidad seleccionada de un producto
   const handleQuantityChange = (id_product, quantity) => {
     setSelectedProducts((prev) =>
       prev.map((item) =>
@@ -111,10 +91,9 @@ const Caja = () => {
     );
   };
 
-  // Calcular el precio total y la cantidad total de los productos seleccionados
   const calculateTotals = () => {
     const totalPrice = selectedProducts.reduce(
-      (acc, item) => acc + item.priceSell * item.quantity, // Multiplicar priceSell por quantity
+      (acc, item) => acc + item.priceSell * item.quantity,
       0
     );
     const totalQuantity = selectedProducts.reduce(
@@ -130,41 +109,54 @@ const Caja = () => {
     );
   };
 
-  // Manejar el envío del formulario
+  // --- CONSOLE LOGS PARA DEPURAR LA FECHA ---
+  useEffect(() => {
+    console.log("Valor inicial de orderDate:", orderDate);
+  }, []);
+
+  const handleDateChange = (e) => {
+    setOrderDate(e.target.value);
+    console.log("Fecha seleccionada en el input:", e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!nDocument) {
       alert("Por favor, ingresa el número de documento.");
       return;
     }
-  
+
     const { totalPrice, totalQuantity } = calculateTotals();
-  
-    // Formatea los productos para que coincidan con la estructura esperada por el backend
-    const formattedProducts = selectedProducts.map(product => ({
+
+    const formattedProducts = selectedProducts.map((product) => ({
       id_product: product.id_product,
-      quantity: product.quantity || 1 // Asegúrate de que la cantidad esté definida
+      quantity: product.quantity || 1,
     }));
-  
+
+    // LOG: Verifica el valor de orderDate antes de enviar
+    console.log("Fecha que se enviará en la orden:", orderDate);
+
     const orderDataToSend = {
-      date: new Date().toISOString().split('T')[0], // Formatea la fecha como YYYY-MM-DD
+      date: orderDate,
       amount: totalPrice,
       quantity: totalQuantity,
       state_order: "Pedido Realizado",
-      products: formattedProducts, // Usa el array de objetos formateados
+      products: formattedProducts,
       address: "Retira en Local",
       deliveryAddress: null,
       shippingCost: 0,
       n_document: nDocument,
-      pointOfSale: "Local"
+      pointOfSale: "Local",
     };
-  
+
+    // LOG: Verifica el objeto completo que se envía
+    console.log("Enviando datos de la orden:", orderDataToSend);
+
     try {
-      console.log("Enviando datos de la orden:", orderDataToSend);
       const orderDetail = await dispatch(createOrder(orderDataToSend));
-      console.log("Respuesta completa:", orderDetail);
-  
+      console.log("Respuesta completa del backend:", orderDetail);
+
       if (orderDetail && orderDetail.id_orderDetail) {
         console.log("Orden creada exitosamente:", orderDetail);
         navigate(`/receipt/${orderDetail.id_orderDetail}`);
@@ -179,8 +171,6 @@ const Caja = () => {
       }
     } catch (error) {
       console.error("Error al crear la orden:", error);
-  
-      // Verificar si el error es porque el usuario no está registrado
       if (error.message.includes("Usuario no registrado")) {
         Swal.fire({
           title: "Usuario no registrado",
@@ -191,11 +181,10 @@ const Caja = () => {
           cancelButtonText: "Cancelar",
         }).then((result) => {
           if (result.isConfirmed) {
-            navigate("/register"); // Redirige a la página de registro
+            navigate("/register");
           }
         });
       } else {
-        // Mostrar un mensaje de error genérico si no es un error de usuario no registrado
         Swal.fire(
           "Error",
           "No se pudo crear la orden. Inténtalo de nuevo.",
@@ -204,7 +193,7 @@ const Caja = () => {
       }
     }
   };
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -253,54 +242,57 @@ const Caja = () => {
 
       {/* Mostrar productos seleccionados */}
       {selectedProducts.length > 0 && (
-  <div className="mb-6">
-    <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
-    {selectedProducts.map((product) => (
-      <div
-        key={product.id_product}
-        className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
-      >
-        <div className="flex items-center">
-          {/* Miniatura de la imagen del producto */}
-          {product.Images && product.Images.length > 0 && (
-            <img
-              src={product.Images[0].url}
-              alt={product.description}
-              className="w-12 h-12 mr-4 rounded-full object-cover"
-            />
-          )}
-          <div>
-            <p className="mr-4 text-lg font-semibold">{product.description}</p>
-            <p className="text-sm text-gray-500">
-              Precio Unitario: ${product.priceSell}
-            </p>
-          </div>
+        <div className="mb-6">
+          <h3 className="text-xl font-medium mb-4">Productos Seleccionados</h3>
+          {selectedProducts.map((product) => (
+            <div
+              key={product.id_product}
+              className="flex items-center justify-between mb-4 p-4 bg-gray-100 rounded-lg shadow-sm"
+            >
+              <div className="flex items-center">
+                {product.Images && product.Images.length > 0 && (
+                  <img
+                    src={product.Images[0].url}
+                    alt={product.description}
+                    className="w-12 h-12 mr-4 rounded-full object-cover"
+                  />
+                )}
+                <div>
+                  <p className="mr-4 text-lg font-semibold">
+                    {product.description}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Precio Unitario: ${product.priceSell}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <input
+                  type="number"
+                  min="1"
+                  value={product.quantity || 1}
+                  onChange={(e) =>
+                    handleQuantityChange(
+                      product.id_product,
+                      Number(e.target.value)
+                    )
+                  }
+                  className="w-16 p-2 border border-gray-300 rounded-md text-center"
+                />
+                <p className="text-sm text-gray-500">
+                  Total: ${product.priceSell * (product.quantity || 1)}
+                </p>
+                <button
+                  onClick={() => handleRemoveProduct(product.id_product)}
+                  className="mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-700 transition duration-300"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-        <div>
-          <input
-            type="number"
-            min="1"
-            value={product.quantity || 1}
-            onChange={(e) =>
-              handleQuantityChange(product.id_product, Number(e.target.value))
-            }
-            className="w-16 p-2 border border-gray-300 rounded-md text-center"
-          />
-          <p className="text-sm text-gray-500">
-            Total: ${product.priceSell * (product.quantity || 1)}
-          </p>
-          {/* Botón de eliminar */}
-          <button
-            onClick={() => handleRemoveProduct(product.id_product)}
-            className="mt-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-700 transition duration-300"
-          >
-            Eliminar
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
+      )}
 
       {/* Input para el número de documento */}
       <div className="mb-4">
@@ -317,18 +309,30 @@ const Caja = () => {
         />
       </div>
       <div className="mb-4">
-  <h3 className="text-lg font-semibold">Subtotal</h3>
-  <p>
-    Total productos: <span className="font-bold">{calculateTotals().totalQuantity}</span>
-  </p>
-  <p>
-    Subtotal:{" "}
-    <span className="font-bold">
-      ${calculateTotals().totalPrice.toLocaleString("es-CO")}
-    </span>
-  </p>
-</div>
-      {/* Botón para enviar la orden */}
+        <h3 className="text-lg font-semibold">Subtotal</h3>
+        <p>
+          Total productos:{" "}
+          <span className="font-bold">{calculateTotals().totalQuantity}</span>
+        </p>
+        <p>
+          Subtotal:{" "}
+          <span className="font-bold">
+            ${calculateTotals().totalPrice.toLocaleString("es-CO")}
+          </span>
+        </p>
+      </div>
+      <div className="mb-4">
+        <label htmlFor="order_date" className="block text-lg font-medium mb-2">
+          Fecha del pedido
+        </label>
+        <input
+          type="date"
+          id="order_date"
+          value={orderDate}
+          onChange={handleDateChange}
+          className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
       <form onSubmit={handleSubmit}>
         <button
           type="submit"
@@ -341,5 +345,4 @@ const Caja = () => {
   );
 };
 
-export default Caja;                                      
-     
+export default Caja;

@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
         buyer_email,
         buyer_phone,
         total_amount, // Este es el valor de la GiftCard
-        date: new Date(),
+        date: date ? new Date(date) : new Date(),
         payMethod: "GiftCard",
         amount,
         amount2: null,
@@ -84,7 +84,7 @@ module.exports = async (req, res) => {
         amount,
         payMethod: actualPaymentMethod,
         payment_state: "Pago",
-        date: new Date(),
+        date: date ? new Date(date) : new Date(),
         receipt_number: receiptNumber,
         cashier_document,
       });
@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
       buyer_email,
       buyer_phone,
       total_amount: totalConDescuento, // <-- Aplica el descuento aquí
-      date: new Date(),
+      date: date ? new Date(date) : new Date(),
       payMethod,
       amount,
       amount2: amount2 || null,

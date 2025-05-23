@@ -69,8 +69,8 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     console.log("Firma generada:", firmaReal);
 
    const dateToSave = date
-  ? new Date(date)
-  : new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  ? date // <-- Usa el string tal cual
+  : new Date().toISOString().split('T')[0]; // Fecha de hoy en formato YYYY-MM-DD
 
 const orderDetail = await OrderDetail.create({
   id_orderDetail: newOrderId,

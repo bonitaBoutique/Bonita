@@ -16,6 +16,6 @@ router.get('/active-giftcards', controller.getActiveGiftCards);
 router.get("/addi-sistecredito", controller.getAddiSistecreditoPayments);
 
 // ✅ Actualizar información de depósito
-router.put("/deposit/:receiptId", controller.updatePaymentDeposit);
+router.put("/deposit/:receiptId", controller.updatePaymentAddiSistecredito);  // ✅ Función correcta
 
 module.exports = router;

@@ -103,8 +103,8 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
-getAddiSistecreditoPayments: catchedAsync(require("./Caja/getAddiSistecreditoPayments")),
-updatePaymentAddiSistecredito: catchedAsync(require("./Caja/updatePaymentAddiSistecredito")),
+getAddiSistecreditoPayments: catchedAsync(getAddiSistecreditoPayments),
+updatePaymentAddiSistecredito: catchedAsync(updatePaymentAddiSistecredito),
   
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

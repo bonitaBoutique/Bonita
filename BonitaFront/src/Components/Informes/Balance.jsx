@@ -3,13 +3,21 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchBalance } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
-// ✅ Importar utilidades de fecha para Colombia
-import { getColombiaDate, formatDateForDisplay, isValidDate } from "../../utils/dateUtils";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+// ✅ Configurar dayjs con plugins de zona horaria
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+// ✅ Importar utilidades mejoradas
+import { 
+  getColombiaDate, 
+  formatDateForDisplay, 
+  formatDateForBackend,
+  isValidDate 
+} from "../../utils/dateUtils";
 
 const Balance = () => {
   const dispatch = useDispatch();
@@ -18,10 +26,10 @@ const Balance = () => {
   // ✅ Usar función consistente para fecha de Colombia
   const today = getColombiaDate();
   
-  console.log("Fecha de Colombia (consistente):", today);
-  console.log("Fecha con dayjs:", dayjs().tz("America/Bogota").format("YYYY-MM-DD"));
-  console.log("Fecha local navegador:", new Date());
-  console.log("Offset navegador:", new Date().getTimezoneOffset());
+  console.log("🕒 Fecha de Colombia (consistente):", today);
+  console.log("🕒 Fecha con dayjs:", dayjs().tz("America/Bogota").format("YYYY-MM-DD"));
+  console.log("🕒 Fecha local navegador:", new Date().toISOString().split('T')[0]);
+  console.log("🕒 Offset navegador:", new Date().getTimezoneOffset());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -36,14 +44,17 @@ const Balance = () => {
     expenses = [],
     cashierTotals = {},
     loading,
+    error,
   } = useSelector((state) => state);
 
-  console.log("Datos del backend:", {
+  console.log("📊 Datos del backend:", {
     income,
     expenses,
     cashierTotals,
     totalOnlineSales,
     totalExpenses,
+    loading,
+    error
   });
 
   // ✅ State para filtros con fechas de Colombia
@@ -56,26 +67,58 @@ const Balance = () => {
     cashier: "",
   });
 
-  // ✅ Remover useEffect de carga de fecha externa - usar fecha local consistente
-  useEffect(() => {
-    console.log("Cargando balance con filtros:", filters);
+  // ✅ Función para enviar filtros al backend con formato correcto
+  const sendFiltersToBackend = (currentFilters) => {
     const formattedFilters = {
-      ...filters,
-      startDate: filters.startDate || undefined,
-      endDate: filters.endDate || undefined,
+      ...currentFilters,
+      // ✅ Formatear fechas específicamente para el backend
+      startDate: currentFilters.startDate ? formatDateForBackend(currentFilters.startDate) : undefined,
+      endDate: currentFilters.endDate ? formatDateForBackend(currentFilters.endDate) : undefined,
     };
-    console.log("Filtros enviados al backend:", formattedFilters);
+
+    // ✅ Limpiar filtros vacíos
+    Object.keys(formattedFilters).forEach(key => {
+      if (formattedFilters[key] === "" || formattedFilters[key] === undefined) {
+        delete formattedFilters[key];
+      }
+    });
+
+    console.log("📤 Enviando filtros al backend:", formattedFilters);
+    console.log("📅 Fechas originales:", {
+      startDate: currentFilters.startDate,
+      endDate: currentFilters.endDate
+    });
+    console.log("📅 Fechas formateadas:", {
+      startDate: formattedFilters.startDate,
+      endDate: formattedFilters.endDate
+    });
+
     dispatch(fetchBalance(formattedFilters));
+  };
+
+  // ✅ Effect para cargar datos cuando cambian los filtros
+  useEffect(() => {
+    console.log("🔄 Filtros cambiaron, cargando balance:", filters);
+    sendFiltersToBackend(filters);
   }, [dispatch, filters]);
 
-  // ✅ Función para validar cambios de fecha
+  // ✅ Función para validar cambios de fecha mejorada
   const handleDateFilterChange = (field, value) => {
+    console.log(`📅 Cambiando ${field} a:`, value);
+
     if (!isValidDate(value)) {
-      console.warn(`Fecha inválida para ${field}:`, value);
+      console.warn(`❌ Fecha inválida para ${field}:`, value);
+      alert("Fecha inválida. Por favor selecciona una fecha válida.");
       return;
     }
 
-    // Validar que startDate no sea mayor que endDate
+    // ✅ Validar que no sea fecha futura
+    if (value > today) {
+      alert("No se pueden seleccionar fechas futuras.");
+      return;
+    }
+
+    // ✅ Validaciones de rango de fechas
     if (field === 'startDate' && filters.endDate && value > filters.endDate) {
       alert("La fecha de inicio no puede ser mayor que la fecha de fin");
       return;
@@ -86,15 +129,32 @@ const Balance = () => {
       return;
     }
 
+    // ✅ Actualizar filtros
     setFilters(prev => ({
       ...prev,
       [field]: value
     }));
     
-    console.log(`${field} actualizada a:`, value);
+    console.log(`✅ ${field} actualizada a:`, value);
+    console.log("📅 Fecha formateada para mostrar:", formatDateForDisplay(value));
   };
 
-  // --- Function to combine and filter all movements ---
+  // ✅ Función para resetear filtros
+  const resetFilters = () => {
+    const newFilters = {
+      startDate: today,
+      endDate: today,
+      paymentMethod: "",
+      pointOfSale: "",
+      expenseType: "",
+      cashier: "",
+    };
+    
+    console.log("🔄 Reseteando filtros a:", newFilters);
+    setFilters(newFilters);
+  };
+
+  // ✅ Function to combine and filter all movements
   const getAllMovements = () => {
     const movements = [
       // Map online sales
@@ -118,7 +178,7 @@ const Balance = () => {
         paymentMethod: sale.paymentMethod || "Desconocido",
         pointOfSale: "Local",
         id: `local-${sale.id}`,
-        description: sale.buyerName || "Desconocido",
+        description: sale.buyerName || sale.description || "Desconocido",
         cashier_document: sale.cashierDocument,
       })),
       // Map expenses
@@ -198,10 +258,10 @@ const Balance = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
     
     // ✅ Usar fecha de Colombia para el nombre del archivo
-    const fileName = `balance_${today}.xlsx`;
+    const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
     
-    console.log(`Archivo exportado: ${fileName}`);
+    console.log(`📄 Archivo exportado: ${fileName}`);
   };
 
   // Calculate income totals per payment method
@@ -241,7 +301,36 @@ const Balance = () => {
     ),
   ];
 
-  if (loading) return <div className="text-center mt-40">Cargando...</div>;
+  // ✅ Loading y error states mejorados
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando balance financiero...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Error al cargar el balance</h3>
+            <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => sendFiltersToBackend(filters)}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-200"
+            >
+              🔄 Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const allMovements = getAllMovements();
   const totalPages = Math.ceil(allMovements.length / itemsPerPage);
@@ -254,34 +343,39 @@ const Balance = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       <h1 className="text-3xl font-bold mb-6 text-center">
-        Balance Financiero
+        💰 Balance Financiero
       </h1>
 
-      {/* ✅ Información de fecha actual de Colombia */}
-      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+      {/* ✅ Información de fecha actual de Colombia mejorada */}
+      <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
         <p className="text-sm text-blue-800">
-          <strong>Fecha actual de Colombia:</strong> {formatDateForDisplay(today)}
+          <strong>📅 Fecha actual de Colombia:</strong> {formatDateForDisplay(today)}
         </p>
         <p className="text-xs text-blue-600 mt-1">
-          Filtros predeterminados configurados para hoy
+          🕒 Zona horaria: America/Bogota (UTC-5)
+        </p>
+        <p className="text-xs text-blue-600">
+          📊 Rango de filtros: {formatDateForDisplay(filters.startDate)} - {formatDateForDisplay(filters.endDate)}
         </p>
       </div>
 
       {/* ✅ Filters Section mejorado */}
-      <div className="mb-6 p-4 border rounded shadow-sm bg-gray-50">
-        <h2 className="text-xl font-semibold mb-3">Filtros</h2>
+      <div className="mb-6 p-4 border rounded-lg shadow-sm bg-gray-50">
+        <h2 className="text-xl font-semibold mb-3 flex items-center">
+          🔍 Filtros de Búsqueda
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* ✅ Input de fecha inicio mejorado */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Inicio
+              📅 Fecha Inicio
             </label>
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
               max={today} // No permitir fechas futuras
-              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500"
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
               {formatDateForDisplay(filters.startDate)}
@@ -291,7 +385,7 @@ const Balance = () => {
           {/* ✅ Input de fecha fin mejorado */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Fin
+              📅 Fecha Fin
             </label>
             <input
               type="date"
@@ -299,131 +393,139 @@ const Balance = () => {
               onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
               min={filters.startDate} // No menor que fecha inicio
               max={today} // No permitir fechas futuras
-              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500"
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
               {formatDateForDisplay(filters.endDate)}
             </p>
           </div>
 
-          <select
-            value={filters.paymentMethod}
-            onChange={(e) =>
-              setFilters({ ...filters, paymentMethod: e.target.value })
-            }
-            className="border rounded p-2"
-          >
-            <option value="">Todos los Métodos (Ingresos)</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Nequi">Nequi</option>
-            <option value="Bancolombia">Bancolombia</option>
-            <option value="Addi">Addi</option>
-            <option value="Sistecredito">Sistecredito</option>
-            <option value="Wompi">Wompi (Online)</option>
-          </select>
-          
-          <select
-            value={filters.pointOfSale}
-            onChange={(e) =>
-              setFilters({ ...filters, pointOfSale: e.target.value })
-            }
-            className="border rounded p-2"
-          >
-            <option value="">Todos los Puntos de Venta</option>
-            <option value="Local">Local</option>
-            <option value="Online">Online</option>
-          </select>
-          
-          <select
-            value={filters.expenseType}
-            onChange={(e) =>
-              setFilters({ ...filters, expenseType: e.target.value })
-            }
-            className="border rounded p-2"
-          >
-            <option value="">Todos los Tipos de Gasto</option>
-            <option value="Nomina Colaboradores">Nómina Colaboradores</option>
-            <option value="Servicios">Servicios</option>
-            <option value="Arriendo">Arriendo</option>
-            <option value="Proveedores">Proveedores</option>
-            <option value="Otros">Otros</option>
-          </select>
-          
-          <select
-            value={filters.cashier}
-            onChange={(e) =>
-              setFilters({ ...filters, cashier: e.target.value })
-            }
-            className="border rounded p-2"
-          >
-            <option value="">Todos los Cajeros (Ventas Locales)</option>
-            {cashiers.map((cashier) => (
-              <option key={cashier} value={cashier}>
-                {cashier}
-              </option>
-            ))}
-          </select>
+          {/* ✅ Método de pago */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              💳 Método de Pago
+            </label>
+            <select
+              value={filters.paymentMethod}
+              onChange={(e) =>
+                setFilters({ ...filters, paymentMethod: e.target.value })
+              }
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos los Métodos (Ingresos)</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Addi">Addi</option>
+              <option value="Sistecredito">Sistecredito</option>
+              <option value="Wompi">Wompi (Online)</option>
+            </select>
+          </div>
+
+          {/* ✅ Punto de venta */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              🏪 Punto de Venta
+            </label>
+            <select
+              value={filters.pointOfSale}
+              onChange={(e) =>
+                setFilters({ ...filters, pointOfSale: e.target.value })
+              }
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos los Puntos de Venta</option>
+              <option value="Local">Local</option>
+              <option value="Online">Online</option>
+            </select>
+          </div>
+
+          {/* ✅ Tipo de gasto */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              💸 Tipo de Gasto
+            </label>
+            <select
+              value={filters.expenseType}
+              onChange={(e) =>
+                setFilters({ ...filters, expenseType: e.target.value })
+              }
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos los Tipos de Gasto</option>
+              <option value="Nomina Colaboradores">Nómina Colaboradores</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Arriendo">Arriendo</option>
+              <option value="Proveedores">Proveedores</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          {/* ✅ Cajero */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              👤 Cajero
+            </label>
+            <select
+              value={filters.cashier}
+              onChange={(e) =>
+                setFilters({ ...filters, cashier: e.target.value })
+              }
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos los Cajeros (Ventas Locales)</option>
+              {cashiers.map((cashier) => (
+                <option key={cashier} value={cashier}>
+                  {cashier}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* ✅ Botón para resetear filtros a hoy */}
-        <div className="mt-4">
+        {/* ✅ Botones de acción mejorados */}
+        <div className="mt-4 flex gap-2 flex-wrap">
           <button
-            onClick={() => setFilters({
-              startDate: today,
-              endDate: today,
-              paymentMethod: "",
-              pointOfSale: "",
-              expenseType: "",
-              cashier: "",
-            })}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
+            onClick={resetFilters}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200 flex items-center"
           >
-            Resetear a Hoy
+            🔄 Resetear a Hoy
+          </button>
+          <button
+            onClick={() => sendFiltersToBackend(filters)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 flex items-center"
+          >
+            🔍 Recargar Datos
           </button>
         </div>
       </div>
 
-      {/* Income by Payment Method Section */}
+      {/* ✅ Income by Payment Method Section */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3">
-          Ingresos por Método (Detalle)
+        <h2 className="text-xl font-semibold mb-3 flex items-center">
+          💰 Ingresos por Método (Detalle)
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
           {[
-            { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50" },
-            { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50" },
-            { name: "Nequi", value: ingresosNequi, color: "bg-green-50" },
-            {
-              name: "Bancolombia",
-              value: ingresosBancolombia,
-              color: "bg-green-50",
-            },
-            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50" },
-            {
-              name: "Sistecredito",
-              value: ingresosSistecredito,
-              color: "bg-yellow-50",
-            },
-            {
-              name: "Venta Online",
-              value: totalOnlineSales,
-              color: "bg-blue-50",
-            },
-            {
-              name: "Pagos Parciales Reserva",
-              value: ingresosPagosParciales,
-              color: "bg-purple-50",
-            },
+            { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50 border-green-200", icon: "💵" },
+            { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50 border-green-200", icon: "💳" },
+            { name: "Nequi", value: ingresosNequi, color: "bg-green-50 border-green-200", icon: "📱" },
+            { name: "Bancolombia", value: ingresosBancolombia, color: "bg-green-50 border-green-200", icon: "🏦" },
+            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50 border-yellow-200", icon: "🛒" },
+            { name: "Sistecredito", value: ingresosSistecredito, color: "bg-yellow-50 border-yellow-200", icon: "💰" },
+            { name: "Venta Online", value: totalOnlineSales, color: "bg-blue-50 border-blue-200", icon: "🌐" },
+            { name: "Pagos Parciales", value: ingresosPagosParciales, color: "bg-purple-50 border-purple-200", icon: "📝" },
           ].map((method) => (
             <div
               key={method.name}
-              className={`${method.color} p-4 rounded shadow-sm text-center`}
+              className={`${method.color} p-4 rounded-lg shadow-sm text-center border`}
             >
-              <h3 className="text-md font-semibold text-gray-700">
+              <div className="text-2xl mb-2">{method.icon}</div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">
                 {method.name}
               </h3>
-              <p className="text-xl font-bold text-gray-900">
+              <p className="text-lg font-bold text-gray-900">
                 {method.value.toLocaleString("es-CO", {
                   style: "currency",
                   currency: "COP",
@@ -432,15 +534,15 @@ const Balance = () => {
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          * Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se
-          incluyen en el cálculo de 'Ingresos Totales' del resumen.
+        <p className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
+          ⚠️ Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se incluyen en el cálculo de 'Ingresos Totales' del resumen.
         </p>
       </div>
 
-      {/* Summary Section */}
+      {/* ✅ Summary Section mejorado */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-green-100 p-4 rounded shadow-md text-center">
+        <div className="bg-green-100 p-6 rounded-lg shadow-md text-center border-l-4 border-green-500">
+          <div className="text-3xl mb-2">💚</div>
           <h3 className="text-lg font-semibold text-green-800">
             Ingresos Totales*
           </h3>
@@ -451,7 +553,8 @@ const Balance = () => {
             })}
           </p>
         </div>
-        <div className="bg-red-100 p-4 rounded shadow-md text-center">
+        <div className="bg-red-100 p-6 rounded-lg shadow-md text-center border-l-4 border-red-500">
+          <div className="text-3xl mb-2">💸</div>
           <h3 className="text-lg font-semibold text-red-800">Gastos Totales</h3>
           <p className="text-2xl font-bold text-red-900">
             {totalExpenses.toLocaleString("es-CO", {
@@ -460,9 +563,10 @@ const Balance = () => {
             })}
           </p>
         </div>
-        <div className="bg-blue-100 p-4 rounded shadow-md text-center">
+        <div className="bg-blue-100 p-6 rounded-lg shadow-md text-center border-l-4 border-blue-500">
+          <div className="text-3xl mb-2">⚖️</div>
           <h3 className="text-lg font-semibold text-blue-800">Balance*</h3>
-          <p className="text-2xl font-bold text-blue-900">
+          <p className={`text-2xl font-bold ${displayBalance >= 0 ? 'text-blue-900' : 'text-red-900'}`}>
             {displayBalance.toLocaleString("es-CO", {
               style: "currency",
               currency: "COP",
@@ -471,29 +575,18 @@ const Balance = () => {
         </div>
         <button
           onClick={handleExportExcel}
-          className="bg-indigo-600 text-white p-4 rounded shadow-md hover:bg-indigo-700 transition duration-200 flex items-center justify-center"
+          className="bg-indigo-600 text-white p-6 rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 flex flex-col items-center justify-center border-l-4 border-indigo-500"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Exportar Excel
+          <div className="text-3xl mb-2">📊</div>
+          <span className="font-semibold">Exportar Excel</span>
         </button>
       </div>
 
-      {/* Cashier Totals Section */}
+      {/* ✅ Cashier Totals Section mejorado */}
       {Object.keys(cashierTotals).length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-3">
-            Ventas por Cajero (Local)
+          <h2 className="text-xl font-semibold mb-3 flex items-center">
+            👤 Ventas por Cajero (Local)
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(cashierTotals)
@@ -503,8 +596,9 @@ const Balance = () => {
               .map(([cashier, total]) => (
                 <div
                   key={cashier}
-                  className="bg-purple-50 p-4 rounded shadow-sm text-center"
+                  className="bg-purple-50 p-4 rounded-lg shadow-sm text-center border border-purple-200"
                 >
+                  <div className="text-2xl mb-2">👤</div>
                   <h3 className="text-md font-semibold text-purple-800">
                     {cashier}
                   </h3>
@@ -520,28 +614,31 @@ const Balance = () => {
         </div>
       )}
 
-      {/* Movements Table Section */}
-      <div className="overflow-x-auto shadow-md rounded-lg">
-        <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg">
-          Detalle de Movimientos
+      {/* ✅ Movements Table Section mejorado */}
+      <div className="overflow-x-auto shadow-lg rounded-lg">
+        <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg flex items-center">
+          📋 Detalle de Movimientos
+          <span className="ml-2 text-sm font-normal text-gray-600">
+            ({allMovements.length} registros)
+          </span>
         </h2>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fecha
+                📅 Fecha
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo
+                📝 Tipo
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Descripción
+                📄 Descripción
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Método de Pago
+                💳 Método de Pago
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Monto
+                💰 Monto
               </th>
             </tr>
           </thead>
@@ -550,11 +647,11 @@ const Balance = () => {
               paginatedMovements.map((movement) => (
                 <tr
                   key={movement.id}
-                  className={
+                  className={`transition-colors duration-200 ${
                     movement.amount < 0
                       ? "hover:bg-red-50"
                       : "hover:bg-green-50"
-                  }
+                  }`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {dayjs(movement.date)
@@ -562,7 +659,13 @@ const Balance = () => {
                       .format("DD/MM/YYYY HH:mm")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {movement.type}
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      movement.amount < 0 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {movement.type}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.description || "-"}
@@ -584,8 +687,15 @@ const Balance = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="text-center py-4 text-gray-500">
-                  No hay movimientos para mostrar con los filtros seleccionados.
+                <td colSpan="5" className="text-center py-8 text-gray-500">
+                  <div className="text-4xl mb-2">📭</div>
+                  <p>No hay movimientos para mostrar con los filtros seleccionados.</p>
+                  <button
+                    onClick={resetFilters}
+                    className="mt-2 text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Resetear filtros
+                  </button>
                 </td>
               </tr>
             )}
@@ -593,93 +703,105 @@ const Balance = () => {
         </table>
 
         {/* ✅ Controles de paginación mejorados */}
-        <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Mostrando{" "}
-                <span className="font-medium">
-                  {(currentPage - 1) * itemsPerPage + 1}
-                </span>{" "}
-                a{" "}
-                <span className="font-medium">
-                  {Math.min(currentPage * itemsPerPage, allMovements.length)}
-                </span>{" "}
-                de{" "}
-                <span className="font-medium">{allMovements.length}</span>{" "}
-                resultados
-              </p>
-            </div>
-            <div>
-              <nav
-                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                aria-label="Pagination"
+        {allMovements.length > 0 && (
+          <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
               >
-                <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                ← Anterior
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Siguiente →
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Mostrando{" "}
+                  <span className="font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{" "}
+                  a{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, allMovements.length)}
+                  </span>{" "}
+                  de{" "}
+                  <span className="font-medium">{allMovements.length}</span>{" "}
+                  resultados
+                </p>
+              </div>
+              <div>
+                <nav
+                  className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                  aria-label="Pagination"
                 >
-                  {"<<"}
-                </button>
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {"<"}
-                </button>
-                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                  {currentPage} / {totalPages || 1}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {">"}
-                </button>
-                <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {">>"}
-                </button>
-              </nav>
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    title="Primera página"
+                  >
+                    {"<<"}
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    title="Página anterior"
+                  >
+                    {"<"}
+                  </button>
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    {currentPage} / {totalPages || 1}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    title="Página siguiente"
+                  >
+                    {">"}
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    title="Última página"
+                  >
+                    {">>"}
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Back Button */}
+      {/* ✅ Back Button mejorado */}
       <div className="mt-8 text-center">
         <button
           onClick={() => navigate(-1)}
-          className="bg-gray-600 text-white py-2 px-5 rounded shadow-md hover:bg-gray-700 transition duration-200"
+          className="bg-gray-600 text-white py-3 px-6 rounded-lg shadow-md hover:bg-gray-700 transition duration-200 flex items-center mx-auto"
         >
-          Volver
+          ← Volver
         </button>
+      </div>
+
+      {/* ✅ Footer con información adicional */}
+      <div className="mt-6 text-center text-xs text-gray-500 bg-gray-50 p-3 rounded">
+        <p>* Los ingresos totales y balance excluyen Addi y Sistecredito</p>
+        <p>📅 Todos los horarios están en zona horaria de Colombia (America/Bogota)</p>
       </div>
     </div>
   );

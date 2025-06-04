@@ -29,9 +29,19 @@ module.exports = (sequelize) => {
     allowNull: false,
   },
   date: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
+        type: DataTypes.DATEONLY, // Solo fecha, sin hora
+        allowNull: false,
+        defaultValue: DataTypes.NOW // Esto tomará la fecha de Colombia
+      },
+      estimated_delivery_date: {
+        type: DataTypes.DATE, // Fecha y hora
+        allowNull: true,
+      },
+ },
+    {
+      paranoid: true,
+      timestamps: true, // Cambiar a true para createdAt/updatedAt
+    }
+  );
+};
 
-})
-}

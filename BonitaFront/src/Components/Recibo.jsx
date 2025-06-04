@@ -15,6 +15,8 @@ import {
   updateOrderState
 } from "../Redux/Actions/actions";
 import ReservationPopup from "./ReservationPopup";
+import { getColombiaDate, formatDateForDisplay, isValidDate } from "../utils/dateUtils";
+
 
 const Recibo = () => {
   const { idOrder } = useParams();
@@ -48,7 +50,7 @@ const Recibo = () => {
   const [buyerEmail, setBuyerEmail] = useState("");
   const [buyerPhone, setBuyerPhone] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
-  const [date, setDate] = useState("");
+ const [date, setDate] = useState(() => getColombiaDate());
   const [cashGiven, setCashGiven] = useState("");
   const [change, setChange] = useState(0);
 

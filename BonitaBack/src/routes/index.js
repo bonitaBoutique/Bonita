@@ -21,6 +21,6 @@ router.use('/reservation', require('./reservationRouter') )
 router.use('/invoice', require('./invoiceRouter') )
 router.use('/taxxa', require('./taxxaRouter') )
 router.use('/giftcard', require('./giftCardRouter') )
-router.use('/hora', require('./horaLocal'))
+
                                                                                                                                                            
 module.exports = router;

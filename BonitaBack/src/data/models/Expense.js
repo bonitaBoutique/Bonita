@@ -3,9 +3,14 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize) => {
   sequelize.define("Expense", {
     date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-    },
+        type: DataTypes.DATEONLY, // Solo fecha, sin hora
+        allowNull: false,
+        defaultValue: DataTypes.NOW // Esto tomará la fecha de Colombia
+      },
+      estimated_delivery_date: {
+        type: DataTypes.DATE, // Fecha y hora
+        allowNull: true,
+      },
     type: {
       type: DataTypes.ENUM,
       values: [

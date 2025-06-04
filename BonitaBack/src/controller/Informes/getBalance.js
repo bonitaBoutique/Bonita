@@ -1,5 +1,6 @@
 const { OrderDetail, Receipt, Expense, CreditPayment, Reservation } = require("../../data");
 const { Op } = require("sequelize");
+const { getColombiaDate } = require("../../utils/dateUtils");
 
 const getBalance = async (req, res) => {
   try {
@@ -9,16 +10,14 @@ const getBalance = async (req, res) => {
 
     let dateFilter = {};
 
-    // Si no hay fechas, filtra por el día actual en Colombia
+    // ✅ Simplificar manejo de fechas usando la utilidad
     if (!startDate && !endDate) {
-      const now = new Date();
-      const dateColombia = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-      const todayColombia = dateColombia.toISOString().split('T')[0];
-      dateFilter.date = todayColombia;
+      // Si no hay fechas, usar día actual de Colombia
+      dateFilter.date = getColombiaDate();
     } else if (startDate || endDate) {
       // Si es el mismo día, usamos estrategia especial
       if (startDate && endDate && startDate === endDate) {
-        // Configurar para filtrar exactamente un día completo
+        // Filtrar exactamente un día completo
         const nextDay = new Date(endDate);
         nextDay.setDate(nextDay.getDate() + 1);
         const nextDayString = nextDay.toISOString().split('T')[0];
@@ -45,143 +44,232 @@ const getBalance = async (req, res) => {
       }
     }
 
-    console.log("Filtro de fecha modificado:", JSON.stringify(dateFilter));
-console.log("Fechas recibidas en backend:", startDate, endDate);
-console.log("Filtro de fecha aplicado:", dateFilter);
-    // Obtener ventas online
+    console.log("Filtro de fecha aplicado:", JSON.stringify(dateFilter));
+
+    // ✅ Obtener ventas online con mejor manejo de errores
     const onlineSales = await OrderDetail.findAll({
       where: {
         ...dateFilter,
-        pointOfSale: 'Online'
+        pointOfSale: 'Online',
+        // Asegurar que solo sean ventas completadas
+        transaction_status: {
+          [Op.in]: ['APPROVED', 'approved', 'Completada']
+        }
       },
       attributes: [
         'id_orderDetail',
         'date',
         'amount',
         'pointOfSale',
-        'transaction_status'
-      ]
+        'transaction_status',
+        'discount'
+      ],
+      order: [['date', 'DESC']]
     });
 
-    // Obtener ventas locales exclusivamente de Receipt
+    // ✅ Obtener ventas locales con filtro mejorado
+    let localSalesFilter = {
+      ...dateFilter
+    };
+
+    // Agregar filtro de método de pago si se especifica
+    if (paymentMethod) {
+      localSalesFilter.payMethod = paymentMethod;
+    }
+
     const localSales = await Receipt.findAll({
-      where: {
-        ...dateFilter,
-        ...(paymentMethod && { payMethod: paymentMethod })
-      },
+      where: localSalesFilter,
       attributes: [
         'id_receipt',
         'buyer_name',
         'date',
         'total_amount',
         'payMethod',
-        'cashier_document'
-      ]
+        'cashier_document',
+        'discount'
+      ],
+      order: [['date', 'DESC']]
     });
 
-    // Obtener pagos parciales de reservas
+    // ✅ Obtener pagos parciales de reservas con mejor filtrado
     const partialPayments = await CreditPayment.findAll({
-      where: { ...dateFilter },
+      where: dateFilter,
       attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
       include: [
         {
           model: Reservation,
-          attributes: ['n_document', 'id_orderDetail'],
+          attributes: ['n_document', 'id_orderDetail', 'status'],
+          required: true // Solo pagos con reservas válidas
         }
-      ]
+      ],
+      order: [['date', 'DESC']]
     });
-console.log("Filtro de fecha para Expense:", dateFilter);
-    // Obtener gastos
+
+    // ✅ Obtener gastos con filtro mejorado
+    let expensesFilter = {
+      ...dateFilter
+    };
+
+    // Agregar filtro de método de pago para gastos si se especifica
+    if (paymentMethod) {
+      expensesFilter.paymentMethods = paymentMethod;
+    }
+
     const expenses = await Expense.findAll({
-      where: {
-        ...dateFilter,
-        ...(paymentMethod && { paymentMethods: paymentMethod })
-      },
+      where: expensesFilter,
       attributes: [
         'id',
         'date',
         'amount',
         'type',
         'paymentMethods',
-        'description'
-      ]
+        'description',
+        'destinatario'
+      ],
+      order: [['date', 'DESC']]
     });
-console.log("Expenses encontrados:", expenses.map(e => ({ id: e.id, date: e.date })));
-    // Formatear ventas online
-    const formattedOnlineSales = onlineSales.map(sale => ({
-      id: sale.id_orderDetail,
-      date: sale.date,
-      amount: sale.amount,
-      pointOfSale: 'Online',
-      transactionStatus: sale.transaction_status,
-      paymentMethod: 'Wompi'
-    }));
 
-    // Formatear ventas locales
+    console.log(`Encontrados: ${onlineSales.length} ventas online, ${localSales.length} ventas locales, ${partialPayments.length} pagos parciales, ${expenses.length} gastos`);
+
+    // ✅ Formatear ventas online con cálculo de descuento
+    const formattedOnlineSales = onlineSales.map(sale => {
+      const discount = sale.discount || 0;
+      const amountWithDiscount = sale.amount * (1 - discount / 100);
+      
+      return {
+        id: sale.id_orderDetail,
+        date: sale.date,
+        amount: parseFloat(amountWithDiscount.toFixed(2)),
+        originalAmount: sale.amount,
+        discount: discount,
+        pointOfSale: 'Online',
+        transactionStatus: sale.transaction_status,
+        paymentMethod: 'Wompi'
+      };
+    });
+
+    // ✅ Formatear ventas locales con mejor manejo de datos
     const formattedLocalSales = localSales.map(sale => ({
       id: sale.id_receipt,
       date: sale.date,
-      amount: sale.total_amount,
+      amount: parseFloat(sale.total_amount || 0),
+      discount: sale.discount || 0,
       pointOfSale: 'Local',
       paymentMethod: sale.payMethod || 'Desconocido',
-      cashierDocument: sale.cashier_document,
-      buyerName: sale.buyer_name || 'Desconocido',
+      cashierDocument: sale.cashier_document || 'Sin asignar',
+      buyerName: sale.buyer_name || 'Cliente general',
     }));
 
-    console.log("OnlineSales enviados:", formattedOnlineSales);
-console.log("LocalSales enviados:", formattedLocalSales);
-
-    // Formatear pagos parciales de reservas
+    // ✅ Formatear pagos parciales de reservas
     const formattedPartialPayments = partialPayments.map(payment => ({
       id: payment.id_payment,
       date: payment.date,
-      amount: payment.amount,
+      amount: parseFloat(payment.amount || 0),
       pointOfSale: 'Local',
-      paymentMethod: 'Crédito',
+      paymentMethod: 'Crédito - Pago Parcial',
       type: 'Pago Parcial Reserva',
       reservationId: payment.id_reservation,
-      n_document: payment.Reservation ? payment.Reservation.n_document : null,
-      id_orderDetail: payment.Reservation ? payment.Reservation.id_orderDetail : null,
+      reservationStatus: payment.Reservation?.status || 'Sin estado',
+      n_document: payment.Reservation?.n_document || null,
+      id_orderDetail: payment.Reservation?.id_orderDetail || null,
     }));
 
-    // Unir ventas locales y pagos parciales de reservas
+    // ✅ Combinar todos los ingresos locales
     const allLocalIncome = [
       ...formattedLocalSales,
       ...formattedPartialPayments
     ];
 
-    // Calcular totales
+    // ✅ Formatear gastos con mejor estructura
+    const formattedExpenses = expenses.map(expense => ({
+      id: expense.id,
+      date: expense.date,
+      amount: parseFloat(expense.amount || 0),
+      type: expense.type,
+      paymentMethod: expense.paymentMethods,
+      description: expense.description || 'Sin descripción',
+      destinatario: expense.destinatario || 'No especificado'
+    }));
+
+    // ✅ Calcular totales con precisión decimal
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
     const totalLocalSales = allLocalIncome.reduce((sum, sale) => sum + sale.amount, 0);
     const totalIncome = totalOnlineSales + totalLocalSales;
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalExpenses = formattedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
-    // Calcular totales por cajero (solo ventas locales, no pagos parciales)
+    // ✅ Calcular totales por cajero (solo ventas locales directas)
     const cashierTotals = formattedLocalSales.reduce((acc, sale) => {
-      const cashier = sale.cashierDocument || 'Unknown';
-      acc[cashier] = (acc[cashier] || 0) + sale.amount;
+      const cashier = sale.cashierDocument || 'Sin asignar';
+      acc[cashier] = parseFloat(((acc[cashier] || 0) + sale.amount).toFixed(2));
       return acc;
     }, {});
 
-    // Respuesta al frontend
+    // ✅ Calcular totales por método de pago
+    const paymentMethodTotals = [...formattedLocalSales, ...formattedOnlineSales].reduce((acc, sale) => {
+      const method = sale.paymentMethod || 'Desconocido';
+      acc[method] = parseFloat(((acc[method] || 0) + sale.amount).toFixed(2));
+      return acc;
+    }, {});
+
+    // ✅ Estadísticas adicionales
+    const stats = {
+      totalTransactions: formattedOnlineSales.length + allLocalIncome.length,
+      onlineTransactions: formattedOnlineSales.length,
+      localTransactions: allLocalIncome.length,
+      averageTicket: totalIncome > 0 ? parseFloat((totalIncome / (formattedOnlineSales.length + allLocalIncome.length)).toFixed(2)) : 0,
+      totalDiscountGiven: [...formattedOnlineSales, ...formattedLocalSales].reduce((sum, sale) => {
+        if (sale.originalAmount && sale.discount) {
+          return sum + (sale.originalAmount - sale.amount);
+        }
+        return sum;
+      }, 0)
+    };
+
+    // ✅ Respuesta estructurada al frontend
     return res.status(200).json({
-      balance,
-      totalIncome,
-      totalOnlineSales,
-      totalLocalSales,
-      totalExpenses,
-      income: {
-        online: formattedOnlineSales,
-        local: allLocalIncome // Incluye ventas locales y pagos parciales
-      },
-      expenses,
-      cashierTotals
+      success: true,
+      data: {
+        // Totales principales
+        balance: parseFloat(balance.toFixed(2)),
+        totalIncome: parseFloat(totalIncome.toFixed(2)),
+        totalOnlineSales: parseFloat(totalOnlineSales.toFixed(2)),
+        totalLocalSales: parseFloat(totalLocalSales.toFixed(2)),
+        totalExpenses: parseFloat(totalExpenses.toFixed(2)),
+        
+        // Detalle de transacciones
+        income: {
+          online: formattedOnlineSales,
+          local: allLocalIncome
+        },
+        expenses: formattedExpenses,
+        
+        // Análisis adicionales
+        cashierTotals,
+        paymentMethodTotals,
+        statistics: stats,
+        
+        // Metadatos
+        dateRange: {
+          startDate: startDate || getColombiaDate(),
+          endDate: endDate || getColombiaDate()
+        },
+        filters: {
+          paymentMethod: paymentMethod || 'Todos',
+          pointOfSale: pointOfSale || 'Todos'
+        }
+      }
     });
 
   } catch (error) {
     console.error("Error en getBalance:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      success: false,
+      error: {
+        message: "Error interno del servidor al obtener el balance",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }
+    });
   }
 };
 

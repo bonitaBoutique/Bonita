@@ -1,4 +1,5 @@
 const { Receipt, OrderDetail, Product, Payment } = require("../../data");
+const { formatDateForDB } = require("../../utils/dateUtils");
 
 module.exports = async (req, res) => {
   const {
@@ -66,8 +67,8 @@ module.exports = async (req, res) => {
         buyer_name,
         buyer_email,
         buyer_phone,
-        total_amount, // Este es el valor de la GiftCard
-        date: date ? date : new Date().toISOString().split('T')[0],
+        total_amount,
+        date: formatDateForDB(date), // ✅ Fecha correcta
         payMethod: "GiftCard",
         amount,
         amount2: null,
@@ -76,15 +77,16 @@ module.exports = async (req, res) => {
         cashier_document,
       });
 
+
       // Crear el Payment asociado
-      await Payment.create({
+       await Payment.create({
         buyer_name,
         buyer_email,
         buyer_phone,
         amount,
         payMethod: actualPaymentMethod,
         payment_state: "Pago",
-        date: date ? date : new Date().toISOString().split('T')[0],
+        date: formatDateForDB(date), // ✅ Fecha correcta
         receipt_number: receiptNumber,
         cashier_document,
       });
@@ -142,15 +144,15 @@ module.exports = async (req, res) => {
       buyer_name,
       buyer_email,
       buyer_phone,
-      total_amount: totalConDescuento, // <-- Aplica el descuento aquí
-      date: date ? date : new Date().toISOString().split('T')[0],
+      total_amount: totalConDescuento,
+      date: formatDateForDB(date), // ✅ Fecha correcta
       payMethod,
       amount,
       amount2: amount2 || null,
       payMethod2: payMethod2 || null,
       receipt_number: receiptNumber,
       cashier_document,
-      discount, // Opcional: guarda el descuento también en el recibo si quieres
+      discount,
     });
 
     return res.status(201).json({

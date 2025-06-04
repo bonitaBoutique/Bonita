@@ -3,126 +3,135 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchBalance } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
+// ✅ Importar utilidades de fecha para Colombia
+import { getColombiaDate, formatDateForDisplay, isValidDate } from "../../utils/dateUtils";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
-import axios from "axios";
-
-
 
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const today = dayjs().tz("America/Bogota").format("YYYY-MM-DD");
-console.log("Fecha local navegador:", new Date());
-console.log("Fecha Colombia calculada con dayjs:", today);
-console.log("Offset navegador:", new Date().getTimezoneOffset());
+  
+  // ✅ Usar función consistente para fecha de Colombia
+  const today = getColombiaDate();
+  
+  console.log("Fecha de Colombia (consistente):", today);
+  console.log("Fecha con dayjs:", dayjs().tz("America/Bogota").format("YYYY-MM-DD"));
+  console.log("Fecha local navegador:", new Date());
+  console.log("Offset navegador:", new Date().getTimezoneOffset());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
   const {
-    balance: backendBalance = 0, // Renamed backend value
-    totalIncome: backendTotalIncome = 0, // Renamed backend value
+    balance: backendBalance = 0,
+    totalIncome: backendTotalIncome = 0,
     totalOnlineSales = 0,
-    totalLocalSales: backendTotalLocalSales = 0, // Renamed backend value
+    totalLocalSales: backendTotalLocalSales = 0,
     totalExpenses = 0,
-    income = { online: [], local: [] }, // Default to empty arrays
-    expenses = [], // Default to empty array
-    cashierTotals = {}, // Default to empty object
+    income = { online: [], local: [] },
+    expenses = [],
+    cashierTotals = {},
     loading,
   } = useSelector((state) => state);
-  console.log("Datos del backend:", {
-  income,
-  expenses,
-  cashierTotals,
-  totalOnlineSales,
-  totalExpenses,
-});
 
-  // State for filters
-  const [loadingFecha, setLoadingFecha] = useState(true);
+  console.log("Datos del backend:", {
+    income,
+    expenses,
+    cashierTotals,
+    totalOnlineSales,
+    totalExpenses,
+  });
+
+  // ✅ State para filtros con fechas de Colombia
   const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
+    startDate: today, // ✅ Inicializar con fecha de Colombia
+    endDate: today,   // ✅ Inicializar con fecha de Colombia
     paymentMethod: "",
     pointOfSale: "",
     expenseType: "",
     cashier: "",
   });
-   
- useEffect(() => {
-    if (!filters.startDate && !filters.endDate) {
-      axios.get("/hora/now-colombia") // Ajusta la ruta si tu backend la expone diferente
-        .then(res => {
-          setFilters(f => ({
-            ...f,
-            startDate: res.data.today,
-            endDate: res.data.today
-          }));
-        })
-        .finally(() => setLoadingFecha(false));
-    } else {
-      setLoadingFecha(false);
+
+  // ✅ Remover useEffect de carga de fecha externa - usar fecha local consistente
+  useEffect(() => {
+    console.log("Cargando balance con filtros:", filters);
+    const formattedFilters = {
+      ...filters,
+      startDate: filters.startDate || undefined,
+      endDate: filters.endDate || undefined,
+    };
+    console.log("Filtros enviados al backend:", formattedFilters);
+    dispatch(fetchBalance(formattedFilters));
+  }, [dispatch, filters]);
+
+  // ✅ Función para validar cambios de fecha
+  const handleDateFilterChange = (field, value) => {
+    if (!isValidDate(value)) {
+      console.warn(`Fecha inválida para ${field}:`, value);
+      return;
     }
-  }, []);
 
-useEffect(() => {
-  if (loadingFecha) return; // Espera a tener la fecha de Colombia
+    // Validar que startDate no sea mayor que endDate
+    if (field === 'startDate' && filters.endDate && value > filters.endDate) {
+      alert("La fecha de inicio no puede ser mayor que la fecha de fin");
+      return;
+    }
+    
+    if (field === 'endDate' && filters.startDate && value < filters.startDate) {
+      alert("La fecha de fin no puede ser menor que la fecha de inicio");
+      return;
+    }
 
-  const formattedFilters = {
-    ...filters,
-    startDate: filters.startDate || undefined,
-    endDate: filters.endDate || undefined,
+    setFilters(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    console.log(`${field} actualizada a:`, value);
   };
-  console.log("Filtros enviados al backend:", formattedFilters);
-  dispatch(fetchBalance(formattedFilters));
-}, [dispatch, filters, loadingFecha]);
- 
 
   // --- Function to combine and filter all movements ---
   const getAllMovements = () => {
-    // Combine sales and expenses into a single array
     const movements = [
       // Map online sales
       ...(income.online || []).map((sale) => ({
-        ...sale, // Spread original sale properties
+        ...sale,
         type: "Venta Online",
-        amount: sale.amount || 0, // Ensure amount is a number
+        amount: sale.amount || 0,
         date: sale.date,
-        paymentMethod: sale.paymentMethod || "Wompi", // Default payment method if needed
+        paymentMethod: sale.paymentMethod || "Wompi",
         pointOfSale: "Online",
-        id: `online-${sale.id_orderDetail}`, // Create a unique ID
-        description: `Pedido #${sale.id_orderDetail}` || "-", // Use order ID for description
-        cashier_document: null, // No cashier for online sales
+        id: `online-${sale.id_orderDetail}`,
+        description: `Pedido #${sale.id_orderDetail}` || "-",
+        cashier_document: null,
       })),
       // Map local sales
       ...(income.local || []).map((sale) => ({
-        ...sale, // Spread original sale properties
-        type:
-          sale.type === "Pago Parcial Reserva"
-            ? "Pago Parcial Reserva"
-            : "Venta Local",
+        ...sale,
+        type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
         amount: sale.amount || 0,
         date: sale.date,
         paymentMethod: sale.paymentMethod || "Desconocido",
         pointOfSale: "Local",
         id: `local-${sale.id}`,
         description: sale.buyerName || "Desconocido",
-        cashier_document: sale.cashierDocument, // Keep cashier document
+        cashier_document: sale.cashierDocument,
       })),
       // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
-        ...expense, // Spread original expense properties
+        ...expense,
         type: `Gasto - ${expense.type}`,
-        amount: -(expense.amount || 0), // Expenses are negative, ensure amount is number
+        amount: -(expense.amount || 0),
         date: expense.date,
-        paymentMethod: expense.paymentMethods || "N/A", // Payment method for expenses
-        pointOfSale: "N/A", // Point of sale might not apply to expenses
-        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`, // Ensure unique ID
-        description: expense.description || expense.type || "-", // Use expense description or type
-        cashier_document: null, // No specific cashier for expenses usually
+        paymentMethod: expense.paymentMethods || "N/A",
+        pointOfSale: "N/A",
+        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`,
+        description: expense.description || expense.type || "-",
+        cashier_document: null,
       })),
     ];
 
@@ -135,38 +144,31 @@ useEffect(() => {
       );
     }
     if (filters.paymentMethod) {
-      // Filter incomes only, as expenses might not have the same payment methods
       filteredMovements = filteredMovements.filter(
         (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
       );
     }
     if (filters.expenseType) {
-      // Filter only expenses by their specific type
       filteredMovements = filteredMovements.filter(
         (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
       );
     }
     if (filters.cashier) {
-      // Filter local sales by cashier
       filteredMovements = filteredMovements.filter(
-        (m) =>
-          m.type !== "Venta Local" || m.cashier_document === filters.cashier
+        (m) => m.type !== "Venta Local" || m.cashier_document === filters.cashier
       );
     }
 
-    // Sort movements by date, most recent first
+    // ✅ Sort movements by date usando dayjs para consistencia
     return filteredMovements.sort((a, b) => 
-  dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
-);
+      dayjs(b.date).tz("America/Bogota").valueOf() - dayjs(a.date).tz("America/Bogota").valueOf()
+    );
   };
 
-  
-
-  // --- Function to handle Excel export ---
+  // ✅ Function to handle Excel export con fecha de Colombia
   const handleExportExcel = () => {
-    const movementsToExport = getAllMovements(); // Get filtered movements
+    const movementsToExport = getAllMovements();
 
-    // Map data for the Excel sheet, ensuring correct description
     const wsData = movementsToExport.map((m) => ({
       Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
       Tipo: m.type,
@@ -184,24 +186,25 @@ useEffect(() => {
       { wch: 30 },
       { wch: 15 },
       { wch: 15 },
-    ]; // Adjust column widths
+    ];
     Object.keys(ws).forEach((cell) => {
       if (cell.startsWith("E") && cell !== "E1") {
-        // Target 'Monto' column, skip header
         ws[cell].z = "$ #,##0;[Red]$ -#,##0";
-        ws[cell].t = "n"; // Set cell type to number
+        ws[cell].t = "n";
       }
     });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
-    XLSX.writeFile(
-      wb,
-      `balance_${new Date().toISOString().split("T")[0]}.xlsx`
-    );
+    
+    // ✅ Usar fecha de Colombia para el nombre del archivo
+    const fileName = `balance_${today}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    console.log(`Archivo exportado: ${fileName}`);
   };
 
-  // --- Calculate income totals per payment method (for individual cards) ---
+  // Calculate income totals per payment method
   const calculateIncomeByMethod = (method) => {
     return (income.local || [])
       .filter(
@@ -222,36 +225,31 @@ useEffect(() => {
   const ingresosAddi = calculateIncomeByMethod("Addi");
   const ingresosSistecredito = calculateIncomeByMethod("Sistecredito");
 
-  // --- Calculate Total Income to DISPLAY (excluding Addi and Sistecredito) ---
   const displayTotalIncome =
     ingresosEfectivo +
     ingresosTarjeta +
     ingresosNequi +
     ingresosBancolombia +
-    totalOnlineSales + // Sum only desired local methods + online sales
+    totalOnlineSales +
     ingresosPagosParciales;
-  // --- Calculate Balance to DISPLAY ---
+
   const displayBalance = displayTotalIncome - totalExpenses;
 
-  // --- Get unique cashiers for the filter dropdown ---
   const cashiers = [
     ...new Set(
-      (income.local || []).map((sale) => sale.cashierDocument).filter(Boolean) // Remove null/undefined cashier documents
+      (income.local || []).map((sale) => sale.cashierDocument).filter(Boolean)
     ),
   ];
 
-  // --- Render loading state ---
   if (loading) return <div className="text-center mt-40">Cargando...</div>;
 
   const allMovements = getAllMovements();
   const totalPages = Math.ceil(allMovements.length / itemsPerPage);
 
-  // Movimientos a mostrar en la página actual
   const paginatedMovements = allMovements.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
@@ -259,29 +257,55 @@ useEffect(() => {
         Balance Financiero
       </h1>
 
-      {/* Filters Section */}
+      {/* ✅ Información de fecha actual de Colombia */}
+      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+        <p className="text-sm text-blue-800">
+          <strong>Fecha actual de Colombia:</strong> {formatDateForDisplay(today)}
+        </p>
+        <p className="text-xs text-blue-600 mt-1">
+          Filtros predeterminados configurados para hoy
+        </p>
+      </div>
+
+      {/* ✅ Filters Section mejorado */}
       <div className="mb-6 p-4 border rounded shadow-sm bg-gray-50">
         <h2 className="text-xl font-semibold mb-3">Filtros</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) =>
-              setFilters({ ...filters, startDate: e.target.value })
-            }
-            className="border rounded p-2"
-            title="Fecha Inicio"
-          />
-         
-<input
-  type="date"
-  value={filters.endDate}
-  onChange={(e) =>
-    setFilters({ ...filters, endDate: e.target.value })
-  }
-  className="border rounded p-2"
-  title="Fecha Fin"
-/>
+          {/* ✅ Input de fecha inicio mejorado */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Inicio
+            </label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
+              max={today} // No permitir fechas futuras
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formatDateForDisplay(filters.startDate)}
+            </p>
+          </div>
+
+          {/* ✅ Input de fecha fin mejorado */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Fin
+            </label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
+              min={filters.startDate} // No menor que fecha inicio
+              max={today} // No permitir fechas futuras
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formatDateForDisplay(filters.endDate)}
+            </p>
+          </div>
+
           <select
             value={filters.paymentMethod}
             onChange={(e) =>
@@ -298,6 +322,7 @@ useEffect(() => {
             <option value="Sistecredito">Sistecredito</option>
             <option value="Wompi">Wompi (Online)</option>
           </select>
+          
           <select
             value={filters.pointOfSale}
             onChange={(e) =>
@@ -309,6 +334,7 @@ useEffect(() => {
             <option value="Local">Local</option>
             <option value="Online">Online</option>
           </select>
+          
           <select
             value={filters.expenseType}
             onChange={(e) =>
@@ -323,6 +349,7 @@ useEffect(() => {
             <option value="Proveedores">Proveedores</option>
             <option value="Otros">Otros</option>
           </select>
+          
           <select
             value={filters.cashier}
             onChange={(e) =>
@@ -338,6 +365,23 @@ useEffect(() => {
             ))}
           </select>
         </div>
+
+        {/* ✅ Botón para resetear filtros a hoy */}
+        <div className="mt-4">
+          <button
+            onClick={() => setFilters({
+              startDate: today,
+              endDate: today,
+              paymentMethod: "",
+              pointOfSale: "",
+              expenseType: "",
+              cashier: "",
+            })}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
+          >
+            Resetear a Hoy
+          </button>
+        </div>
       </div>
 
       {/* Income by Payment Method Section */}
@@ -346,7 +390,6 @@ useEffect(() => {
           Ingresos por Método (Detalle)
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          {/* Cards for each payment method */}
           {[
             { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50" },
             { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50" },
@@ -356,12 +399,12 @@ useEffect(() => {
               value: ingresosBancolombia,
               color: "bg-green-50",
             },
-            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50" }, // Different color
+            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50" },
             {
               name: "Sistecredito",
               value: ingresosSistecredito,
               color: "bg-yellow-50",
-            }, // Different color
+            },
             {
               name: "Venta Online",
               value: totalOnlineSales,
@@ -371,7 +414,7 @@ useEffect(() => {
               name: "Pagos Parciales Reserva",
               value: ingresosPagosParciales,
               color: "bg-purple-50",
-            }, // Nueva tarjeta
+            },
           ].map((method) => (
             <div
               key={method.name}
@@ -484,7 +527,23 @@ useEffect(() => {
         </h2>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-200">
-            {/* ...cabecera de la tabla... */}
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fecha
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipo
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Descripción
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Método de Pago
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Monto
+              </th>
+            </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedMovements.length > 0 ? (
@@ -497,7 +556,6 @@ useEffect(() => {
                       : "hover:bg-green-50"
                   }
                 >
-                  {/* ...celdas de la fila... */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {dayjs(movement.date)
                       .tz("America/Bogota")
@@ -533,48 +591,91 @@ useEffect(() => {
             )}
           </tbody>
         </table>
-        {/* Controles de paginación */}
-        <div className="flex justify-center gap-2 mt-4">
-          <button
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-          >
-            {"<<"}
-          </button>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-          >
-            {"<"}
-          </button>
-          <span className="px-2 py-1">
-            {currentPage} / {totalPages || 1}
-          </span>
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-          >
-            {">"}
-          </button>
-          <button
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-          >
-            {">>"}
-          </button>
+
+        {/* ✅ Controles de paginación mejorados */}
+        <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Mostrando{" "}
+                <span className="font-medium">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{" "}
+                a{" "}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, allMovements.length)}
+                </span>{" "}
+                de{" "}
+                <span className="font-medium">{allMovements.length}</span>{" "}
+                resultados
+              </p>
+            </div>
+            <div>
+              <nav
+                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                aria-label="Pagination"
+              >
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {"<<"}
+                </button>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {"<"}
+                </button>
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {">"}
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {">>"}
+                </button>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Back Button */}
       <div className="mt-8 text-center">
         <button
-          onClick={() => navigate(-1)} // Go back to the previous page
+          onClick={() => navigate(-1)}
           className="bg-gray-600 text-white py-2 px-5 rounded shadow-md hover:bg-gray-700 transition duration-200"
         >
           Volver

@@ -11,8 +11,14 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       date: {
-        type: DataTypes.DATEONLY,
+        type: DataTypes.DATEONLY, // Solo fecha, sin hora
         allowNull: false,
+        // ✅ Remover defaultValue para evitar conflictos
+        // defaultValue: DataTypes.NOW // Esto puede causar problemas de zona horaria
+      },
+      estimated_delivery_date: {
+        type: DataTypes.DATE, // Fecha y hora
+        allowNull: true,
       },
       quantity: {
         type: DataTypes.INTEGER,
@@ -81,15 +87,15 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      estimated_delivery_date: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
+      // ✅ ELIMINAR ESTE DUPLICADO
+      // estimated_delivery_date: {
+      //   type: DataTypes.DATE,
+      //   allowNull: true,
+      // },
       isFacturable: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      
       status: {
         type: DataTypes.ENUM("pendiente", "facturada", "cancelada", "completada"),
         allowNull: false,
@@ -101,16 +107,19 @@ module.exports = (sequelize) => {
         defaultValue: "Online",
       },
       discount: {
-  type: DataTypes.FLOAT,
-  allowNull: true,
-  defaultValue: 0,
-  comment: 'Descuento aplicado al total de la orden'
-},
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: 0,
+        comment: 'Descuento aplicado al total de la orden'
+      },
     },
     {
       paranoid: true,
-
-      timestamps: false,
+      timestamps: true, // ✅ Esto automáticamente crea createdAt y updatedAt
+      // ✅ Configuración adicional para asegurar que los timestamps funcionen
+      createdAt: 'createdAt',
+      updatedAt: 'updatedAt',
+      deletedAt: 'deletedAt', // Para paranoid mode
     }
   );
 };

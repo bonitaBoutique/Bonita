@@ -32,7 +32,7 @@ const  {postInvoice, getAllInvoices}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const {getLastInvoiceNumber} = require("./invoiceControllers.js");
 
-const{getNowColombia} = require("./getNowColombia.js");
+
 
 
 
@@ -103,7 +103,7 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
-  getNowColombia: catchedAsync(getNowColombia)
+
 
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

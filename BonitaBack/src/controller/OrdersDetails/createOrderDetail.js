@@ -2,7 +2,7 @@ const { OrderDetail, Product, StockMovement } = require("../../data");
 const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
-
+const { formatDateForDB } = require("../../utils/dateUtils");
 const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD"; // Asegúrate que esta sea tu clave de PRODUCCIÓN
 
 function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoIntegridad) {
@@ -24,8 +24,9 @@ module.exports = async (req, res) => {
       shippingCost = 0,
       n_document,
       pointOfSale,
-      discount = 0 // Asegúrate de que discount tenga un valor por defecto
+      discount = 0
     } = req.body;
+
 
     // --- Validaciones (sin cambios) ---
     if (!date || !amount || !quantity || !state_order || !products || !address) {
@@ -68,25 +69,23 @@ const amountInCents = Math.round(totalAmount * 100); // Asegura que sea entero
     console.log("ID generado:", newOrderId);
     console.log("Firma generada:", firmaReal);
 
-   const dateToSave = date
-  ? date // <-- Usa el string tal cual
-  : new Date().toISOString().split('T')[0]; // Fecha de hoy en formato YYYY-MM-DD
+   const dateToSave = formatDateForDB(date); // Fecha de hoy en formato YYYY-MM-DD
 
 const orderDetail = await OrderDetail.create({
-  id_orderDetail: newOrderId,
-  date: dateToSave, // Ahora sí puede ser la fecha elegida por el usuario
-  amount: totalAmount,
-  shippingCost,
-  quantity,
-  state_order,
-  address,
-  deliveryAddress: finalDeliveryAddress,
-  n_document,
-  pointOfSale,
-  integritySignature: firmaReal,
-  isFacturable,
-  discount
-});
+      id_orderDetail: newOrderId,
+      date: dateToSave, // ✅ Fecha correcta de Colombia
+      amount: totalAmount,
+      shippingCost,
+      quantity,
+      state_order,
+      address,
+      deliveryAddress: finalDeliveryAddress,
+      n_document,
+      pointOfSale,
+      integritySignature: firmaReal,
+      isFacturable,
+      discount
+    });
     // --- Asociar productos y actualizar stock (sin cambios) ---
     await Promise.all(
       products.map(async (product) => {

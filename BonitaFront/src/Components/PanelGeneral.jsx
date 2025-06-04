@@ -48,7 +48,7 @@ const PanelGeneral = () => {
                   Clientes
                 </Link>
                 <p className="text-sm text-slate-600">
-                 Listado de clientes y saldos
+                  Listado de clientes y saldos
                 </p>
               </div>
               <div className="text-center space-y-2">
@@ -80,9 +80,7 @@ const PanelGeneral = () => {
                 >
                   Cuentas por cobrar
                 </Link>
-                <p className="text-sm text-slate-600">
-                  Listado de Reservas 
-                </p>
+                <p className="text-sm text-slate-600">Listado de Reservas</p>
               </div>
               <div className="text-center space-y-2">
                 <Link
@@ -92,10 +90,20 @@ const PanelGeneral = () => {
                   Gift Cards
                 </Link>
                 <p className="text-sm text-slate-600">
-                  Listado de Gift Cards Activas 
+                  Listado de Gift Cards Activas
                 </p>
               </div>
-             
+              <div className="text-center space-y-2">
+                <Link
+                  to="/pagoCredito"
+                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                >
+                  Addi / Sistecredito{" "}
+                </Link>
+                <p className="text-sm text-slate-600">
+                  Listado de Pagos Addi / Sistecredito
+                </p>
+              </div>
             </>
           </div>
         </div>

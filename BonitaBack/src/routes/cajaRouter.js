@@ -12,4 +12,10 @@ router.get('/receipts', controller.getReceipts)
 router.get('/receipts/giftcard', controller.getGiftCardReceipts);
 router.get('/active-giftcards', controller.getActiveGiftCards);
 
+// ✅ Obtener pagos de Addi y Sistecredito
+router.get("/addi-sistecredito", controller.getAddiSistecreditoPayments);
+
+// ✅ Actualizar información de depósito
+router.put("/deposit/:receiptId", controller.updatePaymentDeposit);
+
 module.exports = router;

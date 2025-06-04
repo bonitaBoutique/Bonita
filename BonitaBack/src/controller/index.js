@@ -31,7 +31,7 @@ const { createInvoice } = require("./Taxxa/TaxxaService");
 const  {postInvoice, getAllInvoices}  = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const {getLastInvoiceNumber} = require("./invoiceControllers.js");
-
+const {getAddiSistecreditoPayments, updatePaymentAddiSistecredito} = require("./Caja/getAddiSistecreditoPayments");
 
 
 
@@ -103,7 +103,8 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
-
-
+getAddiSistecreditoPayments: catchedAsync(require("./Caja/getAddiSistecreditoPayments")),
+updatePaymentAddiSistecredito: catchedAsync(require("./Caja/updatePaymentAddiSistecredito")),
+  
 };
 //cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

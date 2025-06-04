@@ -139,6 +139,10 @@ export const adminRoutes = [
   { 
     path: '/creditN', 
     component: lazy(() => import('../Taxxa/CreditN')) 
+  },
+   { 
+    path: '/pagoCredito', 
+    component: lazy(() => import('../AddiSistecreditoPayments')) 
   }
  
   

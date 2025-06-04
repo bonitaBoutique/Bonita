@@ -67,6 +67,41 @@ const Balance = () => {
     cashier: "",
   });
 
+  // ✅ Función mejorada para formatear fechas en movimientos
+  const formatMovementDate = (dateString) => {
+    if (!dateString) return "-";
+    
+    try {
+      console.log("🕒 Fecha original:", dateString);
+      
+      // ✅ Crear fecha sin forzar conversión de zona horaria
+      const date = new Date(dateString);
+      console.log("🕒 Fecha parseada:", date.toISOString());
+      console.log("🕒 Fecha local:", date.toLocaleString());
+      
+      // ✅ Verificar si la fecha está en formato UTC
+      const isUTC = dateString.includes('Z') || dateString.includes('+') || dateString.includes('T');
+      
+      let formattedDate;
+      
+      if (isUTC) {
+        // ✅ Es UTC, convertir a Colombia
+        formattedDate = dayjs(date).utc().tz("America/Bogota").format("DD/MM/YYYY HH:mm");
+        console.log("🕒 Convertida de UTC a Colombia:", formattedDate);
+      } else {
+        // ✅ Es fecha local, usar tal como está
+        formattedDate = dayjs(date).format("DD/MM/YYYY HH:mm");
+        console.log("🕒 Usada como fecha local:", formattedDate);
+      }
+      
+      return formattedDate;
+      
+    } catch (error) {
+      console.warn("❌ Error al formatear fecha:", dateString, error);
+      return dateString;
+    }
+  };
+
   // ✅ Función para enviar filtros al backend con formato correcto
   const sendFiltersToBackend = (currentFilters) => {
     const formattedFilters = {
@@ -101,6 +136,19 @@ const Balance = () => {
     console.log("🔄 Filtros cambiaron, cargando balance:", filters);
     sendFiltersToBackend(filters);
   }, [dispatch, filters]);
+
+  // ✅ Effect para debugging de movimientos
+  useEffect(() => {
+    if (income.local && income.local.length > 0) {
+      console.log("🔍 Movimientos locales con fechas:", income.local.slice(0, 3).map(m => ({
+        id: m.id,
+        date: m.date,
+        formatted: formatMovementDate(m.date),
+        type: m.type || 'Venta Local',
+        amount: m.amount
+      })));
+    }
+  }, [income.local]);
 
   // ✅ Función para validar cambios de fecha mejorada
   const handleDateFilterChange = (field, value) => {
@@ -220,17 +268,19 @@ const Balance = () => {
     }
 
     // ✅ Sort movements by date usando dayjs para consistencia
-    return filteredMovements.sort((a, b) => 
-      dayjs(b.date).tz("America/Bogota").valueOf() - dayjs(a.date).tz("America/Bogota").valueOf()
-    );
+    return filteredMovements.sort((a, b) => {
+      const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
+      const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
+      return dateB - dateA;
+    });
   };
 
-  // ✅ Function to handle Excel export con fecha de Colombia
+  // ✅ Function to handle Excel export con fecha corregida
   const handleExportExcel = () => {
     const movementsToExport = getAllMovements();
 
     const wsData = movementsToExport.map((m) => ({
-      Fecha: dayjs(m.date).tz("America/Bogota").format("DD/MM/YYYY HH:mm"),
+      Fecha: formatMovementDate(m.date), // ✅ Usar la función corregida
       Tipo: m.type,
       Descripción: m.description || "-",
       "Método de Pago": m.paymentMethod || "N/A",
@@ -614,7 +664,7 @@ const Balance = () => {
         </div>
       )}
 
-      {/* ✅ Movements Table Section mejorado */}
+      {/* ✅ Movements Table Section con fechas corregidas */}
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg flex items-center">
           📋 Detalle de Movimientos
@@ -653,10 +703,13 @@ const Balance = () => {
                       : "hover:bg-green-50"
                   }`}
                 >
+                  {/* ✅ Celda de fecha corregida */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {dayjs(movement.date)
-                      .tz("America/Bogota")
-                      .format("DD/MM/YYYY HH:mm")}
+                    {formatMovementDate(movement.date)}
+                    {/* ✅ Debug temporal - remover después */}
+                    <div className="text-xs text-gray-400 mt-1">
+                      Raw: {movement.date}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     <span className={`px-2 py-1 rounded-full text-xs ${

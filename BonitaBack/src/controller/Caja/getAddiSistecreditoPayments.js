@@ -1,7 +1,7 @@
 const { Receipt, OrderDetail, Product } = require("../../data");
 const { Op } = require("sequelize");
 
-exports.getAddiSistecreditoPayments = async (req, res) => {
+const getAddiSistecreditoPayments = async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -14,15 +14,15 @@ exports.getAddiSistecreditoPayments = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // ✅ Construir filtros
+    // ✅ CORREGIR: Usar el campo correcto del modelo Receipt
     const whereConditions = {
-      paymentMethod: {
+      payMethod: { // ← Campo correcto en Receipt
         [Op.in]: ['Addi', 'Sistecredito']
       }
     };
 
     if (paymentMethod !== 'all') {
-      whereConditions.paymentMethod = paymentMethod;
+      whereConditions.payMethod = paymentMethod; // ← Campo correcto
     }
 
     if (status === 'pending') {
@@ -46,12 +46,13 @@ exports.getAddiSistecreditoPayments = async (req, res) => {
       include: [
         {
           model: OrderDetail,
-          as: 'orderDetails',
+          as: 'orderDetail', // ← Usar alias singular correcto
           required: false,
           include: [
             {
               model: Product,
-              as: 'product',
+              as: 'products', // ← Usar alias plural para productos
+              through: { attributes: [] }, // Para relación many-to-many
               required: false,
               attributes: ['id', 'name', 'category']
             }
@@ -70,7 +71,7 @@ exports.getAddiSistecreditoPayments = async (req, res) => {
     };
 
     receipts.rows.forEach(receipt => {
-      const amount = parseFloat(receipt.totalAmount) || 0;
+      const amount = parseFloat(receipt.total_amount) || 0; // ← Campo correcto
       totals.total += amount;
       
       if (receipt.depositDate) {
@@ -112,3 +113,4 @@ exports.getAddiSistecreditoPayments = async (req, res) => {
   }
 };
 
+module.exports = getAddiSistecreditoPayments;

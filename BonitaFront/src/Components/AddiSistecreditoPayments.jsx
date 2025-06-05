@@ -84,37 +84,39 @@ const AddiSistecreditoPayments = () => {
 
   // ✅ Actualizar depósito usando axios
   const updateDeposit = async (receiptId, depositData) => {
-    try {
-      console.log("🔄 Actualizando depósito:", receiptId, depositData);
+  try {
+    console.log("🔄 Actualizando depósito:", receiptId, depositData);
 
-      const response = await axios.put(`${BASE_URL}/payments/deposit/${receiptId}`, depositData, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+    // ❌ INCORRECTO: /payments/deposit/
+    // const response = await axios.put(`${BASE_URL}/payments/deposit/${receiptId}`, depositData, {
 
-      console.log("✅ Respuesta actualización:", response.data);
-
-      if (response.data.success) {
-        // ✅ Recargar datos
-        await fetchPayments(pagination.currentPage);
-        alert("✅ Depósito actualizado exitosamente");
-      } else {
-        throw new Error(response.data.message || 'Error al actualizar');
+    // ✅ CORRECTO: /caja/deposit/
+    const response = await axios.put(`${BASE_URL}/caja/deposit/${receiptId}`, depositData, {
+      headers: {
+        'Content-Type': 'application/json',
       }
-    } catch (error) {
-      console.error("❌ Error al actualizar depósito:", error);
-      
-      // ✅ Manejo de errores específico
-      if (error.response) {
-        alert(`❌ Error: ${error.response.data?.message || error.response.status}`);
-      } else if (error.request) {
-        alert("❌ Error de conexión al actualizar el depósito");
-      } else {
-        alert(`❌ Error al actualizar: ${error.message}`);
-      }
+    });
+
+    console.log("✅ Respuesta actualización:", response.data);
+
+    if (response.data.success) {
+      await fetchPayments(pagination.currentPage);
+      alert("✅ Depósito actualizado exitosamente");
+    } else {
+      throw new Error(response.data.message || 'Error al actualizar');
     }
-  };
+  } catch (error) {
+    console.error("❌ Error al actualizar depósito:", error);
+    
+    if (error.response) {
+      alert(`❌ Error: ${error.response.data?.message || error.response.status}`);
+    } else if (error.request) {
+      alert("❌ Error de conexión al actualizar el depósito");
+    } else {
+      alert(`❌ Error al actualizar: ${error.message}`);
+    }
+  }
+};
 
   // ✅ Componente para fila de pago
   const PaymentRow = ({ payment }) => {

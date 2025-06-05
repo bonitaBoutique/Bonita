@@ -3,10 +3,25 @@ const { catchedAsync } = require("../utils");
 const webhook = require("./webhook");
 const {
   updateSellerData,
-  getOrCreateSellerData,getSellerDataBySdocno
+  getOrCreateSellerData,
+  getSellerDataBySdocno
 } = require("./Taxxa/sellerDataControllers");
 const { getProductStock, createProduct } = require("./Products");
-const { createReceipt, lastReceipt, getReceipts,redeemGiftCard, getGiftCardReceipts, getActiveGiftCards } = require("./Caja");
+
+// ✅ CORREGIR: Faltaba 'const {' al inicio
+const {
+  createReceipt, 
+  lastReceipt, 
+  getReceipts, 
+  getActiveGiftCards, 
+  getGiftCardReceipts, 
+  redeemGiftCard, 
+  createGiftCard, 
+  getGiftCardBalance,
+  getAddiSistecreditoPayments,
+  updatePaymentAddiSistecredito
+} = require("./Caja");
+
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
 const generateApiKey = require("./MiPaquete/generateApiKey");
@@ -19,8 +34,7 @@ const {
 } = require("./MiPaquete/createDirection");
 const createOrderWithReservation = require("./OrdersDetails/createOrderWithReservation");
 const removedProduct = require("./OrdersDetails/removedProduct");
-const createGiftCard = require("./Caja/createGiftCard");
-const getGiftCardBalance = require("./Caja/createGiftCard");
+
 const getBalance = require("./Informes/getBalance");
 const { forgotPassword } = require("./nodemailerController/forgotPassword.js");
 const { resetPassword } = require("./nodemailerController/resetPassword.js");
@@ -28,13 +42,9 @@ const { sendEmail } = require("./nodemailerController/index.js");
 const { getClientAccountBalance, getAllClientAccounts, resumenDeCuenta } = require("./AccountBalance/index.js");
 const { getAllReservations, updateReservation, reservationByDocument, applyingPayments } = require("./ReservationController");
 const { createInvoice } = require("./Taxxa/TaxxaService");
-const  {postInvoice, getAllInvoices}  = require("./invoiceControllers.js");
+const { postInvoice, getAllInvoices } = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
-const {getLastInvoiceNumber} = require("./invoiceControllers.js");
-const {getAddiSistecreditoPayments, updatePaymentAddiSistecredito} = require("./Caja/getAddiSistecreditoPayments");
-
-
-
+const { getLastInvoiceNumber } = require("./invoiceControllers.js");
 
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
@@ -84,7 +94,6 @@ module.exports = {
   updateReservation: catchedAsync(updateReservation),
   getBalance: catchedAsync(getBalance),
   resumenDeCuenta: catchedAsync(resumenDeCuenta),
-  createReceipt: catchedAsync(createReceipt),
   forgotPassword: catchedAsync(forgotPassword),
   resetPassword: catchedAsync(resetPassword),
   sendEmail: catchedAsync(sendEmail),
@@ -103,8 +112,7 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
-getAddiSistecreditoPayments: catchedAsync(getAddiSistecreditoPayments),
-updatePaymentAddiSistecredito: catchedAsync(updatePaymentAddiSistecredito),
-  
+  // ✅ NUEVAS FUNCIONES PARA ADDI/SISTECREDITO
+  getAddiSistecreditoPayments: catchedAsync(getAddiSistecreditoPayments),
+  updatePaymentAddiSistecredito: catchedAsync(updatePaymentAddiSistecredito),
 };
-//cambios en getAllReservations, updateReservation, reservationByDocument, applyingPayments

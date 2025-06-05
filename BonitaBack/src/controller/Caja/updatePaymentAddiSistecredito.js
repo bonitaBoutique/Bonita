@@ -1,6 +1,6 @@
 const { Receipt } = require("../../data");
 
- exports.updatePaymentAddiSistecredito = async (req, res) => {
+const updatePaymentAddiSistecredito = async (req, res) => {
   try {
     const { receiptId } = req.params;
     const { depositDate, depositAmount, notes } = req.body;
@@ -16,7 +16,8 @@ const { Receipt } = require("../../data");
       });
     }
 
-    if (!['Addi', 'Sistecredito'].includes(receipt.paymentMethod)) {
+    // ✅ CORREGIR: Usar el campo correcto del modelo Receipt
+    if (!['Addi', 'Sistecredito'].includes(receipt.payMethod)) { // ← Campo correcto
       return res.status(400).json({
         success: false,
         message: "Este recibo no es de Addi o Sistecredito"
@@ -25,7 +26,7 @@ const { Receipt } = require("../../data");
 
     const updatedReceipt = await receipt.update({
       depositDate: depositDate || null,
-      depositAmount: depositAmount || receipt.totalAmount,
+      depositAmount: depositAmount || receipt.total_amount, // ← Campo correcto
       depositNotes: notes || null,
       updatedAt: new Date()
     });
@@ -50,3 +51,4 @@ const { Receipt } = require("../../data");
   }
 };
 
+module.exports = updatePaymentAddiSistecredito;

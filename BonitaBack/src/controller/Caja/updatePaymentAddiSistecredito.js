@@ -1,17 +1,12 @@
 const { Receipt } = require("../../data");
 
-module.exports = async (req, res) => {
+const updatePaymentAddiSistecredito = async (req, res) => {
   try {
     const { receiptId } = req.params;
     const { depositDate, depositAmount, notes } = req.body;
 
-    console.log(`📝 Actualizando depósito para recibo ${receiptId}:`, {
-      depositDate,
-      depositAmount,
-      notes
-    });
+    console.log(`📝 Actualizando depósito para recibo ${receiptId}`);
 
-    // ✅ Buscar el recibo
     const receipt = await Receipt.findByPk(receiptId);
 
     if (!receipt) {
@@ -21,7 +16,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // ✅ Verificar que sea Addi o Sistecredito
     if (!['Addi', 'Sistecredito'].includes(receipt.paymentMethod)) {
       return res.status(400).json({
         success: false,
@@ -29,7 +23,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // ✅ Actualizar información de depósito
     const updatedReceipt = await receipt.update({
       depositDate: depositDate || null,
       depositAmount: depositAmount || receipt.totalAmount,
@@ -56,3 +49,6 @@ module.exports = async (req, res) => {
     });
   }
 };
+
+// ✅ IMPORTANTE: Exportar la función
+module.exports = updatePaymentAddiSistecredito;

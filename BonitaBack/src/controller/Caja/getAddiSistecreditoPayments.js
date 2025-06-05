@@ -1,13 +1,13 @@
 const { Receipt, OrderDetail, Product } = require("../../data");
 const { Op } = require("sequelize");
 
-module.exports = async (req, res) => {
+const getAddiSistecreditoPayments = async (req, res) => {
   try {
     const { 
       page = 1, 
       limit = 20, 
-      status = 'all', // 'pending', 'deposited', 'all'
-      paymentMethod = 'all', // 'Addi', 'Sistecredito', 'all'
+      status = 'all',
+      paymentMethod = 'all',
       startDate,
       endDate 
     } = req.query;
@@ -21,12 +21,10 @@ module.exports = async (req, res) => {
       }
     };
 
-    // ✅ Filtrar por método específico
     if (paymentMethod !== 'all') {
       whereConditions.paymentMethod = paymentMethod;
     }
 
-    // ✅ Filtrar por estado de depósito
     if (status === 'pending') {
       whereConditions.depositDate = null;
     } else if (status === 'deposited') {
@@ -35,24 +33,26 @@ module.exports = async (req, res) => {
       };
     }
 
-    // ✅ Filtrar por rango de fechas de creación
     if (startDate && endDate) {
       whereConditions.date = {
         [Op.between]: [startDate, endDate]
       };
     }
 
-    // ✅ Obtener recibos con información completa
+    console.log("🔍 Filtros aplicados:", whereConditions);
+
     const receipts = await Receipt.findAndCountAll({
       where: whereConditions,
       include: [
         {
           model: OrderDetail,
           as: 'orderDetails',
+          required: false,
           include: [
             {
               model: Product,
               as: 'product',
+              required: false,
               attributes: ['id', 'name', 'category']
             }
           ]
@@ -63,7 +63,6 @@ module.exports = async (req, res) => {
       offset: parseInt(offset)
     });
 
-    // ✅ Calcular totales
     const totals = {
       pending: 0,
       deposited: 0,
@@ -81,8 +80,7 @@ module.exports = async (req, res) => {
       }
     });
 
-    console.log(`📊 Pagos Addi/Sistecredito encontrados: ${receipts.count}`);
-    console.log(`💰 Totales:`, totals);
+    console.log(`📊 Pagos encontrados: ${receipts.count}`);
 
     return res.status(200).json({
       success: true,
@@ -105,7 +103,7 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error al obtener pagos Addi/Sistecredito:", error.message);
+    console.error("❌ Error al obtener pagos:", error.message);
     return res.status(500).json({ 
       success: false,
       message: "Error al obtener los pagos",
@@ -113,3 +111,6 @@ module.exports = async (req, res) => {
     });
   }
 };
+
+// ✅ IMPORTANTE: Exportar la función
+module.exports = getAddiSistecreditoPayments;

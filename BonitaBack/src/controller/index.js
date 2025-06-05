@@ -8,7 +8,6 @@ const {
 } = require("./Taxxa/sellerDataControllers");
 const { getProductStock, createProduct } = require("./Products");
 
-// ✅ CORREGIR: Faltaba 'const {' al inicio
 const {
   createReceipt, 
   lastReceipt, 
@@ -17,10 +16,14 @@ const {
   getGiftCardReceipts, 
   redeemGiftCard, 
   createGiftCard, 
-  getGiftCardBalance,
-  getAddiSistecreditoPayments,
-  updatePaymentAddiSistecredito
+  getGiftCardBalance
 } = require("./Caja");
+
+// ✅ AGREGAR IMPORTS DE ADDI/SISTECREDITO DESDE CONTROLLERS/
+const createAddiSistecreditoDeposit = require("./createAddiSistecreditoDeposit");
+const getAddiSistecreditoConciliation = require("./getAddiSistecreditoConciliation");
+const getAddiSistecreditoDeposits = require("./getAddiSistecreditoDeposits");
+const updateAddiSistecreditoDeposit = require("./updateAddiSistecreditoDeposit");
 
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
@@ -112,7 +115,10 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
+  
   // ✅ NUEVAS FUNCIONES PARA ADDI/SISTECREDITO
-  getAddiSistecreditoPayments: catchedAsync(getAddiSistecreditoPayments),
-  updatePaymentAddiSistecredito: catchedAsync(updatePaymentAddiSistecredito),
+  createAddiSistecreditoDeposit: catchedAsync(createAddiSistecreditoDeposit),
+  getAddiSistecreditoConciliation: catchedAsync(getAddiSistecreditoConciliation),
+  getAddiSistecreditoDeposits: catchedAsync(getAddiSistecreditoDeposits),
+  updateAddiSistecreditoDeposit: catchedAsync(updateAddiSistecreditoDeposit),
 };

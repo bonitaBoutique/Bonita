@@ -14,30 +14,30 @@ const {
 
 //-------------------------------- CONFIGURACION PARA TRABAJAR LOCALMENTE-----------------------------------
 // ❌ COMENTAR TEMPORALMENTE LA CONFIGURACIÓN LOCAL:
-// const sequelize = new Sequelize(
-//   `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-//   {
-//     logging: false,
-//     native: false,
-//   }
-// );
+const sequelize = new Sequelize(
+  `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
+  {
+    logging: false,
+    native: false,
+  }
+);
 
 //-------------------------------------CONFIGURACION PARA EL DEPLOY---------------------------------------------------------------------
 // ✅ USAR LA CONFIGURACIÓN DE RAILWAY:
-const sequelize = new Sequelize(DB_DEPLOY, {
-  logging: false,
-  native: false,
-  timezone: '-05:00', // Colombia UTC-5
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    },
-    useUTC: false,
-    dateStrings: true,
-    typeCast: true
-  }
-});
+// const sequelize = new Sequelize(DB_DEPLOY, {
+//   logging: false,
+//   native: false,
+//   timezone: '-05:00', // Colombia UTC-5
+//   dialectOptions: {
+//     ssl: {
+//       require: true,
+//       rejectUnauthorized: false
+//     },
+//     useUTC: false,
+//     dateStrings: true,
+//     typeCast: true
+//   }
+// });
 
 // ✅ RESTO DEL CÓDIGO PARA CARGAR MODELOS
 const basename = path.basename(__filename);
@@ -76,30 +76,38 @@ const {
   CreditPayment, 
   Token, 
   Invoice, 
-  GiftCard 
+  GiftCard ,
+  AddiSistecreditoDeposit
 } = sequelize.models;
 
 // ✅ DEFINIR ASOCIACIONES
-Product.belongsTo(Category, { foreignKey: 'categoryId' });
-Category.hasMany(Product, { foreignKey: 'categoryId' });
+OrderDetail.belongsToMany(Product, { through: 'OrderProduct', as: 'products', foreignKey: 'id_orderDetail' });
 
-Product.belongsTo(SubCategory, { foreignKey: 'subCategoryId' });
-SubCategory.hasMany(Product, { foreignKey: 'subCategoryId' });
+// Product.js
+Product.belongsToMany(OrderDetail, { through: 'OrderProduct', as: 'orders', foreignKey: 'id_product' });
+//User --> Order
+OrderDetail.belongsTo(User,{foreignKey:"n_document"})
+User.hasMany(OrderDetail,{foreignKey: "n_document"})
 
-Category.hasMany(SubCategory, { foreignKey: 'categoryId' });
-SubCategory.belongsTo(Category, { foreignKey: 'categoryId' });
 
-OrderDetail.belongsToMany(Product, { through: OrderProduct, foreignKey: 'id_orderDetail' });
-Product.belongsToMany(OrderDetail, { through: OrderProduct, foreignKey: 'id_product' });
 
-OrderDetail.hasMany(OrderProduct, { foreignKey: 'id_orderDetail', as: 'orderProducts' });
-OrderProduct.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
+//Order --> Delivery
+OrderDetail.hasOne(Delivery, { foreignKey: 'id_orderDetail' });
+Delivery.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 
-Product.hasMany(OrderProduct, { foreignKey: 'id_product' });
-OrderProduct.belongsTo(Product, { foreignKey: 'id_product', as: 'product' });
 
+OrderDetail.hasMany(Reservation, { foreignKey: 'id_orderDetail' });
+Reservation.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
+
+//Order ---> Payment
+Payment.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
+OrderDetail.hasMany(Payment, { foreignKey: 'id_orderDetail' });
+
+//Product ---> Image
 Product.hasMany(Image, { foreignKey: 'id_product' });
 Image.belongsTo(Product, { foreignKey: 'id_product' });
+
+
 
 Product.hasMany(StockMovement, { foreignKey: 'id_product' });
 StockMovement.belongsTo(Product, { foreignKey: 'id_product' });
@@ -109,6 +117,18 @@ Invoice.belongsTo(OrderDetail, { foreignKey: 'id_orderDetail' });
 
 OrderDetail.hasMany(Reservation, { foreignKey: "id_orderDetail" });
 Reservation.belongsTo(OrderDetail, { foreignKey: "id_orderDetail" });
+
+Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail",allowNull: false,});
+OrderDetail.hasOne(Receipt, {foreignKey: "id_orderDetail",});
+
+User.hasMany(OrderDetail, { foreignKey: 'n_document', sourceKey: 'n_document' });
+OrderDetail.belongsTo(User, { foreignKey: 'n_document', targetKey: 'n_document' });
+
+OrderDetail.hasMany(Receipt, { foreignKey: "id_orderDetail" });
+Receipt.belongsTo(OrderDetail, { foreignKey: "id_orderDetail", allowNull: false });
+
+Reservation.hasMany(CreditPayment, { foreignKey: 'id_reservation' });
+CreditPayment.belongsTo(Reservation, { foreignKey: 'id_reservation' });
 
 Receipt.belongsTo(User, { 
   foreignKey: 'cashier_document',
@@ -120,24 +140,20 @@ User.hasMany(Receipt, {
   sourceKey: 'n_document',
   as: 'receipts'
 });
+Payment.belongsTo(Receipt, { foreignKey: 'id_receipt' });
+Receipt.hasMany(Payment, { foreignKey: 'id_receipt' });
 
-
-
-User.hasMany(OrderDetail, { foreignKey: 'n_document', sourceKey: 'n_document' });
-OrderDetail.belongsTo(User, { foreignKey: 'n_document', targetKey: 'n_document' });
-
-Receipt.belongsTo(OrderDetail, { 
-  foreignKey: "id_orderDetail", 
-  as: "orderDetail", // ← Nueva relación para Addi/Sistecredito
-  allowNull: false 
+AddiSistecreditoDeposit.belongsTo(User, { 
+  foreignKey: 'registeredBy',
+  targetKey: 'n_document',
+  as: 'registeredByUser'
 });
 
-OrderDetail.hasOne(Receipt, { 
-  foreignKey: "id_orderDetail",
-  as: "receipt" // ← Relación inversa
+User.hasMany(AddiSistecreditoDeposit, { 
+  foreignKey: 'registeredBy',
+  sourceKey: 'n_document',
+  as: 'addiSistecreditoDeposits'
 });
-
-
 
 module.exports = {
   ...sequelize.models,

@@ -1,6 +1,6 @@
 const { Receipt } = require("../../data");
 
-const updatePaymentAddiSistecredito = async (req, res) => {
+ exports.updatePaymentAddiSistecredito = async (req, res) => {
   try {
     const { receiptId } = req.params;
     const { depositDate, depositAmount, notes } = req.body;
@@ -50,5 +50,3 @@ const updatePaymentAddiSistecredito = async (req, res) => {
   }
 };
 
-// ✅ IMPORTANTE: Exportar la función
-module.exports = updatePaymentAddiSistecredito;

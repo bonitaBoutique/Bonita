@@ -1,7 +1,7 @@
 const { Receipt, OrderDetail, Product } = require("../../data");
 const { Op } = require("sequelize");
 
-const getAddiSistecreditoPayments = async (req, res) => {
+exports.getAddiSistecreditoPayments = async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -112,5 +112,3 @@ const getAddiSistecreditoPayments = async (req, res) => {
   }
 };
 
-// ✅ IMPORTANTE: Exportar la función
-module.exports = getAddiSistecreditoPayments;

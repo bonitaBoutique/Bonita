@@ -46,9 +46,9 @@ const AddiSistecreditoPayments = () => {
         }
       });
 
-      console.log("📤 Enviando petición:", `${BASE_URL}/payments/addi-sistecredito`, params);
+      console.log("📤 Enviando petición:", `${BASE_URL}/caja/addi-sistecredito`, params);
 
-      const response = await axios.get(`${BASE_URL}/payments/addi-sistecredito`, {
+      const response = await axios.get(`${BASE_URL}/caja/addi-sistecredito`, {
         params
       });
 

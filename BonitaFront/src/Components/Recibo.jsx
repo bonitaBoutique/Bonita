@@ -53,6 +53,7 @@ const Recibo = () => {
  const [date, setDate] = useState(() => getColombiaDate());
   const [cashGiven, setCashGiven] = useState("");
   const [change, setChange] = useState(0);
+   const [observations, setObservations] = useState("");
 
   const resetForm = () => {
     setPaymentMethod("Efectivo");
@@ -224,7 +225,8 @@ const Recibo = () => {
       cashier_name: `${cashierInfo.first_name} ${cashierInfo.last_name}`,
       payMethod2: finalPayMethod2, // Usar el método final
       amount2: finalAmount2, // Usar el monto final
-      discount: discount, // Usar el descuento
+      discount: discount,
+      observations: observations,
     };
 
     try {
@@ -280,57 +282,118 @@ const Recibo = () => {
   };
 
   const generatePDF = () => {
-    const doc = new jsPDF({
-      unit: "pt",
-      format: [226.77, 839.28],
-    });
+  const doc = new jsPDF({
+    unit: "pt",
+    format: [226.77, 839.28],
+  });
 
-    doc.setFontSize(18);
-    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
-      align: "center",
-    });
+  doc.setFontSize(18);
+  doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+    align: "center",
+  });
 
-    doc.setFontSize(10);
-    let currentY = 50;
+  doc.setFontSize(10);
+  let currentY = 50;
 
-    doc.text(
-      "Bonita Boutique  S.A.S NIT:",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+  doc.text(
+    "Bonita Boutique  S.A.S NIT:",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
+
+  doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 30;
+
+  doc.text(
+    `RECIBO # ${newReceiptNumber}`,
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
+
+  doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.text(
+    `Estado de venta: ${order.state_order}`,
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+
+  currentY += 20;
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
+
+  doc.setFontSize(10);
+  doc.text(` ${buyerName}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(` ${buyerEmail}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
+  currentY += 20;
+  doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Monto Total: $${totalWithDiscount}`, 20, currentY);
+  currentY += 20;
+  doc.text(
+    `Metodo de Pago : ${paymentMethod} $${
+      showSecondPayment ? amount1 : totalWithDiscount
+    }`,
+    20,
+    currentY
+  );
+  currentY += 20;
+
+  if (showSecondPayment && paymentMethod2 && amount2) {
+    doc.text(`Metodo de Pago 2: ${paymentMethod2} $${amount2}`, 20, currentY);
     currentY += 20;
+  }
 
-    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 30;
+  // Agregar productos al recibo
+  doc.setFontSize(7);
+  currentY += 20;
 
-    doc.text(
-      `RECIBO # ${newReceiptNumber}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+  order.products.forEach((product, index) => {
+    const productLine = `${index + 1}. ${product.description} `;
+    const lines = doc.splitTextToSize(productLine, 170);
+    doc.text(lines, 20, currentY);
+    currentY += 15 * lines.length;
+  });
 
-    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
-
-    doc.text(
-      `Estado de venta: ${order.state_order}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-
+  // ✅ AGREGAR OBSERVACIONES AL PDF (DESPUÉS DE LOS PRODUCTOS)
+  if (observations && observations.trim() !== "") {
     currentY += 20;
     doc.text(
       "***************************",
@@ -339,95 +402,52 @@ const Recibo = () => {
       { align: "center" }
     );
     currentY += 20;
-
-    doc.setFontSize(10);
-    doc.text(` ${buyerName}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(` ${buyerEmail}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
-currentY += 20;
-doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
-currentY += 20;
-
-
-    doc.text(`Monto Total: $${totalWithDiscount}`, 20, currentY);
-    currentY += 20;
-    doc.text(
-      `Metodo de Pago : ${paymentMethod} $${
-        showSecondPayment ? monto1 : totalWithDiscount
-      }`,
-      20,
-      currentY
-    );
-    currentY += 20;
-
-    if (showSecondPayment && paymentMethod2 && amount2) {
-      doc.text(`Metodo de Pago 2: ${paymentMethod2} $${amount2}`, 20, currentY);
-      currentY += 20;
-    }
-
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    // Agregar productos al recibo
-    doc.setFontSize(7);
-    //doc.text("Productos:", 20, currentY);
-    currentY += 20;
-
-    order.products.forEach((product, index) => {
-      const productLine = `${index + 1}. ${product.description} `;
-      // Divide el texto si excede el ancho de 170 puntos (ajusta según tu recibo)
-      const lines = doc.splitTextToSize(productLine, 170);
-      doc.text(lines, 20, currentY);
-      currentY += 15 * lines.length; // Ajusta el salto según la cantidad de líneas
-    });
-
-    currentY += 20;
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    doc.setFontSize(10);
-    doc.text(
-      `Atendido por: ${
-        cashierInfo
-          ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
-          : "N/A"
-      }`,
-      20,
-      currentY
-    );
-    currentY += 15;
 
     doc.setFontSize(8);
-    doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
-    currentY += 30;
+    doc.text("OBSERVACIONES:", 20, currentY);
+    currentY += 15;
+    
+    // Dividir observaciones en múltiples líneas si es necesario
+    const observationLines = doc.splitTextToSize(observations.trim(), 180);
+    doc.text(observationLines, 20, currentY);
+    currentY += 12 * observationLines.length;
+  }
 
-    doc.setFontSize(12);
-    doc.text(
-      "Gracias por elegirnos!",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+  currentY += 20;
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    doc.output("dataurlnewwindow");
-  };
+  doc.setFontSize(10);
+  doc.text(
+    `Atendido por: ${
+      cashierInfo
+        ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
+        : "N/A"
+    }`,
+    20,
+    currentY
+  );
+  currentY += 15;
+
+  doc.setFontSize(8);
+  doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
+  currentY += 30;
+
+  doc.setFontSize(12);
+  doc.text(
+    "Gracias por elegirnos!",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+
+  doc.output("dataurlnewwindow");
+};
 
   const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
   const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
@@ -578,6 +598,7 @@ currentY += 20;
               <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
               <option value="Crédito">Reserva Crédito</option>
               <option value="Addi">Addi</option>
+              <option value="Nequi">Nequi</option>
               <option value="Sistecredito">Sistecredito</option>
               <option value="Bancolombia">Bancolombia</option>
               <option value="Otro">Otro</option>
@@ -643,6 +664,7 @@ currentY += 20;
                 <option value="Crédito">Reserva Crédito</option>
                 <option value="Addi">Addi</option>
                 <option value="Sistecredito">Sistecredito</option>
+                <option value="Nequi">Nequi</option>
                 <option value="Bancolombia">Bancolombia</option>
                 <option value="GiftCard">GiftCard</option>
                 <option value="Otro">Otro</option>
@@ -724,6 +746,22 @@ currentY += 20;
                   } rounded-md shadow-sm bg-gray-100`}
                 />
               </div>
+              <div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700">
+    Observaciones
+  </label>
+  <textarea
+    value={observations}
+    onChange={(e) => setObservations(e.target.value)}
+    placeholder="Observaciones adicionales sobre la venta..."
+    rows="3"
+    maxLength="500"
+    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+  <div className="text-xs text-gray-500 mt-1">
+    {observations.length}/500 caracteres
+  </div>
+</div>
             </>
           )}
 

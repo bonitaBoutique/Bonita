@@ -2,17 +2,18 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import axios from "axios";
-import { BASE_URL } from "../Config"; // ✅ Importa BASE_URL desde tu archivo de configuración
+import { BASE_URL } from "../Config";
 
 const AddiSistecreditoPayments = () => {
   const navigate = useNavigate();
   
-  const [payments, setPayments] = useState([]);
+  const [deposits, setDeposits] = useState([]);
+  const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('conciliation'); // 'conciliation', 'deposits', 'register'
   const [filters, setFilters] = useState({
-    status: 'all',
-    paymentMethod: 'all',
+    platform: 'all',
     startDate: '',
     endDate: ''
   });
@@ -21,14 +22,54 @@ const AddiSistecreditoPayments = () => {
     totalPages: 1,
     total: 0
   });
-  const [totals, setTotals] = useState({
-    pending: 0,
-    deposited: 0,
-    total: 0
+  const [summary, setSummary] = useState({
+    deposits: { totalAmount: 0, count: 0 },
+    receipts: { totalAmount: 0, count: 0 },
+    difference: { total: 0 }
   });
 
-  // ✅ Cargar pagos usando axios
-  const fetchPayments = async (page = 1) => {
+  // ✅ NUEVA FUNCIÓN: Obtener conciliación
+  const fetchConciliation = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const params = {
+        ...filters
+      };
+
+      // Limpiar parámetros vacíos
+      Object.keys(params).forEach(key => {
+        if (params[key] === '' || params[key] === 'all') {
+          delete params[key];
+        }
+      });
+
+      console.log("📤 Obteniendo conciliación:", `${BASE_URL}/addi-sistecredito/conciliation`, params);
+
+      const response = await axios.get(`${BASE_URL}/addi-sistecredito/conciliation`, {
+        params
+      });
+
+      console.log("📥 Conciliación recibida:", response.data);
+
+      if (response.data.success) {
+        setSummary(response.data.data.summary);
+        setDeposits(response.data.data.deposits);
+        setReceipts(response.data.data.receipts);
+      } else {
+        throw new Error(response.data.message || 'Error al cargar la conciliación');
+      }
+    } catch (error) {
+      console.error("❌ Error al cargar conciliación:", error);
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Obtener lista de depósitos
+  const fetchDeposits = async (page = 1) => {
     setLoading(true);
     setError(null);
     
@@ -39,231 +80,283 @@ const AddiSistecreditoPayments = () => {
         ...filters
       };
 
-      // ✅ Limpiar parámetros vacíos
       Object.keys(params).forEach(key => {
         if (params[key] === '' || params[key] === 'all') {
           delete params[key];
         }
       });
 
-      console.log("📤 Enviando petición:", `${BASE_URL}/caja/addi-sistecredito`, params);
+      console.log("📤 Obteniendo depósitos:", `${BASE_URL}/addi-sistecredito/deposits`, params);
 
-      const response = await axios.get(`${BASE_URL}/caja/addi-sistecredito`, {
+      const response = await axios.get(`${BASE_URL}/addi-sistecredito/deposits`, {
         params
       });
 
-      console.log("📥 Respuesta recibida:", response.data);
-
       if (response.data.success) {
-        setPayments(response.data.data.receipts);
+        setDeposits(response.data.data.deposits);
         setPagination(response.data.data.pagination);
-        setTotals(response.data.data.totals);
       } else {
-        throw new Error(response.data.message || 'Error al cargar los datos');
+        throw new Error(response.data.message || 'Error al cargar los depósitos');
       }
     } catch (error) {
-      console.error("❌ Error al cargar pagos:", error);
-      
-      // ✅ Manejo de errores más específico
-      if (error.response) {
-        // Error del servidor (4xx, 5xx)
-        setError(`Error del servidor: ${error.response.data?.message || error.response.status}`);
-      } else if (error.request) {
-        // Error de red
-        setError("Error de conexión. Verifica tu conexión a internet.");
-      } else {
-        // Otro tipo de error
-        setError(error.message || "Error desconocido");
-      }
-      
-      setPayments([]);
+      console.error("❌ Error al cargar depósitos:", error);
+      handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Actualizar depósito usando axios
-  const updateDeposit = async (receiptId, depositData) => {
-  try {
-    console.log("🔄 Actualizando depósito:", receiptId, depositData);
+  // ✅ NUEVA FUNCIÓN: Registrar depósito
+  const registerDeposit = async (depositData) => {
+    try {
+      console.log("💰 Registrando depósito:", depositData);
 
-    // ❌ INCORRECTO: /payments/deposit/
-    // const response = await axios.put(`${BASE_URL}/payments/deposit/${receiptId}`, depositData, {
+      const response = await axios.post(`${BASE_URL}/addi-sistecredito/deposit`, depositData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    // ✅ CORRECTO: /caja/deposit/
-    const response = await axios.put(`${BASE_URL}/caja/deposit/${receiptId}`, depositData, {
-      headers: {
-        'Content-Type': 'application/json',
+      console.log("✅ Depósito registrado:", response.data);
+
+      if (response.data.success) {
+        alert("✅ Depósito registrado exitosamente");
+        // Recargar datos según la pestaña activa
+        if (activeTab === 'conciliation') {
+          await fetchConciliation();
+        } else if (activeTab === 'deposits') {
+          await fetchDeposits();
+        }
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Error al registrar');
       }
-    });
-
-    console.log("✅ Respuesta actualización:", response.data);
-
-    if (response.data.success) {
-      await fetchPayments(pagination.currentPage);
-      alert("✅ Depósito actualizado exitosamente");
-    } else {
-      throw new Error(response.data.message || 'Error al actualizar');
+    } catch (error) {
+      console.error("❌ Error al registrar depósito:", error);
+      handleError(error);
+      return false;
     }
-  } catch (error) {
-    console.error("❌ Error al actualizar depósito:", error);
-    
+  };
+
+  // ✅ NUEVA FUNCIÓN: Actualizar depósito
+  const updateDeposit = async (depositId, updateData) => {
+    try {
+      console.log("🔄 Actualizando depósito:", depositId, updateData);
+
+      const response = await axios.put(`${BASE_URL}/addi-sistecredito/deposit/${depositId}`, updateData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.data.success) {
+        alert("✅ Depósito actualizado exitosamente");
+        // Recargar datos
+        if (activeTab === 'conciliation') {
+          await fetchConciliation();
+        } else if (activeTab === 'deposits') {
+          await fetchDeposits();
+        }
+      } else {
+        throw new Error(response.data.message || 'Error al actualizar');
+      }
+    } catch (error) {
+      console.error("❌ Error al actualizar depósito:", error);
+      handleError(error);
+    }
+  };
+
+  // ✅ Manejo de errores centralizado
+  const handleError = (error) => {
     if (error.response) {
-      alert(`❌ Error: ${error.response.data?.message || error.response.status}`);
+      setError(`Error del servidor: ${error.response.data?.message || error.response.status}`);
     } else if (error.request) {
-      alert("❌ Error de conexión al actualizar el depósito");
+      setError("Error de conexión. Verifica tu conexión a internet.");
     } else {
-      alert(`❌ Error al actualizar: ${error.message}`);
+      setError(error.message || "Error desconocido");
     }
-  }
-};
+  };
 
-  // ✅ Componente para fila de pago
-  const PaymentRow = ({ payment }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [editData, setEditData] = useState({
-      depositDate: payment.depositDate ? dayjs(payment.depositDate).format('YYYY-MM-DD') : '',
-      depositAmount: payment.depositAmount || payment.totalAmount,
-      notes: payment.depositNotes || ''
+  // ✅ COMPONENTE: Formulario de registro
+  const RegisterDepositForm = () => {
+    const [formData, setFormData] = useState({
+      platform: 'Addi',
+      depositDate: dayjs().format('YYYY-MM-DD'),
+      amount: '',
+      referenceNumber: '',
+      description: '',
+      registeredBy: '', // Aquí deberías obtener el usuario actual
+      notes: ''
     });
 
-    const handleSave = async () => {
-      await updateDeposit(payment.id, editData);
-      setIsEditing(false);
-    };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      
+      if (!formData.amount || !formData.registeredBy) {
+        alert("❌ Por favor completa los campos obligatorios");
+        return;
+      }
 
-    const handleRemoveDeposit = async () => {
-      if (window.confirm("⚠️ ¿Seguro que quieres remover este depósito?")) {
-        await updateDeposit(payment.id, { 
-          depositDate: null, 
-          depositAmount: null, 
-          notes: null 
+      const success = await registerDeposit({
+        ...formData,
+        amount: parseFloat(formData.amount)
+      });
+
+      if (success) {
+        // Limpiar formulario
+        setFormData({
+          platform: 'Addi',
+          depositDate: dayjs().format('YYYY-MM-DD'),
+          amount: '',
+          referenceNumber: '',
+          description: '',
+          registeredBy: formData.registeredBy, // Mantener usuario
+          notes: ''
         });
       }
     };
 
     return (
-      <tr className={`${payment.depositDate ? 'bg-green-50' : 'bg-yellow-50'} hover:bg-gray-100 transition-colors`}>
-        <td className="px-4 py-3 text-sm">
-          {dayjs(payment.date).format('DD/MM/YYYY HH:mm')}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            payment.paymentMethod === 'Addi' 
-              ? 'bg-purple-100 text-purple-800' 
-              : 'bg-blue-100 text-blue-800'
-          }`}>
-            {payment.paymentMethod}
-          </span>
-        </td>
-        <td className="px-4 py-3 text-sm font-medium">
-          ${parseFloat(payment.totalAmount || 0).toLocaleString('es-CO')}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {payment.buyerName || payment.customerName || 'N/A'}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {isEditing ? (
-            <input
-              type="date"
-              value={editData.depositDate}
-              onChange={(e) => setEditData({...editData, depositDate: e.target.value})}
-              className="border rounded px-2 py-1 text-xs w-full focus:ring-2 focus:ring-blue-500"
-            />
-          ) : (
-            payment.depositDate ? (
-              <span className="text-green-600 font-medium">
-                {dayjs(payment.depositDate).format('DD/MM/YYYY')}
-              </span>
-            ) : (
-              <span className="text-red-500 text-xs font-medium">⏳ Pendiente</span>
-            )
-          )}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {isEditing ? (
-            <input
-              type="number"
-              value={editData.depositAmount}
-              onChange={(e) => setEditData({...editData, depositAmount: e.target.value})}
-              className="border rounded px-2 py-1 text-xs w-full focus:ring-2 focus:ring-blue-500"
-              step="0.01"
-              min="0"
-            />
-          ) : (
-            payment.depositAmount ? (
-              <span className="text-green-600 font-medium">
-                ${parseFloat(payment.depositAmount).toLocaleString('es-CO')}
-              </span>
-            ) : (
-              <span className="text-gray-400">-</span>
-            )
-          )}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {isEditing ? (
-            <div className="flex gap-1">
-              <button
-                onClick={handleSave}
-                className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 transition duration-200"
-                title="Guardar"
+      <div className="bg-white p-6 rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold mb-4">💰 Registrar Nuevo Depósito</h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Plataforma *
+              </label>
+              <select
+                value={formData.platform}
+                onChange={(e) => setFormData({...formData, platform: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                required
               >
-                ✓
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600 transition duration-200"
-                title="Cancelar"
-              >
-                ✕
-              </button>
+                <option value="Addi">🛒 Addi</option>
+                <option value="Sistecredito">💰 Sistecredito</option>
+              </select>
             </div>
-          ) : (
-            <div className="flex gap-1">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition duration-200"
-                title="Editar"
-              >
-                ✏️
-              </button>
-              {payment.depositDate && (
-                <button
-                  onClick={handleRemoveDeposit}
-                  className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition duration-200"
-                  title="Remover depósito"
-                >
-                  🗑️
-                </button>
-              )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha de Depósito *
+              </label>
+              <input
+                type="date"
+                value={formData.depositDate}
+                onChange={(e) => setFormData({...formData, depositDate: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                required
+              />
             </div>
-          )}
-        </td>
-      </tr>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Monto *
+              </label>
+              <input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Número de Referencia
+              </label>
+              <input
+                type="text"
+                value={formData.referenceNumber}
+                onChange={(e) => setFormData({...formData, referenceNumber: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                placeholder="REF123456"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Registrado por *
+              </label>
+              <input
+                type="text"
+                value={formData.registeredBy}
+                onChange={(e) => setFormData({...formData, registeredBy: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                placeholder="Documento del usuario"
+                required
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Descripción
+              </label>
+              <input
+                type="text"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                placeholder="Depósito semanal, etc."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notas
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                rows="3"
+                placeholder="Notas adicionales..."
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition duration-200"
+            >
+              💰 Registrar Depósito
+            </button>
+          </div>
+        </form>
+      </div>
     );
   };
 
   // ✅ Función para resetear filtros
   const resetFilters = () => {
     setFilters({
-      status: 'all',
-      paymentMethod: 'all',
+      platform: 'all',
       startDate: '',
       endDate: ''
     });
   };
 
-  // ✅ Efecto para cargar datos cuando cambian los filtros
+  // ✅ Efecto para cargar datos cuando cambian filtros o pestaña
   useEffect(() => {
-    fetchPayments();
-  }, [filters]);
+    if (activeTab === 'conciliation') {
+      fetchConciliation();
+    } else if (activeTab === 'deposits') {
+      fetchDeposits();
+    }
+  }, [filters, activeTab]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
       {/* ✅ Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
-          💳 Pagos Addi & Sistecredito
+          💳 Gestión Addi & Sistecredito
         </h1>
         <button
           onClick={() => navigate(-1)}
@@ -271,6 +364,27 @@ const AddiSistecreditoPayments = () => {
         >
           ← Volver
         </button>
+      </div>
+
+      {/* ✅ Pestañas */}
+      <div className="flex space-x-1 mb-6">
+        {[
+          { id: 'conciliation', label: '📊 Conciliación', icon: '📊' },
+          { id: 'deposits', label: '💰 Depósitos', icon: '💰' },
+          { id: 'register', label: '➕ Registrar', icon: '➕' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-t-lg font-medium transition duration-200 ${
+              activeTab === tab.id
+                ? 'bg-blue-500 text-white border-b-2 border-blue-500'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* ✅ Mensaje de error */}
@@ -281,11 +395,14 @@ const AddiSistecreditoPayments = () => {
               <span className="text-red-400 text-xl">❌</span>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error al cargar los datos</h3>
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
               <p className="mt-1 text-sm text-red-700">{error}</p>
               <div className="mt-3">
                 <button
-                  onClick={() => fetchPayments()}
+                  onClick={() => {
+                    if (activeTab === 'conciliation') fetchConciliation();
+                    else if (activeTab === 'deposits') fetchDeposits();
+                  }}
                   className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition duration-200"
                 >
                   🔄 Reintentar
@@ -296,224 +413,375 @@ const AddiSistecreditoPayments = () => {
         </div>
       )}
 
-      {/* ✅ Resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-yellow-100 p-4 rounded-lg border-l-4 border-yellow-500">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">⏳</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-lg font-semibold text-yellow-800">Pendientes</h3>
-              <p className="text-2xl font-bold text-yellow-900">
-                ${totals.pending.toLocaleString('es-CO')}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-green-100 p-4 rounded-lg border-l-4 border-green-500">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">✅</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-lg font-semibold text-green-800">Depositados</h3>
+      {/* ✅ Contenido según pestaña activa */}
+      {activeTab === 'register' && <RegisterDepositForm />}
+
+      {activeTab === 'conciliation' && (
+        <div>
+          {/* Resumen de conciliación */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-green-100 p-4 rounded-lg border-l-4 border-green-500">
+              <h3 className="text-lg font-semibold text-green-800">💰 Depósitos Registrados</h3>
               <p className="text-2xl font-bold text-green-900">
-                ${totals.deposited.toLocaleString('es-CO')}
+                ${summary.deposits.totalAmount.toLocaleString('es-CO')}
               </p>
+              <p className="text-sm text-green-700">{summary.deposits.count} depósitos</p>
             </div>
-          </div>
-        </div>
-        <div className="bg-blue-100 p-4 rounded-lg border-l-4 border-blue-500">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-lg font-semibold text-blue-800">Total</h3>
+            <div className="bg-blue-100 p-4 rounded-lg border-l-4 border-blue-500">
+              <h3 className="text-lg font-semibold text-blue-800">🧾 Recibos Generados</h3>
               <p className="text-2xl font-bold text-blue-900">
-                ${totals.total.toLocaleString('es-CO')}
+                ${summary.receipts.totalAmount.toLocaleString('es-CO')}
+              </p>
+              <p className="text-sm text-blue-700">{summary.receipts.count} recibos</p>
+            </div>
+            <div className={`p-4 rounded-lg border-l-4 ${
+              summary.difference.total >= 0 
+                ? 'bg-green-100 border-green-500' 
+                : 'bg-red-100 border-red-500'
+            }`}>
+              <h3 className={`text-lg font-semibold ${
+                summary.difference.total >= 0 ? 'text-green-800' : 'text-red-800'
+              }`}>
+                ⚖️ Diferencia
+              </h3>
+              <p className={`text-2xl font-bold ${
+                summary.difference.total >= 0 ? 'text-green-900' : 'text-red-900'
+              }`}>
+                ${Math.abs(summary.difference.total).toLocaleString('es-CO')}
+              </p>
+              <p className={`text-sm ${
+                summary.difference.total >= 0 ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {summary.difference.total >= 0 ? 'Favor' : 'Déficit'}
               </p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ✅ Filtros */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-semibold">🔍 Filtros</h2>
-          <button
-            onClick={resetFilters}
-            className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition duration-200"
-          >
-            🔄 Limpiar
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({...filters, status: e.target.value})}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="pending">⏳ Pendientes</option>
-              <option value="deposited">✅ Depositados</option>
-            </select>
+          {/* Filtros para conciliación */}
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold">🔍 Filtros</h2>
+              <button
+                onClick={resetFilters}
+                className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition duration-200"
+              >
+                🔄 Limpiar
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
+                <select
+                  value={filters.platform}
+                  onChange={(e) => setFilters({...filters, platform: e.target.value})}
+                  className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">Todas las plataformas</option>
+                  <option value="Addi">🛒 Solo Addi</option>
+                  <option value="Sistecredito">💰 Solo Sistecredito</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha inicio</label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                  className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha fin</label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                  className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Método</label>
-            <select
-              value={filters.paymentMethod}
-              onChange={(e) => setFilters({...filters, paymentMethod: e.target.value})}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">Todos los métodos</option>
-              <option value="Addi">🛒 Solo Addi</option>
-              <option value="Sistecredito">💰 Solo Sistecredito</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha inicio</label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha fin</label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* ✅ Tabla */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            📋 Lista de Pagos 
-            {!loading && (
-              <span className="text-sm font-normal text-gray-500 ml-2">
-                ({pagination.total} registros)
-              </span>
+          {/* Mostrar depósitos y recibos lado a lado */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Depósitos */}
+            <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-green-50 border-b">
+                <h3 className="text-lg font-medium text-green-900">💰 Depósitos Registrados</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {deposits.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    📭 No hay depósitos registrados
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {deposits.map((deposit) => (
+                      <div key={deposit.id} className="p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                deposit.platform === 'Addi' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {deposit.platform}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {dayjs(deposit.depositDate).format('DD/MM/YYYY')}
+                              </span>
+                            </div>
+                            <p className="text-lg font-semibold text-green-600">
+                              ${deposit.amount.toLocaleString('es-CO')}
+                            </p>
+                            {deposit.description && (
+                              <p className="text-sm text-gray-600">{deposit.description}</p>
+                            )}
+                          </div>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            deposit.status === 'Registrado' ? 'bg-yellow-100 text-yellow-800' :
+                            deposit.status === 'Conciliado' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {deposit.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recibos */}
+            <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-blue-50 border-b">
+                <h3 className="text-lg font-medium text-blue-900">🧾 Recibos Generados</h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {receipts.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    📭 No hay recibos generados
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {receipts.map((receipt) => (
+                      <div key={receipt.id_receipt} className="p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                receipt.payMethod === 'Addi' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {receipt.payMethod}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {dayjs(receipt.date).format('DD/MM/YYYY')}
+                              </span>
+                            </div>
+                            <p className="text-lg font-semibold text-blue-600">
+                              ${receipt.total_amount.toLocaleString('es-CO')}
+                            </p>
+                            <p className="text-sm text-gray-600">{receipt.buyer_name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'deposits' && (
+        <div>
+          {/* Lista de depósitos con funcionalidad de edición */}
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                💰 Gestión de Depósitos
+                {!loading && (
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({pagination.total} registros)
+                  </span>
+                )}
+              </h3>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      📅 Fecha
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      💳 Plataforma
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      💰 Monto
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      📝 Estado
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      ⚙️ Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center">
+                        <div className="flex flex-col items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                          <p className="text-gray-500">Cargando depósitos...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : deposits.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-4 py-8 text-center">
+                        <div className="text-gray-500">
+                          <p className="text-lg">📭 No hay depósitos</p>
+                          <p className="text-sm mt-1">No se encontraron depósitos con los filtros seleccionados</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    deposits.map((deposit) => (
+                      <DepositRow 
+                        key={deposit.id} 
+                        deposit={deposit} 
+                        onUpdate={updateDeposit}
+                      />
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación */}
+            {pagination.totalPages > 1 && (
+              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Página {pagination.currentPage} de {pagination.totalPages} 
+                  ({pagination.total} registros)
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fetchDeposits(pagination.currentPage - 1)}
+                    disabled={pagination.currentPage === 1}
+                    className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  >
+                    ← Anterior
+                  </button>
+                  <button
+                    onClick={() => fetchDeposits(pagination.currentPage + 1)}
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
             )}
-          </h3>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  📅 Fecha Venta
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  💳 Método
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  💰 Monto Venta
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  👤 Cliente
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  📅 Fecha Depósito
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  💵 Monto Depositado
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ⚙️ Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-                      <p className="text-gray-500">Cargando pagos...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center">
-                    <div className="text-red-500">
-                      <p className="text-lg">❌ Error al cargar los datos</p>
-                      <p className="text-sm mt-1">{error}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : payments.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center">
-                    <div className="text-gray-500">
-                      <p className="text-lg">📭 No hay pagos</p>
-                      <p className="text-sm mt-1">No se encontraron pagos de Addi o Sistecredito con los filtros seleccionados</p>
-                      <button
-                        onClick={resetFilters}
-                        className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm"
-                      >
-                        🔄 Limpiar filtros
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                payments.map((payment) => (
-                  <PaymentRow key={payment.id} payment={payment} />
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ✅ Paginación */}
-        {pagination.totalPages > 1 && (
-          <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="text-sm text-gray-700">
-              Mostrando página {pagination.currentPage} de {pagination.totalPages} 
-              <span className="hidden sm:inline">
-                {" "}({pagination.total} registros total)
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchPayments(pagination.currentPage - 1)}
-                disabled={pagination.currentPage === 1}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition duration-200"
-              >
-                ← Anterior
-              </button>
-              <span className="px-3 py-1 text-sm text-gray-600">
-                {pagination.currentPage} / {pagination.totalPages}
-              </span>
-              <button
-                onClick={() => fetchPayments(pagination.currentPage + 1)}
-                disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition duration-200"
-              >
-                Siguiente →
-              </button>
-            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+// ✅ COMPONENTE: Fila de depósito editable
+const DepositRow = ({ deposit, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    status: deposit.status,
+    notes: deposit.notes || '',
+    description: deposit.description || '',
+    referenceNumber: deposit.referenceNumber || ''
+  });
+
+  const handleSave = async () => {
+    await onUpdate(deposit.id, editData);
+    setIsEditing(false);
+  };
+
+  return (
+    <tr className="hover:bg-gray-100 transition-colors">
+      <td className="px-4 py-3 text-sm">
+        {dayjs(deposit.depositDate).format('DD/MM/YYYY')}
+      </td>
+      <td className="px-4 py-3 text-sm">
+        <span className={`px-2 py-1 rounded text-xs font-medium ${
+          deposit.platform === 'Addi' 
+            ? 'bg-purple-100 text-purple-800' 
+            : 'bg-blue-100 text-blue-800'
+        }`}>
+          {deposit.platform}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm font-medium">
+        ${deposit.amount.toLocaleString('es-CO')}
+      </td>
+      <td className="px-4 py-3 text-sm">
+        {isEditing ? (
+          <select
+            value={editData.status}
+            onChange={(e) => setEditData({...editData, status: e.target.value})}
+            className="border rounded px-2 py-1 text-xs w-full focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Registrado">Registrado</option>
+            <option value="Conciliado">Conciliado</option>
+            <option value="Revisión">Revisión</option>
+          </select>
+        ) : (
+          <span className={`px-2 py-1 rounded text-xs ${
+            deposit.status === 'Registrado' ? 'bg-yellow-100 text-yellow-800' :
+            deposit.status === 'Conciliado' ? 'bg-green-100 text-green-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {deposit.status}
+          </span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-sm">
+        {isEditing ? (
+          <div className="flex gap-1">
+            <button
+              onClick={handleSave}
+              className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
+              title="Guardar"
+            >
+              ✓
+            </button>
+            <button
+              onClick={() => setIsEditing(false)}
+              className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
+              title="Cancelar"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+            title="Editar"
+          >
+            ✏️
+          </button>
+        )}
+      </td>
+    </tr>
   );
 };
 

@@ -1,4 +1,4 @@
-const { Reservation, CreditPayment, OrderDetail } = require("../../data");
+const { Reservation, CreditPayment, OrderDetail, User } = require("../../data");
 const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
@@ -8,12 +8,28 @@ module.exports = async (req, res) => {
   console.log("Received request to apply payment:", { id_reservation, amount });
 
   try {
+    // ✅ INCLUIR User en la consulta de la reserva
     const reservation = await Reservation.findByPk(id_reservation, {
-      include: OrderDetail
+      include: [{
+        model: OrderDetail,
+        include: [{
+          model: User,
+          attributes: ['n_document', 'first_name', 'last_name', 'email', 'phone']
+        }]
+      }]
     });
 
     if (!reservation) {
       return response(res, 404, { error: "Reservation not found" });
+    }
+
+    // ✅ Si no hay User asociado en OrderDetail, buscar por n_document como en tu otro controlador
+    let user = reservation.OrderDetail.User;
+    if (!user && reservation.OrderDetail.n_document) {
+      user = await User.findOne({
+        where: { n_document: reservation.OrderDetail.n_document },
+        attributes: ['n_document', 'first_name', 'last_name', 'email', 'phone']
+      });
     }
 
     // Create a new payment record
@@ -27,14 +43,34 @@ module.exports = async (req, res) => {
 
     // Check if total payments equal the order amount
     if (reservation.totalPaid >= reservation.OrderDetail.amount) {
-      reservation.OrderDetail.status = "completada"; // Usa el valor permitido
+      reservation.OrderDetail.status = "completada";
     }
 
     // Save changes
     await reservation.save();
     await reservation.OrderDetail.save();
 
-    return response(res, 200, { reservation });
+    // ✅ INCLUIR la información del usuario en la respuesta
+    const responseData = {
+      ...reservation.toJSON(),
+      OrderDetail: {
+        ...reservation.OrderDetail.toJSON(),
+        User: user ? {
+          n_document: user.n_document,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone
+        } : null
+      }
+    };
+
+    console.log("✅ Payment applied successfully with user data:", {
+      reservationId: id_reservation,
+      userName: user ? `${user.first_name} ${user.last_name}` : 'Usuario no encontrado'
+    });
+
+    return response(res, 200, { reservation: responseData });
   } catch (error) {
     console.error("Error applying payment:", error);
     return response(res, 500, { error: "Internal server error" });

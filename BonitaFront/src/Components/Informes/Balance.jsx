@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
+import TruncatedText from './TruncatedText';
 
 // ✅ Configurar dayjs con plugins de zona horaria
 dayjs.extend(utc);
@@ -16,7 +17,7 @@ import {
   getColombiaDate, 
   formatDateForDisplay, 
   formatDateForBackend,
-  formatMovementDate, // ✅ Importar desde utilidades
+  formatMovementDate,
   isValidDate 
 } from "../../utils/dateUtils";
 
@@ -60,8 +61,8 @@ const Balance = () => {
 
   // ✅ State para filtros con fechas de Colombia
   const [filters, setFilters] = useState({
-    startDate: today, // ✅ Inicializar con fecha de Colombia
-    endDate: today,   // ✅ Inicializar con fecha de Colombia
+    startDate: today,
+    endDate: today,
     paymentMethod: "",
     pointOfSale: "",
     expenseType: "",
@@ -72,12 +73,10 @@ const Balance = () => {
   const sendFiltersToBackend = (currentFilters) => {
     const formattedFilters = {
       ...currentFilters,
-      // ✅ Formatear fechas específicamente para el backend
       startDate: currentFilters.startDate ? formatDateForBackend(currentFilters.startDate) : undefined,
       endDate: currentFilters.endDate ? formatDateForBackend(currentFilters.endDate) : undefined,
     };
 
-    // ✅ Limpiar filtros vacíos
     Object.keys(formattedFilters).forEach(key => {
       if (formattedFilters[key] === "" || formattedFilters[key] === undefined) {
         delete formattedFilters[key];
@@ -97,24 +96,34 @@ const Balance = () => {
     dispatch(fetchBalance(formattedFilters));
   };
 
-  // ✅ Effect para cargar datos cuando cambian los filtros
-  useEffect(() => {
-    console.log("🔄 Filtros cambiaron, cargando balance:", filters);
-    sendFiltersToBackend(filters);
-  }, [dispatch, filters]);
-
-  // ✅ Effect para debugging de movimientos
+  // ✅ Effect para debug de estructura de datos
   useEffect(() => {
     if (income.local && income.local.length > 0) {
-      console.log("🔍 Movimientos locales con fechas:", income.local.slice(0, 3).map(m => ({
-        id: m.id,
-        date: m.date,
-        formatted: formatMovementDate(m.date), // ✅ Usar función de utilidades
-        type: m.type || 'Venta Local',
-        amount: m.amount
-      })));
+      console.log("🔍 DEBUG: Estructura de ventas locales:", income.local.slice(0, 2));
+      console.log("🔍 DEBUG: Claves disponibles en primera venta:", Object.keys(income.local[0]));
+      
+      // Buscar nombres de comprador en diferentes ubicaciones
+      income.local.slice(0, 3).forEach((sale, index) => {
+        console.log(`🔍 DEBUG Venta ${index + 1}:`, {
+          id: sale.id,
+          buyerName: sale.buyerName,
+          buyer_name: sale.buyer_name,
+          User: sale.User,
+          OrderDetail: sale.OrderDetail,
+          Receipt: sale.Receipt,
+          description: sale.description,
+          type: sale.type,
+          amount: sale.amount,
+          paymentMethod: sale.paymentMethod
+        });
+      });
     }
   }, [income.local]);
+
+  // ✅ Effect para cargar datos cuando cambian los filtros
+  useEffect(() => {
+    sendFiltersToBackend(filters);
+  }, []);
 
   // ✅ Función para validar cambios de fecha mejorada
   const handleDateFilterChange = (field, value) => {
@@ -126,13 +135,11 @@ const Balance = () => {
       return;
     }
 
-    // ✅ Validar que no sea fecha futura
     if (value > today) {
       alert("No se pueden seleccionar fechas futuras.");
       return;
     }
 
-    // ✅ Validaciones de rango de fechas
     if (field === 'startDate' && filters.endDate && value > filters.endDate) {
       alert("La fecha de inicio no puede ser mayor que la fecha de fin");
       return;
@@ -143,7 +150,6 @@ const Balance = () => {
       return;
     }
 
-    // ✅ Actualizar filtros
     setFilters(prev => ({
       ...prev,
       [field]: value
@@ -183,18 +189,66 @@ const Balance = () => {
         description: `Pedido #${sale.id_orderDetail}` || "-",
         cashier_document: null,
       })),
-      // Map local sales
-      ...(income.local || []).map((sale) => ({
-        ...sale,
-        type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
-        amount: sale.amount || 0,
-        date: sale.date,
-        paymentMethod: sale.paymentMethod || "Desconocido",
-        pointOfSale: "Local",
-        id: `local-${sale.id}`,
-        description: sale.buyerName || sale.description || "Desconocido",
-        cashier_document: sale.cashierDocument,
-      })),
+      
+      // ✅ Map local sales CON MEJOR MANEJO DE NOMBRES
+      ...(income.local || []).map((sale) => {
+        // ✅ Función para obtener el nombre del comprador de múltiples ubicaciones
+        const getBuyerName = (saleData) => {
+          // Prioridad 1: buyerName directo
+          if (saleData.buyerName && saleData.buyerName !== "Desconocido") {
+            return saleData.buyerName;
+          }
+          
+          // Prioridad 2: buyer_name con underscore
+          if (saleData.buyer_name && saleData.buyer_name !== "Desconocido") {
+            return saleData.buyer_name;
+          }
+          
+          // Prioridad 3: Desde User anidado
+          if (saleData.User) {
+            const firstName = saleData.User.first_name || "";
+            const lastName = saleData.User.last_name || "";
+            const fullName = `${firstName} ${lastName}`.trim();
+            if (fullName) return fullName;
+          }
+          
+          // Prioridad 4: Desde OrderDetail.User
+          if (saleData.OrderDetail && saleData.OrderDetail.User) {
+            const firstName = saleData.OrderDetail.User.first_name || "";
+            const lastName = saleData.OrderDetail.User.last_name || "";
+            const fullName = `${firstName} ${lastName}`.trim();
+            if (fullName) return fullName;
+          }
+          
+          // Prioridad 5: Desde Receipt
+          if (saleData.Receipt && saleData.Receipt.buyer_name) {
+            return saleData.Receipt.buyer_name;
+          }
+          
+          // Prioridad 6: description como fallback
+          if (saleData.description && saleData.description !== "Desconocido") {
+            return saleData.description;
+          }
+          
+          // Fallback final
+          return "Cliente no identificado";
+        };
+
+        const buyerName = getBuyerName(sale);
+        
+        return {
+          ...sale,
+          type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
+          amount: sale.amount || 0,
+          date: sale.date,
+          paymentMethod: sale.paymentMethod || "Desconocido",
+          pointOfSale: "Local",
+          id: `local-${sale.id}`,
+          description: buyerName,
+          cashier_document: sale.cashierDocument,
+        };
+      }),
+      
       // Map expenses
       ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
         ...expense,
@@ -233,7 +287,6 @@ const Balance = () => {
       );
     }
 
-    // ✅ Sort movements by date usando dayjs para consistencia
     return filteredMovements.sort((a, b) => {
       const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
       const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
@@ -246,7 +299,7 @@ const Balance = () => {
     const movementsToExport = getAllMovements();
 
     const wsData = movementsToExport.map((m) => ({
-      Fecha: formatMovementDate(m.date), // ✅ Usar la función de utilidades
+      Fecha: formatMovementDate(m.date),
       Tipo: m.type,
       Descripción: m.description || "-",
       "Método de Pago": m.paymentMethod || "N/A",
@@ -273,7 +326,6 @@ const Balance = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
     
-    // ✅ Usar fecha de Colombia para el nombre del archivo
     const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
     
@@ -390,7 +442,7 @@ const Balance = () => {
               type="date"
               value={filters.startDate}
               onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
-              max={today} // No permitir fechas futuras
+              max={today}
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -407,8 +459,8 @@ const Balance = () => {
               type="date"
               value={filters.endDate}
               onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
-              min={filters.startDate} // No menor que fecha inicio
-              max={today} // No permitir fechas futuras
+              min={filters.startDate}
+              max={today}
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -669,10 +721,8 @@ const Balance = () => {
                       : "hover:bg-green-50"
                   }`}
                 >
-                  {/* ✅ Celda de fecha corregida usando función de utilidades */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {formatMovementDate(movement.date)}
-                    {/* ✅ Debug temporal - remover después */}
                     <div className="text-xs text-gray-400 mt-1">
                       Raw: {movement.date}
                     </div>
@@ -686,9 +736,9 @@ const Balance = () => {
                       {movement.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {movement.description || "-"}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700"> {/* Quitar whitespace-nowrap */}
+  <TruncatedText text={movement.description} maxLength={80} />
+</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.paymentMethod || "N/A"}
                   </td>

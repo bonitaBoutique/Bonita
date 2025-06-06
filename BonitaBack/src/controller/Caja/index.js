@@ -4,8 +4,7 @@ const getReceipts = require("./getReceipts");
 const lastReceipt = require("./lastReceipt");
 const getActiveGiftCards = require("./getActiveGiftCards");
 const redeemGiftCard = require("./redeemGiftCard");
-const getAddiSistecreditoPayments = require("./getAddiSistecreditoPayments");
-const updatePaymentAddiSistecredito = require("./updatePaymentAddiSistecredito");
+
 const { createGiftCard, getGiftCardBalance } = require("./createGiftCard");
 
 module.exports = {
@@ -17,6 +16,5 @@ module.exports = {
     redeemGiftCard,
     createGiftCard,
     getGiftCardBalance,
-    getAddiSistecreditoPayments,
-    updatePaymentAddiSistecredito
+  
 };

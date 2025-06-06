@@ -3,9 +3,11 @@ const putProduct = require("./putProduct");
 const deleteProduct = require("./deleteProduct");
 const getAllProduct = require("./getAllProduct");
 const getProductId = require("./getProductId");
-
-
+const getStock = require("./getStock");
+const returnProducts= require("./returnProducts")
 const getProductStock = require("./getProductStock")
+const getReceiptForReturn = require("./getReceiptForReturn");
+const getReturnHistory = require("./getReturnHistory");
 
 module.exports={
     createProduct,
@@ -14,6 +16,9 @@ module.exports={
     getAllProduct,
     getProductId,
     getProductStock,
-    
+    getStock,
+    returnProducts,
+    getReceiptForReturn,
+    getReturnHistory
     
 }

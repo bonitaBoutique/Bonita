@@ -10,15 +10,6 @@ module.exports = (sequelize) => {
         autoIncrement: true,
         allowNull: false,
       },
-      // ✅ AGREGAR RELACIÓN CON ORDERDETAIL
-      id_orderDetail: {
-        type: DataTypes.UUID,
-        allowNull: true, // Null para GiftCards
-        references: {
-          model: "OrderDetails",
-          key: "id_orderDetail",
-        },
-      },
       cashier_document: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -51,6 +42,7 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
+          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",
@@ -59,6 +51,7 @@ module.exports = (sequelize) => {
         ),
         allowNull: false,
       },
+      
       amount: {
         type: DataTypes.FLOAT,
         allowNull: false, 
@@ -72,53 +65,28 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
+          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",
           "Otro",
           "GiftCard"
         ),
-        allowNull: true,
+        allowNull: true, // <-- Opcional
       },
       date: {
-        type: DataTypes.DATEONLY,
+        type: DataTypes.DATEONLY, // Solo fecha, sin hora
         allowNull: false,
-        defaultValue: DataTypes.NOW
+        defaultValue: DataTypes.NOW // Esto tomará la fecha de Colombia
       },
       estimated_delivery_date: {
-        type: DataTypes.DATE,
+        type: DataTypes.DATE, // Fecha y hora
         allowNull: true,
       },
-      receipt_number: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        unique: true,
-      },
-      // ✅ AGREGAR CAMPOS PARA ADDI/SISTECREDITO
-      discount: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-        defaultValue: 0,
-      },
-      depositDate: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-        comment: 'Fecha en que se deposita el pago de Addi/Sistecredito'
-      },
-      depositAmount: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
-        comment: 'Monto depositado'
-      },
-      depositNotes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        comment: 'Notas sobre el depósito'
-      }
     },
     {
       paranoid: true,
-      timestamps: true,
+      timestamps: true, // Cambiar a true para createdAt/updatedAt
     }
   );
 };

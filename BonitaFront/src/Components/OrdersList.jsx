@@ -79,21 +79,38 @@ const OrdersList = () => {
   };
 
   const filteredOrders = orders.filter((order) => {
-    // Normaliza el estado para evitar problemas de mayúsculas/minúsculas o espacios
-    const orderState = (order.state_order || "").trim().toLowerCase();
-    const filterStateNormalized = filterState.trim().toLowerCase();
-  
-    const matchesState =
-      filterState === ""
-        ? orderState !== "retirado"
-        : orderState === filterStateNormalized;
-  
+  // Filtro por estado
+  const orderState = (order.state_order || "").trim().toLowerCase();
+  const filterStateNormalized = filterState.trim().toLowerCase();
+
+  const matchesState =
+    filterState === ""
+      ? orderState !== "retirado"
+      : orderState === filterStateNormalized;
+
+  // ✅ FILTRO MEJORADO: nombre + n_document
+  let matchesName = true;
+  if (filterName.trim() !== "") {
+    const searchTerm = filterName.toLowerCase().trim();
+    
+    // Buscar en nombre completo
     const fullName = order.user_info
       ? `${order.user_info.first_name} ${order.user_info.last_name}`.toLowerCase()
       : "";
-    const matchesName = fullName.includes(filterName.toLowerCase());
-    return matchesState && matchesName;
-  });
+    
+    // Buscar en número de documento
+    const nDocument = order.user_info?.n_document?.toLowerCase() || "";
+    
+    // También buscar en el n_document del OrderDetail directamente
+    const orderDocument = order.n_document?.toLowerCase() || "";
+    
+    matchesName = fullName.includes(searchTerm) || 
+                  nDocument.includes(searchTerm) || 
+                  orderDocument.includes(searchTerm);
+  }
+
+  return matchesState && matchesName;
+});
 
   const handleFilterChange = (e) => {
     setFilterState(e.target.value);
@@ -122,17 +139,17 @@ const OrdersList = () => {
           {/* ... (Filtro de estado) ... */}
           <div className="mb-4">
             <div className="mb-4">
-              <label className="mr-2 text-gray-200 font-monserrat font-semibold">
-                Buscar por cliente:
-              </label>
-              <input
-                type="text"
-                value={filterName}
-                onChange={(e) => setFilterName(e.target.value)}
-                className="bg-gray-600 text-gray-200 font-monserrat px-3 py-1 rounded"
-                placeholder="Nombre o apellido"
-              />
-            </div>
+  <label className="mr-2 text-gray-200 font-monserrat font-semibold">
+    Buscar por cliente:
+  </label>
+  <input
+    type="text"
+    value={filterName}
+    onChange={(e) => setFilterName(e.target.value)}
+    className="bg-gray-600 text-gray-200 font-monserrat px-3 py-1 rounded"
+    placeholder="Nombre o Nº de cédula" // ✅ Placeholder actualizado
+  />
+</div>
             <label className="mr-2 text-gray-200 font-monserrat font-semibold">
               Filtrar por estado:
             </label>
@@ -170,16 +187,38 @@ const OrdersList = () => {
                       </div>
                     </div>
                     <div className="font-semibold text-blue-700 mb-1">
-                      Cliente:{" "}
-                      {order.user_info
-                        ? `${order.user_info.first_name} ${order.user_info.last_name}`
-                        : "Sin datos"}
-                    </div>
+  Cliente:{" "}
+  {order.user_info
+    ? `${order.user_info.first_name} ${order.user_info.last_name}`
+    : "Sin datos"}
+  {/* ✅ MOSTRAR DOCUMENTO */}
+  {order.user_info?.n_document && (
+    <span className="text-sm text-gray-600 ml-2">
+      (Doc: {order.user_info.n_document})
+    </span>
+  )}
+</div>
                     <div className="flex justify-between items-center mb-2">
                       <div className="font-semibold">Fecha: {order.date}</div>
                     </div>
                     <div>Cantidad: {order.quantity}</div>
                     <div>Monto: ${order.amount}</div>
+                    {order.receipt_info && (
+  <div className="bg-green-50 border border-green-200 rounded p-2 mb-2">
+    <div className="text-sm font-semibold text-green-800">
+      📧 Recibo Generado
+    </div>
+    <div className="text-sm text-green-700">
+      ID Recibo: #{order.receipt_info.id_receipt}
+    </div>
+    <div className="text-sm text-green-700">
+      Método de Pago: {order.receipt_info.payMethod}
+    </div>
+    <div className="text-sm text-green-700">
+      Monto: ${order.receipt_info.total_amount?.toLocaleString('es-CO')}
+    </div>
+  </div>
+)}
                     <div className="font-semibold">
                       N° Pedido: {order.id_orderDetail}
                     </div>

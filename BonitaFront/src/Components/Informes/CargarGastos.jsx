@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { createExpense } from "../../Redux/Actions/actions";
 // ✅ Importar utilidades de fecha para Colombia
-import { getColombiaDate, formatDateForDisplay, isValidDate } from "../../utils/dateUtils";
+import {
+  getColombiaDate,
+  formatDateForDisplay,
+  isValidDate,
+} from "../../utils/dateUtils";
 import Swal from "sweetalert2";
 
 const CargarGastos = () => {
@@ -14,7 +18,7 @@ const CargarGastos = () => {
   const [description, setDescription] = useState("");
   const [paymentMethods, setPaymentMethods] = useState("");
   const [destinatario, setDestinatario] = useState("");
-  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, success, error } = useSelector((state) => state.expenses);
@@ -26,7 +30,7 @@ const CargarGastos = () => {
   // ✅ Manejar cambios de fecha con validación
   const handleDateChange = (e) => {
     const selectedDate = e.target.value;
-    
+
     if (!isValidDate(selectedDate)) {
       Swal.fire({
         icon: "error",
@@ -115,7 +119,7 @@ const CargarGastos = () => {
         showConfirmButton: false,
         willOpen: () => {
           Swal.showLoading();
-        }
+        },
       });
 
       // ✅ Datos con fecha validada de Colombia
@@ -146,7 +150,6 @@ const CargarGastos = () => {
       setDescription("");
       setPaymentMethods("");
       setDestinatario("");
-      
     } catch (err) {
       console.error("Error al crear gasto:", err);
       Swal.fire({
@@ -165,7 +168,8 @@ const CargarGastos = () => {
       {/* ✅ Información de fecha actual de Colombia */}
       <div className="mb-4 p-3 bg-blue-50 rounded-lg">
         <p className="text-sm text-blue-800">
-          <strong>Fecha actual de Colombia:</strong> {formatDateForDisplay(getColombiaDate())}
+          <strong>Fecha actual de Colombia:</strong>{" "}
+          {formatDateForDisplay(getColombiaDate())}
         </p>
         <p className="text-xs text-blue-600 mt-1">
           Fecha predeterminada configurada para hoy
@@ -182,7 +186,11 @@ const CargarGastos = () => {
             type="date"
             value={date}
             onChange={handleDateChange}
-            min={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Hasta 1 año atrás
+            min={
+              new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+                .toISOString()
+                .split("T")[0]
+            } // Hasta 1 año atrás
             max={getColombiaDate()} // No fechas futuras
             className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-pink-300 focus:border-pink-400 sm:text-sm"
             required
@@ -207,14 +215,18 @@ const CargarGastos = () => {
             <option value="">Seleccione un tipo</option>
             <option value="Impuestos">Impuestos</option>
             <option value="Nomina Colaboradores">Nómina Colaboradores</option>
-            <option value="Nomina Contratistas Externos">Nómina Contratistas Externos</option>
+            <option value="Nomina Contratistas Externos">
+              Nómina Contratistas Externos
+            </option>
             <option value="Seguridad Social">Seguridad Social</option>
             <option value="Publicidad">Publicidad</option>
             <option value="Servicio Agua">Servicio Agua</option>
             <option value="Servicio Energia">Servicio Energía</option>
             <option value="Servicio Internet">Servicio Internet</option>
             <option value="Suministros">Suministros</option>
-            <option value="Viaticos y Transportes">Viáticos y Transportes</option>
+            <option value="Viaticos y Transportes">
+              Viáticos y Transportes
+            </option>
             <option value="Inventario">Inventario</option>
             <option value="Arriendo">Arriendo</option>
             <option value="Proveedores">Proveedores</option>
@@ -232,11 +244,11 @@ const CargarGastos = () => {
             onChange={(e) => setDescription(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Ingrese una descripción detallada del gasto..."
-            rows="3"
-            maxLength="500"
+            rows="4"
+            maxLength="2000" // ✅ AUMENTAR EL LÍMITE
           />
           <p className="text-xs text-gray-500 mt-1">
-            {description.length}/500 caracteres
+            {description.length}/2000 caracteres
           </p>
         </div>
 
@@ -257,9 +269,10 @@ const CargarGastos = () => {
           />
           {amount && Number(amount) > 0 && (
             <p className="text-sm text-gray-600 mt-1">
-              Monto: {Number(amount).toLocaleString("es-CO", {
+              Monto:{" "}
+              {Number(amount).toLocaleString("es-CO", {
                 style: "currency",
-                currency: "COP"
+                currency: "COP",
               })}
             </p>
           )}
@@ -313,7 +326,7 @@ const CargarGastos = () => {
           >
             {loading ? "Creando gasto..." : "Crear Gasto"}
           </button>
-          
+
           <button
             type="button"
             onClick={handleBack}
@@ -326,7 +339,9 @@ const CargarGastos = () => {
 
       {/* ✅ Información adicional */}
       <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-        <h3 className="text-sm font-medium text-yellow-800 mb-2">Importante:</h3>
+        <h3 className="text-sm font-medium text-yellow-800 mb-2">
+          Importante:
+        </h3>
         <ul className="text-xs text-yellow-700 space-y-1">
           <li>• Los gastos se registran en hora de Colombia</li>
           <li>• No se permiten fechas futuras</li>

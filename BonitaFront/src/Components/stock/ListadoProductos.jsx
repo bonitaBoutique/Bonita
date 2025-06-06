@@ -4,8 +4,8 @@ import {
   fetchProducts,
   updateProduct,
   deleteProduct,
-} from "../../Redux/Actions/actions"; // Ajusta la ruta según tu estructura
-import * as XLSX from "xlsx"; // Importar SheetJS
+} from "../../Redux/Actions/actions";
+import * as XLSX from "xlsx";
 import Navbar2 from "../Navbar2";
 import { openCloudinaryWidget } from "../../cloudinaryConfig";
 
@@ -20,14 +20,67 @@ const ListadoProductos = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
   const [editForm, setEditForm] = useState({});
-
   const [selectedProducts, setSelectedProducts] = useState([]);
 
+  // ✅ NUEVO: Estado para movimientos de stock
+  const [stockMovements, setStockMovements] = useState({});
+
+  // ✅ NUEVO: Función para obtener movimientos de stock
+  const fetchStockMovements = async (productId) => {
+    try {
+      const response = await fetch(`/api/products/stock/${productId}`);
+      const data = await response.json();
+      if (data.success) {
+        setStockMovements(prev => ({
+          ...prev,
+          [productId]: data.movements || []
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching stock movements:", error);
+    }
+  };
+
+  // ✅ NUEVO: Función para calcular stock actual
+  const calculateCurrentStock = (product) => {
+    const movements = stockMovements[product.id_product] || [];
+    
+    // Stock inicial (cuando se creó el producto)
+    const initialStock = product.stock;
+    
+    // Calcular movimientos posteriores
+    const totalOut = movements
+      .filter(mov => mov.type === 'OUT')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    
+    const totalIn = movements
+      .filter(mov => mov.type === 'IN')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    
+    // Stock actual = inicial + entradas - salidas
+    const currentStock = initialStock + totalIn - totalOut;
+    
+    return {
+      initial: initialStock,
+      current: Math.max(0, currentStock), // No permitir stock negativo
+      movements: movements.length
+    };
+  };
+
+  // ✅ Cargar movimientos cuando se cargan los productos
+  useEffect(() => {
+    if (products.length > 0) {
+      products.forEach(product => {
+        fetchStockMovements(product.id_product);
+      });
+    }
+  }, [products]);
+
+  // ... resto de funciones existentes (sin cambios) ...
   const handleImageUpload = (productId) => {
     openCloudinaryWidget((uploadedImageUrl) => {
       if (uploadedImageUrl) {
         console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
-        // Busca el producto actual en el arreglo de productos
         const productToUpdate = products.find(
           (p) => p.id_product === productId
         );
@@ -94,7 +147,6 @@ const ListadoProductos = () => {
         tiendaOnLine: !producto.tiendaOnLine,
       };
       await dispatch(updateProduct(producto.id_product, updatedProduct));
-      // Recargar los productos después de la actualización
       dispatch(fetchProducts());
     } catch (error) {
       console.error("Error al actualizar el estado:", error);
@@ -121,18 +173,22 @@ const ListadoProductos = () => {
       selectedProducts.includes(producto.id_product)
     );
 
-    const dataForExcel = selectedData.map((producto) => ({
-      Código_Barra: producto.codigoBarra,
-      Marca: producto.marca,
-      Código_Proveedor: producto.codigoProv,
-      Descripción: producto.description,
-      Costo: producto.price,
-      Precio_Venta: producto.priceSell,
-      Stock: producto.stock,
-      Tamaños: producto.sizes,
-      Colores: producto.colors,
-      Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
-    }));
+    const dataForExcel = selectedData.map((producto) => {
+      const stockInfo = calculateCurrentStock(producto);
+      return {
+        Código_Barra: producto.codigoBarra,
+        Marca: producto.marca,
+        Código_Proveedor: producto.codigoProv,
+        Descripción: producto.description,
+        Costo: producto.price,
+        Precio_Venta: producto.priceSell,
+        Stock_Inicial: stockInfo.initial, // ✅ NUEVO
+        Stock_Actual: stockInfo.current,  // ✅ NUEVO
+        Tamaños: producto.sizes,
+        Colores: producto.colors,
+        Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
@@ -154,7 +210,6 @@ const ListadoProductos = () => {
   );
   const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
 
-  // Función para cambiar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   if (loading)
@@ -172,7 +227,6 @@ const ListadoProductos = () => {
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
             onChange={handleFiltroChange}
           />
-  
           <button
             onClick={handleDownloadExcel}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -181,7 +235,7 @@ const ListadoProductos = () => {
             Descargar Excel
           </button>
         </div>
-  
+
         <div className="overflow-x-auto">
           <table className="min-w-full table-auto border-collapse border border-gray-300">
             <thead className="bg-gray-100">
@@ -195,7 +249,8 @@ const ListadoProductos = () => {
                   "Descripción",
                   "Costo",
                   "Precio Venta",
-                  "Stock",
+                  "Stock Inicial", // ✅ CAMBIO: Renombrado
+                  "Stock Actual",  // ✅ NUEVO
                   "Tamaños",
                   "Colores",
                   "Tienda Online",
@@ -219,8 +274,11 @@ const ListadoProductos = () => {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((producto) => (
-                <tr key={producto.id_product} className="hover:bg-gray-50">
+              {currentItems.map((producto) => {
+                const stockInfo = calculateCurrentStock(producto); // ✅ NUEVO
+                
+                return (
+                  <tr key={producto.id_product} className="hover:bg-gray-50">
                   {/* Imágenes */}
                   <td className="px-4 py-2 border border-gray-300">
                     {producto.images && producto.images.length > 0 ? (
@@ -353,19 +411,26 @@ const ListadoProductos = () => {
                   </td>
                   {/* Stock */}
                   <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="stock"
-                        type="number"
-                        value={editForm.stock || ""}
-                        onChange={handleEditChange}
-                        className="w-16 px-2 py-1 border rounded"
-                        min={0}
-                      />
-                    ) : (
-                      producto.stock
-                    )}
-                  </td>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{stockInfo.initial}</span>
+                        <span className="text-xs text-gray-500">Inicial</span>
+                      </div>
+                    </td>
+                    
+                    {/* ✅ Stock Actual (CALCULADO) */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      <div className="flex flex-col">
+                        <span className={`font-medium ${
+                          stockInfo.current <= 5 ? 'text-red-600' : 
+                          stockInfo.current <= 10 ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {stockInfo.current}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {stockInfo.movements} movimientos
+                        </span>
+                      </div>
+                    </td>
                   {/* Tamaños */}
                   <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
@@ -457,7 +522,8 @@ const ListadoProductos = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
   

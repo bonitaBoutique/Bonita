@@ -66,85 +66,100 @@ const ReservationList = () => {
     setIsPaymentPopupOpen(false);
   };
 
-  const handlePayment = async (id_reservation, amount, paymentMethod) => {
-    console.log("Sending payment request:", {
-      id_reservation,
-      amount,
-      paymentMethod,
-    });
-    try {
-      await dispatch(applyPayment(id_reservation, amount, paymentMethod));
+const handlePayment = async (id_reservation, amount, paymentMethod) => {
+  console.log("Sending payment request:", {
+    id_reservation,
+    amount,
+    paymentMethod,
+  });
+  try {
+    // ✅ APLICAR EL PAGO PRIMERO
+    await dispatch(applyPayment(id_reservation, amount, paymentMethod));
 
-      // Obtener la reserva actualizada del estado global
-      const updatedReservation = reservations.find(
-        (res) => res.id_reservation === id_reservation
-      );
+    // ✅ OBTENER LA RESERVA ACTUALIZADA
+    const updatedReservation = reservations.find(
+      (res) => res.id_reservation === id_reservation
+    );
 
-      // Si la reserva actualizada no se encuentra en el estado global, no hacer nada
-      if (!updatedReservation) {
-        console.warn(
-          `Reserva con ID ${id_reservation} no encontrada en el estado global.`
-        );
-        return;
-      }
-
-      // Obtener el número de recibo más reciente y sumarle uno
-      const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
-
-      // Crear y enviar el recibo
-      const receiptData = {
-        receiptNumber,
-        id_orderDetail: updatedReservation.id_orderDetail,
-        total_amount: amount,
-        amount, // <--- este campo es obligatorio para el backend
-        buyer_name:
-          updatedReservation.OrderDetail.User.first_name +
-          " " +
-          updatedReservation.OrderDetail.User.last_name,
-        buyer_email: updatedReservation.OrderDetail.User.email,
-        buyer_phone: updatedReservation.OrderDetail.User.phone,
-        payMethod: paymentMethod,
-        date: new Date().toISOString().split("T")[0],
-        cashier_document: userInfo?.n_document || "ADMIN",
-      };
-
-      // Mostrar alerta de que el recibo está listo para descargar
-      const saldoPendiente =
-        updatedReservation.OrderDetail.amount -
-        (updatedReservation.totalPaid + amount);
-
-      Swal.fire({
-        title: "Recibo Creado",
-        text: "El recibo está listo para descargar.",
-        icon: "success",
-        confirmButtonText: "Descargar",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          generatePDF({
-            ...receiptData,
-            saldoPendiente,
-          });
-        }
-      });
-
-      // Verificar si el total pagado es igual al monto de la orden
-      if (
-        updatedReservation.totalPaid + amount >=
-        updatedReservation.OrderDetail.amount
-      ) {
-        await dispatch(updateReservation(id_reservation, "Completada"));
-      }
-
-      handleClosePaymentPopup();
-    } catch (error) {
-      console.error("Error al aplicar el pago:", error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
-        icon: "error",
-      });
+    if (!updatedReservation) {
+      console.warn(`Reserva con ID ${id_reservation} no encontrada en el estado global.`);
+      return;
     }
-  };
+
+    // ✅ CONSTRUIR EL NOMBRE DEL COMPRADOR CORRECTAMENTE
+    const buyerFirstName = updatedReservation.OrderDetail?.User?.first_name || "";
+    const buyerLastName = updatedReservation.OrderDetail?.User?.last_name || "";
+    const buyerName = `${buyerFirstName} ${buyerLastName}`.trim() || "Cliente no identificado";
+    
+    console.log("🔍 DEBUG - Datos del comprador:", {
+      buyerFirstName,
+      buyerLastName,
+      buyerName,
+      fullReservation: updatedReservation
+    });
+
+    // ✅ OBTENER EL NÚMERO DE RECIBO
+    const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
+
+    // ✅ CREAR DATOS DEL RECIBO CON INFORMACIÓN COMPLETA
+    const receiptData = {
+      receiptNumber,
+      id_orderDetail: updatedReservation.id_orderDetail,
+      total_amount: amount,
+      amount,
+      buyer_name: buyerName, // ✅ Usar el nombre construido correctamente
+      buyer_email: updatedReservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
+      buyer_phone: updatedReservation.OrderDetail?.User?.phone || "Sin teléfono",
+      payMethod: paymentMethod,
+      payMethod2: null, // Para pagos únicos
+      amount2: null, // Para pagos únicos
+      date: new Date().toISOString().split("T")[0],
+      cashier_document: userInfo?.n_document || "ADMIN",
+      // ✅ AGREGAR CAMPO PARA IDENTIFICAR COMO PAGO PARCIAL
+      tipo_transaccion: "Pago Parcial Reserva"
+    };
+
+    console.log("🔍 DEBUG - Datos del recibo a enviar:", receiptData);
+
+    // ✅ CREAR EL RECIBO EN EL BACKEND
+    await dispatch(createReceipt(receiptData));
+
+    // ✅ CALCULAR SALDO PENDIENTE
+    const saldoPendiente = updatedReservation.OrderDetail.amount - (updatedReservation.totalPaid + amount);
+
+    // ✅ MOSTRAR ALERTA DE ÉXITO
+    Swal.fire({
+      title: "Recibo Creado",
+      text: `Pago aplicado correctamente para ${buyerName}. El recibo está listo para descargar.`,
+      icon: "success",
+      confirmButtonText: "Descargar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        generatePDF({
+          ...receiptData,
+          saldoPendiente,
+        });
+      }
+    });
+
+    // ✅ VERIFICAR SI LA RESERVA ESTÁ COMPLETA
+    if (updatedReservation.totalPaid + amount >= updatedReservation.OrderDetail.amount) {
+      await dispatch(updateReservation(id_reservation, "Completada"));
+    }
+
+    // ✅ RECARGAR LAS RESERVAS PARA ACTUALIZAR LA VISTA
+    await dispatch(getAllReservations());
+
+    handleClosePaymentPopup();
+  } catch (error) {
+    console.error("Error al aplicar el pago:", error);
+    Swal.fire({
+      title: "Error",
+      text: "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
+      icon: "error",
+    });
+  }
+};
 
   const handleDelete = async (id_reservation) => {
     await dispatch(deleteReservation(id_reservation));
@@ -197,119 +212,168 @@ const ReservationList = () => {
     setHoveredOrderId(null);
   };
 
-  const generatePDF = (receiptData) => {
-    const {
-      receiptNumber,
-      date,
-      buyer_name,
-      buyer_email,
-      buyer_phone,
-      total_amount,
-      payMethod,
-      id_orderDetail,
-      saldoPendiente,
-    } = receiptData;
+  // ✅ CORREGIR la función generatePDF para incluir saldo pendiente
+const generatePDF = (receiptData) => {
+  const {
+    receiptNumber,
+    date,
+    buyer_name,
+    buyer_email,
+    buyer_phone,
+    total_amount,
+    payMethod,
+    id_orderDetail,
+    saldoPendiente, // ✅ Recibir el saldo pendiente
+  } = receiptData;
 
-    // Crear un nuevo documento PDF con tamaño 80x297 mm
-    const doc = new jsPDF({
-      unit: "pt", // Establecer la unidad a puntos
-      format: [226.77, 839.28], // Definir el tamaño del recibo en puntos (80 x 297 mm)
-    });
+  // Crear un nuevo documento PDF con tamaño 80x297 mm
+  const doc = new jsPDF({
+    unit: "pt",
+    format: [226.77, 839.28],
+  });
 
-    // Título centrado en la parte superior
-    doc.setFontSize(18);
-    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
-      align: "center",
-    });
+  // Título centrado en la parte superior
+  doc.setFontSize(18);
+  doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+    align: "center",
+  });
 
-    // Información adicional centrada y más pequeña
-    doc.setFontSize(10);
-    let currentY = 50; // Posición inicial
+  // Información adicional centrada y más pequeña
+  doc.setFontSize(10);
+  let currentY = 50;
 
-    doc.text(
-      "Bonita Boutique  S.A.S NIT:",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20; // Espacio mayor entre líneas
+  doc.text(
+    "Bonita Boutique  S.A.S NIT:",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
+  doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
 
-    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 30; // Más espacio antes de la sección siguiente
+  doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 30;
 
-    // Número de recibo centrado
-    doc.text(
-      `RECIBO # ${receiptNumber}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+  // Número de recibo centrado
+  doc.text(
+    `RECIBO # ${receiptNumber}`,
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    // Fecha y estado de la venta
-    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
+  // Fecha y estado de la venta
+  doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
 
-    doc.text(
-      `Estado de venta: ${payMethod}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+  // ✅ CAMBIAR "Estado de venta" por "Tipo de Transacción" para pagos parciales
+  doc.text(
+    `Tipo: Pago Parcial Reserva`,
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
 
-    // Línea de asteriscos
-    currentY += 20; // Espacio antes de la línea
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20; // Espacio después de la línea
+  // Línea de asteriscos
+  currentY += 20;
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    // Detalles del recibo
-    doc.setFontSize(10); // Tamaño de fuente más pequeño para los detalles
-    doc.text(` ${buyer_name}`, 20, currentY);
-    currentY += 20;
+  // Detalles del recibo
+  doc.setFontSize(10);
+  doc.text(`Cliente: ${buyer_name}`, 20, currentY);
+  currentY += 20;
 
-    doc.text(` ${buyer_email}`, 20, currentY);
-    currentY += 20;
+  doc.text(`Email: ${buyer_email}`, 20, currentY);
+  currentY += 20;
 
-    doc.text(` ${buyer_phone || "N/A"}`, 20, currentY);
-    currentY += 20;
+  doc.text(`Teléfono: ${buyer_phone || "N/A"}`, 20, currentY);
+  currentY += 20;
 
-    doc.text(`Pago Parcial: $${total_amount}`, 20, currentY);
-    currentY += 20;
-    doc.text(`Saldo Pendiente: $${saldoPendiente}`, 20, currentY); // <-- agrega esta línea
-    currentY += 20;
-    doc.text(`Metodo de Pago : ${payMethod}`, 20, currentY);
-    currentY += 20;
-    doc.text(`${id_orderDetail}`, 20, currentY);
+  // ✅ AGREGAR LÍNEA SEPARADORA ANTES DE LOS MONTOS
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
 
-    // Agregar texto final centrado
-    currentY += 40; // Espacio mayor antes del mensaje final
-    doc.setFontSize(12);
-    doc.text(
-      "Gracias por elegirnos!",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+  // ✅ INFORMACIÓN FINANCIERA DEL PAGO PARCIAL
+  doc.setFontSize(11);
+  doc.text(`Pago Parcial: $${total_amount?.toLocaleString("es-CO")}`, 20, currentY);
+  currentY += 20;
 
-    // Guardar el PDF con un nombre personalizado que incluye el número de recibo
-    const fileName = `Recibo_${receiptNumber}.pdf`; // Nombre del archivo
-    doc.autoPrint();
-    window.open(doc.output("bloburl"), "_blank");
-  };
+  // ✅ AGREGAR SALDO PENDIENTE CON FORMATO DESTACADO
+  doc.setFontSize(12);
+  doc.text(`Saldo Pendiente: $${saldoPendiente?.toLocaleString("es-CO")}`, 20, currentY);
+  currentY += 20;
+
+  doc.setFontSize(10);
+  doc.text(`Método de Pago: ${payMethod}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Orden: ${id_orderDetail}`, 20, currentY);
+  currentY += 30;
+
+  // ✅ AGREGAR NOTA INFORMATIVA SOBRE LA RESERVA
+  doc.text(
+    "***************************",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+  currentY += 20;
+
+  doc.setFontSize(9);
+  doc.text("NOTA: Este es un pago parcial", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 15;
+
+  doc.text("de una reserva. El saldo", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 15;
+
+  doc.text("pendiente debe ser cancelado", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 15;
+
+  doc.text("para completar la compra.", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 30;
+
+  // Agregar texto final centrado
+  doc.setFontSize(12);
+  doc.text(
+    "Gracias por elegirnos!",
+    doc.internal.pageSize.width / 2,
+    currentY,
+    { align: "center" }
+  );
+
+  // Guardar el PDF con un nombre personalizado que incluye el número de recibo
+  const fileName = `Recibo_Parcial_${receiptNumber}.pdf`;
+  doc.autoPrint();
+  window.open(doc.output("bloburl"), "_blank");
+};
 
   // Lógica para la paginación
   const indexOfLastReservation = currentPage * reservationsPerPage;
@@ -468,26 +532,32 @@ const ReservationList = () => {
                       >
                         Aplicar Pago
                       </button>
-                      <button
-                        onClick={() =>
-                          generatePDF({
-                            receiptNumber: reservation.receiptNumber || 1001,
-                            date: new Date().toISOString().split("T")[0],
-                            buyer_name:
-                              reservation.OrderDetail.User.first_name +
-                              " " +
-                              reservation.OrderDetail.User.last_name,
-                            buyer_email: reservation.OrderDetail.User.email,
-                            buyer_phone: reservation.OrderDetail.User.phone,
-                            total_amount: reservation.totalPaid,
-                            payMethod: "Crédito",
-                            id_orderDetail: reservation.id_orderDetail,
-                          })
-                        }
-                        className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
-                      >
-                        Generar Recibo
-                      </button>
+                     <button
+  onClick={() => {
+    // ✅ CALCULAR EL SALDO PENDIENTE ACTUAL
+    const currentPendingDebt = calculatePendingDebt(
+      reservation.OrderDetail?.amount || 0,
+      reservation.totalPaid || 0
+    );
+
+    generatePDF({
+      receiptNumber: reservation.receiptNumber || 1001,
+      date: new Date().toISOString().split("T")[0],
+      buyer_name: reservation.OrderDetail?.User 
+        ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
+        : "Cliente no identificado",
+      buyer_email: reservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
+      buyer_phone: reservation.OrderDetail?.User?.phone || "Sin teléfono",
+      total_amount: reservation.totalPaid || 0,
+      payMethod: "Crédito/Reserva",
+      id_orderDetail: reservation.id_orderDetail,
+      saldoPendiente: currentPendingDebt, // ✅ Pasar el saldo pendiente calculado
+    });
+  }}
+  className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
+>
+  Generar Recibo
+</button>
                       <button
                         onClick={() => handleDelete(reservation.id_reservation)}
                         className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"

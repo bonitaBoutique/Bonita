@@ -6,9 +6,10 @@ const {
   getOrCreateSellerData,
   getSellerDataBySdocno
 } = require("./Taxxa/sellerDataControllers");
-const { getProductStock, createProduct } = require("./Products");
+const { getProductStock, createProduct, getStock,  returnProducts,
+    getReceiptForReturn,
+    getReturnHistory } = require("./Products");
 
-// ✅ CORREGIR: Faltaba 'const {' al inicio
 const {
   createReceipt, 
   lastReceipt, 
@@ -17,10 +18,14 @@ const {
   getGiftCardReceipts, 
   redeemGiftCard, 
   createGiftCard, 
-  getGiftCardBalance,
-  getAddiSistecreditoPayments,
-  updatePaymentAddiSistecredito
+  getGiftCardBalance
 } = require("./Caja");
+
+// ✅ AGREGAR IMPORTS DE ADDI/SISTECREDITO DESDE CONTROLLERS/
+const createAddiSistecreditoDeposit = require("./createAddiSistecreditoDeposit");
+const getAddiSistecreditoConciliation = require("./getAddiSistecreditoConciliation");
+const getAddiSistecreditoDeposits = require("./getAddiSistecreditoDeposits");
+const updateAddiSistecreditoDeposit = require("./updateAddiSistecreditoDeposit");
 
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
@@ -48,6 +53,7 @@ const { getLastInvoiceNumber } = require("./invoiceControllers.js");
 
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
+  getStock: catchedAsync(require("./Products/getStock")),
   createCategory: catchedAsync(require("./Category/createCategory")),
   createSB: catchedAsync(require("./SubCategory/createSB")),
   putProduct: catchedAsync(require("./Products/putProduct")),
@@ -112,7 +118,14 @@ module.exports = {
   redeemGiftCard: catchedAsync(redeemGiftCard),
   createGiftCard: catchedAsync(createGiftCard),
   getGiftCardBalance: catchedAsync(getGiftCardBalance),
+  
   // ✅ NUEVAS FUNCIONES PARA ADDI/SISTECREDITO
-  getAddiSistecreditoPayments: catchedAsync(getAddiSistecreditoPayments),
-  updatePaymentAddiSistecredito: catchedAsync(updatePaymentAddiSistecredito),
+  createAddiSistecreditoDeposit: catchedAsync(createAddiSistecreditoDeposit),
+  getAddiSistecreditoConciliation: catchedAsync(getAddiSistecreditoConciliation),
+  getAddiSistecreditoDeposits: catchedAsync(getAddiSistecreditoDeposits),
+  updateAddiSistecreditoDeposit: catchedAsync(updateAddiSistecreditoDeposit),
+
+  ReturnProducts: catchedAsync(require("./Products/ReturnProducts")),
+  getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),
+  getReturnHistory: catchedAsync(require("./Products/getReturnHistory")),
 };

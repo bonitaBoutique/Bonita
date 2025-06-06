@@ -103,6 +103,10 @@ export const adminRoutes = [
     path: '/panelProductos', 
     component: lazy(() => import('../Product/PanelProductos')) 
   },
+   { 
+    path: '/stock/movements', 
+    component: lazy(() => import('../stock/StockMovements'))
+   },
   { 
     path: '/reservas', 
     component: lazy(() => import('../ReservationsList')) 
@@ -117,6 +121,14 @@ export const adminRoutes = [
   },
   { 
     path: '/createProducts', 
+    component: lazy(() => import('../Product/CreateProduct')) 
+  },
+  { 
+    path: '/returns/management', 
+    component: lazy(() => import('../stock/ReturnManagment')) 
+  },
+  { 
+    path: '/returns/history', 
     component: lazy(() => import('../Product/CreateProduct')) 
   },
   { 

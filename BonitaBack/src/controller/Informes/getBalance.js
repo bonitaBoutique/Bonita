@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense, CreditPayment, Reservation } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User } = require("../../data");
 const { Op } = require("sequelize");
 const { getColombiaDate } = require("../../utils/dateUtils");
 
@@ -63,7 +63,7 @@ const getBalance = async (req, res) => {
         'pointOfSale',
         'transaction_status',
         'discount',
-        'createdAt'
+       
       ],
       order: [['date', 'DESC']]
     });
@@ -95,7 +95,7 @@ const getBalance = async (req, res) => {
         'total_amount',
         'payMethod',
         'cashier_document',
-        'createdAt'
+       
       ],
       order: [['date', 'DESC']]
     });
@@ -112,18 +112,33 @@ const getBalance = async (req, res) => {
 
     // ✅ PASO 3: Obtener pagos parciales de reservas
     console.log("💳 Buscando pagos parciales...");
-    const partialPayments = await CreditPayment.findAll({
-      where: dateFilter,
-      attributes: ['id_payment', 'id_reservation', 'amount', 'date', 'createdAt'],
+   const partialPayments = await CreditPayment.findAll({
+  where: dateFilter,
+  attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
+  include: [
+    {
+      model: Reservation,
+      attributes: ['n_document', 'id_orderDetail', 'status'],
+      required: false,
+      // ✅ AGREGAR ESTE INCLUDE ANIDADO
       include: [
         {
-          model: Reservation,
-          attributes: ['n_document', 'id_orderDetail', 'status'],
-          required: false
+          model: OrderDetail,
+          attributes: ['id_orderDetail', 'n_document'],
+          required: false,
+          include: [
+            {
+              model: User,
+              attributes: ['n_document', 'first_name', 'last_name', 'email'],
+              required: false
+            }
+          ]
         }
-      ],
-      order: [['date', 'DESC']]
-    });
+      ]
+    }
+  ],
+  order: [['date', 'DESC']]
+});
 
     console.log(`✅ Pagos parciales encontrados: ${partialPayments.length}`);
 
@@ -145,10 +160,12 @@ const getBalance = async (req, res) => {
         'paymentMethods',
         'description',
         'destinatario',
-        'createdAt'
+       
       ],
       order: [['date', 'DESC']]
     });
+
+    
 
     console.log(`✅ Gastos encontrados: ${expenses.length}`);
 
@@ -184,18 +201,32 @@ const getBalance = async (req, res) => {
       type: 'Venta Local'
     }));
 
-    const formattedPartialPayments = partialPayments.map(payment => ({
-      id: payment.id_payment,
-      date: payment.date,
-      amount: parseFloat(payment.amount || 0),
-      pointOfSale: 'Local',
-      paymentMethod: 'Efectivo',
-      type: 'Pago Parcial Reserva',
-      reservationId: payment.id_reservation,
-      reservationStatus: payment.Reservation?.status || 'Sin estado',
-      n_document: payment.Reservation?.n_document || null,
-      id_orderDetail: payment.Reservation?.id_orderDetail || null,
-    }));
+    const formattedPartialPayments = partialPayments.map(payment => {
+  // ✅ OBTENER EL NOMBRE DEL USUARIO
+  let buyerName = 'Cliente no identificado';
+  
+  if (payment.Reservation?.OrderDetail?.User) {
+    const user = payment.Reservation.OrderDetail.User;
+    buyerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Cliente no identificado';
+  }
+
+  return {
+    id: payment.id_payment,
+    date: payment.date,
+    amount: parseFloat(payment.amount || 0),
+    pointOfSale: 'Local',
+    paymentMethod: 'Efectivo',
+    type: 'Pago Parcial Reserva',
+    reservationId: payment.id_reservation,
+    reservationStatus: payment.Reservation?.status || 'Sin estado',
+    n_document: payment.Reservation?.n_document || null,
+    id_orderDetail: payment.Reservation?.id_orderDetail || null,
+    // ✅ AGREGAR EL NOMBRE DEL COMPRADOR
+    buyerName: buyerName,
+    buyer_name: buyerName, // Para compatibilidad con el frontend
+    description: buyerName // Para que aparezca en la columna descripción
+  };
+});
 
     const formattedExpenses = expenses.map(expense => ({
       id: expense.id,

@@ -125,7 +125,7 @@ module.exports = {
   getAddiSistecreditoDeposits: catchedAsync(getAddiSistecreditoDeposits),
   updateAddiSistecreditoDeposit: catchedAsync(updateAddiSistecreditoDeposit),
 
-  ReturnProducts: catchedAsync(require("./Products/ReturnProducts")),
+  returnProducts: catchedAsync(require("./Products/returnProducts")),
   getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),
   getReturnHistory: catchedAsync(require("./Products/getReturnHistory")),
 };

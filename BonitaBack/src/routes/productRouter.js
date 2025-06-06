@@ -13,7 +13,7 @@ router.get("/stock-movements", controller.getStock); // Para listar TODOS los mo
 
 // ✅ NUEVAS RUTAS DE DEVOLUCIONES
 router.get("/receipt-for-return/:receipt_id", controller.getReceiptForReturn); // Buscar recibo para devolución
-router.post("/process-return", controller.ReturnProducts); // Procesar devolución
+router.post("/process-return", controller.returnProducts); // Procesar devolución
 router.get("/returns-history", controller.getReturnHistory); // Historial de devoluciones
 
 // ✅ RUTAS CON PARÁMETROS AL FINAL

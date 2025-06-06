@@ -6,7 +6,9 @@ const {
   getOrCreateSellerData,
   getSellerDataBySdocno
 } = require("./Taxxa/sellerDataControllers");
-const { getProductStock, createProduct } = require("./Products");
+const { getProductStock, createProduct, getStock,  returnProducts,
+    getReceiptForReturn,
+    getReturnHistory } = require("./Products");
 
 const {
   createReceipt, 
@@ -51,6 +53,7 @@ const { getLastInvoiceNumber } = require("./invoiceControllers.js");
 
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
+  getStock: catchedAsync(require("./Products/getStock")),
   createCategory: catchedAsync(require("./Category/createCategory")),
   createSB: catchedAsync(require("./SubCategory/createSB")),
   putProduct: catchedAsync(require("./Products/putProduct")),
@@ -121,4 +124,8 @@ module.exports = {
   getAddiSistecreditoConciliation: catchedAsync(getAddiSistecreditoConciliation),
   getAddiSistecreditoDeposits: catchedAsync(getAddiSistecreditoDeposits),
   updateAddiSistecreditoDeposit: catchedAsync(updateAddiSistecreditoDeposit),
+
+  ReturnProducts: catchedAsync(require("./Products/ReturnProducts")),
+  getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),
+  getReturnHistory: catchedAsync(require("./Products/getReturnHistory")),
 };

@@ -135,13 +135,28 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_ACCOUNT_SUMMARY_REQUEST,
   FETCH_ACCOUNT_SUMMARY_SUCCESS,
   FETCH_ACCOUNT_SUMMARY_FAILURE,
+  SEARCH_RECEIPT_FOR_RETURN_REQUEST,
+  SEARCH_RECEIPT_FOR_RETURN_SUCCESS,
+  SEARCH_RECEIPT_FOR_RETURN_FAILURE,
+  PROCESS_RETURN_REQUEST,
+  PROCESS_RETURN_SUCCESS,
+  PROCESS_RETURN_FAILURE,
+  FETCH_RETURN_HISTORY_REQUEST,
+  FETCH_RETURN_HISTORY_SUCCESS,
+  FETCH_RETURN_HISTORY_FAILURE,
+  CLEAR_RETURN_STATE,
+  RESET_RECEIPT_SEARCH,
 
 } from "../Actions/actions-type";
 
 const initialState = {
-  searchTerm: "",
-  receipts: [],
-  receiptNumber: null,
+  receiptsLoading: false,
+  receiptsError: null,
+  receiptsPagination: {
+    total: 0,
+    pages: 0,
+    currentPage: 1
+  },
   priceFilter: { min: null, max: null },
   categoryFilter: "",
   searchResults: [],
@@ -287,6 +302,28 @@ const initialState = {
   data: null,
   error: null,
 },
+returns: {
+    receiptSearch: {
+      loading: false,
+      receipt: null,
+      canReturn: true,
+      daysSinceReceipt: 0,
+      error: null,
+    },
+    processing: {
+      loading: false,
+      result: null,
+      error: null,
+      success: false,
+    },
+    history: {
+      loading: false,
+      data: [],
+      pagination: null,
+      stats: [],
+      error: null,
+    },
+  },
 };
 
 
@@ -1083,13 +1120,31 @@ case USER_REGISTER_FAIL:
       return { ...state, loading: false, error: action.payload };
 
     case FETCH_RECEIPTS_REQUEST:
-      return { ...state, loading: true, error: null };
+  return { 
+    ...state, 
+    receiptsLoading: true, 
+    receiptsError: null 
+  };
 
-    case FETCH_RECEIPTS_SUCCESS:
-      return { ...state, loading: false, receipts: action.payload };
+case FETCH_RECEIPTS_SUCCESS:
+  return { 
+    ...state, 
+    receiptsLoading: false, 
+    receipts: action.payload.receipts || action.payload,
+    receiptsPagination: action.payload.total ? {
+      total: action.payload.total,
+      pages: action.payload.pages,
+      currentPage: action.payload.currentPage
+    } : state.receiptsPagination,
+    receiptsError: null
+  };
 
-    case FETCH_RECEIPTS_FAILURE:
-      return { ...state, loading: false, error: action.payload };
+case FETCH_RECEIPTS_FAILURE:
+  return { 
+    ...state, 
+    receiptsLoading: false, 
+    receiptsError: action.payload 
+  };
 
     case CREATE_EXPENSE_REQUEST:
       return {
@@ -1526,7 +1581,195 @@ case CREATE_SENDING_FAILURE:
             data: null,
             error: action.payload,
           },
-        };   
+        }; 
+         case FETCH_ACCOUNT_SUMMARY_FAILURE:
+      return {
+        ...state,
+        accountSummary: {
+          loading: false,
+          data: null,
+          error: action.payload,
+        },
+      };
+
+    // ✅ =========================================
+    // 🆕 CASOS PARA SISTEMA DE DEVOLUCIONES
+    // ✅ =========================================
+
+    // 🔍 BUSCAR RECIBO PARA DEVOLUCIÓN
+    case SEARCH_RECEIPT_FOR_RETURN_REQUEST:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          receiptSearch: {
+            ...state.returns.receiptSearch,
+            loading: true,
+            error: null,
+          },
+        },
+      };
+
+    case SEARCH_RECEIPT_FOR_RETURN_SUCCESS:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          receiptSearch: {
+            loading: false,
+            receipt: action.payload.receipt,
+            canReturn: action.payload.canReturn,
+            daysSinceReceipt: action.payload.daysSinceReceipt,
+            error: null,
+          },
+        },
+      };
+
+    case SEARCH_RECEIPT_FOR_RETURN_FAILURE:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          receiptSearch: {
+            ...state.returns.receiptSearch,
+            loading: false,
+            error: action.payload,
+          },
+        },
+      };
+
+    // 🔄 PROCESAR DEVOLUCIÓN
+    case PROCESS_RETURN_REQUEST:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          processing: {
+            ...state.returns.processing,
+            loading: true,
+            error: null,
+            success: false,
+          },
+        },
+      };
+
+    case PROCESS_RETURN_SUCCESS:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          processing: {
+            loading: false,
+            result: action.payload,
+            error: null,
+            success: true,
+          },
+        },
+        // ✅ Si se creó un nuevo recibo, agregarlo a la lista
+        receipts: action.payload.newReceipt 
+          ? [...state.receipts, action.payload.newReceipt]
+          : state.receipts,
+      };
+
+    case PROCESS_RETURN_FAILURE:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          processing: {
+            ...state.returns.processing,
+            loading: false,
+            error: action.payload,
+            success: false,
+          },
+        },
+      };
+
+    // 📋 HISTORIAL DE DEVOLUCIONES
+    case FETCH_RETURN_HISTORY_REQUEST:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          history: {
+            ...state.returns.history,
+            loading: true,
+            error: null,
+          },
+        },
+      };
+
+    case FETCH_RETURN_HISTORY_SUCCESS:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          history: {
+            loading: false,
+            data: action.payload.returns,
+            pagination: action.payload.pagination,
+            stats: action.payload.stats,
+            error: null,
+          },
+        },
+      };
+
+    case FETCH_RETURN_HISTORY_FAILURE:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          history: {
+            ...state.returns.history,
+            loading: false,
+            error: action.payload,
+          },
+        },
+      };
+
+    // 🧹 LIMPIAR ESTADO DE DEVOLUCIONES
+    case CLEAR_RETURN_STATE:
+      return {
+        ...state,
+        returns: {
+          receiptSearch: {
+            loading: false,
+            receipt: null,
+            canReturn: true,
+            daysSinceReceipt: 0,
+            error: null,
+          },
+          processing: {
+            loading: false,
+            result: null,
+            error: null,
+            success: false,
+          },
+          history: {
+            loading: false,
+            data: [],
+            pagination: null,
+            stats: [],
+            error: null,
+          },
+        },
+      };
+
+    // 🔄 RESETEAR BÚSQUEDA DE RECIBO
+    case RESET_RECEIPT_SEARCH:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          receiptSearch: {
+            loading: false,
+            receipt: null,
+            canReturn: true,
+            daysSinceReceipt: 0,
+            error: null,
+          },
+        },
+      };  
 
           
     default:

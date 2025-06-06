@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
         },
         { model: Payment },
       ],
-      order: [["createdAt", "DESC"]],
+     
     });
 
     // Buscar reservas directas por n_document
@@ -50,13 +50,13 @@ module.exports = async (req, res) => {
           { buyer_phone: user.phone },
         ],
       },
-      order: [["createdAt", "DESC"]],
+      
     });
 
     // GiftCards por email del usuario
     const giftcards = await GiftCard.findAll({
       where: { buyer_email: user.email },
-      order: [["createdAt", "DESC"]],
+      
     });
 
     return res.json({

@@ -22,6 +22,6 @@ router.use('/invoice', require('./invoiceRouter') )
 router.use('/taxxa', require('./taxxaRouter') )
 router.use('/giftcard', require('./giftCardRouter') )
 router.use('/creditPayment', require('./addiSistecreditoRoutes') )
-
+router.use("/addi-sistecredito", require("./addiSistecreditoRoutes"));
                                                                                                                                                            
 module.exports = router;

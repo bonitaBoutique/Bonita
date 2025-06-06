@@ -42,6 +42,7 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
+          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",
@@ -50,6 +51,7 @@ module.exports = (sequelize) => {
         ),
         allowNull: false,
       },
+      
       amount: {
         type: DataTypes.FLOAT,
         allowNull: false, 
@@ -63,6 +65,7 @@ module.exports = (sequelize) => {
           "Efectivo",
           "Sistecredito",
           "Addi",
+          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",

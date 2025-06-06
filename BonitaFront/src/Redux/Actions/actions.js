@@ -139,6 +139,18 @@ REMOVE_PRODUCT_FROM_ORDER_FAILURE,
 FETCH_ACCOUNT_SUMMARY_REQUEST,
 FETCH_ACCOUNT_SUMMARY_SUCCESS,
 FETCH_ACCOUNT_SUMMARY_FAILURE,
+SEARCH_RECEIPT_FOR_RETURN_REQUEST,
+  SEARCH_RECEIPT_FOR_RETURN_SUCCESS,
+  SEARCH_RECEIPT_FOR_RETURN_FAILURE,
+  PROCESS_RETURN_REQUEST,
+  PROCESS_RETURN_SUCCESS,
+  PROCESS_RETURN_FAILURE,
+  FETCH_RETURN_HISTORY_REQUEST,
+  FETCH_RETURN_HISTORY_SUCCESS,
+  FETCH_RETURN_HISTORY_FAILURE,
+  CLEAR_RETURN_STATE,
+  RESET_RECEIPT_SEARCH,
+
 
   
 } from "./actions-type";
@@ -982,8 +994,18 @@ export const fetchAllReceipts = () => async (dispatch) => {
     const { data } = await axios.get(`${BASE_URL}/caja/receipts`);
     console.log("API response data:", data);
 
-    dispatch({ type: FETCH_RECEIPTS_SUCCESS, payload: data.data.receipts });
+    // ✅ CORREGIR: Los recibos están en data.receipts, no en data.data.receipts
+    dispatch({ 
+      type: FETCH_RECEIPTS_SUCCESS, 
+      payload: {
+        receipts: data.receipts,
+        total: data.total,
+        pages: data.pages,
+        currentPage: data.currentPage
+      }
+    });
   } catch (error) {
+    console.error("Error fetching receipts:", error);
     dispatch({
       type: FETCH_RECEIPTS_FAILURE,
       payload:
@@ -991,6 +1013,7 @@ export const fetchAllReceipts = () => async (dispatch) => {
           ? error.response.data.message
           : error.message,
     });
+    Swal.fire('Error', 'Error al obtener los recibos', 'error');
   }
 };
 
@@ -1371,3 +1394,149 @@ export const fetchAccountSummary = (n_document) => async (dispatch) => {
 
   }
 }
+
+// ✅ AGREGAR AL FINAL DEL ARCHIVO, DESPUÉS DE fetchAccountSummary
+
+// ===========================================
+// 🆕 ACTIONS PARA SISTEMA DE DEVOLUCIONES
+// ===========================================
+
+// ✅ 1. BUSCAR RECIBO PARA DEVOLUCIÓN
+export const searchReceiptForReturn = (receiptId) => async (dispatch) => {
+  try {
+    dispatch({ type: SEARCH_RECEIPT_FOR_RETURN_REQUEST });
+
+    const { data } = await axios.get(`${BASE_URL}/product/receipt-for-return/${receiptId}`);
+    console.log("🔍 Recibo encontrado:", data);
+
+    if (data.success) {
+      dispatch({ 
+        type: SEARCH_RECEIPT_FOR_RETURN_SUCCESS, 
+        payload: data.data 
+      });
+      return data.data; // Retornar para uso en el componente
+    } else {
+      throw new Error(data.message || 'Recibo no encontrado');
+    }
+
+  } catch (error) {
+    console.error("❌ Error buscando recibo:", error);
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: SEARCH_RECEIPT_FOR_RETURN_FAILURE,
+      payload: errorMessage
+    });
+    
+    throw new Error(errorMessage);
+  }
+};
+
+// ✅ 2. PROCESAR DEVOLUCIÓN COMPLETA
+export const processReturn = (returnData) => async (dispatch) => {
+  try {
+    dispatch({ type: PROCESS_RETURN_REQUEST });
+
+    console.log("🔄 Procesando devolución:", returnData);
+
+    const { data } = await axios.post(`${BASE_URL}/product/process-return`, returnData, {
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (data.success) {
+      dispatch({ 
+        type: PROCESS_RETURN_SUCCESS, 
+        payload: data.data 
+      });
+
+      // ✅ Si se creó un nuevo recibo, actualizar la lista de recibos
+      if (data.data.newReceipt) {
+        // Refrescar la lista de recibos para incluir el nuevo
+        dispatch(fetchAllReceipts());
+      }
+
+      // Mostrar mensaje de éxito
+      Swal.fire({
+        title: '✅ Devolución Procesada',
+        text: 'La devolución se ha procesado exitosamente',
+        icon: 'success',
+        timer: 3000,
+        timerProgressBar: true
+      });
+
+      return data.data; // Retornar resultado para el componente
+    } else {
+      throw new Error(data.message || 'Error al procesar devolución');
+    }
+
+  } catch (error) {
+    console.error("❌ Error procesando devolución:", error);
+    const errorMessage = error.response?.data?.error || error.message;
+
+    dispatch({
+      type: PROCESS_RETURN_FAILURE,
+      payload: errorMessage
+    });
+
+    // Mostrar mensaje de error
+    Swal.fire({
+      title: '❌ Error en Devolución',
+      text: errorMessage,
+      icon: 'error'
+    });
+    
+    throw new Error(errorMessage);
+  }
+};
+
+// ✅ 3. OBTENER HISTORIAL DE DEVOLUCIONES
+export const fetchReturnHistory = (filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_RETURN_HISTORY_REQUEST });
+
+    // Construir query params para filtros
+    const queryParams = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] && filters[key] !== 'all') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+
+    const url = `${BASE_URL}/product/returns-history${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    console.log("📋 Obteniendo historial:", url);
+
+    const { data } = await axios.get(url);
+
+    if (data.success) {
+      dispatch({ 
+        type: FETCH_RETURN_HISTORY_SUCCESS, 
+        payload: data.data 
+      });
+      return data.data;
+    } else {
+      throw new Error(data.message || 'Error al obtener historial');
+    }
+
+  } catch (error) {
+    console.error("❌ Error obteniendo historial:", error);
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: FETCH_RETURN_HISTORY_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire('Error', 'Error al cargar el historial de devoluciones', 'error');
+    throw new Error(errorMessage);
+  }
+};
+
+// ✅ 4. LIMPIAR ESTADO DE DEVOLUCIONES
+export const clearReturnState = () => ({
+  type: CLEAR_RETURN_STATE
+});
+
+// ✅ 5. RESETEAR BÚSQUEDA DE RECIBO
+export const resetReceiptSearch = () => ({
+  type: RESET_RECEIPT_SEARCH
+});

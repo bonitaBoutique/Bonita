@@ -150,13 +150,17 @@ DELETE_ORDER_DETAIL_REQUEST,
 } from "../Actions/actions-type";
 
 const initialState = {
-  receiptsLoading: false,
+ receiptsLoading: false,
   receiptsError: null,
   receiptsPagination: {
     total: 0,
     pages: 0,
     currentPage: 1
   },
+  // ✅ AGREGAR ESTA LÍNEA:
+  receipts: [],
+  receiptNumber: null,
+  
   priceFilter: { min: null, max: null },
   categoryFilter: "",
   searchResults: [],
@@ -1081,22 +1085,35 @@ case USER_REGISTER_FAIL:
         },
       };
 
-    case CREATE_RECEIPT_SUCCESS:
-      return {
-        ...state,
-        loading: false,
-        receipts: [...state.receipts, action.payload],
-        error: null, // Añade esto para limpiar el error
-      };
+  case CREATE_RECEIPT_REQUEST:
+  return {
+    ...state,
+    receiptsLoading: true,
+    receiptsError: null,
+  };
 
-    case CREATE_RECEIPT_FAILURE:
-      return { ...state, loading: false, error: action.payload };
+case CREATE_RECEIPT_SUCCESS:
+  return {
+    ...state,
+    receiptsLoading: false,
+    receipts: [...state.receipts, action.payload],
+    receiptsError: null,
+  };
 
-      case RESET_RECEIPT_STATE:
+case CREATE_RECEIPT_FAILURE:
+  return { 
+    ...state, 
+    receiptsLoading: false, 
+    receiptsError: action.payload 
+  };
+
+case RESET_RECEIPT_STATE:
   return {
     ...state,
     receipts: [],
     receiptNumber: null,
+    receiptsLoading: false, // ✅ Agregar esto también
+    receiptsError: null,    // ✅ Agregar esto también
     orderById: {
       loading: false,
       error: null,
@@ -1108,7 +1125,6 @@ case USER_REGISTER_FAIL:
       order: {},
       error: null,
     },
-    // Limpia otros estados relacionados si lo necesitas
   };
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };

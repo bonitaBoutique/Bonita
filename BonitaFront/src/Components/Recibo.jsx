@@ -17,44 +17,60 @@ import {
 import ReservationPopup from "./ReservationPopup";
 import { getColombiaDate, formatDateForDisplay, isValidDate } from "../utils/dateUtils";
 
-
 const Recibo = () => {
   const { idOrder } = useParams();
   const { n_document } = useParams();
 
+  // ✅ ESTADOS LOCALES
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
   const [showSecondPayment, setShowSecondPayment] = useState(false);
   const [paymentMethod2, setPaymentMethod2] = useState("");
-  const [amount1, setAmount1] = useState(""); // Primer monto
-  const [amount2, setAmount2] = useState(""); // Segundo monto
+  const [amount1, setAmount1] = useState("");
+  const [amount2, setAmount2] = useState("");
   const [loadingCashier, setLoadingCashier] = useState(true);
   const [discount, setDiscount] = useState(0);
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [buyerPhone, setBuyerPhone] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [date, setDate] = useState(() => getColombiaDate());
+  const [cashGiven, setCashGiven] = useState("");
+  const [change, setChange] = useState(0);
+  const [observations, setObservations] = useState("");
+
+  // ✅ HOOKS
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // ✅ SELECTORES REDUX
   const { order, loading, error } = useSelector((state) => state.orderById);
   const { receiptNumber } = useSelector((state) => state);
+  const { 
+    receiptsLoading = false, 
+    receiptsError = null,
+    receipts = []
+  } = useSelector((state) => state);
+
   const {
     userInfo,
     loading: userLoading,
     error: userError,
   } = useSelector((state) => state.userLogin);
+
   const {
     userInfo: cashierInfo,
     loading: cashierLoading,
     error: cashierError,
   } = useSelector((state) => state.userTaxxa);
 
-  const [buyerName, setBuyerName] = useState("");
-  const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerPhone, setBuyerPhone] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
- const [date, setDate] = useState(() => getColombiaDate());
-  const [cashGiven, setCashGiven] = useState("");
-  const [change, setChange] = useState(0);
-   const [observations, setObservations] = useState("");
+  // ✅ CÁLCULOS DERIVADOS
+  const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
+  const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
+  const newReceiptNumber = receiptNumber ? receiptNumber + 1 : 1001;
 
+  // ✅ FUNCIONES UTILITARIAS
   const resetForm = () => {
     setPaymentMethod("Efectivo");
     setShowSecondPayment(false);
@@ -65,18 +81,45 @@ const Recibo = () => {
     setBuyerEmail("");
     setBuyerPhone("");
     setTotalAmount("");
-    setDate("");
+    setDate(getColombiaDate());
     setCashGiven("");
     setChange(0);
+    setDiscount(0);
+    setObservations("");
     setIsSubmitted(false);
   };
 
   const handleExit = () => {
     dispatch(resetReceiptState());
     dispatch(clearOrderState());
-    navigate("/caja");
+    navigate("/panel/caja"); // ✅ Ruta consistente
   };
 
+  // ✅ MANEJO DE MÉTODOS DE PAGO
+  const handlePaymentMethodChange = (e) => {
+    const value = e.target.value;
+    setPaymentMethod(value);
+    setShowSecondPayment(false);
+    setPaymentMethod2("");
+    setAmount1("");
+    setAmount2("");
+    if (value === "Crédito") {
+      setShowReservationPopup(true);
+    }
+  };
+
+  // ✅ MANEJO DE EFECTIVO CON DESCUENTO
+  const handleCashGivenChange = (e) => {
+  const value = parseFloat(e.target.value) || 0;
+  setCashGiven(value);
+  
+  // ✅ CALCULAR VUELTO CON PRECISIÓN
+  const totalAmount = Number(totalWithDiscount);
+  const changeAmount = value - totalAmount;
+  setChange(Math.round(changeAmount * 100) / 100); // Redondear a 2 decimales
+};
+
+  // ✅ EFFECTS
   useEffect(() => {
     if (!order || order.id_orderDetail !== idOrder) {
       dispatch(fetchOrdersByIdOrder(idOrder));
@@ -94,7 +137,6 @@ const Recibo = () => {
       setBuyerName(`${order.userData.first_name} ${order.userData.last_name}`);
       setBuyerEmail(order.userData.email);
       setBuyerPhone(order.userData.phone);
-      // Resetear montos y segundo pago al cargar nueva orden
       setAmount1("");
       setAmount2("");
       setShowSecondPayment(false);
@@ -111,106 +153,91 @@ const Recibo = () => {
     }
   }, [userInfo, dispatch]);
 
-  // Maneja el cambio del método de pago principal
-  const handlePaymentMethodChange = (e) => {
-    const value = e.target.value; // <-- Agrega esto
-    setPaymentMethod(value);
-    setShowSecondPayment(false);
-    setPaymentMethod2("");
-    setAmount1("");
-    setAmount2("");
-    if (value === "Crédito") {
-      setShowReservationPopup(true);
-    }
-  };
+  // ✅ MANEJO DE SUBMIT
+  // ✅ MANEJO DE SUBMIT CORREGIDO
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  if (loading || userLoading || cashierLoading) {
-    return <p>Cargando detalles de la orden...</p>;
+  // Validación de descuento
+  if (discount < 0 || discount > 100) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "El descuento debe estar entre 0% y 100%.",
+    });
+    return;
   }
 
-  if (error || userError || cashierError) {
-    // Si es objeto, muestra el campo 'message' o 'error'
-    const getErrorMsg = (err) =>
-      typeof err === "string"
-        ? err
-        : err?.message || err?.error || JSON.stringify(err);
+  let finalAmount1;
+  let finalAmount2 = null;
+  let finalPayMethod2 = null;
 
-    return (
-      <p>
-        Error al cargar la orden:{" "}
-        {getErrorMsg(error) ||
-          getErrorMsg(userError) ||
-          getErrorMsg(cashierError)}
-      </p>
-    );
-  }
+  // Validación y asignación de montos
+  if (showSecondPayment) {
+    finalAmount1 = Number(amount1);
+    finalAmount2 = Number(amount2);
+    finalPayMethod2 = paymentMethod2;
 
-  if (!order || order.id_orderDetail !== idOrder) {
-    return <p>No se encontró la orden</p>;
-  }
-
-  const newReceiptNumber = receiptNumber ? receiptNumber + 1 : 1001;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    let finalAmount1;
-    let finalAmount2 = null;
-    let finalPayMethod2 = null;
-
-    // **VALIDACIÓN Y ASIGNACIÓN DE MONTOS DENTRO DEL HANDLESUBMIT**
-    if (showSecondPayment) {
-      finalAmount1 = Number(amount1);
-      finalAmount2 = Number(amount2);
-      finalPayMethod2 = paymentMethod2;
-
-      // Validar que los montos sean números y la suma sea correcta
-      if (
-        isNaN(finalAmount1) ||
-        isNaN(finalAmount2) ||
-        finalAmount1 <= 0 ||
-        finalAmount2 <= 0 ||
-        !finalPayMethod2
-      ) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Debes ingresar ambos montos y seleccionar el segundo método de pago.",
-        });
-        return;
-      }
-
-      if (finalAmount1 + finalAmount2 !== Number(totalAmount)) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "La suma de los montos debe ser igual al total.",
-        });
-        return;
-      }
-    } else {
-      // Si solo hay un método de pago
-      finalAmount1 = Number(totalAmount);
-    }
-
-    if (isNaN(finalAmount1) || finalAmount1 <= 0) {
+    if (
+      isNaN(finalAmount1) ||
+      isNaN(finalAmount2) ||
+      finalAmount1 <= 0 ||
+      finalAmount2 <= 0 ||
+      !finalPayMethod2
+    ) {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "El monto total no es válido.",
+        text: "Debes ingresar ambos montos y seleccionar el segundo método de pago.",
       });
       return;
     }
 
-    if (!userInfo || !order || !cashierInfo) {
+    if (finalAmount1 + finalAmount2 !== totalWithDiscount) {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Faltan datos necesarios",
+        text: `La suma de los montos debe ser igual al total con descuento: $${totalWithDiscount.toLocaleString("es-CO")}`,
       });
       return;
     }
+  } else {
+    finalAmount1 = totalWithDiscount;
+  }
 
+  // ✅ VALIDACIÓN CORREGIDA PARA EFECTIVO
+  if (paymentMethod === "Efectivo" && !showSecondPayment) {
+    const cashAmount = Number(cashGiven);
+    const totalAmount = Number(totalWithDiscount);
+    
+    // Permitir diferencias mínimas por redondeo (0.01)
+    if (!cashGiven || cashAmount < (totalAmount - 0.01)) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: `El dinero entregado ($${cashAmount.toFixed(2)}) debe ser mayor o igual al total a pagar ($${totalAmount.toFixed(2)}).`,
+      });
+      return;
+    }
+  }
+
+  if (isNaN(finalAmount1) || finalAmount1 <= 0) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "El monto total no es válido.",
+    });
+    return;
+  }
+
+  if (!userInfo || !order || !cashierInfo) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Faltan datos necesarios para generar el recibo.",
+    });
+    return;
+  }
     const receiptData = {
       receiptNumber: newReceiptNumber,
       total_amount: totalWithDiscount,
@@ -220,17 +247,18 @@ const Recibo = () => {
       buyer_email: buyerEmail,
       buyer_phone: buyerPhone,
       payMethod: paymentMethod,
-      amount: finalAmount1, // Usar el monto final calculado
+      amount: finalAmount1,
       cashier_document: userInfo.n_document,
       cashier_name: `${cashierInfo.first_name} ${cashierInfo.last_name}`,
-      payMethod2: finalPayMethod2, // Usar el método final
-      amount2: finalAmount2, // Usar el monto final
+      payMethod2: finalPayMethod2,
+      amount2: finalAmount2,
       discount: discount,
       observations: observations,
     };
 
     try {
       await dispatch(createReceipt(receiptData));
+      
       await dispatch(
         updateOrderState(
           order.id_orderDetail,
@@ -240,8 +268,9 @@ const Recibo = () => {
           discount
         )
       );
+      
       setIsSubmitted(true);
-      setIsSubmitted(true);
+      
       Swal.fire({
         icon: "success",
         title: "¡Éxito!",
@@ -254,19 +283,13 @@ const Recibo = () => {
         if (result.isConfirmed) {
           generatePDF(finalAmount1, finalAmount2);
         }
-        if (discount < 0 || discount > Number(totalAmount)) {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "El descuento no puede ser mayor al monto total ni negativo.",
-          });
-          return;
-        }
+        
         resetForm();
         dispatch(resetReceiptState());
         dispatch(clearOrderState());
-        navigate("/panel/caja"); // o "/caja"
+        navigate("/panel/caja");
       });
+      
     } catch (error) {
       console.error("Error creating receipt:", error);
       Swal.fire({
@@ -281,119 +304,59 @@ const Recibo = () => {
     }
   };
 
-  const generatePDF = () => {
-  const doc = new jsPDF({
-    unit: "pt",
-    format: [226.77, 839.28],
-  });
+  // ✅ GENERACIÓN DE PDF CORREGIDA
+  const generatePDF = (amount1Param = null, amount2Param = null) => {
+    const doc = new jsPDF({
+      unit: "pt",
+      format: [226.77, 839.28],
+    });
 
-  doc.setFontSize(18);
-  doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
-    align: "center",
-  });
+    doc.setFontSize(18);
+    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+      align: "center",
+    });
 
-  doc.setFontSize(10);
-  let currentY = 50;
+    doc.setFontSize(10);
+    let currentY = 50;
 
-  doc.text(
-    "Bonita Boutique  S.A.S NIT:",
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-  currentY += 20;
-
-  doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
-    align: "center",
-  });
-  currentY += 20;
-
-  doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-    align: "center",
-  });
-  currentY += 30;
-
-  doc.text(
-    `RECIBO # ${newReceiptNumber}`,
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-  currentY += 20;
-
-  doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-    align: "center",
-  });
-  currentY += 20;
-
-  doc.text(
-    `Estado de venta: ${order.state_order}`,
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-
-  currentY += 20;
-  doc.text(
-    "***************************",
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-  currentY += 20;
-
-  doc.setFontSize(10);
-  doc.text(` ${buyerName}`, 20, currentY);
-  currentY += 20;
-
-  doc.text(` ${buyerEmail}`, 20, currentY);
-  currentY += 20;
-
-  doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
-  currentY += 20;
-
-  doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
-  currentY += 20;
-  doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
-  currentY += 20;
-
-  doc.text(`Monto Total: $${totalWithDiscount}`, 20, currentY);
-  currentY += 20;
-  doc.text(
-    `Metodo de Pago : ${paymentMethod} $${
-      showSecondPayment ? amount1 : totalWithDiscount
-    }`,
-    20,
-    currentY
-  );
-  currentY += 20;
-
-  if (showSecondPayment && paymentMethod2 && amount2) {
-    doc.text(`Metodo de Pago 2: ${paymentMethod2} $${amount2}`, 20, currentY);
+    doc.text(
+      "Bonita Boutique S.A.S NIT:",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
     currentY += 20;
-  }
 
-  doc.text(
-    "***************************",
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-  currentY += 20;
+    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
 
-  // Agregar productos al recibo
-  doc.setFontSize(7);
-  currentY += 20;
+    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 30;
 
-  order.products.forEach((product, index) => {
-    const productLine = `${index + 1}. ${product.description} `;
-    const lines = doc.splitTextToSize(productLine, 170);
-    doc.text(lines, 20, currentY);
-    currentY += 15 * lines.length;
-  });
+    doc.text(
+      `RECIBO # ${newReceiptNumber}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 20;
 
-  // ✅ AGREGAR OBSERVACIONES AL PDF (DESPUÉS DE LOS PRODUCTOS)
-  if (observations && observations.trim() !== "") {
+    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    doc.text(
+      `Estado de venta: ${order.state_order}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+
     currentY += 20;
     doc.text(
       "***************************",
@@ -403,54 +366,139 @@ const Recibo = () => {
     );
     currentY += 20;
 
-    doc.setFontSize(8);
-    doc.text("OBSERVACIONES:", 20, currentY);
-    currentY += 15;
+    doc.setFontSize(10);
+    doc.text(`${buyerName}`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`${buyerEmail}`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 20;
     
-    // Dividir observaciones en múltiples líneas si es necesario
-    const observationLines = doc.splitTextToSize(observations.trim(), 180);
-    doc.text(observationLines, 20, currentY);
-    currentY += 12 * observationLines.length;
+    doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`Monto Total: $${totalWithDiscount.toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 20;
+
+    // ✅ USAR PARÁMETROS CORRECTOS
+    const displayAmount1 = amount1Param || totalWithDiscount;
+    doc.text(
+      `Método de Pago: ${paymentMethod} $${displayAmount1.toLocaleString("es-CO")}`,
+      20,
+      currentY
+    );
+    currentY += 20;
+
+    if (showSecondPayment && paymentMethod2 && amount2Param) {
+      doc.text(`Método de Pago 2: ${paymentMethod2} $${amount2Param.toLocaleString("es-CO")}`, 20, currentY);
+      currentY += 20;
+    }
+
+    doc.text(
+      "***************************",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 20;
+
+    // Productos
+    doc.setFontSize(7);
+    currentY += 20;
+
+    order.products.forEach((product, index) => {
+      const productLine = `${index + 1}. ${product.description}`;
+      const lines = doc.splitTextToSize(productLine, 170);
+      doc.text(lines, 20, currentY);
+      currentY += 15 * lines.length;
+    });
+
+    // ✅ OBSERVACIONES
+    if (observations && observations.trim() !== "") {
+      currentY += 20;
+      doc.text(
+        "***************************",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
+
+      doc.setFontSize(8);
+      doc.text("OBSERVACIONES:", 20, currentY);
+      currentY += 15;
+      
+      const observationLines = doc.splitTextToSize(observations.trim(), 180);
+      doc.text(observationLines, 20, currentY);
+      currentY += 12 * observationLines.length;
+    }
+
+    currentY += 20;
+    doc.text(
+      "***************************",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 20;
+
+    doc.setFontSize(10);
+    doc.text(
+      `Atendido por: ${
+        cashierInfo
+          ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
+          : "N/A"
+      }`,
+      20,
+      currentY
+    );
+    currentY += 15;
+
+    doc.setFontSize(8);
+    doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
+    currentY += 30;
+
+    doc.setFontSize(12);
+    doc.text(
+      "Gracias por elegirnos!",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+
+    doc.output("dataurlnewwindow");
+  };
+
+  // ✅ MANEJO DE LOADING Y ERRORES
+  if (loading || userLoading || cashierLoading || receiptsLoading) {
+    return <p>Cargando detalles de la orden...</p>;
   }
 
-  currentY += 20;
-  doc.text(
-    "***************************",
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-  currentY += 20;
+  if (error || userError || cashierError || receiptsError) {
+    const getErrorMsg = (err) =>
+      typeof err === "string"
+        ? err
+        : err?.message || err?.error || JSON.stringify(err);
 
-  doc.setFontSize(10);
-  doc.text(
-    `Atendido por: ${
-      cashierInfo
-        ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
-        : "N/A"
-    }`,
-    20,
-    currentY
-  );
-  currentY += 15;
+    return (
+      <p>
+        Error al cargar la orden:{" "}
+        {getErrorMsg(error) ||
+          getErrorMsg(userError) ||
+          getErrorMsg(cashierError) ||
+          getErrorMsg(receiptsError)}
+      </p>
+    );
+  }
 
-  doc.setFontSize(8);
-  doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
-  currentY += 30;
-
-  doc.setFontSize(12);
-  doc.text(
-    "Gracias por elegirnos!",
-    doc.internal.pageSize.width / 2,
-    currentY,
-    { align: "center" }
-  );
-
-  doc.output("dataurlnewwindow");
-};
-
-  const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
-  const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
+  if (!order || order.id_orderDetail !== idOrder) {
+    return <p>No se encontró la orden</p>;
+  }
 
   return (
     <div>
@@ -469,6 +517,7 @@ const Recibo = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Número de Recibo */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Número de Recibo
@@ -477,35 +526,30 @@ const Recibo = () => {
               type="number"
               value={newReceiptNumber}
               readOnly
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
             />
           </div>
 
+          {/* Cajero */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Cajero
             </label>
-            {loadingCashier ? (
-              <input
-                type="text"
-                value="Cargando..."
-                readOnly
-                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
-              />
-            ) : (
-              <input
-                type="text"
-                value={
-                  cashierInfo
-                    ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
-                    : "N/A"
-                }
-                readOnly
-                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
-              />
-            )}
+            <input
+              type="text"
+              value={
+                loadingCashier
+                  ? "Cargando..."
+                  : cashierInfo
+                  ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
+                  : "N/A"
+              }
+              readOnly
+              className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
+            />
           </div>
 
+          {/* Datos del comprador */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Nombre del Comprador
@@ -543,6 +587,8 @@ const Recibo = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
+
+          {/* Descuento */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Descuento (%)
@@ -557,6 +603,7 @@ const Recibo = () => {
               placeholder="0"
             />
           </div>
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Monto de Descuento
@@ -568,6 +615,7 @@ const Recibo = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
             />
           </div>
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Monto Total
@@ -603,7 +651,7 @@ const Recibo = () => {
               <option value="Bancolombia">Bancolombia</option>
               <option value="Otro">Otro</option>
             </select>
-            {/* **INPUT PARA AMOUNT 1 (SOLO SI HAY 2 PAGOS)** */}
+
             {showSecondPayment && (
               <input
                 type="number"
@@ -623,7 +671,6 @@ const Recibo = () => {
               className="mt-2 text-blue-600 underline text-xs"
               onClick={() => {
                 setShowSecondPayment(true);
-                // Opcional: Limpiar montos al mostrar segundo pago
                 setAmount1("");
                 setAmount2("");
               }}
@@ -632,7 +679,7 @@ const Recibo = () => {
             </button>
           )}
 
-          {/* Sección del segundo método de pago */}
+          {/* Segundo método de pago */}
           {showSecondPayment && (
             <div className="mb-4 p-4 border border-gray-200 rounded">
               <div className="flex justify-between items-center mb-2">
@@ -645,7 +692,7 @@ const Recibo = () => {
                   onClick={() => {
                     setShowSecondPayment(false);
                     setPaymentMethod2("");
-                    setAmount1(""); // Limpiar montos al quitar
+                    setAmount1("");
                     setAmount2("");
                   }}
                 >
@@ -655,7 +702,7 @@ const Recibo = () => {
               <select
                 value={paymentMethod2}
                 onChange={(e) => setPaymentMethod2(e.target.value)}
-                required // Hacerlo requerido si se muestra
+                required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               >
                 <option value="">Seleccione</option>
@@ -674,98 +721,83 @@ const Recibo = () => {
                 value={amount2}
                 onChange={(e) => setAmount2(e.target.value)}
                 placeholder="Monto Método 2"
-                required // Hacerlo requerido si se muestra
+                required
                 className="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               />
             </div>
           )}
 
+          {/* ✅ SECCIÓN DE EFECTIVO CORREGIDA */}
           {paymentMethod === "Efectivo" && !showSecondPayment && (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Dinero Entregado
-                </label>
-                <input
-                  type="number"
-                  value={cashGiven}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    setCashGiven(value);
-                    setChange(value - Number(totalAmount));
-                  }}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Vuelto
-                </label>
-                <input
-                  type="text"
-                  value={
-                    change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"
-                  }
-                  readOnly
-                  className={`mt-1 block w-full px-3 py-2 border ${
-                    change >= 0 ? "border-gray-300" : "border-red-500"
-                  } rounded-md shadow-sm bg-gray-100`}
-                />
-              </div>
-            </>
-          )}
-          {paymentMethod === "Efectivo" && !showSecondPayment && (
-            <>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Dinero Entregado
-                </label>
-                <input
-                  type="number"
-                  value={cashGiven}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    setCashGiven(value);
-                    setChange(value - Number(totalAmount)); // Usar Number() por si acaso
-                  }}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Vuelto
-                </label>
-                <input
-                  type="text"
-                  value={
-                    change >= 0 ? `$${change.toFixed(2)}` : "Monto insuficiente"
-                  }
-                  readOnly
-                  className={`mt-1 block w-full px-3 py-2 border ${
-                    change >= 0 ? "border-gray-300" : "border-red-500"
-                  } rounded-md shadow-sm bg-gray-100`}
-                />
-              </div>
-              <div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700">
-    Observaciones
-  </label>
-  <textarea
-    value={observations}
-    onChange={(e) => setObservations(e.target.value)}
-    placeholder="Observaciones adicionales sobre la venta..."
-    rows="3"
-    maxLength="500"
-    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-  />
-  <div className="text-xs text-gray-500 mt-1">
-    {observations.length}/500 caracteres
-  </div>
-</div>
-            </>
-          )}
+  <>
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Dinero Entregado
+      </label>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        value={cashGiven}
+        onChange={handleCashGivenChange}
+        placeholder={`Mínimo: $${totalWithDiscount.toFixed(2)}`}
+        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+      />
+    </div>
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700">
+        Vuelto
+      </label>
+      <input
+        type="text"
+        value={
+          change >= 0 
+            ? `$${change.toFixed(2)}` 
+            : `Faltan $${Math.abs(change).toFixed(2)}`
+        }
+        readOnly
+        className={`mt-1 block w-full px-3 py-2 border ${
+          change >= -0.01 ? "border-green-300 bg-green-50" : "border-red-500 bg-red-50"
+        } rounded-md shadow-sm`}
+      />
+      {change >= 0 && change > 0 && (
+        <div className="text-xs text-green-600 mt-1">
+          ✅ Vuelto a entregar al cliente
+        </div>
+      )}
+      {change === 0 && (
+        <div className="text-xs text-blue-600 mt-1">
+          ✅ Pago exacto
+        </div>
+      )}
+      {change < 0 && (
+        <div className="text-xs text-red-600 mt-1">
+          ❌ Dinero insuficiente
+        </div>
+      )}
+    </div>
+  </>
+)}
 
-          {/* ... Campo Fecha ... */}
+          {/* ✅ OBSERVACIONES PARA TODOS LOS MÉTODOS */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Observaciones
+            </label>
+            <textarea
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              placeholder="Observaciones adicionales sobre la venta..."
+              rows="3"
+              maxLength="500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              {observations.length}/500 caracteres
+            </div>
+          </div>
+
+          {/* Fecha */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
               Fecha
@@ -779,7 +811,7 @@ const Recibo = () => {
             />
           </div>
 
-          {/* ... Botones Generar/Descargar Recibo ... */}
+          {/* Botones */}
           <div className="flex gap-4">
             <button
               type="submit"
@@ -795,7 +827,7 @@ const Recibo = () => {
                   type="button"
                   onClick={() =>
                     generatePDF(
-                      showSecondPayment ? Number(amount1) : Number(totalAmount),
+                      showSecondPayment ? Number(amount1) : totalWithDiscount,
                       showSecondPayment ? Number(amount2) : null
                     )
                   }
@@ -820,7 +852,7 @@ const Recibo = () => {
             orderId={order.id_orderDetail}
             totalAmount={totalAmount}
             onClose={() => setShowReservationPopup(false)}
-            onSubmit={() => setShowReservationPopup(false)} // ¿Debería hacer algo más al enviar?
+            onSubmit={() => setShowReservationPopup(false)}
           />
         )}
       </div>

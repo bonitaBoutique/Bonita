@@ -150,13 +150,17 @@ DELETE_ORDER_DETAIL_REQUEST,
 } from "../Actions/actions-type";
 
 const initialState = {
-  receiptsLoading: false,
+ receiptsLoading: false,
   receiptsError: null,
   receiptsPagination: {
     total: 0,
     pages: 0,
     currentPage: 1
   },
+  // ✅ AGREGAR ESTA LÍNEA:
+  receipts: [],
+  receiptNumber: null,
+  
   priceFilter: { min: null, max: null },
   categoryFilter: "",
   searchResults: [],
@@ -1081,16 +1085,27 @@ case USER_REGISTER_FAIL:
         },
       };
 
-    case CREATE_RECEIPT_SUCCESS:
-      return {
-        ...state,
-        loading: false,
-        receipts: [...state.receipts, action.payload],
-        error: null, // Añade esto para limpiar el error
-      };
+    case CREATE_RECEIPT_REQUEST:
+  return {
+    ...state,
+    receiptsLoading: true, // ✅ Usar receiptsLoading en lugar de loading
+    receiptsError: null,   // ✅ Usar receiptsError en lugar de error
+  };
 
-    case CREATE_RECEIPT_FAILURE:
-      return { ...state, loading: false, error: action.payload };
+case CREATE_RECEIPT_SUCCESS:
+  return {
+    ...state,
+    receiptsLoading: false, // ✅ Usar receiptsLoading consistentemente
+    receipts: [...state.receipts, action.payload],
+    receiptsError: null,    // ✅ Usar receiptsError consistentemente
+  };
+
+case CREATE_RECEIPT_FAILURE:
+  return { 
+    ...state, 
+    receiptsLoading: false, // ✅ Usar receiptsLoading consistentemente
+    receiptsError: action.payload // ✅ Usar receiptsError consistentemente
+  };
 
       case RESET_RECEIPT_STATE:
   return {

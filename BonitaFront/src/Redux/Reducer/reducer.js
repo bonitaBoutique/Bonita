@@ -1085,33 +1085,35 @@ case USER_REGISTER_FAIL:
         },
       };
 
-    case CREATE_RECEIPT_REQUEST:
+  case CREATE_RECEIPT_REQUEST:
   return {
     ...state,
-    receiptsLoading: true, // ✅ Usar receiptsLoading en lugar de loading
-    receiptsError: null,   // ✅ Usar receiptsError en lugar de error
+    receiptsLoading: true,
+    receiptsError: null,
   };
 
 case CREATE_RECEIPT_SUCCESS:
   return {
     ...state,
-    receiptsLoading: false, // ✅ Usar receiptsLoading consistentemente
+    receiptsLoading: false,
     receipts: [...state.receipts, action.payload],
-    receiptsError: null,    // ✅ Usar receiptsError consistentemente
+    receiptsError: null,
   };
 
 case CREATE_RECEIPT_FAILURE:
   return { 
     ...state, 
-    receiptsLoading: false, // ✅ Usar receiptsLoading consistentemente
-    receiptsError: action.payload // ✅ Usar receiptsError consistentemente
+    receiptsLoading: false, 
+    receiptsError: action.payload 
   };
 
-      case RESET_RECEIPT_STATE:
+case RESET_RECEIPT_STATE:
   return {
     ...state,
     receipts: [],
     receiptNumber: null,
+    receiptsLoading: false, // ✅ Agregar esto también
+    receiptsError: null,    // ✅ Agregar esto también
     orderById: {
       loading: false,
       error: null,
@@ -1123,7 +1125,6 @@ case CREATE_RECEIPT_FAILURE:
       order: {},
       error: null,
     },
-    // Limpia otros estados relacionados si lo necesitas
   };
     case FETCH_LATEST_RECEIPTS_REQUEST:
       return { ...state, loading: true, error: null };

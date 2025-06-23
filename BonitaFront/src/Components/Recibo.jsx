@@ -879,12 +879,18 @@ const Recibo = () => {
         </form>
 
         {showReservationPopup && (
-          <ReservationPopup
-            orderId={order.id_orderDetail}
-            totalAmount={totalAmount}
-            onClose={() => setShowReservationPopup(false)}
-            onSubmit={() => setShowReservationPopup(false)}
-          />
+         <ReservationPopup
+  orderId={order.id_orderDetail}
+  totalAmount={totalAmount}
+  onClose={() => setShowReservationPopup(false)}
+  onSubmit={async (reservationData) => {
+    // Despacha la acción para crear la reserva
+    await dispatch(createReservation(order.id_orderDetail, reservationData));
+    setShowReservationPopup(false);
+    // Opcional: muestra un mensaje de éxito
+    Swal.fire("Reserva creada", "La reserva fue registrada correctamente.", "success");
+  }}
+/>
         )}
       </div>
     </div>

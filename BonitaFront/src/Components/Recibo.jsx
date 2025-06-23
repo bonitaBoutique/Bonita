@@ -889,7 +889,7 @@ const Recibo = () => {
         date: order.date,
         amount: order.amount,
         quantity: order.quantity,
-        state_order: "Reserva", // o el estado que corresponda para reservas
+        state_order: "Reserva a Crédito", // o el estado que corresponda para reservas
         products: order.products.map(p => ({
           id_product: p.id_product,
           quantity: p.quantity || 1 // ajusta si tienes cantidad

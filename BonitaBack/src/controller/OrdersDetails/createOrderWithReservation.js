@@ -206,4 +206,3 @@ module.exports = async (req, res) => {
       return response(res, 500, { error: error.message, details: error.errors || null });
     };
   }
-  return response(res, 500, { error: "Internal Server Error" });

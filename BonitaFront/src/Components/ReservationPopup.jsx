@@ -1,24 +1,18 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useDispatch } from 'react-redux';
-import Swal from 'sweetalert2';
-import { createReservation } from '../Redux/Actions/actions';
 
-const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
+const ReservationPopup = ({ totalAmount, onClose, onSubmit }) => {
   const [partialPayment, setPartialPayment] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Efectivo'); // Estado para el tipo de pago
-  const dispatch = useDispatch();
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const reservationData = {
+    onSubmit({
       partialPayment,
       dueDate,
-      paymentMethod, // Incluir el tipo de pago en los datos de la reserva
-    };
-    dispatch(createReservation({ id_orderDetail: orderId, totalAmount }, reservationData));
-    onClose();
+      paymentMethod,
+    });
   };
 
   return (
@@ -32,7 +26,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
               type="text"
               value={totalAmount}
               readOnly
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
             />
           </div>
           <div className="mb-4">
@@ -41,7 +35,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
               type="number"
               value={partialPayment}
               onChange={(e) => setPartialPayment(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
               required
             />
           </div>
@@ -50,12 +44,11 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
               required
             >
               <option value="Efectivo">Efectivo</option>
               <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
-              
               <option value="Bancolombia">Bancolombia</option>
               <option value="Otro">Otro</option>
             </select>
@@ -66,7 +59,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
               required
             />
           </div>
@@ -74,13 +67,13 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="mr-4 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              className="mr-4 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               Crear Reserva
             </button>
@@ -92,9 +85,9 @@ const ReservationPopup = ({ orderId, totalAmount, onClose }) => {
 };
 
 ReservationPopup.propTypes = {
-  orderId: PropTypes.string.isRequired,
   totalAmount: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 };
 
 export default ReservationPopup;

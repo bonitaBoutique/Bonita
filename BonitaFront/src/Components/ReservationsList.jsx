@@ -391,217 +391,439 @@ const generatePDF = (receiptData) => {
   console.log("RESERVATIONS:", reservations);
   console.log("CURRENT RESERVATIONS:", currentReservations);
 
-  return (
-    <div className="container mx-auto p-4 mt-12">
-      <h1 className="text-2xl font-bold mb-4">Reservas</h1>
+return (
+  <div className="container mx-auto p-4 mt-12">
+    <h1 className="text-2xl font-bold mb-4">Reservas</h1>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
-          <thead>
-            <tr>
-              <th className="py-2 px-4 border-b">Id Orden</th>
-              <th className="py-2 px-4 border-b">Cliente </th>
-              <th className="py-2 px-4 border-b">Vencimiento</th>
-              <th className="py-2 px-4 border-b">Parcial</th>
-              <th className="py-2 px-4 border-b">Monto Orden</th>
-              <th className="py-2 px-4 border-b">Deuda Pendiente</th>
-              <th className="py-2 px-4 border-b">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentReservations &&
-              currentReservations.map((reservation) => {
-                const pendingDebt = calculatePendingDebt(
-                  reservation.OrderDetail?.amount || 0,
-                  reservation.totalPaid || 0
-                );
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white shadow-lg rounded-lg">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Id Orden</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Cliente</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Vencimiento</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Estado</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Parcial</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Monto Orden</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Deuda Pendiente</th>
+            <th className="py-3 px-4 border-b font-semibold text-gray-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentReservations &&
+            currentReservations.map((reservation) => {
+              const pendingDebt = calculatePendingDebt(
+                reservation.OrderDetail?.amount || 0,
+                reservation.totalPaid || 0
+              );
 
-                return (
-                  <tr key={reservation.id_reservation}>
-                    <td className="py-2 px-4 border-b relative">
-                      <button
-                        onMouseEnter={(e) =>
-                          handleMouseEnter(reservation.id_orderDetail, e)
-                        }
-                        onMouseLeave={handleMouseLeave}
-                        className="text-blue-500 underline hover:text-blue-700"
+              // ✅ FORMATEAR FECHA DE VENCIMIENTO CON ZONA HORARIA DE COLOMBIA
+              const formatDueDate = (dueDate) => {
+                if (!dueDate) return 'N/A';
+                
+                try {
+                  const date = new Date(dueDate);
+                  return date.toLocaleDateString('es-CO', {
+                    timeZone: 'America/Bogota',
+                    year: 'numeric',
+                    month: '2-digit', 
+                    day: '2-digit'
+                  });
+                } catch (error) {
+                  console.error('Error formatting date:', error);
+                  return 'Fecha inválida';
+                }
+              };
+
+              // ✅ VERIFICAR SI ESTÁ VENCIDA
+              const isOverdue = () => {
+                if (!reservation.dueDate) return false;
+                
+                const today = new Date();
+                const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+                const dueDate = new Date(reservation.dueDate);
+                
+                return dueDate < colombiaToday;
+              };
+
+              // ✅ DETERMINAR ESTADO DE LA RESERVA
+              const getReservationStatus = () => {
+                if (reservation.status === 'Completada') return 'Completada';
+                if (reservation.status === 'Cancelada') return 'Cancelada';
+                if (isOverdue()) return 'Vencida';
+                return 'Pendiente';
+              };
+
+              const status = getReservationStatus();
+
+              return (
+                <tr 
+                  key={reservation.id_reservation} 
+                  className={`hover:bg-gray-50 transition-colors ${
+                    status === 'Vencida' ? 'bg-red-50' : 
+                    status === 'Completada' ? 'bg-green-50' : 
+                    status === 'Cancelada' ? 'bg-gray-100' : ''
+                  }`}
+                >
+                  <td className="py-3 px-4 border-b relative">
+                    <button
+                      onMouseEnter={(e) =>
+                        handleMouseEnter(reservation.id_orderDetail, e)
+                      }
+                      onMouseLeave={handleMouseLeave}
+                      className="text-blue-600 underline hover:text-blue-800 font-medium transition-colors"
+                    >
+                      {reservation.id_orderDetail}
+                    </button>
+
+                    {hoveredOrderId === reservation.id_orderDetail && (
+                      <div
+                        style={{
+                          position: "fixed",
+                          left: `${tooltipPosition.x}px`,
+                          top: `${tooltipPosition.y}px`,
+                          zIndex: 1000,
+                        }}
+                        className="bg-gray-800 text-white p-4 rounded-lg shadow-xl min-w-[320px] max-w-[400px]"
                       >
-                        {reservation.id_orderDetail}
-                      </button>
+                        <div className="space-y-3">
+                          <p className="font-semibold border-b border-gray-600 pb-2 text-yellow-300">
+                            📋 Detalles de la Orden
+                          </p>
 
-                      {hoveredOrderId === reservation.id_orderDetail && (
-                        <div
-                          style={{
-                            position: "fixed",
-                            left: `${tooltipPosition.x}px`,
-                            top: `${tooltipPosition.y}px`,
-                            zIndex: 1000,
-                          }}
-                          className="bg-gray-700 text-white p-3 rounded-md shadow-lg min-w-[300px]"
-                        >
-                          <div className="space-y-2">
-                            <p className="font-semibold border-b pb-1">
-                              Detalles de la Orden:
-                            </p>
+                          {currentOrderDetail ? (
+                            <>
+                              <div className="bg-gray-700 p-2 rounded">
+                                <p className="font-medium text-blue-300 mb-1">
+                                  👤 Cliente:
+                                </p>
+                                <p className="text-sm">{`${
+                                  currentOrderDetail.userData?.first_name ||
+                                  "N/A"
+                                } ${
+                                  currentOrderDetail.userData?.last_name ||
+                                  "N/A"
+                                }`}</p>
+                                <p className="text-xs text-gray-400">
+                                  📄 Doc: {currentOrderDetail.n_document || "N/A"}
+                                </p>
+                              </div>
 
-                            {currentOrderDetail ? (
-                              <>
-                                <div className="mb-2">
-                                  <p className="font-medium text-gray-300">
-                                    Cliente:
+                              {currentOrderDetail.products &&
+                              currentOrderDetail.products.length > 0 ? (
+                                <div className="bg-gray-700 p-2 rounded">
+                                  <p className="font-medium text-green-300 border-b border-gray-600 pb-1 mb-2">
+                                    🛍️ Productos ({currentOrderDetail.products.length}):
                                   </p>
-                                  <p>{`${
-                                    currentOrderDetail.userData?.first_name ||
-                                    "N/A"
-                                  } ${
-                                    currentOrderDetail.userData?.last_name ||
-                                    "N/A"
-                                  }`}</p>
-                                  <p className="text-sm text-gray-400">
-                                    Doc:{" "}
-                                    {currentOrderDetail.n_document || "N/A"}
-                                  </p>
-                                </div>
-
-                                {currentOrderDetail.products &&
-                                currentOrderDetail.products.length > 0 ? (
-                                  <div>
-                                    <p className="font-medium text-gray-300 border-b pb-1">
-                                      Productos:
-                                    </p>
+                                  <div className="max-h-32 overflow-y-auto">
                                     {currentOrderDetail.products.map(
                                       (product, index) => (
-                                        <div key={index} className="pl-2 py-1">
-                                          <p className="text-sm">
+                                        <div key={index} className="pl-2 py-1 border-l-2 border-green-400 ml-2 mb-1">
+                                          <p className="text-sm font-medium">
                                             {product.description ||
                                               "Sin descripción"}
                                           </p>
-                                          <div className="text-xs text-gray-400">
-                                            <p>
-                                              Código:{" "}
-                                              {product.codigoBarra || "N/A"}
-                                            </p>
-                                            <p>
-                                              Precio: $
-                                              {product.priceSell?.toLocaleString() ||
-                                                "0"}
-                                            </p>
+                                          <div className="text-xs text-gray-400 flex justify-between">
+                                            <span>
+                                              📦 {product.codigoBarra || "N/A"}
+                                            </span>
+                                            <span className="text-green-400">
+                                              💰 ${product.priceSell?.toLocaleString() || "0"}
+                                            </span>
                                           </div>
                                         </div>
                                       )
                                     )}
                                   </div>
-                                ) : (
-                                  <p className="text-sm text-gray-400">
-                                    No hay productos disponibles
-                                  </p>
-                                )}
-                              </>
-                            ) : (
-                              <p className="text-sm text-gray-400">
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-400 bg-gray-700 p-2 rounded">
+                                  📦 No hay productos disponibles
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                              <p className="text-sm text-gray-400 ml-2">
                                 Cargando detalles...
                               </p>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    )}
+                  </td>
+                  
+                  <td className="py-3 px-4 border-b">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-blue-600 font-semibold text-sm">
+                          {reservation.OrderDetail?.User?.first_name?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {reservation.OrderDetail?.User
+                            ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
+                            : "Cliente no identificado"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {reservation.OrderDetail?.User?.email || "Sin email"}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  
+                  {/* ✅ COLUMNA DE VENCIMIENTO MEJORADA */}
+                  <td className={`py-3 px-4 border-b ${
+                    status === 'Vencida' ? 'text-red-600 font-bold' : 'text-gray-700'
+                  }`}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {formatDueDate(reservation.dueDate)}
+                      </span>
+                      {status === 'Vencida' && (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full mt-1 inline-block">
+                          ⚠️ VENCIDA
+                        </span>
                       )}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      {reservation.OrderDetail?.User
-                        ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
-                        : "N/A"}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      {new Date(reservation.dueDate).toLocaleDateString()}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      ${reservation.totalPaid?.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      $
-                      {reservation.OrderDetail?.amount?.toLocaleString() ||
-                        "N/A"}
-                    </td>
-                    <td className="py-2 px-4 border-b text-red-600 font-semibold">
+                    </div>
+                  </td>
+                  
+                  {/* ✅ NUEVA COLUMNA DE ESTADO */}
+                  <td className="py-3 px-4 border-b">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      status === 'Completada' 
+                        ? 'bg-green-100 text-green-800' 
+                        : status === 'Cancelada'
+                        ? 'bg-gray-100 text-gray-800'
+                        : status === 'Vencida'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {status === 'Completada' && '✅ '}
+                      {status === 'Cancelada' && '❌ '}
+                      {status === 'Vencida' && '⚠️ '}
+                      {status === 'Pendiente' && '⏳ '}
+                      {status}
+                    </span>
+                  </td>
+                  
+                  <td className="py-3 px-4 border-b">
+                    <span className="font-semibold text-green-600">
+                      ${reservation.totalPaid?.toLocaleString() || '0'}
+                    </span>
+                  </td>
+                  
+                  <td className="py-3 px-4 border-b">
+                    <span className="font-semibold">
+                      ${reservation.OrderDetail?.amount?.toLocaleString() || "N/A"}
+                    </span>
+                  </td>
+                  
+                  <td className="py-3 px-4 border-b">
+                    <span className={`font-bold ${
+                      pendingDebt > 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>
                       ${pendingDebt?.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-4 border-b">
+                    </span>
+                    {pendingDebt <= 0 && (
+                      <div className="text-xs text-green-600 mt-1">
+                        ✅ Pagado completo
+                      </div>
+                    )}
+                  </td>
+                  
+                  <td className="py-3 px-4 border-b">
+                    <div className="flex flex-col space-y-1">
+                      {/* ✅ BOTÓN APLICAR PAGO */}
                       <button
                         onClick={() => handleOpenPaymentPopup(reservation)}
-                        className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2"
+                        disabled={status === 'Completada' || status === 'Cancelada'}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          status === 'Completada' || status === 'Cancelada'
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                        title={
+                          status === 'Completada' ? 'Reserva ya completada' :
+                          status === 'Cancelada' ? 'Reserva cancelada' :
+                          'Aplicar pago a esta reserva'
+                        }
                       >
-                        Aplicar Pago
+                        💳 Aplicar Pago
                       </button>
-                     <button
-  onClick={() => {
-    // ✅ CALCULAR EL SALDO PENDIENTE ACTUAL
-    const currentPendingDebt = calculatePendingDebt(
-      reservation.OrderDetail?.amount || 0,
-      reservation.totalPaid || 0
-    );
-
-    generatePDF({
-      receiptNumber: reservation.receiptNumber || 1001,
-      date: new Date().toISOString().split("T")[0],
-      buyer_name: reservation.OrderDetail?.User 
-        ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
-        : "Cliente no identificado",
-      buyer_email: reservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
-      buyer_phone: reservation.OrderDetail?.User?.phone || "Sin teléfono",
-      total_amount: reservation.totalPaid || 0,
-      payMethod: "Crédito/Reserva",
-      id_orderDetail: reservation.id_orderDetail,
-      saldoPendiente: currentPendingDebt, // ✅ Pasar el saldo pendiente calculado
-    });
-  }}
-  className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 mr-2"
->
-  Generar Recibo
-</button>
+                      
+                      {/* ✅ BOTÓN GENERAR RECIBO */}
                       <button
-                        onClick={() => handleDelete(reservation.id_reservation)}
-                        className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
+                        onClick={() => {
+                          const currentPendingDebt = calculatePendingDebt(
+                            reservation.OrderDetail?.amount || 0,
+                            reservation.totalPaid || 0
+                          );
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-4">
+                          // ✅ USAR FECHA DE COLOMBIA PARA EL RECIBO
+                          const colombiaDate = new Date().toLocaleDateString('es-CO', {
+                            timeZone: 'America/Bogota',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          });
+
+                          generatePDF({
+                            receiptNumber: reservation.receiptNumber || (latestReceipt ? latestReceipt + 1 : 1001),
+                            date: colombiaDate,
+                            buyer_name: reservation.OrderDetail?.User 
+                              ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
+                              : "Cliente no identificado",
+                            buyer_email: reservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
+                            buyer_phone: reservation.OrderDetail?.User?.phone || "Sin teléfono",
+                            total_amount: reservation.totalPaid || 0,
+                            payMethod: "Crédito/Reserva",
+                            id_orderDetail: reservation.id_orderDetail,
+                            saldoPendiente: currentPendingDebt,
+                            dueDate: formatDueDate(reservation.dueDate),
+                            status: status
+                          });
+                        }}
+                        className="bg-green-500 text-white px-3 py-1 rounded text-xs font-medium hover:bg-green-600 transition-colors"
+                        title="Generar recibo PDF de la reserva"
+                      >
+                        📄 Generar Recibo
+                      </button>
+                      
+                      {/* ✅ BOTÓN ELIMINAR */}
+                      <button
+                        onClick={() => {
+                          Swal.fire({
+                            title: '¿Estás seguro?',
+                            text: `¿Deseas eliminar la reserva de ${reservation.OrderDetail?.User?.first_name || 'este cliente'}?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Sí, eliminar',
+                            cancelButtonText: 'Cancelar'
+                          }).then((result) => {
+                            if (result.isConfirmed) {
+                              handleDelete(reservation.id_reservation);
+                            }
+                          });
+                        }}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs font-medium hover:bg-red-600 transition-colors"
+                        title="Eliminar esta reserva"
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </div>
+
+    {/* ✅ MENSAJE CUANDO NO HAY RESERVAS */}
+    {(!currentReservations || currentReservations.length === 0) && !loading && (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">📋</div>
+        <h3 className="text-xl font-semibold text-gray-600 mb-2">No hay reservas</h3>
+        <p className="text-gray-500">No se encontraron reservas para mostrar en este momento.</p>
+      </div>
+    )}
+
+    {/* ✅ PAGINACIÓN MEJORADA */}
+    {reservations && reservations.length > reservationsPerPage && (
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <button
+          onClick={() => currentPage > 1 && paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`px-3 py-2 rounded ${
+            currentPage === 1 
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          ← Anterior
+        </button>
+        
         {Array.from({
           length: Math.ceil(reservations.length / reservationsPerPage),
         }).map((_, index) => (
           <button
             key={index}
             onClick={() => paginate(index + 1)}
-            className={`mx-1 px-3 py-1 rounded ${
+            className={`px-3 py-2 rounded ${
               currentPage === index + 1
                 ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
             }`}
           >
             {index + 1}
           </button>
         ))}
+        
+        <button
+          onClick={() => 
+            currentPage < Math.ceil(reservations.length / reservationsPerPage) && 
+            paginate(currentPage + 1)
+          }
+          disabled={currentPage === Math.ceil(reservations.length / reservationsPerPage)}
+          className={`px-3 py-2 rounded ${
+            currentPage === Math.ceil(reservations.length / reservationsPerPage)
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Siguiente →
+        </button>
       </div>
+    )}
 
-      {/* Popup de Pago */}
-      {isPaymentPopupOpen && selectedReservation && (
-        <PaymentPopup
-          reservation={selectedReservation}
-          onClose={handleClosePaymentPopup}
-          onPayment={handlePayment}
-        />
-      )}
+    {/* ✅ ESTADÍSTICAS RÁPIDAS */}
+    <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+        <h4 className="text-sm font-medium text-gray-600">Total Reservas</h4>
+        <p className="text-2xl font-bold text-blue-600">{reservations?.length || 0}</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+        <h4 className="text-sm font-medium text-gray-600">Completadas</h4>
+        <p className="text-2xl font-bold text-green-600">
+          {reservations?.filter(r => r.status === 'Completada').length || 0}
+        </p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+        <h4 className="text-sm font-medium text-gray-600">Pendientes</h4>
+        <p className="text-2xl font-bold text-yellow-600">
+          {reservations?.filter(r => !r.status || r.status === 'Pendiente').length || 0}
+        </p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+        <h4 className="text-sm font-medium text-gray-600">Vencidas</h4>
+        <p className="text-2xl font-bold text-red-600">
+          {reservations?.filter(r => {
+            if (!r.dueDate) return false;
+            const today = new Date();
+            const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+            const dueDate = new Date(r.dueDate);
+            return dueDate < colombiaToday && (!r.status || r.status === 'Pendiente');
+          }).length || 0}
+        </p>
+      </div>
     </div>
-  );
-};
+
+    {/* Popup de Pago */}
+    {isPaymentPopupOpen && selectedReservation && (
+      <PaymentPopup
+        reservation={selectedReservation}
+        onClose={handleClosePaymentPopup}
+        onPayment={handlePayment}
+      />
+    )}
+  </div>
+);}
 
 // Componente para el Popup de Pago
 const PaymentPopup = ({ reservation, onClose, onPayment }) => {

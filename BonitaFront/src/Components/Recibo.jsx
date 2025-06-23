@@ -879,19 +879,38 @@ const Recibo = () => {
         </form>
 
         {showReservationPopup && (
-         <ReservationPopup
-  orderId={order.id_orderDetail}
-  totalAmount={totalAmount}
-  onClose={() => setShowReservationPopup(false)}
-  onSubmit={async (reservationData) => {
-    // Despacha la acción para crear la reserva
-    await dispatch(createReservation(order.id_orderDetail, reservationData));
-    setShowReservationPopup(false);
-    // Opcional: muestra un mensaje de éxito
-    Swal.fire("Reserva creada", "La reserva fue registrada correctamente.", "success");
-  }}
-/>
-        )}
+  <ReservationPopup
+    orderId={order.id_orderDetail}
+    totalAmount={totalAmount}
+    onClose={() => setShowReservationPopup(false)}
+    onSubmit={async (reservationData) => {
+      // Construir el objeto completo que espera el backend
+      const reservationBody = {
+        date: order.date,
+        amount: order.amount,
+        quantity: order.quantity,
+        state_order: "Reserva", // o el estado que corresponda para reservas
+        products: order.products.map(p => ({
+          id_product: p.id_product,
+          quantity: p.quantity || 1 // ajusta si tienes cantidad
+        })),
+        address: order.address,
+        deliveryAddress: order.deliveryAddress,
+        shippingCost: order.shippingCost || 0,
+        n_document: order.n_document,
+        pointOfSale: order.pointOfSale || "Local",
+        discount: order.discount || 0,
+        // Datos específicos de la reserva
+        partialPayment: reservationData.partialPayment,
+        dueDate: reservationData.dueDate,
+        paymentMethod: reservationData.paymentMethod
+      };
+      await dispatch(createReservation(order.id_orderDetail, reservationBody));
+      setShowReservationPopup(false);
+      Swal.fire("Reserva creada", "La reserva fue registrada correctamente.", "success");
+    }}
+  />
+)}
       </div>
     </div>
   );

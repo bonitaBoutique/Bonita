@@ -13,6 +13,8 @@ function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoInte
 
 module.exports = async (req, res) => {
   try {
+    console.log('🟣 [BACK] Body recibido para crear reserva:', req.body);
+    console.log('🟣 [BACK] Params:', req.params);
     const {
       date,
       amount,
@@ -197,11 +199,11 @@ module.exports = async (req, res) => {
         // ✅ No exponer detalles internos en producción
         details: process.env.NODE_ENV === 'development' ? error.parent : undefined
       });
+      
     }
     
-    return response(res, 500, { 
-      error: "Internal Server Error", 
-      message: error.message 
-    });
+   
+      return response(res, 500, { error: error.message, details: error.errors || null });
+    };
   }
-};
+  return response(res, 500, { error: "Internal Server Error" });

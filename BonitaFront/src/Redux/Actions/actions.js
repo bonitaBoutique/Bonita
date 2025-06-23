@@ -1079,26 +1079,35 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       });
     }
   };
-  export const createReservation = (id_orderDetail, reservationData) => async (dispatch) => {
-    try {
-      dispatch({ type: CREATE_RESERVATION_REQUEST });
-  
-      // Extract just the ID string if an object was passed
-      const orderId = typeof id_orderDetail === 'object' ? id_orderDetail.id_orderDetail : id_orderDetail;
-  
-      console.log('Sending reservation request with ID:', orderId);
-  
-      const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
-  
-      dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
-      Swal.fire('Success', 'Reservation created successfully', 'success');
-      return data; // Return the data to the component
-    } catch (error) {
-      dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
-      Swal.fire('Error', 'Failed to create reservation', 'error');
-      throw error; // Re-throw the error to the component
+ export const createReservation = (id_orderDetail, reservationData) => async (dispatch) => {
+  try {
+    dispatch({ type: CREATE_RESERVATION_REQUEST });
+
+    // Extrae solo el ID si es un objeto
+    const orderId = typeof id_orderDetail === 'object' ? id_orderDetail.id_orderDetail : id_orderDetail;
+
+    console.log('🔵 [FRONT] Enviando reserva con ID:', orderId);
+    console.log('🔵 [FRONT] reservationData:', reservationData);
+
+    const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
+
+    console.log('🟢 [FRONT] Respuesta del backend al crear reserva:', data);
+
+    dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
+    Swal.fire('Success', 'Reservation created successfully', 'success');
+    return data;
+  } catch (error) {
+    console.error('🔴 [FRONT] Error al crear reserva:', error);
+    if (error.response) {
+      console.error('🔴 [FRONT] error.response.data:', error.response.data);
+      console.error('🔴 [FRONT] error.response.status:', error.response.status);
+      console.error('🔴 [FRONT] error.response.headers:', error.response.headers);
     }
-  };
+    dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
+    Swal.fire('Error', 'Failed to create reservation', 'error');
+    throw error;
+  }
+};
 
   export const fetchBalance = (filters) => async (dispatch) => {
     try {

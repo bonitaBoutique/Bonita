@@ -19,8 +19,8 @@ const ReservationList = () => {
   const error = useSelector((state) => state.reservation.error);
   const latestReceipt = useSelector((state) => state.receiptNumber);
   const orderDetails = useSelector((state) => state.orderById.orderDetail);
-  
-  // ✅ ESTADOS PARA FILTROS
+
+  // Estados para filtros
   const [filters, setFilters] = useState({
     fechaInicio: '',
     fechaFin: '',
@@ -29,10 +29,7 @@ const ReservationList = () => {
     soloVencidas: false,
     soloConDeuda: false
   });
-  
-  const [paymentAmounts, setPaymentAmounts] = useState({});
-  const [hoveredOrderId, setHoveredOrderId] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
   const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
   const [selectedReservation, setSelectedReservation] = useState(null);
   const [isPaymentPopupOpen, setIsPaymentPopupOpen] = useState(false);
@@ -40,7 +37,7 @@ const ReservationList = () => {
   const [reservationsPerPage] = useState(7);
   const { userInfo } = useSelector((state) => state.userLogin);
 
-  // ✅ FUNCIÓN PARA APLICAR FILTROS
+  // Función para aplicar filtros
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
       ...prev,
@@ -48,22 +45,21 @@ const ReservationList = () => {
     }));
   };
 
-  // ✅ FUNCIÓN PARA BUSCAR CON FILTROS
+  // Buscar con filtros
   const searchWithFilters = () => {
-    const queryParams = new URLSearchParams();
-    
-    if (filters.fechaInicio) queryParams.append('fechaInicio', filters.fechaInicio);
-    if (filters.fechaFin) queryParams.append('fechaFin', filters.fechaFin);
-    if (filters.usuario) queryParams.append('usuario', filters.usuario);
-    if (filters.documento) queryParams.append('documento', filters.documento);
-    if (filters.soloVencidas) queryParams.append('soloVencidas', 'true');
-    if (filters.soloConDeuda) queryParams.append('soloConDeuda', 'true');
+    const filterObj = {};
+    if (filters.fechaInicio) filterObj.fechaInicio = filters.fechaInicio;
+    if (filters.fechaFin) filterObj.fechaFin = filters.fechaFin;
+    if (filters.usuario) filterObj.usuario = filters.usuario;
+    if (filters.documento) filterObj.documento = filters.documento;
+    if (filters.soloVencidas) filterObj.soloVencidas = 'true';
+    if (filters.soloConDeuda) filterObj.soloConDeuda = 'true';
 
-    dispatch(getAllReservations(queryParams.toString()));
+    dispatch(getAllReservations(filterObj));
     setCurrentPage(1);
   };
 
-  // ✅ FUNCIÓN PARA LIMPIAR FILTROS
+  // Limpiar filtros
   const clearFilters = () => {
     setFilters({
       fechaInicio: '',
@@ -82,87 +78,45 @@ const ReservationList = () => {
     dispatch(fetchLatestReceipt());
   }, [dispatch]);
 
-  // ✅ FUNCIÓN PARA OBTENER RESERVAS FILTRADAS LOCALMENTE
-  const getFilteredReservations = () => {
-    let filtered = reservations;
-
-    // Aplicar filtros locales adicionales si es necesario
-    if (filters.soloVencidas && filters.soloConDeuda) {
-      filtered = filtered.filter(reservation => {
-        const pendingDebt = calculatePendingDebt(
-          reservation.OrderDetail?.amount || 0,
-          reservation.totalPaid || 0
-        );
-        
-        const isOverdue = () => {
-          if (!reservation.dueDate) return false;
-          const today = new Date();
-          const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-          const dueDate = new Date(reservation.dueDate);
-          return dueDate < colombiaToday;
-        };
-
-        return isOverdue() && pendingDebt > 0;
-      });
-    }
-
-    return filtered;
-  };
-
+  // Calcular deuda pendiente
   const calculatePendingDebt = (totalAmount, paidAmount) => {
     return totalAmount - paidAmount;
   };
 
-  useEffect(() => {
-    if (!loading && !error && reservations && reservations.length === 0) {
-      Swal.fire({
-        title: "Sin Reservas",
-        text: "No hay reservas para mostrar en este momento",
-        icon: "info",
-        confirmButtonText: "Aceptar",
-      });
-    }
-  }, [reservations, loading, error]);
+  // Paginación
+  const indexOfLastReservation = currentPage * reservationsPerPage;
+  const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
+  const currentReservations = reservations.slice(
+    indexOfFirstReservation,
+    indexOfLastReservation
+  );
 
-  useEffect(() => {
-    if (orderDetails) {
-      console.log("OrderDetails actualizado:", orderDetails);
-      setCurrentOrderDetail(orderDetails);
-    }
-  }, [orderDetails]);
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Abrir popup de pago
   const handleOpenPaymentPopup = (reservation) => {
     setSelectedReservation(reservation);
     setIsPaymentPopupOpen(true);
   };
 
+  // Cerrar popup de pago
   const handleClosePaymentPopup = () => {
     setSelectedReservation(null);
     setIsPaymentPopupOpen(false);
   };
 
+  // Aplicar pago
   const handlePayment = async (id_reservation, amount, paymentMethod) => {
-    console.log("Sending payment request:", {
-      id_reservation,
-      amount,
-      paymentMethod,
-    });
     try {
       await dispatch(applyPayment(id_reservation, amount, paymentMethod));
-
       const updatedReservation = reservations.find(
         (res) => res.id_reservation === id_reservation
       );
-
-      if (!updatedReservation) {
-        console.warn(`Reserva con ID ${id_reservation} no encontrada en el estado global.`);
-        return;
-      }
+      if (!updatedReservation) return;
 
       const buyerFirstName = updatedReservation.OrderDetail?.User?.first_name || "";
       const buyerLastName = updatedReservation.OrderDetail?.User?.last_name || "";
       const buyerName = `${buyerFirstName} ${buyerLastName}`.trim() || "Cliente no identificado";
-      
       const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
 
       const receiptData = {
@@ -206,7 +160,6 @@ const ReservationList = () => {
       await dispatch(getAllReservations());
       handleClosePaymentPopup();
     } catch (error) {
-      console.error("Error al aplicar el pago:", error);
       Swal.fire({
         title: "Error",
         text: "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
@@ -215,55 +168,12 @@ const ReservationList = () => {
     }
   };
 
+  // Eliminar reserva
   const handleDelete = async (id_reservation) => {
     await dispatch(deleteReservation(id_reservation));
   };
 
-  const handleUpdateStatus = async (id_reservation, status) => {
-    await dispatch(updateReservation(id_reservation, status));
-  };
-
-  const handleMouseEnter = async (id_orderDetail, event) => {
-    try {
-      const rect = event.currentTarget.getBoundingClientRect();
-      setTooltipPosition({
-        x: rect.left,
-        y: rect.bottom + window.scrollY + 5,
-      });
-      setHoveredOrderId(id_orderDetail);
-
-      setCurrentOrderDetail(null);
-
-      const result = await dispatch(fetchOrdersByIdOrder(id_orderDetail));
-      console.log("Fetched order details:", result);
-
-      if (result) {
-        setCurrentOrderDetail(result);
-      }
-    } catch (error) {
-      console.error("Error en handleMouseEnter:", error);
-      setCurrentOrderDetail(null);
-    }
-  };
-
-  useEffect(() => {
-    if (orderDetails) {
-      const orderData = {
-        userData: {
-          first_name: orderDetails.userData?.first_name || "",
-          last_name: orderDetails.userData?.last_name || "",
-        },
-        n_document: orderDetails.n_document,
-        products: orderDetails.products || [],
-      };
-      setCurrentOrderDetail(orderData);
-    }
-  }, [orderDetails]);
-
-  const handleMouseLeave = () => {
-    setHoveredOrderId(null);
-  };
-
+  // Generar PDF de recibo
   const generatePDF = (receiptData) => {
     const {
       receiptNumber,
@@ -407,39 +317,21 @@ const ReservationList = () => {
       { align: "center" }
     );
 
-    const fileName = `Recibo_Parcial_${receiptNumber}.pdf`;
     doc.autoPrint();
     window.open(doc.output("bloburl"), "_blank");
   };
 
-  // Lógica para la paginación
-  const filteredReservations = getFilteredReservations();
-  const indexOfLastReservation = currentPage * reservationsPerPage;
-  const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
-  const currentReservations = filteredReservations.slice(
-    indexOfFirstReservation,
-    indexOfLastReservation
-  );
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
-
-  console.log("RESERVATIONS:", reservations);
-  console.log("FILTERED RESERVATIONS:", filteredReservations);
-  console.log("CURRENT RESERVATIONS:", currentReservations);
 
   return (
     <div className="container mx-auto p-4 mt-12">
       <h1 className="text-2xl font-bold mb-6">Gestión de Reservas</h1>
 
-      {/* ✅ PANEL DE FILTROS */}
+      {/* Panel de filtros */}
       <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">🔍 Filtros de Búsqueda</h2>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          {/* Filtro por fecha de creación */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Inicio
@@ -451,7 +343,6 @@ const ReservationList = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Fin
@@ -463,8 +354,6 @@ const ReservationList = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          {/* Filtro por usuario */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               👤 Nombre Cliente
@@ -477,8 +366,6 @@ const ReservationList = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          {/* Filtro por documento */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📄 Documento
@@ -491,8 +378,6 @@ const ReservationList = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          {/* Filtros de estado */}
           <div className="flex items-center space-x-4">
             <label className="flex items-center">
               <input
@@ -503,7 +388,6 @@ const ReservationList = () => {
               />
               <span className="text-sm text-gray-700">⚠️ Solo Vencidas</span>
             </label>
-
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -515,8 +399,6 @@ const ReservationList = () => {
             </label>
           </div>
         </div>
-
-        {/* Botones de acción */}
         <div className="flex space-x-3">
           <button
             onClick={searchWithFilters}
@@ -531,8 +413,6 @@ const ReservationList = () => {
             🗑️ Limpiar Filtros
           </button>
         </div>
-
-        {/* Resumen de filtros activos */}
         {(filters.fechaInicio || filters.fechaFin || filters.usuario || filters.documento || filters.soloVencidas || filters.soloConDeuda) && (
           <div className="mt-4 p-3 bg-blue-50 rounded-md">
             <p className="text-sm text-blue-800">
@@ -548,7 +428,7 @@ const ReservationList = () => {
         )}
       </div>
 
-      {/* ✅ TABLA DE RESERVAS MEJORADA */}
+      {/* Tabla de reservas */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white shadow-lg rounded-lg">
           <thead className="bg-gray-50">
@@ -572,70 +452,58 @@ const ReservationList = () => {
                   reservation.totalPaid || 0
                 );
 
-                // ✅ FORMATEAR FECHA DE VENCIMIENTO CON ZONA HORARIA DE COLOMBIA
+                // Formatear fechas
                 const formatDueDate = (dueDate) => {
                   if (!dueDate) return 'N/A';
-                  
                   try {
                     const date = new Date(dueDate);
                     return date.toLocaleDateString('es-CO', {
                       timeZone: 'America/Bogota',
                       year: 'numeric',
-                      month: '2-digit', 
+                      month: '2-digit',
                       day: '2-digit'
                     });
-                  } catch (error) {
-                    console.error('Error formatting date:', error);
+                  } catch {
                     return 'Fecha inválida';
                   }
                 };
-
-                // ✅ FORMATEAR FECHA DE CREACIÓN
                 const formatCreationDate = (createdAt) => {
                   try {
                     const date = new Date(createdAt);
                     return date.toLocaleDateString('es-CO', {
                       timeZone: 'America/Bogota',
                       year: 'numeric',
-                      month: '2-digit', 
+                      month: '2-digit',
                       day: '2-digit'
                     });
-                  } catch (error) {
+                  } catch {
                     return 'Fecha inválida';
                   }
                 };
-
-                // ✅ VERIFICAR SI ESTÁ VENCIDA
                 const isOverdue = () => {
                   if (!reservation.dueDate) return false;
-                  
                   const today = new Date();
                   const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
                   const dueDate = new Date(reservation.dueDate);
-                  
                   return dueDate < colombiaToday;
                 };
-
-                // ✅ DETERMINAR ESTADO DE LA RESERVA
                 const getReservationStatus = () => {
                   if (reservation.status === 'Completada') return 'Completada';
                   if (reservation.status === 'Cancelada') return 'Cancelada';
                   if (isOverdue()) return 'Vencida';
                   return 'Pendiente';
                 };
-
                 const status = getReservationStatus();
 
                 return (
-                  <tr 
-                    key={reservation.id_reservation} 
+                  <tr
+                    key={reservation.id_reservation}
                     className={`hover:bg-gray-50 transition-colors ${
-                      status === 'Vencida' ? 'bg-red-50' : 
-                      status === 'Completada' ? 'bg-green-50' : 
+                      status === 'Vencida' ? 'bg-red-50' :
+                      status === 'Completada' ? 'bg-green-50' :
                       status === 'Cancelada' ? 'bg-gray-100' : ''
                     }`}
                   >
-                    {/* ✅ COLUMNA FECHA DE CREACIÓN */}
                     <td className="py-3 px-4 border-b">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900">
@@ -650,7 +518,6 @@ const ReservationList = () => {
                         </span>
                       </div>
                     </td>
-
                     <td className="py-3 px-4 border-b">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
@@ -670,15 +537,11 @@ const ReservationList = () => {
                         </div>
                       </div>
                     </td>
-
-                    {/* ✅ NUEVA COLUMNA DOCUMENTO */}
                     <td className="py-3 px-4 border-b">
                       <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                         {reservation.OrderDetail?.User?.n_document || reservation.n_document || 'N/A'}
                       </span>
                     </td>
-                    
-                    {/* ✅ COLUMNA DE VENCIMIENTO MEJORADA */}
                     <td className={`py-3 px-4 border-b ${
                       status === 'Vencida' ? 'text-red-600 font-bold' : 'text-gray-700'
                     }`}>
@@ -693,12 +556,10 @@ const ReservationList = () => {
                         )}
                       </div>
                     </td>
-                    
-                    {/* ✅ COLUMNA DE ESTADO */}
                     <td className="py-3 px-4 border-b">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        status === 'Completada' 
-                          ? 'bg-green-100 text-green-800' 
+                        status === 'Completada'
+                          ? 'bg-green-100 text-green-800'
                           : status === 'Cancelada'
                           ? 'bg-gray-100 text-gray-800'
                           : status === 'Vencida'
@@ -712,19 +573,16 @@ const ReservationList = () => {
                         {status}
                       </span>
                     </td>
-                    
                     <td className="py-3 px-4 border-b">
                       <span className="font-semibold text-green-600">
                         ${reservation.totalPaid?.toLocaleString() || '0'}
                       </span>
                     </td>
-                    
                     <td className="py-3 px-4 border-b">
                       <span className="font-semibold">
                         ${reservation.OrderDetail?.amount?.toLocaleString() || "N/A"}
                       </span>
                     </td>
-                    
                     <td className="py-3 px-4 border-b">
                       <span className={`font-bold ${
                         pendingDebt > 0 ? 'text-red-600' : 'text-green-600'
@@ -737,10 +595,8 @@ const ReservationList = () => {
                         </div>
                       )}
                     </td>
-                    
                     <td className="py-3 px-4 border-b">
                       <div className="flex flex-col space-y-1">
-                        {/* ✅ BOTÓN APLICAR PAGO */}
                         <button
                           onClick={() => handleOpenPaymentPopup(reservation)}
                           disabled={status === 'Completada' || status === 'Cancelada'}
@@ -757,26 +613,22 @@ const ReservationList = () => {
                         >
                           💳 Aplicar Pago
                         </button>
-                        
-                        {/* ✅ BOTÓN GENERAR RECIBO */}
                         <button
                           onClick={() => {
                             const currentPendingDebt = calculatePendingDebt(
                               reservation.OrderDetail?.amount || 0,
                               reservation.totalPaid || 0
                             );
-
                             const colombiaDate = new Date().toLocaleDateString('es-CO', {
                               timeZone: 'America/Bogota',
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit'
                             });
-
                             generatePDF({
                               receiptNumber: reservation.receiptNumber || (latestReceipt ? latestReceipt + 1 : 1001),
                               date: colombiaDate,
-                              buyer_name: reservation.OrderDetail?.User 
+                              buyer_name: reservation.OrderDetail?.User
                                 ? `${reservation.OrderDetail.User.first_name} ${reservation.OrderDetail.User.last_name}`
                                 : "Cliente no identificado",
                               buyer_email: reservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
@@ -794,8 +646,6 @@ const ReservationList = () => {
                         >
                           📄 Generar Recibo
                         </button>
-                        
-                        {/* ✅ BOTÓN ELIMINAR */}
                         <button
                           onClick={() => {
                             Swal.fire({
@@ -827,13 +677,13 @@ const ReservationList = () => {
         </table>
       </div>
 
-      {/* ✅ MENSAJE CUANDO NO HAY RESERVAS */}
+      {/* Mensaje cuando no hay reservas */}
       {(!currentReservations || currentReservations.length === 0) && !loading && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📋</div>
           <h3 className="text-xl font-semibold text-gray-600 mb-2">
-            {Object.values(filters).some(filter => filter !== '' && filter !== false) 
-              ? 'No se encontraron reservas con los filtros aplicados' 
+            {Object.values(filters).some(filter => filter !== '' && filter !== false)
+              ? 'No se encontraron reservas con los filtros aplicados'
               : 'No hay reservas'}
           </h3>
           <p className="text-gray-500">
@@ -844,23 +694,22 @@ const ReservationList = () => {
         </div>
       )}
 
-      {/* ✅ PAGINACIÓN MEJORADA */}
-      {filteredReservations && filteredReservations.length > reservationsPerPage && (
+      {/* Paginación */}
+      {reservations && reservations.length > reservationsPerPage && (
         <div className="flex justify-center items-center mt-6 space-x-2">
           <button
             onClick={() => currentPage > 1 && paginate(currentPage - 1)}
             disabled={currentPage === 1}
             className={`px-3 py-2 rounded ${
-              currentPage === 1 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
             ← Anterior
           </button>
-          
           {Array.from({
-            length: Math.ceil(filteredReservations.length / reservationsPerPage),
+            length: Math.ceil(reservations.length / reservationsPerPage),
           }).map((_, index) => (
             <button
               key={index}
@@ -874,16 +723,15 @@ const ReservationList = () => {
               {index + 1}
             </button>
           ))}
-          
           <button
-            onClick={() => 
-              currentPage < Math.ceil(filteredReservations.length / reservationsPerPage) && 
+            onClick={() =>
+              currentPage < Math.ceil(reservations.length / reservationsPerPage) &&
               paginate(currentPage + 1)
             }
-            disabled={currentPage === Math.ceil(filteredReservations.length / reservationsPerPage)}
+            disabled={currentPage === Math.ceil(reservations.length / reservationsPerPage)}
             className={`px-3 py-2 rounded ${
-              currentPage === Math.ceil(filteredReservations.length / reservationsPerPage)
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              currentPage === Math.ceil(reservations.length / reservationsPerPage)
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}
           >
@@ -892,28 +740,28 @@ const ReservationList = () => {
         </div>
       )}
 
-      {/* ✅ ESTADÍSTICAS RÁPIDAS ACTUALIZADAS */}
+      {/* Estadísticas rápidas */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
           <h4 className="text-sm font-medium text-gray-600">Total Reservas</h4>
-          <p className="text-2xl font-bold text-blue-600">{filteredReservations?.length || 0}</p>
+          <p className="text-2xl font-bold text-blue-600">{reservations?.length || 0}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
           <h4 className="text-sm font-medium text-gray-600">Completadas</h4>
           <p className="text-2xl font-bold text-green-600">
-            {filteredReservations?.filter(r => r.status === 'Completada').length || 0}
+            {reservations?.filter(r => r.status === 'Completada').length || 0}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
           <h4 className="text-sm font-medium text-gray-600">Pendientes</h4>
           <p className="text-2xl font-bold text-yellow-600">
-            {filteredReservations?.filter(r => !r.status || r.status === 'Pendiente').length || 0}
+            {reservations?.filter(r => !r.status || r.status === 'Pendiente').length || 0}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
           <h4 className="text-sm font-medium text-gray-600">Vencidas con Deuda</h4>
           <p className="text-2xl font-bold text-red-600">
-            {filteredReservations?.filter(r => {
+            {reservations?.filter(r => {
               if (!r.dueDate) return false;
               const today = new Date();
               const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
@@ -954,7 +802,7 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const amount = parseFloat(paymentAmount) || 0;
-    
+
     if (amount <= 0) {
       Swal.fire({
         title: "Error",
@@ -980,8 +828,6 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
         <h2 className="text-2xl font-bold mb-4">💳 Aplicar Pago</h2>
-        
-        {/* Información de la reserva */}
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">Información de la Reserva</h3>
           <p className="text-sm text-gray-600">
@@ -997,7 +843,6 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
             <strong>Saldo Pendiente:</strong> ${pendingDebt.toLocaleString()}
           </p>
         </div>
-
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1015,7 +860,6 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
               required
             />
           </div>
-          
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               💳 Método de Pago
@@ -1035,7 +879,6 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
               <option value="Otro">❓ Otro</option>
             </select>
           </div>
-          
           <div className="flex justify-end space-x-3">
             <button
               type="button"

@@ -1142,34 +1142,42 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     }
   };
 
-  export const getAllReservations = () => async (dispatch) => {
-    dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
-    try {
-      const res = await axios.get(`${BASE_URL}/reservation/all`);
-      console.log('Response from getAllReservations:', res.data.message);
-  
-      if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
-        Swal.fire('Información', 'No se encontraron reservas', 'info');
-        dispatch({
-          type: GET_ALL_RESERVATIONS_SUCCESS,
-          payload: [], // Dispatch an empty array if no reservations are found
-        });
-        return;
+  export const getAllReservations = (filters = {}) => async (dispatch) => {
+  dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
+  try {
+    // Construir query params solo si hay filtros
+    const queryParams = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] && filters[key] !== 'all') {
+        queryParams.append(key, filters[key]);
       }
-  
+    });
+    const url = `${BASE_URL}/reservation/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const res = await axios.get(url);
+    console.log('Response from getAllReservations:', res.data.message);
+
+    if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
+      Swal.fire('Información', 'No se encontraron reservas', 'info');
       dispatch({
         type: GET_ALL_RESERVATIONS_SUCCESS,
-        payload: res.data.message.reservations,
+        payload: [],
       });
-    } catch (error) {
-      console.error('Error in getAllReservations:', error);
-      dispatch({
-        type: GET_ALL_RESERVATIONS_FAILURE,
-        payload: error.message,
-      });
-      Swal.fire( 'No hay reservas');
+      return;
     }
-  };
+
+    dispatch({
+      type: GET_ALL_RESERVATIONS_SUCCESS,
+      payload: res.data.message.reservations,
+    });
+  } catch (error) {
+    console.error('Error in getAllReservations:', error);
+    dispatch({
+      type: GET_ALL_RESERVATIONS_FAILURE,
+      payload: error.message,
+    });
+    Swal.fire('No hay reservas');
+  }
+};
   
   export const applyPayment = (id_reservation, amount) => async (dispatch) => {
     dispatch({ type: APPLY_PAYMENT_REQUEST });

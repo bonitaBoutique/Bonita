@@ -6,17 +6,19 @@ module.exports = async (req, res) => {
   try {
     console.log('Fetching all reservations...');
     
-    // ✅ OBTENER PARÁMETROS DE FILTRADO DESDE QUERY
+    // OBTENER PARÁMETROS DE FILTRADO DESDE QUERY
     const { 
       fechaInicio, 
       fechaFin, 
       usuario, 
       documento, 
       soloVencidas = false, 
-      soloConDeuda = false 
+      soloConDeuda = false,
+      status,           // Nuevo filtro por status de la reserva
+      state_order       // Nuevo filtro por estado de la orden
     } = req.query;
 
-    // ✅ CONSTRUIR CONDICIONES DE FILTRADO
+    // CONSTRUIR CONDICIONES DE FILTRADO
     let whereConditions = {};
     let userWhereConditions = {};
 
@@ -40,6 +42,11 @@ module.exports = async (req, res) => {
       };
     }
 
+    // Filtro por status de la reserva
+    if (status) {
+      whereConditions.status = status;
+    }
+
     // Filtro por usuario (nombre o apellido)
     if (usuario) {
       userWhereConditions[Op.or] = [
@@ -60,6 +67,7 @@ module.exports = async (req, res) => {
             'date', 
             'state_order'
           ],
+          where: state_order ? { state_order } : undefined, // Filtro por estado de la orden
           include: [
             {
               model: User,
@@ -92,7 +100,7 @@ module.exports = async (req, res) => {
       reservations.map(async (reservation) => {
         const reservationData = reservation.toJSON();
         
-        // ✅ FORMATEAR LA FECHA DE VENCIMIENTO PARA COLOMBIA
+        // FORMATEAR LA FECHA DE VENCIMIENTO PARA COLOMBIA
         if (reservationData.dueDate) {
           const dueDate = new Date(reservationData.dueDate);
           reservationData.dueDateFormatted = dueDate.toLocaleDateString('es-CO', {
@@ -102,7 +110,7 @@ module.exports = async (req, res) => {
             day: '2-digit'
           });
           
-          // ✅ VERIFICAR SI LA RESERVA ESTÁ VENCIDA
+          // VERIFICAR SI LA RESERVA ESTÁ VENCIDA
           const today = new Date();
           const colombiaToday = new Date(today.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
           reservationData.isOverdue = dueDate < colombiaToday;
@@ -111,12 +119,12 @@ module.exports = async (req, res) => {
           reservationData.isOverdue = false;
         }
 
-        // ✅ CALCULAR DEUDA PENDIENTE
+        // CALCULAR DEUDA PENDIENTE
         const totalOrderAmount = reservationData.OrderDetail?.amount || 0;
         const totalPaid = reservationData.totalPaid || 0;
         reservationData.pendingDebt = totalOrderAmount - totalPaid;
 
-        // ✅ FORMATEAR FECHA DE CREACIÓN
+        // FORMATEAR FECHA DE CREACIÓN
         reservationData.createdAtFormatted = new Date(reservationData.createdAt).toLocaleDateString('es-CO', {
           timeZone: 'America/Bogota',
           year: 'numeric',
@@ -139,7 +147,7 @@ module.exports = async (req, res) => {
       })
     );
 
-    // ✅ APLICAR FILTROS ADICIONALES
+    // APLICAR FILTROS ADICIONALES
     let filteredReservations = reservationsWithUserData;
 
     // Filtrar solo vencidas
@@ -163,7 +171,9 @@ module.exports = async (req, res) => {
         usuario,
         documento,
         soloVencidas,
-        soloConDeuda
+        soloConDeuda,
+        status,
+        state_order
       }
     });
     

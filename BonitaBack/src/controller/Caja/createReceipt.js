@@ -27,7 +27,8 @@ module.exports = async (req, res) => {
     "Crédito",
     "Bancolombia",
     "Otro",
-    "GiftCard"
+    "GiftCard",
+    "Nequi"
   ];
 
   if (

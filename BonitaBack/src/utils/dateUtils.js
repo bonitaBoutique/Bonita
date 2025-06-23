@@ -1,15 +1,27 @@
 const getColombiaDate = () => {
+  // ✅ USAR toLocaleString con zona horaria específica
   const now = new Date();
-  // Convertir a zona horaria de Colombia (UTC-5)
-  const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
-  return colombiaTime.toISOString().split('T')[0]; // YYYY-MM-DD
+  const colombiaDate = now.toLocaleString('en-CA', { 
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).split(',')[0]; // Formato YYYY-MM-DD
+  
+  return colombiaDate;
 };
 
 const getColombiaDateTime = () => {
+  // ✅ CREAR FECHA ESPECÍFICA PARA COLOMBIA
   const now = new Date();
-  // Convertir a zona horaria de Colombia (UTC-5)
-  const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
-  return colombiaTime;
+  return new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+};
+
+const getColombiaDateTimeISO = () => {
+  // ✅ OBTENER FECHA Y HORA COMPLETA EN ISO PARA COLOMBIA
+  const now = new Date();
+  const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  return colombiaTime.toISOString();
 };
 
 const formatDateForDB = (dateString) => {
@@ -20,13 +32,39 @@ const formatDateForDB = (dateString) => {
     return dateString;
   }
   
-  // Si no, intenta convertirla
+  // ✅ MEJORAR LA CONVERSIÓN
+  try {
+    const date = new Date(dateString);
+    // Convertir a fecha de Colombia
+    return date.toLocaleString('en-CA', { 
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).split(',')[0];
+  } catch (error) {
+    console.error('Error converting date:', error);
+    return getColombiaDate();
+  }
+};
+
+// ✅ NUEVA FUNCIÓN PARA TIMESTAMPS COMPLETOS
+const getColombiaTimestamp = () => {
+  const now = new Date();
+  return now.toLocaleString('sv-SE', { timeZone: 'America/Bogota' }); // YYYY-MM-DD HH:mm:ss
+};
+
+// ✅ FUNCIÓN PARA VALIDAR FECHAS
+const isValidDate = (dateString) => {
   const date = new Date(dateString);
-  return date.toISOString().split('T')[0];
+  return date instanceof Date && !isNaN(date.getTime());
 };
 
 module.exports = {
   getColombiaDate,
   getColombiaDateTime,
-  formatDateForDB
+  getColombiaDateTimeISO,
+  formatDateForDB,
+  getColombiaTimestamp,
+  isValidDate
 };

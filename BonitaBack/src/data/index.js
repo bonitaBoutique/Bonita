@@ -32,12 +32,18 @@ const sequelize = new Sequelize(DB_DEPLOY, {
     ssl: {
       require: true,
       rejectUnauthorized: false
-    },
-    useUTC: false,
-    dateStrings: true,
-    typeCast: true
+    }
+  },
+  define: {
+    timestamps: true,
+    // ✅ NO definir timezone aquí, deja que los modelos manejen las fechas
   }
 });
+
+// ✅ CONFIGURAR ZONA HORARIA GLOBALMENTE (OPCIONAL)
+if (process.env.NODE_ENV === 'production') {
+  process.env.TZ = 'America/Bogota';
+}
 
 // ✅ RESTO DEL CÓDIGO PARA CARGAR MODELOS
 const basename = path.basename(__filename);

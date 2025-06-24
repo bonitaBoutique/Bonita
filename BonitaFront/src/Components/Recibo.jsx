@@ -100,15 +100,15 @@ const Recibo = () => {
   };
 
   // ✅ MANEJO DE MÉTODOS DE PAGO
-  const handlePaymentMethodChange = (e) => {
-    const value = e.target.value;
-    setPaymentMethod(value);
-    setShowSecondPayment(false);
-    setPaymentMethod2("");
-    setAmount1("");
-    setAmount2("");
-   
-    if (value === "Crédito") {
+  const handlePaymentMethodChange = async (e) => {
+  const value = e.target.value;
+  setPaymentMethod(value);
+  setShowSecondPayment(false);
+  setPaymentMethod2("");
+  setAmount1("");
+  setAmount2("");
+ 
+  if (value === "Crédito") {
     try {
       // ✅ 1. Actualizar el estado de la orden a "Reserva a Crédito"
       console.log('🔵 Actualizando orden a Reserva a Crédito:', order.id_orderDetail);

@@ -1087,18 +1087,30 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     console.log('🔵 [FRONT] Creando reserva para orden:', orderId);
     console.log('🔵 [FRONT] Datos de reserva:', reservationData);
 
-    // ✅ ENDPOINT CORRECTO: usar orderId en la URL
-    const { data } = await axios.post(`https://bonita-production-9dee.up.railway.app/order/reservations/${orderId}`, reservationData);
+    // ✅ FORZAR URL COMPLETA CORRECTA
+    const fullUrl = `https://bonita-production-9dee.up.railway.app/order/reservations/${orderId}`;
+    console.log('🔵 [FRONT] URL completa:', fullUrl);
 
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(reservationData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`HTTP ${response.status}: ${errorData.message || 'Error en la petición'}`);
+    }
+
+    const data = await response.json();
     console.log('🟢 [FRONT] Reserva creada exitosamente:', data);
 
     dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
     return data;
   } catch (error) {
     console.error('🔴 [FRONT] Error al crear reserva:', error);
-    if (error.response) {
-      console.error('🔴 [FRONT] error.response.data:', error.response.data);
-    }
     dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
     throw error;
   }

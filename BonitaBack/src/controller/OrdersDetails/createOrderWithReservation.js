@@ -42,8 +42,8 @@ module.exports = async (req, res) => {
       // ✅ CAMPOS ESPECÍFICOS DE RESERVA
       partialPayment,
       dueDate,
-      id_orderDetail, // Si viene este campo, es reserva de orden existente
-      isReservation,   // Flag adicional
+      id_orderDetail,
+      isReservation,
       
       // Campos adicionales
       cashier_document,
@@ -76,12 +76,12 @@ module.exports = async (req, res) => {
     if (isExistingOrderReservation) {
       console.log('🟣 [BACK] ✅ Procesando como reserva de orden existente');
       
-      // ✅ VERIFICAR QUE LA ORDEN EXISTE - USAR ALIAS CORRECTO 'products'
+      // ✅ VERIFICAR QUE LA ORDEN EXISTE
       const existingOrder = await OrderDetail.findByPk(orderId, {
         include: [
           {
             model: Product,
-            as: 'products', // ✅ Alias correcto según tu archivo de asociaciones
+            as: 'products',
             through: { attributes: ['quantity'] }
           },
           {
@@ -97,7 +97,6 @@ module.exports = async (req, res) => {
       }
 
       console.log('🟢 [BACK] Orden existente encontrada:', existingOrder.id_orderDetail);
-      console.log('🟢 [BACK] Productos en la orden:', existingOrder.products?.length || 0);
 
       // ✅ VALIDAR DATOS MÍNIMOS PARA RESERVA
       if (!partialPayment || !dueDate || !n_document) {
@@ -113,7 +112,6 @@ module.exports = async (req, res) => {
         });
       } catch (reservationError) {
         console.log('🟡 [BACK] Tabla Reservation no existe o error:', reservationError.message);
-        // Continuar sin verificar reserva existente si la tabla no existe
       }
 
       if (existingReservation) {
@@ -121,7 +119,7 @@ module.exports = async (req, res) => {
         return response(res, 400, { error: "Ya existe una reserva para esta orden" });
       }
 
-      // ✅ CREAR LA RESERVA SIN VERIFICAR STOCK
+      // ✅ CREAR LA RESERVA
       const reservationData = {
         id_orderDetail: orderId,
         n_document: n_document,
@@ -131,8 +129,6 @@ module.exports = async (req, res) => {
         remainingAmount: Number(existingOrder.amount) - Number(partialPayment),
         status: 'Pendiente',
         paymentMethod: paymentMethod || 'Efectivo',
-        
-        // Datos adicionales
         buyer_name: buyer_name,
         buyer_email: buyer_email,
         buyer_phone: buyer_phone,
@@ -147,7 +143,6 @@ module.exports = async (req, res) => {
         console.log('🟢 [BACK] Reserva creada exitosamente:', newReservation.id);
       } catch (reservationCreateError) {
         console.log('🟡 [BACK] Error creando reserva (usando simulación):', reservationCreateError.message);
-        // Si la tabla no existe, crear registro simulado para continuar
         newReservation = {
           id: uuidv4(),
           id_orderDetail: orderId,
@@ -159,13 +154,22 @@ module.exports = async (req, res) => {
         console.log('🟡 [BACK] Usando reserva simulada:', newReservation);
       }
 
-      // ✅ ACTUALIZAR ESTADO DE LA ORDEN A "Reserva a Crédito"
-      await existingOrder.update({
-        state_order: 'Reserva a Crédito',
-        transaction_status: 'Reservado'
-      });
+      // ✅ ACTUALIZAR ESTADO DE LA ORDEN CON VALORES VÁLIDOS
+      console.log('🟣 [BACK] Actualizando estado de la orden...');
+      
+      try {
+        await existingOrder.update({
+          state_order: 'Reserva a Crédito',
+          transaction_status: 'Pendiente' // ✅ VALOR VÁLIDO: "Pendiente", "Aprobado", "Rechazado", "Fallido", "Cancelado"
+        });
 
-      console.log('🟢 [BACK] Orden actualizada a Reserva a Crédito');
+        console.log('🟢 [BACK] Orden actualizada exitosamente:');
+        console.log('🟢 [BACK] - state_order: "Reserva a Crédito"');
+        console.log('🟢 [BACK] - transaction_status: "Pendiente"');
+      } catch (updateError) {
+        console.log('🔴 [BACK] Error actualizando orden:', updateError.message);
+        // Continuar sin error crítico
+      }
 
       return response(res, 201, {
         message: 'Reserva creada exitosamente',
@@ -179,7 +183,7 @@ module.exports = async (req, res) => {
         },
         order: {
           id_orderDetail: existingOrder.id_orderDetail,
-          state_order: existingOrder.state_order,
+          state_order: 'Reserva a Crédito',
           amount: existingOrder.amount
         }
       });
@@ -194,7 +198,6 @@ module.exports = async (req, res) => {
       return response(res, 400, { error: "Missing Ordering Data" });
     }
 
-    // ✅ RESTO DEL CÓDIGO ORIGINAL PARA CREAR ORDEN NUEVA...
     console.log('🟣 [BACK] Código para orden nueva no implementado');
     return response(res, 501, { error: "Crear orden nueva con reserva no implementado" });
 

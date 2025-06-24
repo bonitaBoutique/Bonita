@@ -60,8 +60,6 @@ module.exports = async (req, res) => {
     }
 
     console.log('🟣 [BACK] Procesando petición de reserva');
-    console.log('🟣 [BACK] orderId desde params:', req.params.orderId || req.params.id);
-    console.log('🟣 [BACK] id_orderDetail desde body:', id_orderDetail);
     console.log('🟣 [BACK] orderId final:', orderId);
     console.log('🟣 [BACK] isReservation:', isReservation);
     console.log('🟣 [BACK] partialPayment:', partialPayment);
@@ -78,11 +76,12 @@ module.exports = async (req, res) => {
     if (isExistingOrderReservation) {
       console.log('🟣 [BACK] ✅ Procesando como reserva de orden existente');
       
-      // ✅ VERIFICAR QUE LA ORDEN EXISTE
+      // ✅ VERIFICAR QUE LA ORDEN EXISTE - USAR ALIAS CORRECTO 'products'
       const existingOrder = await OrderDetail.findByPk(orderId, {
         include: [
           {
             model: Product,
+            as: 'products', // ✅ Alias correcto según tu archivo de asociaciones
             through: { attributes: ['quantity'] }
           },
           {
@@ -98,6 +97,7 @@ module.exports = async (req, res) => {
       }
 
       console.log('🟢 [BACK] Orden existente encontrada:', existingOrder.id_orderDetail);
+      console.log('🟢 [BACK] Productos en la orden:', existingOrder.products?.length || 0);
 
       // ✅ VALIDAR DATOS MÍNIMOS PARA RESERVA
       if (!partialPayment || !dueDate || !n_document) {
@@ -146,7 +146,7 @@ module.exports = async (req, res) => {
         newReservation = await Reservation.create(reservationData);
         console.log('🟢 [BACK] Reserva creada exitosamente:', newReservation.id);
       } catch (reservationCreateError) {
-        console.log('🟡 [BACK] Error creando reserva (tabla no existe?):', reservationCreateError.message);
+        console.log('🟡 [BACK] Error creando reserva (usando simulación):', reservationCreateError.message);
         // Si la tabla no existe, crear registro simulado para continuar
         newReservation = {
           id: uuidv4(),

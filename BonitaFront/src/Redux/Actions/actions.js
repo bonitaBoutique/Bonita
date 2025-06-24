@@ -1079,56 +1079,27 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       });
     }
   };
- export const createReservation = (id_orderDetail, reservationData) => async (dispatch) => {
+  
+export const createReservation = (orderId, reservationData) => async (dispatch) => {
   try {
     dispatch({ type: CREATE_RESERVATION_REQUEST });
 
-    // Extrae solo el ID si es un objeto
-    const orderId = typeof id_orderDetail === 'object' ? id_orderDetail.id_orderDetail : id_orderDetail;
+    console.log('🔵 [FRONT] Creando reserva para orden:', orderId);
+    console.log('🔵 [FRONT] Datos de reserva:', reservationData);
 
-    console.log('🔵 [FRONT] Enviando reserva con ID:', orderId);
-    console.log('🔵 [FRONT] reservationData original:', reservationData);
+    // ✅ ENDPOINT CORRECTO: usar orderId en la URL
+    const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
 
-    // ✅ CONSTRUIR BODY COMPLETO QUE EL CONTROLADOR ESPERA
-    const completeOrderData = {
-      date: reservationData.date || new Date().toISOString().split('T')[0], // Fecha actual si no se proporciona
-      amount: reservationData.totalAmount || reservationData.amount, // Monto total
-      quantity: 1, // Cantidad por defecto
-      state_order: "Reserva a Crédito", // Estado específico para reservas
-      products: reservationData.products || [
-        {
-          id_product: reservationData.id_product || "DEFAULT", // Necesitas pasar esto desde el front
-          quantity: 1
-        }
-      ],
-      address: reservationData.address || "Retira en Local",
-      deliveryAddress: reservationData.deliveryAddress || null,
-      shippingCost: reservationData.shippingCost || 0,
-      n_document: reservationData.n_document,
-      pointOfSale: reservationData.pointOfSale || "Local",
-      discount: reservationData.discount || 0,
-      // ✅ DATOS ESPECÍFICOS DE RESERVA
-      partialPayment: reservationData.partialPayment,
-      dueDate: reservationData.dueDate
-    };
-
-    console.log('🔵 [FRONT] Datos completos para orden con reserva:', completeOrderData);
-
-    const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, completeOrderData);
-
-    console.log('🟢 [FRONT] Respuesta del backend al crear reserva:', data);
+    console.log('🟢 [FRONT] Reserva creada exitosamente:', data);
 
     dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
-    Swal.fire('Success', 'Reservation created successfully', 'success');
     return data;
   } catch (error) {
     console.error('🔴 [FRONT] Error al crear reserva:', error);
     if (error.response) {
       console.error('🔴 [FRONT] error.response.data:', error.response.data);
-      console.error('🔴 [FRONT] error.response.status:', error.response.status);
     }
     dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
-    Swal.fire('Error', 'Failed to create reservation', 'error');
     throw error;
   }
 };

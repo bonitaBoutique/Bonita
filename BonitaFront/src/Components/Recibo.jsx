@@ -1011,20 +1011,43 @@ onSubmit={async (reservationData) => {
       throw new Error('No se pudo obtener el documento del cajero');
     }
 
-    // ✅ DATOS SIMPLIFICADOS PARA RESERVA
+    // ✅ CONSTRUIR DATOS COMPLETOS QUE EL CONTROLADOR ESPERA
     const reservationBody = {
-      id_orderDetail: order.id_orderDetail,
+      // ✅ CAMPOS OBLIGATORIOS QUE VALIDA EL CONTROLADOR
+      date: order.date || new Date().toISOString().split('T')[0],
+      amount: order.amount || Number(totalAmount),
+      quantity: order.quantity || 1,
+      state_order: "Reserva a Crédito", // Estado específico para reservas
+      products: order.products?.map(product => ({
+        id_product: product.id_product,
+        quantity: product.OrderProduct?.quantity || 1
+      })) || [],
+      address: order.address || "Retira en Local",
+      
+      // ✅ CAMPOS OPCIONALES
+      deliveryAddress: order.deliveryAddress || null,
+      shippingCost: order.shippingCost || 0,
       n_document: buyerDocument,
+      pointOfSale: order.pointOfSale || "Local",
+      discount: order.discount || 0,
+      
+      // ✅ DATOS ESPECÍFICOS DE LA RESERVA
       partialPayment: Number(reservationData.partialPayment),
       dueDate: reservationData.dueDate,
+      
+      // ✅ DATOS ADICIONALES
       cashier_document: cashierDocument,
       buyer_name: buyerName,
       buyer_email: buyerEmail,
       buyer_phone: buyerPhone,
-      paymentMethod: reservationData.paymentMethod
+      paymentMethod: reservationData.paymentMethod,
+      
+      // ✅ INDICADOR DE QUE ES RESERVA DE ORDEN EXISTENTE
+      id_orderDetail: order.id_orderDetail,
+      isReservation: true
     };
     
-    console.log('🔵 Body final para crear reserva:', JSON.stringify(reservationBody, null, 2));
+    console.log('🔵 Body completo para crear reserva:', JSON.stringify(reservationBody, null, 2));
     
     // ✅ CREAR RESERVA
     const result = await dispatch(createReservation(order.id_orderDetail, reservationBody));
@@ -1067,9 +1090,9 @@ onSubmit={async (reservationData) => {
     let errorMessage = 'No se pudo crear la reserva.';
     
     if (error.message.includes('Not enough stock')) {
-      errorMessage = 'No hay suficiente stock para algunos productos. La orden ya fue creada, contacte al administrador.';
+      errorMessage = 'El stock ya fue descontado al crear la orden original. Este error no debería ocurrir para reservas.';
     } else if (error.message.includes('Missing Ordering Data')) {
-      errorMessage = 'Faltan datos necesarios para crear la reserva.';
+      errorMessage = 'Faltan datos necesarios para crear la reserva. Verifique que la orden tenga todos los datos requeridos.';
     } else if (error.message.includes('Order not found')) {
       errorMessage = 'No se encontró la orden especificada.';
     } else if (error.message) {

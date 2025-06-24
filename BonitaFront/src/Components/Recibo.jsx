@@ -27,7 +27,6 @@ const Recibo = () => {
 
   // ✅ ESTADOS LOCALES
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showReservationPopup, setShowReservationPopup] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
   const [showSecondPayment, setShowSecondPayment] = useState(false);
   const [paymentMethod2, setPaymentMethod2] = useState("");
@@ -43,7 +42,9 @@ const Recibo = () => {
   const [cashGiven, setCashGiven] = useState("");
   const [change, setChange] = useState(0);
   const [observations, setObservations] = useState("");
-
+  const [reservationInfo, setReservationInfo] = useState(null);
+  const [isReservation, setIsReservation] = useState(false);
+  const [showReservationPopup, setShowReservationPopup] = useState(false);
   // ✅ HOOKS
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -76,22 +77,26 @@ const Recibo = () => {
 
   // ✅ FUNCIONES UTILITARIAS
   const resetForm = () => {
-    setPaymentMethod("Efectivo");
-    setShowSecondPayment(false);
-    setPaymentMethod2("");
-    setAmount1("");
-    setAmount2("");
-    setBuyerName("");
-    setBuyerEmail("");
-    setBuyerPhone("");
-    setTotalAmount("");
-    setDate(getColombiaDate());
-    setCashGiven("");
-    setChange(0);
-    setDiscount(0);
-    setObservations("");
-    setIsSubmitted(false);
-  };
+  setPaymentMethod("Efectivo");
+  setShowSecondPayment(false);
+  setPaymentMethod2("");
+  setAmount1("");
+  setAmount2("");
+  setBuyerName("");
+  setBuyerEmail("");
+  setBuyerPhone("");
+  setTotalAmount("");
+  setDate(getColombiaDate());
+  setCashGiven("");
+  setChange(0);
+  setDiscount(0);
+  setObservations("");
+  setIsSubmitted(false);
+  // ✅ LIMPIAR ESTADOS DE RESERVA
+  setIsReservation(false);
+  setReservationInfo(null);
+  setShowReservationPopup(false);
+};
 
   const handleExit = () => {
     dispatch(resetReceiptState());
@@ -100,49 +105,39 @@ const Recibo = () => {
   };
 
   // ✅ MANEJO DE MÉTODOS DE PAGO
-  const handlePaymentMethodChange = async (e) => {
-    const value = e.target.value;
-    setPaymentMethod(value);
-    setShowSecondPayment(false);
-    setPaymentMethod2("");
-    setAmount1("");
-    setAmount2("");
+ const handlePaymentMethodChange = async (e) => {
+  const value = e.target.value;
+  setPaymentMethod(value);
+  setShowSecondPayment(false);
+  setPaymentMethod2("");
+  setAmount1("");
+  setAmount2("");
 
-    if (value === "Crédito") {
-      try {
-        // ✅ 1. Actualizar el estado de la orden a "Reserva a Crédito"
-        console.log(
-          "🔵 Actualizando orden a Reserva a Crédito:",
-          order.id_orderDetail
-        );
+  if (value === "Crédito") {
+    try {
+      console.log('🔵 Actualizando orden a Reserva a Crédito:', order.id_orderDetail);
+      
+      await dispatch(updateOrderState(
+        order.id_orderDetail,
+        "Reserva a Crédito",
+        null,
+        order.amount,
+        0
+      ));
 
-        await dispatch(
-          updateOrderState(
-            order.id_orderDetail,
-            "Reserva a Crédito", // nuevo state_order
-            null, // transaction_status (opcional)
-            order.amount, // amount (mantener el mismo)
-            0 // discount (si no hay descuento)
-          )
-        );
-
-        // ✅ 2. Abrir popup para crear la reserva
-        setShowReservationPopup(true);
-
-        console.log("✅ Orden actualizada, abriendo popup de reserva");
-      } catch (error) {
-        console.error("❌ Error al actualizar orden:", error);
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No se pudo actualizar la orden a Reserva a Crédito",
-        });
-
-        // Revertir el método de pago si hay error
-        setPaymentMethod("Efectivo");
-      }
+      setShowReservationPopup(true);
+      console.log('✅ Orden actualizada, abriendo popup de reserva');
+    } catch (error) {
+      console.error('❌ Error al actualizar orden:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar la orden a Reserva a Crédito'
+      });
+      setPaymentMethod("Efectivo");
     }
-  };
+  }
+};
 
   // ✅ MANEJO DE EFECTIVO CON DESCUENTO
   const handleCashGivenChange = (e) => {
@@ -166,19 +161,36 @@ const Recibo = () => {
     dispatch(fetchLatestOrder());
   }, [dispatch, idOrder, order, receiptNumber]);
 
-  useEffect(() => {
-    if (order && order.id_orderDetail === idOrder) {
-      setTotalAmount(order.amount);
-      setDate(order.date);
+ useEffect(() => {
+  if (order && order.id_orderDetail === idOrder) {
+    setTotalAmount(order.amount);
+    setDate(order.date);
+    
+    // ✅ MANEJAR DATOS DEL BUYER/CLIENTE (Usuario con rol "User")
+    if (order.User) {
+      // Si la orden tiene relación directa con User
+      setBuyerName(`${order.User.first_name} ${order.User.last_name}`);
+      setBuyerEmail(order.User.email);
+      setBuyerPhone(order.User.phone || "");
+    } else if (order.userData) {
+      // Si los datos están en userData
       setBuyerName(`${order.userData.first_name} ${order.userData.last_name}`);
       setBuyerEmail(order.userData.email);
-      setBuyerPhone(order.userData.phone);
-      setAmount1("");
-      setAmount2("");
-      setShowSecondPayment(false);
-      setPaymentMethod2("");
+      setBuyerPhone(order.userData.phone || "");
+    } else {
+      // Si no hay datos del usuario, dejar vacío para llenar manualmente
+      setBuyerName("");
+      setBuyerEmail("");
+      setBuyerPhone("");
     }
-  }, [order, idOrder, dispatch]);
+    
+    setAmount1("");
+    setAmount2("");
+    setShowSecondPayment(false);
+    setPaymentMethod2("");
+  }
+}, [order, idOrder, dispatch]);
+
 
   useEffect(() => {
     if (userInfo && userInfo.n_document) {
@@ -346,194 +358,227 @@ const Recibo = () => {
   };
 
   // ✅ GENERACIÓN DE PDF CORREGIDA
-  const generatePDF = (amount1Param = null, amount2Param = null) => {
-    const doc = new jsPDF({
-      unit: "pt",
-      format: [226.77, 839.28],
-    });
+const generatePDF = (amount1Param = null, amount2Param = null) => {
+  const doc = new jsPDF({
+    unit: "pt",
+    format: [226.77, 839.28],
+  });
 
-    doc.setFontSize(18);
-    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+  doc.setFontSize(18);
+  doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+    align: "center",
+  });
+
+  doc.setFontSize(10);
+  let currentY = 50;
+
+  doc.text("Bonita Boutique S.A.S NIT:", doc.internal.pageSize.width / 2, currentY, {
+    align: "center"
+  });
+  currentY += 20;
+
+  doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 30;
+
+  doc.text(`RECIBO # ${newReceiptNumber}`, doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  // ✅ MOSTRAR TIPO DE TRANSACCIÓN
+  doc.setFontSize(12);
+  if (isReservation && reservationInfo) {
+    doc.text("TIPO: RESERVA A CRÉDITO", doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
-
-    doc.setFontSize(10);
-    let currentY = 50;
-
-    doc.text(
-      "Bonita Boutique S.A.S NIT:",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+  } else {
+    doc.text(`Estado: ${order.state_order}`, doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
+  }
+  currentY += 20;
+
+  doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.setFontSize(10);
+  doc.text(`Cliente: ${buyerName}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Email: ${buyerEmail}`, 20, currentY);
+  currentY += 20;
+
+  doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
+  currentY += 20;
+
+  // ✅ MOSTRAR DOCUMENTO DEL CLIENTE
+  if (isReservation && reservationInfo?.buyerDocument) {
+    doc.text(`Documento: ${reservationInfo.buyerDocument}`, 20, currentY);
+    currentY += 20;
+  }
+
+  doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  // ✅ INFORMACIÓN ESPECÍFICA DE RESERVA
+  if (isReservation && reservationInfo) {
+    doc.setFontSize(11);
+    doc.text("DETALLES DE RESERVA:", 20, currentY);
+    currentY += 20;
+    
+    doc.text(`Monto Total: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 15;
+    
+    doc.text(`Pago Inicial: $${reservationInfo.partialPayment.toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 15;
+    
+    doc.text(`Saldo Pendiente: $${reservationInfo.remainingAmount.toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 15;
+    
+    doc.text(`Método de Pago: ${reservationInfo.paymentMethod}`, 20, currentY);
+    currentY += 15;
+    
+    doc.text(`Fecha de Vencimiento: ${new Date(reservationInfo.dueDate).toLocaleDateString('es-CO')}`, 20, currentY);
+    currentY += 20;
+    
+  } else {
+    // ✅ INFORMACIÓN DE VENTA NORMAL
+    doc.text(`Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`, 20, currentY);
     currentY += 20;
 
-    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 30;
-
-    doc.text(
-      `RECIBO # ${newReceiptNumber}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
-
-    doc.text(
-      `Estado de venta: ${order.state_order}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-
-    currentY += 20;
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    doc.setFontSize(10);
-    doc.text(`${buyerName}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(`${buyerEmail}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(`Teléfono: ${buyerPhone || "N/A"}`, 20, currentY);
-    currentY += 20;
-
-    doc.text(
-      `Monto sin descuento: $${Number(totalAmount).toLocaleString("es-CO")}`,
-      20,
-      currentY
-    );
-    currentY += 20;
-
-    doc.text(
-      `Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`,
-      20,
-      currentY
-    );
-    currentY += 20;
-
-    doc.text(
-      `Monto Total: $${totalWithDiscount.toLocaleString("es-CO")}`,
-      20,
-      currentY
-    );
-    currentY += 20;
-
-    // ✅ USAR PARÁMETROS CORRECTOS
-    const displayAmount1 = amount1Param || totalWithDiscount;
-    doc.text(
-      `Método de Pago: ${paymentMethod} $${displayAmount1.toLocaleString(
-        "es-CO"
-      )}`,
-      20,
-      currentY
-    );
-    currentY += 20;
-
-    if (showSecondPayment && paymentMethod2 && amount2Param) {
-      doc.text(
-        `Método de Pago 2: ${paymentMethod2} $${amount2Param.toLocaleString(
-          "es-CO"
-        )}`,
-        20,
-        currentY
-      );
+    if (discount > 0) {
+      doc.text(`Descuento: ${discount}% ($${discountAmount.toLocaleString("es-CO")})`, 20, currentY);
       currentY += 20;
     }
 
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+    doc.text(`Monto Total: $${totalWithDiscount.toLocaleString("es-CO")}`, 20, currentY);
     currentY += 20;
 
-    // Productos
-    doc.setFontSize(7);
+    const displayAmount1 = amount1Param || totalWithDiscount;
+    doc.text(`Método de Pago: ${paymentMethod} $${displayAmount1.toLocaleString("es-CO")}`, 20, currentY);
     currentY += 20;
 
+    if (showSecondPayment && paymentMethod2 && amount2Param) {
+      doc.text(`Método de Pago 2: ${paymentMethod2} $${amount2Param.toLocaleString("es-CO")}`, 20, currentY);
+      currentY += 20;
+    }
+  }
+
+  doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  // ✅ PRODUCTOS
+  doc.setFontSize(9);
+  doc.text("PRODUCTOS:", 20, currentY);
+  currentY += 15;
+
+  if (order.products && order.products.length > 0) {
     order.products.forEach((product, index) => {
       const productLine = `${index + 1}. ${product.description}`;
       const lines = doc.splitTextToSize(productLine, 170);
       doc.text(lines, 20, currentY);
-      currentY += 15 * lines.length;
+      currentY += 12 * lines.length;
     });
+  }
 
-    // ✅ OBSERVACIONES
-    if (observations && observations.trim() !== "") {
-      currentY += 20;
-      doc.text(
-        "***************************",
-        doc.internal.pageSize.width / 2,
-        currentY,
-        { align: "center" }
-      );
-      currentY += 20;
+  currentY += 15;
 
-      doc.setFontSize(8);
-      doc.text("OBSERVACIONES:", 20, currentY);
-      currentY += 15;
-
-      const observationLines = doc.splitTextToSize(observations.trim(), 180);
-      doc.text(observationLines, 20, currentY);
-      currentY += 12 * observationLines.length;
-    }
-
+  // ✅ OBSERVACIONES
+  if (observations && observations.trim() !== "") {
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
     currentY += 20;
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
-
-    doc.setFontSize(10);
-    doc.text(
-      `Atendido por: ${
-        cashierInfo
-          ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
-          : "N/A"
-      }`,
-      20,
-      currentY
-    );
-    currentY += 15;
 
     doc.setFontSize(8);
-    doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
-    currentY += 30;
+    doc.text("OBSERVACIONES:", 20, currentY);
+    currentY += 15;
 
-    doc.setFontSize(12);
-    doc.text(
-      "Gracias por elegirnos!",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+    const observationLines = doc.splitTextToSize(observations.trim(), 180);
+    doc.text(observationLines, 20, currentY);
+    currentY += 12 * observationLines.length;
+    currentY += 15;
+  }
 
-    doc.output("dataurlnewwindow");
-  };
+  // ✅ NOTA IMPORTANTE PARA RESERVAS
+  if (isReservation && reservationInfo) {
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+    
+    doc.setFontSize(9);
+    doc.text("⚠️ IMPORTANTE:", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 15;
+    
+    doc.setFontSize(8);
+    doc.text("Esta es una RESERVA A CRÉDITO.", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 12;
+    
+    doc.text("El saldo pendiente debe cancelarse", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 12;
+    
+    doc.text(`antes del ${new Date(reservationInfo.dueDate).toLocaleDateString('es-CO')}`, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 12;
+    
+    doc.text("para completar la compra.", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+  }
+
+  doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+  currentY += 20;
+
+  doc.setFontSize(10);
+  doc.text(`Atendido por: ${cashierInfo ? `${cashierInfo.first_name} ${cashierInfo.last_name}` : "N/A"}`, 20, currentY);
+  currentY += 15;
+
+  // ✅ MOSTRAR DOCUMENTO DEL CAJERO
+  if (reservationInfo?.cashierDocument) {
+    doc.text(`Cajero: ${reservationInfo.cashierDocument}`, 20, currentY);
+    currentY += 15;
+  }
+
+  doc.setFontSize(8);
+  doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
+  currentY += 30;
+
+  doc.setFontSize(12);
+  doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, {
+    align: "center",
+  });
+
+  doc.output("dataurlnewwindow");
+};
 
   // ✅ MANEJO DE LOADING Y ERRORES
   if (loading || userLoading || cashierLoading || receiptsLoading) {
@@ -910,52 +955,108 @@ const Recibo = () => {
           </div>
         </form>
 
-       {showReservationPopup && (
+      {showReservationPopup && (
   <ReservationPopup
     orderId={order.id_orderDetail}
     totalAmount={Number(totalAmount)}
     onClose={() => {
       setShowReservationPopup(false);
       setPaymentMethod("Efectivo");
+      setIsReservation(false);
+      setReservationInfo(null);
     }}
     onSubmit={async (reservationData) => {
       try {
-        // ✅ CONSTRUIR DATOS COMPLETOS BASADOS EN LA ORDEN EXISTENTE
-        const completeReservationData = {
-          // Datos básicos de la orden existente
+        console.log('🔵 Datos recibidos del popup:', reservationData);
+        console.log('🔵 Orden actual:', order);
+        console.log('🔵 Usuario logueado (cajero):', user);
+
+        // ✅ OBTENER n_document DEL BUYER/CLIENTE
+        let buyerDocument = null;
+        if (order.User?.n_document) {
+          buyerDocument = order.User.n_document;
+        } else if (order.userData?.n_document) {
+          buyerDocument = order.userData.n_document;
+        } else if (order.n_document) {
+          buyerDocument = order.n_document;
+        }
+
+        // ✅ OBTENER n_document DEL CAJERO (usuario logueado)
+        const cashierDocument = user?.n_document || cashierInfo?.n_document;
+
+        console.log('🔵 Documento del cliente (buyer):', buyerDocument);
+        console.log('🔵 Documento del cajero:', cashierDocument);
+
+        // ✅ VALIDACIONES
+        if (!buyerDocument) {
+          throw new Error('No se pudo obtener el documento del cliente');
+        }
+
+        if (!cashierDocument) {
+          throw new Error('No se pudo obtener el documento del cajero');
+        }
+
+        if (!order.products || order.products.length === 0) {
+          throw new Error('No hay productos en la orden');
+        }
+
+        // ✅ CONSTRUIR DATOS COMPLETOS PARA EL CONTROLADOR EXISTENTE
+        const reservationBody = {
+          // Datos básicos de la orden
           date: order.date || new Date().toISOString().split('T')[0],
           amount: order.amount || Number(totalAmount),
           quantity: order.quantity || 1,
           state_order: "Reserva a Crédito",
-          products: order.products?.map(product => ({
+          
+          // Productos de la orden existente
+          products: order.products.map(product => ({
             id_product: product.id_product,
             quantity: product.OrderProduct?.quantity || 1
-          })) || [],
+          })),
+          
+          // Direcciones
           address: order.address || "Retira en Local",
-          deliveryAddress: order.deliveryAddress,
+          deliveryAddress: order.deliveryAddress || null,
           shippingCost: order.shippingCost || 0,
-          n_document: order.n_document,
+          
+          // ✅ DOCUMENTO DEL CLIENTE/BUYER
+          n_document: buyerDocument,
+          
+          // Configuración de venta
           pointOfSale: order.pointOfSale || "Local",
           discount: order.discount || 0,
-          // Datos específicos de la reserva
+          
+          // ✅ DATOS ESPECÍFICOS DE LA RESERVA
           partialPayment: Number(reservationData.partialPayment),
           dueDate: reservationData.dueDate,
-          totalAmount: Number(totalAmount)
+          
+          // ✅ DATOS DEL CAJERO (para auditoría)
+          cashier_document: cashierDocument,
+          
+          // ✅ DATOS DEL COMPRADOR
+          buyer_name: buyerName,
+          buyer_email: buyerEmail,
+          buyer_phone: buyerPhone
         };
         
-        console.log('🔵 Creando reserva con datos completos:', completeReservationData);
+        console.log('🔵 Body completo para crear reserva:', reservationBody);
         
-        // ✅ Pasar el UUID del usuario (no el orderId)
-        const userId = order.User?.id_user || order.id_orderDetail; // Ajustar según tu estructura
+        // ✅ USAR EL ENDPOINT EXISTENTE CON userId (puede ser el documento del cliente o un UUID)
+        const userId = order.User?.id_user || buyerDocument;
         
-        await dispatch(createReservation(userId, completeReservationData));
+        await dispatch(createReservation(userId, reservationBody));
         
-        // ✅ Guardar información de la reserva para el recibo
+        // ✅ Guardar información para el recibo
         setReservationInfo({
           partialPayment: Number(reservationData.partialPayment),
           dueDate: reservationData.dueDate,
           paymentMethod: reservationData.paymentMethod || "Efectivo",
-          remainingAmount: Number(totalAmount) - Number(reservationData.partialPayment)
+          remainingAmount: Number(totalAmount) - Number(reservationData.partialPayment),
+          buyerName: buyerName,
+          buyerEmail: buyerEmail,
+          buyerPhone: buyerPhone,
+          buyerDocument: buyerDocument,
+          cashierDocument: cashierDocument
         });
         setIsReservation(true);
         
@@ -973,18 +1074,17 @@ const Recibo = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "No se pudo crear la reserva. Inténtalo de nuevo."
+          text: error.message || "No se pudo crear la reserva."
         });
         
-        // Revertir cambios si falla
         setPaymentMethod("Efectivo");
         setShowReservationPopup(false);
         setIsReservation(false);
         setReservationInfo(null);
       }
     }}
-     />
-        )}
+  />
+)}
       </div>
     </div>
   );

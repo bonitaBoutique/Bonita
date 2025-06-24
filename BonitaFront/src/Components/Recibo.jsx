@@ -910,58 +910,80 @@ const Recibo = () => {
           </div>
         </form>
 
-        {showReservationPopup && (
-          <ReservationPopup
-            orderId={order.id_orderDetail}
-            totalAmount={Number(totalAmount)}
-            onClose={() => {
-              setShowReservationPopup(false);
-              // Si cierra sin crear reserva, revertir método de pago
-              setPaymentMethod("Efectivo");
-            }}
-            onSubmit={async (reservationData) => {
-              try {
-                const reservationBody = {
-                  id_orderDetail: order.id_orderDetail,
-                  n_document: order.n_document || order.userData?.n_document,
-                  partialPayment: Number(reservationData.partialPayment),
-                  dueDate: reservationData.dueDate,
-                };
-
-                console.log(
-                  "🔵 Creando reserva para la última orden:",
-                  reservationBody
-                );
-
-                // ✅ Crear la reserva usando el endpoint correcto
-                await dispatch(
-                  createReservation(order.id_orderDetail, reservationBody)
-                );
-
-                setShowReservationPopup(false);
-
-                Swal.fire({
-                  icon: "success",
-                  title: "¡Éxito!",
-                  text: "Reserva creada correctamente para la orden actual.",
-                  confirmButtonText: "Continuar con el recibo",
-                });
-
-                console.log("✅ Reserva creada exitosamente");
-              } catch (error) {
-                console.error("❌ Error al crear reserva:", error);
-                Swal.fire({
-                  icon: "error",
-                  title: "Error",
-                  text: "No se pudo crear la reserva. Inténtalo de nuevo.",
-                });
-
-                // Revertir cambios si falla
-                setPaymentMethod("Efectivo");
-                setShowReservationPopup(false);
-              }
-            }}
-          />
+       {showReservationPopup && (
+  <ReservationPopup
+    orderId={order.id_orderDetail}
+    totalAmount={Number(totalAmount)}
+    onClose={() => {
+      setShowReservationPopup(false);
+      setPaymentMethod("Efectivo");
+    }}
+    onSubmit={async (reservationData) => {
+      try {
+        // ✅ CONSTRUIR DATOS COMPLETOS BASADOS EN LA ORDEN EXISTENTE
+        const completeReservationData = {
+          // Datos básicos de la orden existente
+          date: order.date || new Date().toISOString().split('T')[0],
+          amount: order.amount || Number(totalAmount),
+          quantity: order.quantity || 1,
+          state_order: "Reserva a Crédito",
+          products: order.products?.map(product => ({
+            id_product: product.id_product,
+            quantity: product.OrderProduct?.quantity || 1
+          })) || [],
+          address: order.address || "Retira en Local",
+          deliveryAddress: order.deliveryAddress,
+          shippingCost: order.shippingCost || 0,
+          n_document: order.n_document,
+          pointOfSale: order.pointOfSale || "Local",
+          discount: order.discount || 0,
+          // Datos específicos de la reserva
+          partialPayment: Number(reservationData.partialPayment),
+          dueDate: reservationData.dueDate,
+          totalAmount: Number(totalAmount)
+        };
+        
+        console.log('🔵 Creando reserva con datos completos:', completeReservationData);
+        
+        // ✅ Pasar el UUID del usuario (no el orderId)
+        const userId = order.User?.id_user || order.id_orderDetail; // Ajustar según tu estructura
+        
+        await dispatch(createReservation(userId, completeReservationData));
+        
+        // ✅ Guardar información de la reserva para el recibo
+        setReservationInfo({
+          partialPayment: Number(reservationData.partialPayment),
+          dueDate: reservationData.dueDate,
+          paymentMethod: reservationData.paymentMethod || "Efectivo",
+          remainingAmount: Number(totalAmount) - Number(reservationData.partialPayment)
+        });
+        setIsReservation(true);
+        
+        setShowReservationPopup(false);
+        
+        Swal.fire({
+          icon: "success",
+          title: "¡Éxito!",
+          text: "Reserva creada correctamente.",
+          confirmButtonText: "Continuar con el recibo"
+        });
+        
+      } catch (error) {
+        console.error('❌ Error al crear reserva:', error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo crear la reserva. Inténtalo de nuevo."
+        });
+        
+        // Revertir cambios si falla
+        setPaymentMethod("Efectivo");
+        setShowReservationPopup(false);
+        setIsReservation(false);
+        setReservationInfo(null);
+      }
+    }}
+     />
         )}
       </div>
     </div>

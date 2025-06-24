@@ -49,7 +49,9 @@ const Recibo = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ SELECTORES REDUX
+
+
+// ✅ SELECTORES REDUX
   const { order, loading, error } = useSelector((state) => state.orderById);
   const { receiptNumber } = useSelector((state) => state);
   const {
@@ -559,14 +561,28 @@ const generatePDF = (amount1Param = null, amount2Param = null) => {
   currentY += 20;
 
   doc.setFontSize(10);
-  doc.text(`Atendido por: ${cashierInfo ? `${cashierInfo.first_name} ${cashierInfo.last_name}` : "N/A"}`, 20, currentY);
-  currentY += 15;
+doc.text(
+  `Atendido por: ${
+    userInfo // ✅ CORREGIDO: user → userInfo
+      ? `${userInfo.first_name} ${userInfo.last_name}`
+      : cashierInfo
+      ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
+      : "N/A"
+  }`,
+  20,
+  currentY
+);
+currentY += 15;
 
-  // ✅ MOSTRAR DOCUMENTO DEL CAJERO
-  if (reservationInfo?.cashierDocument) {
-    doc.text(`Cajero: ${reservationInfo.cashierDocument}`, 20, currentY);
-    currentY += 15;
-  }
+// ✅ MOSTRAR DOCUMENTO DEL CAJERO
+if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user → userInfo
+  doc.text(
+    `Cajero: ${userInfo?.n_document || cashierInfo?.n_document}`, // ✅ CORREGIDO: user → userInfo
+    20,
+    currentY
+  );
+  currentY += 15;
+}
 
   doc.setFontSize(8);
   doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
@@ -969,7 +985,7 @@ const generatePDF = (amount1Param = null, amount2Param = null) => {
       try {
         console.log('🔵 Datos recibidos del popup:', reservationData);
         console.log('🔵 Orden actual:', order);
-        console.log('🔵 Usuario logueado (cajero):', user);
+        console.log('🔵 Usuario logueado (cajero):', userInfo); // ✅ CORREGIDO: user → userInfo
 
         // ✅ OBTENER n_document DEL BUYER/CLIENTE
         let buyerDocument = null;
@@ -982,7 +998,7 @@ const generatePDF = (amount1Param = null, amount2Param = null) => {
         }
 
         // ✅ OBTENER n_document DEL CAJERO (usuario logueado)
-        const cashierDocument = user?.n_document || cashierInfo?.n_document;
+        const cashierDocument = userInfo?.n_document || cashierInfo?.n_document; // ✅ CORREGIDO: user → userInfo
 
         console.log('🔵 Documento del cliente (buyer):', buyerDocument);
         console.log('🔵 Documento del cajero:', cashierDocument);
@@ -1041,7 +1057,7 @@ const generatePDF = (amount1Param = null, amount2Param = null) => {
         
         console.log('🔵 Body completo para crear reserva:', reservationBody);
         
-        // ✅ USAR EL ENDPOINT EXISTENTE CON userId (puede ser el documento del cliente o un UUID)
+        // ✅ USAR EL ENDPOINT EXISTENTE CON userId
         const userId = order.User?.id_user || buyerDocument;
         
         await dispatch(createReservation(userId, reservationBody));
@@ -1056,7 +1072,8 @@ const generatePDF = (amount1Param = null, amount2Param = null) => {
           buyerEmail: buyerEmail,
           buyerPhone: buyerPhone,
           buyerDocument: buyerDocument,
-          cashierDocument: cashierDocument
+          cashierDocument: cashierDocument,
+          cashierName: userInfo ? `${userInfo.first_name} ${userInfo.last_name}` : 'N/A' // ✅ CORREGIDO: user → userInfo
         });
         setIsReservation(true);
         

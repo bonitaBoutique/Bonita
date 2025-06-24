@@ -1094,23 +1094,81 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(reservationData)
     });
 
+    console.log('🔵 [FRONT] Status de respuesta:', response.status);
+    console.log('🔵 [FRONT] Headers de respuesta:', [...response.headers.entries()]);
+
+    // ✅ OBTENER TEXTO DE RESPUESTA PARA DEBUG
+    const responseText = await response.text();
+    console.log('🔵 [FRONT] Respuesta raw:', responseText);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP ${response.status}: ${errorData.message || 'Error en la petición'}`);
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+        console.log('🔴 [FRONT] Error parseado:', errorData);
+      } catch (parseError) {
+        console.log('🔴 [FRONT] Error parseando JSON:', parseError);
+        errorData = { message: responseText };
+      }
+      
+      // ✅ EXTRAER MENSAJE DE ERROR CORRECTAMENTE
+      let errorMessage = 'Error desconocido';
+      
+      if (errorData.message) {
+        if (typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        } else if (errorData.message.error) {
+          errorMessage = errorData.message.error;
+        } else if (errorData.message.message) {
+          errorMessage = errorData.message.message;
+        } else {
+          errorMessage = JSON.stringify(errorData.message);
+        }
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      } else if (responseText) {
+        errorMessage = responseText;
+      }
+      
+      console.log('🔴 [FRONT] Mensaje de error final:', errorMessage);
+      
+      // ✅ CREAR ERROR CON MENSAJE ESPECÍFICO
+      const finalError = new Error(`HTTP ${response.status}: ${errorMessage}`);
+      finalError.status = response.status;
+      finalError.data = errorData;
+      
+      throw finalError;
     }
 
-    const data = await response.json();
+    // ✅ PARSEAR RESPUESTA EXITOSA
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('🔴 [FRONT] Error parseando respuesta exitosa:', parseError);
+      throw new Error('Respuesta del servidor no válida');
+    }
+    
     console.log('🟢 [FRONT] Reserva creada exitosamente:', data);
 
     dispatch({ type: CREATE_RESERVATION_SUCCESS, payload: data });
     return data;
   } catch (error) {
-    console.error('🔴 [FRONT] Error al crear reserva:', error);
+    console.error('🔴 [FRONT] Error completo al crear reserva:', {
+      message: error.message,
+      stack: error.stack,
+      status: error.status,
+      data: error.data,
+      orderId,
+      reservationData
+    });
+    
     dispatch({ type: CREATE_RESERVATION_FAILURE, payload: error.message });
     throw error;
   }

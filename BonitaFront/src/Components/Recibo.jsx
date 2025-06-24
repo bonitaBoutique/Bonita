@@ -981,7 +981,7 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
       setIsReservation(false);
       setReservationInfo(null);
     }}
-    onSubmit={async (reservationData) => {
+onSubmit={async (reservationData) => {
   try {
     console.log('🔵 Datos recibidos del popup:', reservationData);
     console.log('🔵 Orden actual:', order);
@@ -1011,15 +1011,12 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
       throw new Error('No se pudo obtener el documento del cajero');
     }
 
-    // ✅ DATOS SIMPLIFICADOS SOLO PARA RESERVA (no crear orden nueva)
+    // ✅ DATOS SIMPLIFICADOS PARA RESERVA
     const reservationBody = {
-      // ✅ DATOS MÍNIMOS NECESARIOS PARA EL CONTROLADOR
-      id_orderDetail: order.id_orderDetail, // ID de la orden existente
+      id_orderDetail: order.id_orderDetail,
       n_document: buyerDocument,
       partialPayment: Number(reservationData.partialPayment),
       dueDate: reservationData.dueDate,
-      
-      // ✅ DATOS ADICIONALES DE LA RESERVA
       cashier_document: cashierDocument,
       buyer_name: buyerName,
       buyer_email: buyerEmail,
@@ -1027,10 +1024,12 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
       paymentMethod: reservationData.paymentMethod
     };
     
-    console.log('🔵 Body simplificado para crear reserva:', reservationBody);
+    console.log('🔵 Body final para crear reserva:', JSON.stringify(reservationBody, null, 2));
     
-    // ✅ USAR EL ID DE LA ORDEN COMO PARÁMETRO EN LA URL
-    await dispatch(createReservation(order.id_orderDetail, reservationBody));
+    // ✅ CREAR RESERVA
+    const result = await dispatch(createReservation(order.id_orderDetail, reservationBody));
+    
+    console.log('🟢 Resultado de la reserva:', result);
     
     // ✅ Guardar información para el recibo
     setReservationInfo({
@@ -1057,24 +1056,32 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
     });
     
   } catch (error) {
-    console.error('❌ Error al crear reserva:', error);
+    console.error('❌ Error detallado al crear reserva:', {
+      message: error.message,
+      stack: error.stack,
+      status: error.status,
+      data: error.data
+    });
     
-    // ✅ MOSTRAR ERROR ESPECÍFICO DE STOCK
-    if (error.response?.data?.message?.error === 'Not enough stock for some products') {
-      const productos = error.response.data.message.productosSinStock;
-      Swal.fire({
-        icon: "error",
-        title: "Stock Insuficiente",
-        html: `No hay suficiente stock para:<br>${productos.map(p => `• ${p.id_product} (Stock: ${p.stock})`).join('<br>')}`,
-        text: "La orden ya fue creada, no se necesita verificar stock nuevamente para hacer la reserva."
-      });
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "No se pudo crear la reserva."
-      });
+    // ✅ MOSTRAR ERROR ESPECÍFICO
+    let errorMessage = 'No se pudo crear la reserva.';
+    
+    if (error.message.includes('Not enough stock')) {
+      errorMessage = 'No hay suficiente stock para algunos productos. La orden ya fue creada, contacte al administrador.';
+    } else if (error.message.includes('Missing Ordering Data')) {
+      errorMessage = 'Faltan datos necesarios para crear la reserva.';
+    } else if (error.message.includes('Order not found')) {
+      errorMessage = 'No se encontró la orden especificada.';
+    } else if (error.message) {
+      errorMessage = error.message;
     }
+    
+    Swal.fire({
+      icon: "error",
+      title: "Error al crear reserva",
+      text: errorMessage,
+      footer: `<small>Código de error: ${error.status || 'Unknown'}</small>`
+    });
     
     setPaymentMethod("Efectivo");
     setShowReservationPopup(false);

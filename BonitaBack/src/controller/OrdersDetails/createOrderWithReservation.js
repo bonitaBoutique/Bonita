@@ -1,9 +1,16 @@
-const { OrderDetail, Product, StockMovement, User, Reservation } = require("../../data"); // ✅ Agregar User y Reservation
+const { OrderDetail, Product, StockMovement, User, Reservation } = require("../../data");
 const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
 const { formatDateForDB } = require("../../utils/dateUtils");
 const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD";
+
+// ✅ FUNCIÓN HELPER PARA FORMATEAR FECHA
+function formatDateForDisplay(date) {
+  if (!date) return null;
+  if (typeof date === 'string') return date;
+  return date.toISOString().split('T')[0];
+}
 
 function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoIntegridad) {
   const cadenaConcatenada = `${referencia}${montoEnCentavos}${moneda}${secretoIntegridad}`;
@@ -13,7 +20,8 @@ function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoInte
 
 module.exports = async (req, res) => {
   try {
-    const { orderId } = req.params; // ID de la orden desde la URL
+    // ✅ OBTENER orderId DESDE PARAMS O BODY
+    let orderId = req.params.orderId || req.params.id;
     
     const {
       // Campos básicos de orden
@@ -45,17 +53,27 @@ module.exports = async (req, res) => {
       paymentMethod
     } = req.body;
 
+    // ✅ SI NO HAY orderId EN PARAMS, USAR EL DEL BODY
+    if (!orderId && id_orderDetail) {
+      orderId = id_orderDetail;
+      console.log('🟡 [BACK] orderId tomado del body:', orderId);
+    }
+
     console.log('🟣 [BACK] Procesando petición de reserva');
-    console.log('🟣 [BACK] orderId desde params:', orderId);
+    console.log('🟣 [BACK] orderId desde params:', req.params.orderId || req.params.id);
     console.log('🟣 [BACK] id_orderDetail desde body:', id_orderDetail);
+    console.log('🟣 [BACK] orderId final:', orderId);
     console.log('🟣 [BACK] isReservation:', isReservation);
     console.log('🟣 [BACK] partialPayment:', partialPayment);
-    console.log('🟣 [BACK] Body completo:', req.body);
+
+    // ✅ VALIDAR QUE TENEMOS UN orderId
+    if (!orderId) {
+      console.log('🔴 [BACK] No se pudo obtener orderId');
+      return response(res, 400, { error: "ID de orden requerido" });
+    }
 
     // ✅ DETECTAR SI ES RESERVA DE ORDEN EXISTENTE
-    const isExistingOrderReservation = (orderId && (id_orderDetail === orderId)) || 
-                                       (isReservation === true) || 
-                                       (partialPayment && dueDate);
+    const isExistingOrderReservation = isReservation === true || (partialPayment && dueDate);
 
     if (isExistingOrderReservation) {
       console.log('🟣 [BACK] ✅ Procesando como reserva de orden existente');
@@ -156,7 +174,7 @@ module.exports = async (req, res) => {
           id_orderDetail: newReservation.id_orderDetail,
           partialPayment: newReservation.partialPayment,
           remainingAmount: newReservation.remainingAmount,
-          dueDate: formatDateForDisplay ? formatDateForDisplay(newReservation.dueDate) : newReservation.dueDate,
+          dueDate: formatDateForDisplay(newReservation.dueDate),
           status: newReservation.status
         },
         order: {
@@ -177,9 +195,7 @@ module.exports = async (req, res) => {
     }
 
     // ✅ RESTO DEL CÓDIGO ORIGINAL PARA CREAR ORDEN NUEVA...
-    // (Aquí va todo el código original del controlador para crear órdenes nuevas)
-    
-    console.log('🟣 [BACK] Código para orden nueva no implementado en este ejemplo');
+    console.log('🟣 [BACK] Código para orden nueva no implementado');
     return response(res, 501, { error: "Crear orden nueva con reserva no implementado" });
 
   } catch (error) {

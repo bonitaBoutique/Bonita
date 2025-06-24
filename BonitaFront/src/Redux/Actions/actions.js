@@ -1079,7 +1079,7 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
       });
     }
   };
-  
+
 export const createReservation = (orderId, reservationData) => async (dispatch) => {
   try {
     dispatch({ type: CREATE_RESERVATION_REQUEST });
@@ -1088,7 +1088,7 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     console.log('🔵 [FRONT] Datos de reserva:', reservationData);
 
     // ✅ ENDPOINT CORRECTO: usar orderId en la URL
-    const { data } = await axios.post(`${BASE_URL}/order/reservations/${orderId}`, reservationData);
+    const { data } = await axios.post(`https://bonita-production-9dee.up.railway.app/order/reservations/${orderId}`, reservationData);
 
     console.log('🟢 [FRONT] Reserva creada exitosamente:', data);
 

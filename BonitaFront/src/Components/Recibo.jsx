@@ -101,43 +101,48 @@ const Recibo = () => {
 
   // ✅ MANEJO DE MÉTODOS DE PAGO
   const handlePaymentMethodChange = async (e) => {
-  const value = e.target.value;
-  setPaymentMethod(value);
-  setShowSecondPayment(false);
-  setPaymentMethod2("");
-  setAmount1("");
-  setAmount2("");
- 
-  if (value === "Crédito") {
-    try {
-      // ✅ 1. Actualizar el estado de la orden a "Reserva a Crédito"
-      console.log('🔵 Actualizando orden a Reserva a Crédito:', order.id_orderDetail);
-      
-      await dispatch(updateOrderState(
-        order.id_orderDetail,
-        "Reserva a Crédito", // nuevo state_order
-        null, // transaction_status (opcional)
-        order.amount, // amount (mantener el mismo)
-        0 // discount (si no hay descuento)
-      ));
-      
-      // ✅ 2. Abrir popup para crear la reserva
-      setShowReservationPopup(true);
-      
-      console.log('✅ Orden actualizada, abriendo popup de reserva');
-    } catch (error) {
-      console.error('❌ Error al actualizar orden:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo actualizar la orden a Reserva a Crédito'
-      });
-      
-      // Revertir el método de pago si hay error
-      setPaymentMethod("Efectivo");
+    const value = e.target.value;
+    setPaymentMethod(value);
+    setShowSecondPayment(false);
+    setPaymentMethod2("");
+    setAmount1("");
+    setAmount2("");
+
+    if (value === "Crédito") {
+      try {
+        // ✅ 1. Actualizar el estado de la orden a "Reserva a Crédito"
+        console.log(
+          "🔵 Actualizando orden a Reserva a Crédito:",
+          order.id_orderDetail
+        );
+
+        await dispatch(
+          updateOrderState(
+            order.id_orderDetail,
+            "Reserva a Crédito", // nuevo state_order
+            null, // transaction_status (opcional)
+            order.amount, // amount (mantener el mismo)
+            0 // discount (si no hay descuento)
+          )
+        );
+
+        // ✅ 2. Abrir popup para crear la reserva
+        setShowReservationPopup(true);
+
+        console.log("✅ Orden actualizada, abriendo popup de reserva");
+      } catch (error) {
+        console.error("❌ Error al actualizar orden:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo actualizar la orden a Reserva a Crédito",
+        });
+
+        // Revertir el método de pago si hay error
+        setPaymentMethod("Efectivo");
+      }
     }
-  }
-};
+  };
 
   // ✅ MANEJO DE EFECTIVO CON DESCUENTO
   const handleCashGivenChange = (e) => {
@@ -905,55 +910,59 @@ const Recibo = () => {
           </div>
         </form>
 
-       {showReservationPopup && (
-  <ReservationPopup
-    orderId={order.id_orderDetail}
-    totalAmount={totalAmount}
-    onClose={() => {
-      setShowReservationPopup(false);
-      // Si cierra sin crear reserva, revertir método de pago
-      setPaymentMethod("Efectivo");
-    }}
-    onSubmit={async (reservationData) => {
-      try {
-        const reservationBody = {
-          id_orderDetail: order.id_orderDetail,
-          n_document: order.n_document,
-          partialPayment: Number(reservationData.partialPayment),
-          dueDate: reservationData.dueDate
-        };
-        
-        console.log('🔵 Creando reserva para orden:', reservationBody);
-        
-        // ✅ Crear la reserva (usando el endpoint correcto)
-        await dispatch(createReservation(order.id_orderDetail, reservationBody));
-        
-        setShowReservationPopup(false);
-        
-        Swal.fire({
-          icon: "success",
-          title: "¡Éxito!",
-          text: "Orden actualizada a Reserva a Crédito y reserva creada correctamente.",
-          confirmButtonText: "Continuar con el recibo"
-        });
-        
-        console.log('✅ Reserva creada exitosamente');
-        
-      } catch (error) {
-        console.error('❌ Error al crear reserva:', error);
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No se pudo crear la reserva. Inténtalo de nuevo."
-        });
-        
-        // Revertir cambios si falla
-        setPaymentMethod("Efectivo");
-        setShowReservationPopup(false);
-      }
-    }}
-  />
-)}
+        {showReservationPopup && (
+          <ReservationPopup
+            orderId={order.id_orderDetail}
+            totalAmount={Number(totalAmount)}
+            onClose={() => {
+              setShowReservationPopup(false);
+              // Si cierra sin crear reserva, revertir método de pago
+              setPaymentMethod("Efectivo");
+            }}
+            onSubmit={async (reservationData) => {
+              try {
+                const reservationBody = {
+                  id_orderDetail: order.id_orderDetail,
+                  n_document: order.n_document || order.userData?.n_document,
+                  partialPayment: Number(reservationData.partialPayment),
+                  dueDate: reservationData.dueDate,
+                };
+
+                console.log(
+                  "🔵 Creando reserva para la última orden:",
+                  reservationBody
+                );
+
+                // ✅ Crear la reserva usando el endpoint correcto
+                await dispatch(
+                  createReservation(order.id_orderDetail, reservationBody)
+                );
+
+                setShowReservationPopup(false);
+
+                Swal.fire({
+                  icon: "success",
+                  title: "¡Éxito!",
+                  text: "Reserva creada correctamente para la orden actual.",
+                  confirmButtonText: "Continuar con el recibo",
+                });
+
+                console.log("✅ Reserva creada exitosamente");
+              } catch (error) {
+                console.error("❌ Error al crear reserva:", error);
+                Swal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: "No se pudo crear la reserva. Inténtalo de nuevo.",
+                });
+
+                // Revertir cambios si falla
+                setPaymentMethod("Efectivo");
+                setShowReservationPopup(false);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );

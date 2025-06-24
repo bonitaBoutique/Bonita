@@ -982,124 +982,106 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
       setReservationInfo(null);
     }}
     onSubmit={async (reservationData) => {
-      try {
-        console.log('🔵 Datos recibidos del popup:', reservationData);
-        console.log('🔵 Orden actual:', order);
-        console.log('🔵 Usuario logueado (cajero):', userInfo); // ✅ CORREGIDO: user → userInfo
+  try {
+    console.log('🔵 Datos recibidos del popup:', reservationData);
+    console.log('🔵 Orden actual:', order);
+    console.log('🔵 Usuario logueado (cajero):', userInfo);
 
-        // ✅ OBTENER n_document DEL BUYER/CLIENTE
-        let buyerDocument = null;
-        if (order.User?.n_document) {
-          buyerDocument = order.User.n_document;
-        } else if (order.userData?.n_document) {
-          buyerDocument = order.userData.n_document;
-        } else if (order.n_document) {
-          buyerDocument = order.n_document;
-        }
+    // ✅ OBTENER DOCUMENTOS
+    let buyerDocument = null;
+    if (order.User?.n_document) {
+      buyerDocument = order.User.n_document;
+    } else if (order.userData?.n_document) {
+      buyerDocument = order.userData.n_document;
+    } else if (order.n_document) {
+      buyerDocument = order.n_document;
+    }
 
-        // ✅ OBTENER n_document DEL CAJERO (usuario logueado)
-        const cashierDocument = userInfo?.n_document || cashierInfo?.n_document; // ✅ CORREGIDO: user → userInfo
+    const cashierDocument = userInfo?.n_document || cashierInfo?.n_document;
 
-        console.log('🔵 Documento del cliente (buyer):', buyerDocument);
-        console.log('🔵 Documento del cajero:', cashierDocument);
+    console.log('🔵 Documento del cliente (buyer):', buyerDocument);
+    console.log('🔵 Documento del cajero:', cashierDocument);
 
-        // ✅ VALIDACIONES
-        if (!buyerDocument) {
-          throw new Error('No se pudo obtener el documento del cliente');
-        }
+    // ✅ VALIDACIONES
+    if (!buyerDocument) {
+      throw new Error('No se pudo obtener el documento del cliente');
+    }
 
-        if (!cashierDocument) {
-          throw new Error('No se pudo obtener el documento del cajero');
-        }
+    if (!cashierDocument) {
+      throw new Error('No se pudo obtener el documento del cajero');
+    }
 
-        if (!order.products || order.products.length === 0) {
-          throw new Error('No hay productos en la orden');
-        }
-
-        // ✅ CONSTRUIR DATOS COMPLETOS PARA EL CONTROLADOR EXISTENTE
-        const reservationBody = {
-          // Datos básicos de la orden
-          date: order.date || new Date().toISOString().split('T')[0],
-          amount: order.amount || Number(totalAmount),
-          quantity: order.quantity || 1,
-          state_order: "Reserva a Crédito",
-          
-          // Productos de la orden existente
-          products: order.products.map(product => ({
-            id_product: product.id_product,
-            quantity: product.OrderProduct?.quantity || 1
-          })),
-          
-          // Direcciones
-          address: order.address || "Retira en Local",
-          deliveryAddress: order.deliveryAddress || null,
-          shippingCost: order.shippingCost || 0,
-          
-          // ✅ DOCUMENTO DEL CLIENTE/BUYER
-          n_document: buyerDocument,
-          
-          // Configuración de venta
-          pointOfSale: order.pointOfSale || "Local",
-          discount: order.discount || 0,
-          
-          // ✅ DATOS ESPECÍFICOS DE LA RESERVA
-          partialPayment: Number(reservationData.partialPayment),
-          dueDate: reservationData.dueDate,
-          
-          // ✅ DATOS DEL CAJERO (para auditoría)
-          cashier_document: cashierDocument,
-          
-          // ✅ DATOS DEL COMPRADOR
-          buyer_name: buyerName,
-          buyer_email: buyerEmail,
-          buyer_phone: buyerPhone
-        };
-        
-        console.log('🔵 Body completo para crear reserva:', reservationBody);
-        
-        // ✅ USAR EL ENDPOINT EXISTENTE CON userId
-        const userId = order.User?.id_user || buyerDocument;
-        
-        await dispatch(createReservation(userId, reservationBody));
-        
-        // ✅ Guardar información para el recibo
-        setReservationInfo({
-          partialPayment: Number(reservationData.partialPayment),
-          dueDate: reservationData.dueDate,
-          paymentMethod: reservationData.paymentMethod || "Efectivo",
-          remainingAmount: Number(totalAmount) - Number(reservationData.partialPayment),
-          buyerName: buyerName,
-          buyerEmail: buyerEmail,
-          buyerPhone: buyerPhone,
-          buyerDocument: buyerDocument,
-          cashierDocument: cashierDocument,
-          cashierName: userInfo ? `${userInfo.first_name} ${userInfo.last_name}` : 'N/A' // ✅ CORREGIDO: user → userInfo
-        });
-        setIsReservation(true);
-        
-        setShowReservationPopup(false);
-        
-        Swal.fire({
-          icon: "success",
-          title: "¡Éxito!",
-          text: "Reserva creada correctamente.",
-          confirmButtonText: "Continuar con el recibo"
-        });
-        
-      } catch (error) {
-        console.error('❌ Error al crear reserva:', error);
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message || "No se pudo crear la reserva."
-        });
-        
-        setPaymentMethod("Efectivo");
-        setShowReservationPopup(false);
-        setIsReservation(false);
-        setReservationInfo(null);
-      }
-    }}
+    // ✅ DATOS SIMPLIFICADOS SOLO PARA RESERVA (no crear orden nueva)
+    const reservationBody = {
+      // ✅ DATOS MÍNIMOS NECESARIOS PARA EL CONTROLADOR
+      id_orderDetail: order.id_orderDetail, // ID de la orden existente
+      n_document: buyerDocument,
+      partialPayment: Number(reservationData.partialPayment),
+      dueDate: reservationData.dueDate,
+      
+      // ✅ DATOS ADICIONALES DE LA RESERVA
+      cashier_document: cashierDocument,
+      buyer_name: buyerName,
+      buyer_email: buyerEmail,
+      buyer_phone: buyerPhone,
+      paymentMethod: reservationData.paymentMethod
+    };
+    
+    console.log('🔵 Body simplificado para crear reserva:', reservationBody);
+    
+    // ✅ USAR EL ID DE LA ORDEN COMO PARÁMETRO EN LA URL
+    await dispatch(createReservation(order.id_orderDetail, reservationBody));
+    
+    // ✅ Guardar información para el recibo
+    setReservationInfo({
+      partialPayment: Number(reservationData.partialPayment),
+      dueDate: reservationData.dueDate,
+      paymentMethod: reservationData.paymentMethod || "Efectivo",
+      remainingAmount: Number(totalAmount) - Number(reservationData.partialPayment),
+      buyerName: buyerName,
+      buyerEmail: buyerEmail,
+      buyerPhone: buyerPhone,
+      buyerDocument: buyerDocument,
+      cashierDocument: cashierDocument,
+      cashierName: userInfo ? `${userInfo.first_name} ${userInfo.last_name}` : 'N/A'
+    });
+    setIsReservation(true);
+    
+    setShowReservationPopup(false);
+    
+    Swal.fire({
+      icon: "success",
+      title: "¡Éxito!",
+      text: "Reserva creada correctamente.",
+      confirmButtonText: "Continuar con el recibo"
+    });
+    
+  } catch (error) {
+    console.error('❌ Error al crear reserva:', error);
+    
+    // ✅ MOSTRAR ERROR ESPECÍFICO DE STOCK
+    if (error.response?.data?.message?.error === 'Not enough stock for some products') {
+      const productos = error.response.data.message.productosSinStock;
+      Swal.fire({
+        icon: "error",
+        title: "Stock Insuficiente",
+        html: `No hay suficiente stock para:<br>${productos.map(p => `• ${p.id_product} (Stock: ${p.stock})`).join('<br>')}`,
+        text: "La orden ya fue creada, no se necesita verificar stock nuevamente para hacer la reserva."
+      });
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message || "No se pudo crear la reserva."
+      });
+    }
+    
+    setPaymentMethod("Efectivo");
+    setShowReservationPopup(false);
+    setIsReservation(false);
+    setReservationInfo(null);
+  }
+}}
   />
 )}
       </div>

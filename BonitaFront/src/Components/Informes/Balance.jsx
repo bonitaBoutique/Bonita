@@ -165,23 +165,29 @@ const Balance = () => {
   };
 
   // ✅ Function to combine and filter all movements
-  const getAllMovements = () => {
-    const movements = [
-      // Map online sales
-      ...(income.online || []).map((sale) => ({
-        ...sale,
-        type: "Venta Online",
-        amount: sale.amount || 0,
-        date: sale.date,
-        paymentMethod: sale.paymentMethod || "Wompi",
-        pointOfSale: "Online",
-        id: `online-${sale.id_orderDetail}`,
-        description: `Pedido #${sale.id_orderDetail}` || "-",
-        cashier_document: null,
-      })),
+const getAllMovements = () => {
+  const movements = [
+    // Map online sales
+    ...(income.online || []).map((sale) => ({
+      ...sale,
+      type: "Venta Online",
+      amount: sale.amount || 0,
+      date: sale.date,
+      paymentMethod: sale.paymentMethod || "Wompi",
+      pointOfSale: "Online",
+      id: `online-${sale.id_orderDetail}`,
+      description: `Pedido #${sale.id_orderDetail}` || "-",
+      cashier_document: null,
+    })),
 
-      // ✅ Map local sales CON MEJOR MANEJO DE NOMBRES
-      ...(income.local || []).map((sale) => {
+    // ✅ Map local sales CON FILTRO PARA EXCLUIR ADDI Y SISTECREDITO
+    ...(income.local || [])
+      .filter((sale) => {
+        // ✅ FILTRAR: Excluir ventas a crédito que no ingresan dinero el mismo día
+        const paymentMethod = sale.paymentMethod;
+        return paymentMethod !== "Addi" && paymentMethod !== "Sistecredito";
+      })
+      .map((sale) => {
         const getBuyerName = (saleData) => {
           if (saleData.buyerName && saleData.buyerName !== "Desconocido") {
             return saleData.buyerName;
@@ -225,87 +231,88 @@ const Balance = () => {
         };
       }),
 
-      // Map expenses
-      ...(Array.isArray(expenses.data) ? expenses.data : []).map((expense) => ({
-        ...expense,
-        type: `Gasto - ${expense.type}`,
-        amount: -(expense.amount || 0),
-        date: expense.date,
-        paymentMethod: expense.paymentMethods || "N/A",
-        pointOfSale: "N/A",
-        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`,
-        description: expense.description || expense.type || "-",
-        cashier_document: null,
-      })),
-    ];
+    // Map expenses
+    ...(Array.isArray(expenses.data) ? expenses.data : []).map((expense) => ({
+      ...expense,
+      type: `Gasto - ${expense.type}`,
+      amount: -(expense.amount || 0),
+      date: expense.date,
+      paymentMethod: expense.paymentMethods || "N/A",
+      pointOfSale: "N/A",
+      id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`,
+      description: expense.description || expense.type || "-",
+      cashier_document: null,
+    })),
+  ];
 
-    // Apply filters
-    let filteredMovements = movements;
+  // Apply filters
+  let filteredMovements = movements;
 
-    if (filters.pointOfSale) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.pointOfSale === filters.pointOfSale
-      );
-    }
-    if (filters.paymentMethod) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
-      );
-    }
-    if (filters.expenseType) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
-      );
-    }
-    if (filters.cashier) {
-      filteredMovements = filteredMovements.filter(
-        (m) =>
-          m.type !== "Venta Local" || m.cashier_document === filters.cashier
-      );
-    }
+  if (filters.pointOfSale) {
+    filteredMovements = filteredMovements.filter(
+      (m) => m.pointOfSale === filters.pointOfSale
+    );
+  }
+  if (filters.paymentMethod) {
+    filteredMovements = filteredMovements.filter(
+      (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
+    );
+  }
+  if (filters.expenseType) {
+    filteredMovements = filteredMovements.filter(
+      (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
+    );
+  }
+  if (filters.cashier) {
+    filteredMovements = filteredMovements.filter(
+      (m) =>
+        m.type !== "Venta Local" || m.cashier_document === filters.cashier
+    );
+  }
 
-    return filteredMovements.sort((a, b) => {
-      const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
-      const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
-      return dateB - dateA;
-    });
-  };
+  return filteredMovements.sort((a, b) => {
+    const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
+    const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
+    return dateB - dateA;
+  });
+};
 
   // ✅ Function to handle Excel export
-  const handleExportExcel = () => {
-    const movementsToExport = getAllMovements();
+const handleExportExcel = () => {
+  const movementsToExport = getAllMovements(); // Ya viene filtrado sin Addi/Sistecredito
 
-    const wsData = movementsToExport.map((m) => ({
-      Fecha: formatMovementDate(m.date),
-      Tipo: m.type,
-      Descripción: m.description || "-",
-      "Método de Pago": m.paymentMethod || "N/A",
-      Monto: m.amount,
-    }));
+  const wsData = movementsToExport.map((m) => ({
+    Fecha: formatMovementDate(m.date),
+    Tipo: m.type,
+    Descripción: m.description || "-",
+    "Método de Pago": m.paymentMethod || "N/A",
+    Monto: m.amount,
+  }));
 
-    const ws = XLSX.utils.json_to_sheet(wsData);
-    ws["!cols"] = [
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 15 },
-      { wch: 15 },
-    ];
-    Object.keys(ws).forEach((cell) => {
-      if (cell.startsWith("E") && cell !== "E1") {
-        ws[cell].z = "$ #,##0;[Red]$ -#,##0";
-        ws[cell].t = "n";
-      }
-    });
+  const ws = XLSX.utils.json_to_sheet(wsData);
+  ws["!cols"] = [
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 30 },
+    { wch: 15 },
+    { wch: 15 },
+  ];
+  Object.keys(ws).forEach((cell) => {
+    if (cell.startsWith("E") && cell !== "E1") {
+      ws[cell].z = "$ #,##0;[Red]$ -#,##0";
+      ws[cell].t = "n";
+    }
+  });
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Balance");
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Balance");
 
-    const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+  const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 
-    console.log(`📄 Archivo exportado: ${fileName}`);
-  };
+  console.log(`📄 Archivo exportado: ${fileName} (sin Addi/Sistecredito)`);
+};
+
 
   // ✅ REEMPLAZAR: Usar datos del backend en lugar de calcular localmente
   const ingresosEfectivo = paymentMethodBreakdown.efectivo || 0;
@@ -597,168 +604,190 @@ const Balance = () => {
       </div>
 
       {/* ✅ SOLUCIÓN: Tarjetas de ingresos SIN FILTRO - muestra todas las tarjetas */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3 flex items-center">
-          💰 Ingresos por Método de Pago (Desde Backend)
-        </h2>
-        
-        {/* ✅ Mostrar mensaje si no hay datos */}
-        {Object.keys(paymentMethodBreakdown).length === 0 ? (
-          <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400 mb-4">
-            <p className="text-yellow-800">
-              <strong>⚠️ Sin datos:</strong> El backend no está enviando información de métodos de pago. 
-              Revisa la respuesta de la API.
-            </p>
-          </div>
-        ) : null}
+     <div className="mb-6">
+  <h2 className="text-xl font-semibold mb-3 flex items-center">
+    💰 Ingresos por Método de Pago (Desde Backend)
+  </h2>
+  
+  {/* ✅ Mensaje informativo sobre Addi y Sistecredito */}
+  <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400 mb-4">
+    <p className="text-sm text-blue-800">
+      <strong>💡 Nota:</strong> Addi y Sistecredito se muestran aquí para información, pero no aparecen en el listado de movimientos porque son ventas a crédito que no ingresan dinero el mismo día.
+    </p>
+  </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[
-            {
-              name: "Efectivo",
-              value: ingresosEfectivo,
-              color: "bg-green-50 border-green-200",
-              icon: "💵",
-              includeInTotal: true,
-            },
-            {
-              name: "Tarjeta",
-              value: ingresosTarjeta,
-              color: "bg-green-50 border-green-200",
-              icon: "💳",
-              includeInTotal: true,
-            },
-            {
-              name: "Nequi",
-              value: ingresosNequi,
-              color: "bg-green-50 border-green-200",
-              icon: "📱",
-              includeInTotal: true,
-            },
-            {
-              name: "Bancolombia",
-              value: ingresosBancolombia,
-              color: "bg-green-50 border-green-200",
-              icon: "🏦",
-              includeInTotal: true,
-            },
-            {
-              name: "Crédito",
-              value: ingresosCredito,
-              color: "bg-blue-50 border-blue-200",
-              icon: "💰",
-              includeInTotal: true,
-            },
-            {
-              name: "GiftCard",
-              value: ingresosGiftCard,
-              color: "bg-purple-50 border-purple-200",
-              icon: "🎁",
-              includeInTotal: true,
-            },
-            {
-              name: "Otro",
-              value: ingresosOtro,
-              color: "bg-gray-50 border-gray-200",
-              icon: "💼",
-              includeInTotal: true,
-            },
-            {
-              name: "Wompi",
-              value: totalOnlineSales,
-              color: "bg-blue-50 border-blue-200",
-              icon: "🌐",
-              includeInTotal: true,
-            },
-            {
-              name: "Addi",
-              value: ingresosAddi,
-              color: "bg-yellow-50 border-yellow-200",
-              icon: "🛒",
-              includeInTotal: false,
-            },
-            {
-              name: "Sistecredito",
-              value: ingresosSistecredito,
-              color: "bg-yellow-50 border-yellow-200",
-              icon: "💰",
-              includeInTotal: false,
-            },
-            {
-              name: "Pagos Iniciales",
-              value: ingresosPagosIniciales,
-              color: "bg-purple-50 border-purple-200",
-              icon: "🆕",
-              includeInTotal: true,
-            },
-            {
-              name: "Pagos Parciales",
-              value: ingresosPagosParciales,
-              color: "bg-purple-50 border-purple-200",
-              icon: "📝",
-              includeInTotal: true,
-            },
-          ]
-          // ✅ SOLUCIÓN: QUITAR EL FILTRO COMPLETAMENTE
-          // .filter(method => method.value > 0) // ❌ ESTA LÍNEA REMOVIDA
-          .map((method) => (
-            <div
-              key={method.name}
-              className={`${method.color} p-4 rounded-lg shadow-sm text-center border transition-all duration-200 hover:shadow-md ${
-                method.value === 0 ? 'opacity-60' : ''
-              }`}
-            >
-              <div className="text-2xl mb-2">{method.icon}</div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">
-                {method.name}
-              </h3>
-              <p className={`text-lg font-bold ${
-                method.value === 0 ? 'text-gray-500' : 'text-gray-900'
-              }`}>
-                {method.value.toLocaleString("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                })}
-              </p>
-              {/* ✅ Indicador si no se incluye en el total */}
-              {!method.includeInTotal && method.value > 0 && (
-                <p className="text-xs text-yellow-700 mt-1">
-                  No incluido en balance
-                </p>
-              )}
-              {/* ✅ Indicador si está en $0 */}
-              {method.value === 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Sin movimientos
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
+  {/* ✅ Mostrar mensaje si no hay datos */}
+  {Object.keys(paymentMethodBreakdown).length === 0 ? (
+    <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400 mb-4">
+      <p className="text-yellow-800">
+        <strong>⚠️ Sin datos:</strong> El backend no está enviando información de métodos de pago. 
+        Revisa la respuesta de la API.
+      </p>
+    </div>
+  ) : null}
 
-        {/* ✅ Información explicativa mejorada */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
-            <p className="text-sm text-blue-800">
-              <strong>💡 Datos del Backend:</strong> Los valores se calculan en el servidor e incluyen separación automática de pagos combinados.
-            </p>
-          </div>
-          <div className="bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
-            <p className="text-sm text-yellow-800">
-              <strong>⚠️ Exclusiones:</strong> Addi y Sistecredito se muestran pero no se incluyen en el balance total.
-            </p>
-          </div>
-          <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
-            <p className="text-sm text-green-800">
-              <strong>✅ Total Calculado:</strong> {displayTotalIncome.toLocaleString("es-CO", {
-                style: "currency",
-                currency: "COP",
-              })}
-            </p>
-          </div>
-        </div>
+  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    {[
+      {
+        name: "Efectivo",
+        value: ingresosEfectivo,
+        color: "bg-green-50 border-green-200",
+        icon: "💵",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Tarjeta",
+        value: ingresosTarjeta,
+        color: "bg-green-50 border-green-200",
+        icon: "💳",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Nequi",
+        value: ingresosNequi,
+        color: "bg-green-50 border-green-200",
+        icon: "📱",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Bancolombia",
+        value: ingresosBancolombia,
+        color: "bg-green-50 border-green-200",
+        icon: "🏦",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Crédito",
+        value: ingresosCredito,
+        color: "bg-blue-50 border-blue-200",
+        icon: "💰",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "GiftCard",
+        value: ingresosGiftCard,
+        color: "bg-purple-50 border-purple-200",
+        icon: "🎁",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Otro",
+        value: ingresosOtro,
+        color: "bg-gray-50 border-gray-200",
+        icon: "💼",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Wompi",
+        value: totalOnlineSales,
+        color: "bg-blue-50 border-blue-200",
+        icon: "🌐",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Addi",
+        value: ingresosAddi,
+        color: "bg-orange-50 border-orange-200", // ✅ Color diferente para créditos
+        icon: "🛒",
+        includeInTotal: false,
+        type: "credit", // ✅ Marcar como crédito
+      },
+      {
+        name: "Sistecredito",
+        value: ingresosSistecredito,
+        color: "bg-orange-50 border-orange-200", // ✅ Color diferente para créditos
+        icon: "💳",
+        includeInTotal: false,
+        type: "credit", // ✅ Marcar como crédito
+      },
+      {
+        name: "Pagos Iniciales",
+        value: ingresosPagosIniciales,
+        color: "bg-purple-50 border-purple-200",
+        icon: "🆕",
+        includeInTotal: true,
+        type: "immediate",
+      },
+      {
+        name: "Pagos Parciales",
+        value: ingresosPagosParciales,
+        color: "bg-purple-50 border-purple-200",
+        icon: "📝",
+        includeInTotal: true,
+        type: "immediate",
+      },
+    ]
+    .map((method) => (
+      <div
+        key={method.name}
+        className={`${method.color} p-4 rounded-lg shadow-sm text-center border transition-all duration-200 hover:shadow-md ${
+          method.value === 0 ? 'opacity-60' : ''
+        }`}
+      >
+        <div className="text-2xl mb-2">{method.icon}</div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-1">
+          {method.name}
+        </h3>
+        <p className={`text-lg font-bold ${
+          method.value === 0 ? 'text-gray-500' : 'text-gray-900'
+        }`}>
+          {method.value.toLocaleString("es-CO", {
+            style: "currency",
+            currency: "COP",
+          })}
+        </p>
+        {/* ✅ Indicadores específicos para créditos */}
+        {method.type === "credit" && method.value > 0 && (
+          <p className="text-xs text-orange-700 mt-1">
+            📋 Crédito (no en listado)
+          </p>
+        )}
+        {!method.includeInTotal && method.value > 0 && method.type === "credit" && (
+          <p className="text-xs text-orange-600 mt-1">
+            No incluido en balance
+          </p>
+        )}
+        {/* ✅ Indicador si está en $0 */}
+        {method.value === 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            Sin movimientos
+          </p>
+        )}
+      </div>
+    ))}
+  </div>
 
-        {/* ✅ DEBUG: Información de paymentMethodBreakdown */}
+  {/* ✅ Información explicativa actualizada */}
+  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+      <p className="text-sm text-blue-800">
+        <strong>💡 Datos del Backend:</strong> Los valores se calculan en el servidor e incluyen separación automática de pagos combinados.
+      </p>
+    </div>
+    <div className="bg-orange-50 p-3 rounded border-l-4 border-orange-400">
+      <p className="text-sm text-orange-800">
+        <strong>📋 Ventas a Crédito:</strong> Addi y Sistecredito no aparecen en el listado porque el dinero no ingresa el mismo día.
+      </p>
+    </div>
+    <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
+      <p className="text-sm text-green-800">
+        <strong>✅ Total Calculado:</strong> {displayTotalIncome.toLocaleString("es-CO", {
+          style: "currency",
+          currency: "COP",
+        })}
+      </p>
+    </div>
+  </div>
+
+        {/* ✅ DEBUG: Información de paymentMethodBreakdown
         {debug && Object.keys(paymentMethodBreakdown).length > 0 && (
           <details className="mt-4 text-sm bg-gray-50 p-3 rounded">
             <summary className="cursor-pointer text-gray-700 font-medium">
@@ -770,7 +799,8 @@ const Balance = () => {
               </pre>
             </div>
           </details>
-        )}
+        )} */}
+        
       </div>
 
       {/* ✅ ACTUALIZAR: Summary usando datos del backend */}

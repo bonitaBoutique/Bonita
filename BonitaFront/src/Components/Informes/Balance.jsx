@@ -6,36 +6,34 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import TruncatedText from './TruncatedText';
+import TruncatedText from "./TruncatedText";
 
 // ✅ Configurar dayjs con plugins de zona horaria
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 // ✅ Importar utilidades mejoradas
-import { 
-  getColombiaDate, 
-  formatDateForDisplay, 
+import {
+  getColombiaDate,
+  formatDateForDisplay,
   formatDateForBackend,
   formatMovementDate,
-  isValidDate 
+  isValidDate,
 } from "../../utils/dateUtils";
 
 const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   // ✅ Usar función consistente para fecha de Colombia
   const today = getColombiaDate();
-  
+
   console.log("🕒 Fecha de Colombia (consistente):", today);
-  console.log("🕒 Fecha con dayjs:", dayjs().tz("America/Bogota").format("YYYY-MM-DD"));
-  console.log("🕒 Fecha local navegador:", new Date().toISOString().split('T')[0]);
-  console.log("🕒 Offset navegador:", new Date().getTimezoneOffset());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
+  // ✅ ACTUALIZAR: Obtener datos del Redux con la nueva estructura
   const {
     balance: backendBalance = 0,
     totalIncome: backendTotalIncome = 0,
@@ -43,20 +41,30 @@ const Balance = () => {
     totalLocalSales: backendTotalLocalSales = 0,
     totalExpenses = 0,
     income = { online: [], local: [] },
-    expenses = [],
+    expenses = { data: [] },
     cashierTotals = {},
+    // ✅ NUEVO: Usar paymentMethodBreakdown del backend
+    paymentMethodBreakdown = {},
     loading,
     error,
+    debug,
+    dateRange
   } = useSelector((state) => state);
 
-  console.log("📊 Datos del backend:", {
+  console.log("📊 Datos completos del Redux:", {
+    backendBalance,
+    backendTotalIncome,
+    totalOnlineSales,
+    backendTotalLocalSales,
+    totalExpenses,
     income,
     expenses,
     cashierTotals,
-    totalOnlineSales,
-    totalExpenses,
+    paymentMethodBreakdown, // ✅ NUEVO LOG
     loading,
-    error
+    error,
+    debug,
+    dateRange
   });
 
   // ✅ State para filtros con fechas de Colombia
@@ -73,26 +81,21 @@ const Balance = () => {
   const sendFiltersToBackend = (currentFilters) => {
     const formattedFilters = {
       ...currentFilters,
-      startDate: currentFilters.startDate ? formatDateForBackend(currentFilters.startDate) : undefined,
-      endDate: currentFilters.endDate ? formatDateForBackend(currentFilters.endDate) : undefined,
+      startDate: currentFilters.startDate
+        ? formatDateForBackend(currentFilters.startDate)
+        : undefined,
+      endDate: currentFilters.endDate
+        ? formatDateForBackend(currentFilters.endDate)
+        : undefined,
     };
 
-    Object.keys(formattedFilters).forEach(key => {
+    Object.keys(formattedFilters).forEach((key) => {
       if (formattedFilters[key] === "" || formattedFilters[key] === undefined) {
         delete formattedFilters[key];
       }
     });
 
     console.log("📤 Enviando filtros al backend:", formattedFilters);
-    console.log("📅 Fechas originales:", {
-      startDate: currentFilters.startDate,
-      endDate: currentFilters.endDate
-    });
-    console.log("📅 Fechas formateadas:", {
-      startDate: formattedFilters.startDate,
-      endDate: formattedFilters.endDate
-    });
-
     dispatch(fetchBalance(formattedFilters));
   };
 
@@ -100,25 +103,13 @@ const Balance = () => {
   useEffect(() => {
     if (income.local && income.local.length > 0) {
       console.log("🔍 DEBUG: Estructura de ventas locales:", income.local.slice(0, 2));
-      console.log("🔍 DEBUG: Claves disponibles en primera venta:", Object.keys(income.local[0]));
-      
-      // Buscar nombres de comprador en diferentes ubicaciones
-      income.local.slice(0, 3).forEach((sale, index) => {
-        console.log(`🔍 DEBUG Venta ${index + 1}:`, {
-          id: sale.id,
-          buyerName: sale.buyerName,
-          buyer_name: sale.buyer_name,
-          User: sale.User,
-          OrderDetail: sale.OrderDetail,
-          Receipt: sale.Receipt,
-          description: sale.description,
-          type: sale.type,
-          amount: sale.amount,
-          paymentMethod: sale.paymentMethod
-        });
-      });
     }
-  }, [income.local]);
+    
+    // ✅ NUEVO: Debug de paymentMethodBreakdown
+    if (paymentMethodBreakdown && Object.keys(paymentMethodBreakdown).length > 0) {
+      console.log("🔍 DEBUG: Payment Method Breakdown:", paymentMethodBreakdown);
+    }
+  }, [income.local, paymentMethodBreakdown]);
 
   // ✅ Effect para cargar datos cuando cambian los filtros
   useEffect(() => {
@@ -140,23 +131,22 @@ const Balance = () => {
       return;
     }
 
-    if (field === 'startDate' && filters.endDate && value > filters.endDate) {
+    if (field === "startDate" && filters.endDate && value > filters.endDate) {
       alert("La fecha de inicio no puede ser mayor que la fecha de fin");
       return;
     }
-    
-    if (field === 'endDate' && filters.startDate && value < filters.startDate) {
+
+    if (field === "endDate" && filters.startDate && value < filters.startDate) {
       alert("La fecha de fin no puede ser menor que la fecha de inicio");
       return;
     }
 
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     console.log(`✅ ${field} actualizada a:`, value);
-    console.log("📅 Fecha formateada para mostrar:", formatDateForDisplay(value));
   };
 
   // ✅ Función para resetear filtros
@@ -169,7 +159,7 @@ const Balance = () => {
       expenseType: "",
       cashier: "",
     };
-    
+
     console.log("🔄 Reseteando filtros a:", newFilters);
     setFilters(newFilters);
   };
@@ -189,56 +179,42 @@ const Balance = () => {
         description: `Pedido #${sale.id_orderDetail}` || "-",
         cashier_document: null,
       })),
-      
+
       // ✅ Map local sales CON MEJOR MANEJO DE NOMBRES
       ...(income.local || []).map((sale) => {
-        // ✅ Función para obtener el nombre del comprador de múltiples ubicaciones
         const getBuyerName = (saleData) => {
-          // Prioridad 1: buyerName directo
           if (saleData.buyerName && saleData.buyerName !== "Desconocido") {
             return saleData.buyerName;
           }
-          
-          // Prioridad 2: buyer_name con underscore
           if (saleData.buyer_name && saleData.buyer_name !== "Desconocido") {
             return saleData.buyer_name;
           }
-          
-          // Prioridad 3: Desde User anidado
           if (saleData.User) {
             const firstName = saleData.User.first_name || "";
             const lastName = saleData.User.last_name || "";
             const fullName = `${firstName} ${lastName}`.trim();
             if (fullName) return fullName;
           }
-          
-          // Prioridad 4: Desde OrderDetail.User
           if (saleData.OrderDetail && saleData.OrderDetail.User) {
             const firstName = saleData.OrderDetail.User.first_name || "";
             const lastName = saleData.OrderDetail.User.last_name || "";
             const fullName = `${firstName} ${lastName}`.trim();
             if (fullName) return fullName;
           }
-          
-          // Prioridad 5: Desde Receipt
           if (saleData.Receipt && saleData.Receipt.buyer_name) {
             return saleData.Receipt.buyer_name;
           }
-          
-          // Prioridad 6: description como fallback
           if (saleData.description && saleData.description !== "Desconocido") {
             return saleData.description;
           }
-          
-          // Fallback final
           return "Cliente no identificado";
         };
 
         const buyerName = getBuyerName(sale);
-        
+
         return {
           ...sale,
-          type: sale.type === "Pago Parcial Reserva" ? "Pago Parcial Reserva" : "Venta Local",
+          type: sale.type || "Venta Local",
           amount: sale.amount || 0,
           date: sale.date,
           paymentMethod: sale.paymentMethod || "Desconocido",
@@ -248,9 +224,9 @@ const Balance = () => {
           cashier_document: sale.cashierDocument,
         };
       }),
-      
+
       // Map expenses
-      ...(Array.isArray(expenses) ? expenses : []).map((expense) => ({
+      ...(Array.isArray(expenses.data) ? expenses.data : []).map((expense) => ({
         ...expense,
         type: `Gasto - ${expense.type}`,
         amount: -(expense.amount || 0),
@@ -283,7 +259,8 @@ const Balance = () => {
     }
     if (filters.cashier) {
       filteredMovements = filteredMovements.filter(
-        (m) => m.type !== "Venta Local" || m.cashier_document === filters.cashier
+        (m) =>
+          m.type !== "Venta Local" || m.cashier_document === filters.cashier
       );
     }
 
@@ -294,7 +271,7 @@ const Balance = () => {
     });
   };
 
-  // ✅ Function to handle Excel export con fecha corregida
+  // ✅ Function to handle Excel export
   const handleExportExcel = () => {
     const movementsToExport = getAllMovements();
 
@@ -307,8 +284,6 @@ const Balance = () => {
     }));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
-
-    // Format the 'Monto' column as Colombian Currency
     ws["!cols"] = [
       { wch: 12 },
       { wch: 20 },
@@ -325,44 +300,64 @@ const Balance = () => {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Balance");
-    
+
     const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
+
     console.log(`📄 Archivo exportado: ${fileName}`);
   };
 
-  // Calculate income totals per payment method
-  const calculateIncomeByMethod = (method) => {
-    return (income.local || [])
-      .filter(
-        (sale) =>
-          sale.paymentMethod === method && sale.type !== "Pago Parcial Reserva"
-      )
-      .reduce((acc, sale) => acc + (sale.amount || 0), 0);
-  };
+  // ✅ REEMPLAZAR: Usar datos del backend en lugar de calcular localmente
+  const ingresosEfectivo = paymentMethodBreakdown.efectivo || 0;
+  const ingresosTarjeta = paymentMethodBreakdown.tarjeta || 0;
+  const ingresosNequi = paymentMethodBreakdown.nequi || 0;
+  const ingresosBancolombia = paymentMethodBreakdown.bancolombia || 0;
+  const ingresosAddi = paymentMethodBreakdown.addi || 0;
+  const ingresosSistecredito = paymentMethodBreakdown.sistecredito || 0;
+  const ingresosCredito = paymentMethodBreakdown.credito || 0;
+  const ingresosGiftCard = paymentMethodBreakdown.giftCard || 0;
+  const ingresosOtro = paymentMethodBreakdown.otro || 0;
+  const ingresosPagosParciales = paymentMethodBreakdown.pagosParciales || 0;
+  const ingresosPagosIniciales = paymentMethodBreakdown.pagosIniciales || 0;
 
-  const ingresosPagosParciales = (income.local || [])
-    .filter((sale) => sale.type === "Pago Parcial Reserva")
-    .reduce((acc, sale) => acc + (sale.amount || 0), 0);
+  // ✅ USAR: Totales del backend
+  const displayTotalIncome = backendTotalIncome;
+  const displayBalance = backendBalance;
 
-  const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
-  const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
-  const ingresosNequi = calculateIncomeByMethod("Nequi");
-  const ingresosBancolombia = calculateIncomeByMethod("Bancolombia");
-  const ingresosAddi = calculateIncomeByMethod("Addi");
-  const ingresosSistecredito = calculateIncomeByMethod("Sistecredito");
+  // ✅ AGREGAR: Log de debug para verificar datos
+  console.log("🔍 DEBUG: Valores de métodos de pago:", {
+    ingresosEfectivo,
+    ingresosTarjeta,
+    ingresosNequi,
+    ingresosBancolombia,
+    ingresosCredito,
+    ingresosGiftCard,
+    ingresosOtro,
+    totalOnlineSales,
+    ingresosAddi,
+    ingresosSistecredito,
+    ingresosPagosIniciales,
+    ingresosPagosParciales,
+    paymentMethodBreakdown
+  });
 
-  const displayTotalIncome =
-    ingresosEfectivo +
-    ingresosTarjeta +
-    ingresosNequi +
-    ingresosBancolombia +
-    totalOnlineSales +
-    ingresosPagosParciales;
+  console.log("💰 Ingresos calculados desde backend:", {
+    efectivo: ingresosEfectivo,
+    tarjeta: ingresosTarjeta,
+    nequi: ingresosNequi,
+    bancolombia: ingresosBancolombia,
+    addi: ingresosAddi,
+    sistecredito: ingresosSistecredito,
+    credito: ingresosCredito,
+    giftCard: ingresosGiftCard,
+    otro: ingresosOtro,
+    pagosParciales: ingresosPagosParciales,
+    pagosIniciales: ingresosPagosIniciales,
+    totalIncome: displayTotalIncome,
+    balance: displayBalance
+  });
 
-  const displayBalance = displayTotalIncome - totalExpenses;
-
+  // ✅ Cajeros dinámicos
   const cashiers = [
     ...new Set(
       (income.local || []).map((sale) => sale.cashierDocument).filter(Boolean)
@@ -386,7 +381,9 @@ const Balance = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
         <div className="text-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-red-800 mb-2">Error al cargar el balance</h3>
+            <h3 className="text-lg font-medium text-red-800 mb-2">
+              Error al cargar el balance
+            </h3>
             <p className="text-red-600">{error}</p>
             <button
               onClick={() => sendFiltersToBackend(filters)}
@@ -414,26 +411,55 @@ const Balance = () => {
         💰 Balance Financiero
       </h1>
 
-      {/* ✅ Información de fecha actual de Colombia mejorada */}
+      {/* ✅ NUEVO: Información de debug si está disponible */}
+      {debug && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-400">
+          <details className="text-sm">
+            <summary className="cursor-pointer text-gray-700 font-medium">
+              🔍 Información de Debug (Click para expandir)
+            </summary>
+            <div className="mt-2 text-xs text-gray-600">
+              <p><strong>Consultas ejecutadas:</strong></p>
+              <ul className="ml-4 list-disc">
+                <li>Ventas online: {debug.queriesExecuted?.onlineSales || 0}</li>
+                <li>Ventas locales: {debug.queriesExecuted?.localSales || 0}</li>
+                <li>Ventas locales formateadas: {debug.queriesExecuted?.formattedLocalSales || 0}</li>
+                <li>Pagos parciales: {debug.queriesExecuted?.partialPayments || 0}</li>
+                <li>Pagos iniciales: {debug.queriesExecuted?.initialReservationPayments || 0}</li>
+                <li>Gastos: {debug.queriesExecuted?.expenses || 0}</li>
+              </ul>
+              <p className="mt-2"><strong>Pagos combinados detectados:</strong> {debug.combinedPaymentsCount || 0}</p>
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* ✅ Información de fecha actual */}
       <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
         <p className="text-sm text-blue-800">
-          <strong>📅 Fecha actual de Colombia:</strong> {formatDateForDisplay(today)}
+          <strong>📅 Fecha actual de Colombia:</strong>{" "}
+          {formatDateForDisplay(today)}
         </p>
         <p className="text-xs text-blue-600 mt-1">
           🕒 Zona horaria: America/Bogota (UTC-5)
         </p>
         <p className="text-xs text-blue-600">
-          📊 Rango de filtros: {formatDateForDisplay(filters.startDate)} - {formatDateForDisplay(filters.endDate)}
+          📊 Rango de filtros: {formatDateForDisplay(filters.startDate)} -{" "}
+          {formatDateForDisplay(filters.endDate)}
         </p>
+        {dateRange && (
+          <p className="text-xs text-blue-600">
+            🔄 Último rango procesado: {dateRange.startDate} - {dateRange.endDate}
+          </p>
+        )}
       </div>
 
-      {/* ✅ Filters Section mejorado */}
+      {/* ✅ Filters Section */}
       <div className="mb-6 p-4 border rounded-lg shadow-sm bg-gray-50">
         <h2 className="text-xl font-semibold mb-3 flex items-center">
           🔍 Filtros de Búsqueda
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* ✅ Input de fecha inicio mejorado */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Inicio
@@ -441,7 +467,9 @@ const Balance = () => {
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => handleDateFilterChange('startDate', e.target.value)}
+              onChange={(e) =>
+                handleDateFilterChange("startDate", e.target.value)
+              }
               max={today}
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -450,7 +478,6 @@ const Balance = () => {
             </p>
           </div>
 
-          {/* ✅ Input de fecha fin mejorado */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Fin
@@ -458,7 +485,9 @@ const Balance = () => {
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => handleDateFilterChange('endDate', e.target.value)}
+              onChange={(e) =>
+                handleDateFilterChange("endDate", e.target.value)
+              }
               min={filters.startDate}
               max={today}
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -468,7 +497,6 @@ const Balance = () => {
             </p>
           </div>
 
-          {/* ✅ Método de pago */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               💳 Método de Pago
@@ -487,11 +515,13 @@ const Balance = () => {
               <option value="Bancolombia">Bancolombia</option>
               <option value="Addi">Addi</option>
               <option value="Sistecredito">Sistecredito</option>
+              <option value="Crédito">Crédito</option>
+              <option value="GiftCard">GiftCard</option>
+              <option value="Otro">Otro</option>
               <option value="Wompi">Wompi (Online)</option>
             </select>
           </div>
 
-          {/* ✅ Punto de venta */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               🏪 Punto de Venta
@@ -509,7 +539,6 @@ const Balance = () => {
             </select>
           </div>
 
-          {/* ✅ Tipo de gasto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               💸 Tipo de Gasto
@@ -530,7 +559,6 @@ const Balance = () => {
             </select>
           </div>
 
-          {/* ✅ Cajero */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               👤 Cajero
@@ -552,7 +580,6 @@ const Balance = () => {
           </div>
         </div>
 
-        {/* ✅ Botones de acción mejorados */}
         <div className="mt-4 flex gap-2 flex-wrap">
           <button
             onClick={resetFilters}
@@ -569,50 +596,189 @@ const Balance = () => {
         </div>
       </div>
 
-      {/* ✅ Income by Payment Method Section */}
+      {/* ✅ SOLUCIÓN: Tarjetas de ingresos SIN FILTRO - muestra todas las tarjetas */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-3 flex items-center">
-          💰 Ingresos por Método (Detalle)
+          💰 Ingresos por Método de Pago (Desde Backend)
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+        
+        {/* ✅ Mostrar mensaje si no hay datos */}
+        {Object.keys(paymentMethodBreakdown).length === 0 ? (
+          <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400 mb-4">
+            <p className="text-yellow-800">
+              <strong>⚠️ Sin datos:</strong> El backend no está enviando información de métodos de pago. 
+              Revisa la respuesta de la API.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[
-            { name: "Efectivo", value: ingresosEfectivo, color: "bg-green-50 border-green-200", icon: "💵" },
-            { name: "Tarjeta", value: ingresosTarjeta, color: "bg-green-50 border-green-200", icon: "💳" },
-            { name: "Nequi", value: ingresosNequi, color: "bg-green-50 border-green-200", icon: "📱" },
-            { name: "Bancolombia", value: ingresosBancolombia, color: "bg-green-50 border-green-200", icon: "🏦" },
-            { name: "Addi", value: ingresosAddi, color: "bg-yellow-50 border-yellow-200", icon: "🛒" },
-            { name: "Sistecredito", value: ingresosSistecredito, color: "bg-yellow-50 border-yellow-200", icon: "💰" },
-            { name: "Venta Online", value: totalOnlineSales, color: "bg-blue-50 border-blue-200", icon: "🌐" },
-            { name: "Pagos Parciales", value: ingresosPagosParciales, color: "bg-purple-50 border-purple-200", icon: "📝" },
-          ].map((method) => (
+            {
+              name: "Efectivo",
+              value: ingresosEfectivo,
+              color: "bg-green-50 border-green-200",
+              icon: "💵",
+              includeInTotal: true,
+            },
+            {
+              name: "Tarjeta",
+              value: ingresosTarjeta,
+              color: "bg-green-50 border-green-200",
+              icon: "💳",
+              includeInTotal: true,
+            },
+            {
+              name: "Nequi",
+              value: ingresosNequi,
+              color: "bg-green-50 border-green-200",
+              icon: "📱",
+              includeInTotal: true,
+            },
+            {
+              name: "Bancolombia",
+              value: ingresosBancolombia,
+              color: "bg-green-50 border-green-200",
+              icon: "🏦",
+              includeInTotal: true,
+            },
+            {
+              name: "Crédito",
+              value: ingresosCredito,
+              color: "bg-blue-50 border-blue-200",
+              icon: "💰",
+              includeInTotal: true,
+            },
+            {
+              name: "GiftCard",
+              value: ingresosGiftCard,
+              color: "bg-purple-50 border-purple-200",
+              icon: "🎁",
+              includeInTotal: true,
+            },
+            {
+              name: "Otro",
+              value: ingresosOtro,
+              color: "bg-gray-50 border-gray-200",
+              icon: "💼",
+              includeInTotal: true,
+            },
+            {
+              name: "Wompi",
+              value: totalOnlineSales,
+              color: "bg-blue-50 border-blue-200",
+              icon: "🌐",
+              includeInTotal: true,
+            },
+            {
+              name: "Addi",
+              value: ingresosAddi,
+              color: "bg-yellow-50 border-yellow-200",
+              icon: "🛒",
+              includeInTotal: false,
+            },
+            {
+              name: "Sistecredito",
+              value: ingresosSistecredito,
+              color: "bg-yellow-50 border-yellow-200",
+              icon: "💰",
+              includeInTotal: false,
+            },
+            {
+              name: "Pagos Iniciales",
+              value: ingresosPagosIniciales,
+              color: "bg-purple-50 border-purple-200",
+              icon: "🆕",
+              includeInTotal: true,
+            },
+            {
+              name: "Pagos Parciales",
+              value: ingresosPagosParciales,
+              color: "bg-purple-50 border-purple-200",
+              icon: "📝",
+              includeInTotal: true,
+            },
+          ]
+          // ✅ SOLUCIÓN: QUITAR EL FILTRO COMPLETAMENTE
+          // .filter(method => method.value > 0) // ❌ ESTA LÍNEA REMOVIDA
+          .map((method) => (
             <div
               key={method.name}
-              className={`${method.color} p-4 rounded-lg shadow-sm text-center border`}
+              className={`${method.color} p-4 rounded-lg shadow-sm text-center border transition-all duration-200 hover:shadow-md ${
+                method.value === 0 ? 'opacity-60' : ''
+              }`}
             >
               <div className="text-2xl mb-2">{method.icon}</div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">
                 {method.name}
               </h3>
-              <p className="text-lg font-bold text-gray-900">
+              <p className={`text-lg font-bold ${
+                method.value === 0 ? 'text-gray-500' : 'text-gray-900'
+              }`}>
                 {method.value.toLocaleString("es-CO", {
                   style: "currency",
                   currency: "COP",
                 })}
               </p>
+              {/* ✅ Indicador si no se incluye en el total */}
+              {!method.includeInTotal && method.value > 0 && (
+                <p className="text-xs text-yellow-700 mt-1">
+                  No incluido en balance
+                </p>
+              )}
+              {/* ✅ Indicador si está en $0 */}
+              {method.value === 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Sin movimientos
+                </p>
+              )}
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
-          ⚠️ Los métodos en amarillo (Addi, Sistecredito) se muestran pero no se incluyen en el cálculo de 'Ingresos Totales' del resumen.
-        </p>
+
+        {/* ✅ Información explicativa mejorada */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Datos del Backend:</strong> Los valores se calculan en el servidor e incluyen separación automática de pagos combinados.
+            </p>
+          </div>
+          <div className="bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
+            <p className="text-sm text-yellow-800">
+              <strong>⚠️ Exclusiones:</strong> Addi y Sistecredito se muestran pero no se incluyen en el balance total.
+            </p>
+          </div>
+          <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
+            <p className="text-sm text-green-800">
+              <strong>✅ Total Calculado:</strong> {displayTotalIncome.toLocaleString("es-CO", {
+                style: "currency",
+                currency: "COP",
+              })}
+            </p>
+          </div>
+        </div>
+
+        {/* ✅ DEBUG: Información de paymentMethodBreakdown */}
+        {debug && Object.keys(paymentMethodBreakdown).length > 0 && (
+          <details className="mt-4 text-sm bg-gray-50 p-3 rounded">
+            <summary className="cursor-pointer text-gray-700 font-medium">
+              🔍 Debug: Payment Method Breakdown (Click para expandir)
+            </summary>
+            <div className="mt-2 text-xs text-gray-600">
+              <pre className="bg-white p-2 rounded border overflow-x-auto">
+                {JSON.stringify(paymentMethodBreakdown, null, 2)}
+              </pre>
+            </div>
+          </details>
+        )}
       </div>
 
-      {/* ✅ Summary Section mejorado */}
+      {/* ✅ ACTUALIZAR: Summary usando datos del backend */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-green-100 p-6 rounded-lg shadow-md text-center border-l-4 border-green-500">
           <div className="text-3xl mb-2">💚</div>
           <h3 className="text-lg font-semibold text-green-800">
-            Ingresos Totales*
+            Ingresos Totales (Backend)*
           </h3>
           <p className="text-2xl font-bold text-green-900">
             {displayTotalIncome.toLocaleString("es-CO", {
@@ -633,8 +799,12 @@ const Balance = () => {
         </div>
         <div className="bg-blue-100 p-6 rounded-lg shadow-md text-center border-l-4 border-blue-500">
           <div className="text-3xl mb-2">⚖️</div>
-          <h3 className="text-lg font-semibold text-blue-800">Balance*</h3>
-          <p className={`text-2xl font-bold ${displayBalance >= 0 ? 'text-blue-900' : 'text-red-900'}`}>
+          <h3 className="text-lg font-semibold text-blue-800">Balance (Backend)*</h3>
+          <p
+            className={`text-2xl font-bold ${
+              displayBalance >= 0 ? "text-blue-900" : "text-red-900"
+            }`}
+          >
             {displayBalance.toLocaleString("es-CO", {
               style: "currency",
               currency: "COP",
@@ -650,7 +820,7 @@ const Balance = () => {
         </button>
       </div>
 
-      {/* ✅ Cashier Totals Section mejorado */}
+      {/* ✅ Cashier Totals Section */}
       {Object.keys(cashierTotals).length > 0 && (
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-3 flex items-center">
@@ -682,7 +852,7 @@ const Balance = () => {
         </div>
       )}
 
-      {/* ✅ Movements Table Section con fechas corregidas */}
+      {/* ✅ Movements Table Section */}
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <h2 className="text-xl font-semibold mb-3 p-4 bg-gray-100 rounded-t-lg flex items-center">
           📋 Detalle de Movimientos
@@ -723,22 +893,21 @@ const Balance = () => {
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {formatMovementDate(movement.date)}
-                    <div className="text-xs text-gray-400 mt-1">
-                      Raw: {movement.date}
-                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      movement.amount < 0 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        movement.amount < 0
+                          ? "bg-red-100 text-red-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
                       {movement.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700"> {/* Quitar whitespace-nowrap */}
-  <TruncatedText text={movement.description} maxLength={80} />
-</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <TruncatedText text={movement.description} maxLength={80} />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {movement.paymentMethod || "N/A"}
                   </td>
@@ -758,7 +927,10 @@ const Balance = () => {
               <tr>
                 <td colSpan="5" className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-2">📭</div>
-                  <p>No hay movimientos para mostrar con los filtros seleccionados.</p>
+                  <p>
+                    No hay movimientos para mostrar con los filtros
+                    seleccionados.
+                  </p>
                   <button
                     onClick={resetFilters}
                     className="mt-2 text-blue-600 hover:text-blue-800 underline"
@@ -771,7 +943,7 @@ const Balance = () => {
           </tbody>
         </table>
 
-        {/* ✅ Controles de paginación mejorados */}
+        {/* ✅ Controles de paginación */}
         {allMovements.length > 0 && (
           <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="flex-1 flex justify-between sm:hidden">
@@ -803,8 +975,7 @@ const Balance = () => {
                   <span className="font-medium">
                     {Math.min(currentPage * itemsPerPage, allMovements.length)}
                   </span>{" "}
-                  de{" "}
-                  <span className="font-medium">{allMovements.length}</span>{" "}
+                  de <span className="font-medium">{allMovements.length}</span>{" "}
                   resultados
                 </p>
               </div>
@@ -822,7 +993,9 @@ const Balance = () => {
                     {"<<"}
                   </button>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                     title="Página anterior"
@@ -857,7 +1030,7 @@ const Balance = () => {
         )}
       </div>
 
-      {/* ✅ Back Button mejorado */}
+      {/* ✅ Back Button */}
       <div className="mt-8 text-center">
         <button
           onClick={() => navigate(-1)}
@@ -867,10 +1040,14 @@ const Balance = () => {
         </button>
       </div>
 
-      {/* ✅ Footer con información adicional */}
+      {/* ✅ Footer actualizado */}
       <div className="mt-6 text-center text-xs text-gray-500 bg-gray-50 p-3 rounded">
         <p>* Los ingresos totales y balance excluyen Addi y Sistecredito</p>
-        <p>📅 Todos los horarios están en zona horaria de Colombia (America/Bogota)</p>
+        <p>💻 Los cálculos se procesan en el backend con separación automática de pagos combinados</p>
+        <p>
+          📅 Todos los horarios están en zona horaria de Colombia
+          (America/Bogota)
+        </p>
       </div>
     </div>
   );

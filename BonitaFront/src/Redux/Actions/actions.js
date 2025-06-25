@@ -1217,39 +1217,40 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
   };
 
   export const getAllReservations = (filters = {}) => async (dispatch) => {
-  dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
   try {
-    // Construir query params solo si hay filtros
+    dispatch({ type: 'GET_ALL_RESERVATIONS_REQUEST' });
+    
+    console.log('🔵 [REDUX] Fetching reservations with filters:', filters);
+    
+    // ✅ CONSTRUIR QUERY STRING
     const queryParams = new URLSearchParams();
+    
     Object.keys(filters).forEach(key => {
-      if (filters[key] && filters[key] !== 'all') {
+      if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
         queryParams.append(key, filters[key]);
       }
     });
-    const url = `${BASE_URL}/reservation/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
-    const res = await axios.get(url);
-    console.log('Response from getAllReservations:', res.data.message);
-
-    if (!res.data.message.reservations || res.data.message.reservations.length === 0) {
-      Swal.fire('Información', 'No se encontraron reservas', 'info');
-      dispatch({
-        type: GET_ALL_RESERVATIONS_SUCCESS,
-        payload: [],
-      });
-      return;
-    }
-
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/reservations?${queryString}` : '/reservations';
+    
+    console.log('🔵 [REDUX] Request URL:', url);
+    
+    const { data } = await axios.get(url);
+    
+    console.log('🔵 [REDUX] Response data:', data);
+    
     dispatch({
-      type: GET_ALL_RESERVATIONS_SUCCESS,
-      payload: res.data.message.reservations,
+      type: 'GET_ALL_RESERVATIONS_SUCCESS',
+      payload: data.reservations || []
     });
+    
   } catch (error) {
-    console.error('Error in getAllReservations:', error);
+    console.error('🔴 [REDUX] Error fetching reservations:', error);
     dispatch({
-      type: GET_ALL_RESERVATIONS_FAILURE,
-      payload: error.message,
+      type: 'GET_ALL_RESERVATIONS_FAILURE',
+      payload: error.response?.data?.message || error.message
     });
-    Swal.fire('No hay reservas');
   }
 };
   

@@ -253,7 +253,7 @@ const initialState = {
     success: false,
     error: null,
   },
-  balance: 0,
+balance: 0,
   totalIncome: 0,
   totalOnlineSales: 0,
   totalLocalSales: 0,
@@ -268,6 +268,24 @@ const initialState = {
     success: false,
     error: null
   },
+  // ✅ NUEVO: Agregar campos faltantes del backend
+  cashierTotals: {},
+  paymentMethodBreakdown: {
+    efectivo: 0,
+    tarjeta: 0,
+    nequi: 0,
+    bancolombia: 0,
+    addi: 0,
+    sistecredito: 0,
+    credito: 0,
+    giftCard: 0,
+    otro: 0,
+    wompi: 0,
+    pagosParciales: 0,
+    pagosIniciales: 0
+  },
+  debug: null,
+  dateRange: null,
 
   order: {
     loading: false,
@@ -1308,24 +1326,54 @@ case FETCH_RECEIPTS_FAILURE:
           }
         }
       };
-      case FETCH_BALANCE_SUCCESS:
-        return {
-          ...state,
-          loading: false,
-          balance: action.payload.balance,
-          totalIncome: action.payload.totalIncome,
-          totalOnlineSales: action.payload.totalOnlineSales,
-          totalLocalSales: action.payload.totalLocalSales,
-          totalExpenses: action.payload.totalExpenses,
-          income: action.payload.income,
-          expenses: action.payload.expenses
-        };
-      case FETCH_BALANCE_FAILURE:
-        return {
-          ...state,
-          loading: false,
-          error: action.payload
-        };
+      case FETCH_BALANCE_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null
+      };
+
+    // ✅ FETCH_BALANCE_SUCCESS CORREGIDO
+    case FETCH_BALANCE_SUCCESS:
+      console.log('🟢 [REDUX] Balance data received:', action.payload);
+      
+      return {
+        ...state,
+        loading: false,
+        error: null,
+        // ✅ Mapear todos los campos del backend correctamente
+        balance: action.payload.balance || 0,
+        totalIncome: action.payload.totalIncome || 0,
+        totalOnlineSales: action.payload.totalOnlineSales || 0,
+        totalLocalSales: action.payload.totalLocalSales || 0,
+        totalExpenses: action.payload.totalExpenses || 0,
+        income: {
+          online: action.payload.income?.online || [],
+          local: action.payload.income?.local || []
+        },
+        expenses: {
+          ...state.expenses,
+          data: action.payload.expenses || []
+        },
+        // ✅ NUEVO: Campos adicionales del backend
+        cashierTotals: action.payload.cashierTotals || {},
+        paymentMethodBreakdown: {
+          ...initialState.paymentMethodBreakdown,
+          ...action.payload.paymentMethodBreakdown
+        },
+        debug: action.payload.debug || null,
+        dateRange: action.payload.dateRange || null
+      };
+
+    case FETCH_BALANCE_FAILURE:
+      console.log('🔴 [REDUX] Balance error:', action.payload);
+      
+      return {
+        ...state,
+        loading: false,
+        error: action.payload
+      };
+
         case GET_ALL_RESERVATIONS_REQUEST:
           return {
             ...state,

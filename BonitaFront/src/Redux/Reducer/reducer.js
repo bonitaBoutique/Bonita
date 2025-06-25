@@ -123,9 +123,6 @@ import {
   CREATE_SENDING_REQUEST,
   CREATE_SENDING_SUCCESS,
   CREATE_SENDING_FAILURE,
-  FETCH_SENDINGTRACKING_REQUEST,
-FETCH_SENDINGTRACKING_SUCCESS,
-FETCH_SENDINGTRACKING_FAILURE,
 DELETE_ORDER_DETAIL_REQUEST,
   DELETE_ORDER_DETAIL_SUCCESS,
   DELETE_ORDER_DETAIL_FAILURE,
@@ -135,6 +132,12 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_ACCOUNT_SUMMARY_REQUEST,
   FETCH_ACCOUNT_SUMMARY_SUCCESS,
   FETCH_ACCOUNT_SUMMARY_FAILURE,
+  FETCH_STOCK_MOVEMENTS_REQUEST,
+  FETCH_STOCK_MOVEMENTS_SUCCESS,
+  FETCH_STOCK_MOVEMENTS_FAILURE,
+  CREATE_STOCK_MOVEMENT_REQUEST,
+  CREATE_STOCK_MOVEMENT_SUCCESS,
+  CREATE_STOCK_MOVEMENT_FAILURE,
   SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   SEARCH_RECEIPT_FOR_RETURN_SUCCESS,
   SEARCH_RECEIPT_FOR_RETURN_FAILURE,
@@ -146,6 +149,7 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_RETURN_HISTORY_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
+
 
 } from "../Actions/actions-type";
 
@@ -253,7 +257,7 @@ const initialState = {
     success: false,
     error: null,
   },
-balance: 0,
+  balance: 0,
   totalIncome: 0,
   totalOnlineSales: 0,
   totalLocalSales: 0,
@@ -262,93 +266,31 @@ balance: 0,
     online: [],
     local: []
   },
+
   expenses: {
     data: [],
     loading: false,
     success: false,
     error: null
   },
-  // ✅ NUEVO: Agregar campos faltantes del backend
-  cashierTotals: {},
-  paymentMethodBreakdown: {
-    efectivo: 0,
-    tarjeta: 0,
-    nequi: 0,
-    bancolombia: 0,
-    addi: 0,
-    sistecredito: 0,
-    credito: 0,
-    giftCard: 0,
-    otro: 0,
-    wompi: 0,
-    pagosParciales: 0,
-    pagosIniciales: 0
-  },
-  debug: null,
-  dateRange: null,
 
-  order: {
-    loading: false,
-    success: false,
-    error: null,
-    order: {},
+  movements: [],
+  pagination: {
+    total: 0,
+    page: 1,
+    limit: 50,
+    totalPages: 0
   },
-  orders: {
-    loading: false,
-    orders: [],
-    error: null,
-  },
-  orderById: {
-    loading: false,
-    error: null,
-    order: {},
-  },
-  ordersGeneral: {
-    loading: false,
-    orders: [],
-    error: null,
-  },
-  updateProduct: {
-    loading: false,
-    roduct: null,
-    error: null,
-  },
-  latestOrder: {
-    loading: false,
-    success: false,
-    error: null,
-    data: {},
-  },
-  accountSummary: {
+  filters: {},
   loading: false,
-  data: null,
   error: null,
-},
-returns: {
-    receiptSearch: {
-      loading: false,
-      receipt: null,
-      canReturn: true,
-      daysSinceReceipt: 0,
-      error: null,
-    },
-    processing: {
-      loading: false,
-      result: null,
-      error: null,
-      success: false,
-    },
-    history: {
-      loading: false,
-      data: [],
-      pagination: null,
-      stats: [],
-      error: null,
-    },
-  },
+  success: false,
+  creating: false,
+  createError: null
 };
-
-
+  
+ 
+ 
 const rootReducer = (state = initialState, action) => {
   switch (action.type) {
     case CREATE_PRODUCT_REQUEST:
@@ -369,6 +311,7 @@ const rootReducer = (state = initialState, action) => {
         loading: false,
         error: action.payload,
       };
+      
     case FETCH_CATEGORIES_REQUEST:
       return {
         ...state,
@@ -1655,11 +1598,7 @@ case CREATE_SENDING_FAILURE:
           error: action.payload,
         },
       };
-
-    // ✅ =========================================
-    // 🆕 CASOS PARA SISTEMA DE DEVOLUCIONES
-    // ✅ =========================================
-
+    
     // 🔍 BUSCAR RECIBO PARA DEVOLUCIÓN
     case SEARCH_RECEIPT_FOR_RETURN_REQUEST:
       return {
@@ -1818,6 +1757,7 @@ case CREATE_SENDING_FAILURE:
           },
         },
       };
+      
 
     // 🔄 RESETEAR BÚSQUEDA DE RECIBO
     case RESET_RECEIPT_SEARCH:

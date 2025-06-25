@@ -150,7 +150,12 @@ SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   FETCH_RETURN_HISTORY_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
-
+  FETCH_STOCK_MOVEMENTS_REQUEST,
+  FETCH_STOCK_MOVEMENTS_SUCCESS,
+  FETCH_STOCK_MOVEMENTS_FAILURE,
+  CREATE_STOCK_MOVEMENT_REQUEST,
+  CREATE_STOCK_MOVEMENT_SUCCESS,
+  CREATE_STOCK_MOVEMENT_FAILURE
 
   
 } from "./actions-type";
@@ -1623,3 +1628,89 @@ export const clearReturnState = () => ({
 export const resetReceiptSearch = () => ({
   type: RESET_RECEIPT_SEARCH
 });
+
+
+export const fetchStockMovements = (filters = {}) => {
+  return async (dispatch) => {
+    dispatch({ type: FETCH_STOCK_MOVEMENTS_REQUEST });
+    
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Agregar parámetros de filtro
+      if (filters.page) queryParams.append('page', filters.page);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+      if (filters.type) queryParams.append('type', filters.type);
+      if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
+
+      console.log("📤 Enviando request a stock movements:", {
+        url: `${API_URL}/products/stock?${queryParams.toString()}`,
+        filters
+      });
+
+      const response = await axios.get(`${API_URL}/products/stock?${queryParams.toString()}`);
+
+      console.log("📥 Response stock movements:", response.data);
+
+      dispatch({
+        type: FETCH_STOCK_MOVEMENTS_SUCCESS,
+        payload: {
+          movements: response.data.data,
+          pagination: response.data.pagination,
+          filters: response.data.filters,
+          success: response.data.success
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error fetching stock movements:", error);
+      
+      const errorMessage = error.response?.data?.error || error.message || 'Error al obtener movimientos de stock';
+      
+      dispatch({
+        type: FETCH_STOCK_MOVEMENTS_FAILURE,
+        payload: errorMessage
+      });
+      
+      throw error;
+    }
+  };
+};
+
+// ✅ ACTION: Crear movimiento de stock manual
+export const createStockMovement = (movementData) => {
+  return async (dispatch) => {
+    dispatch({ type: CREATE_STOCK_MOVEMENT_REQUEST });
+    
+    try {
+      console.log("📤 Creando movimiento de stock:", movementData);
+
+      const response = await axios.post(`${API_URL}/products/stock`, movementData);
+
+      console.log("📥 Movimiento creado:", response.data);
+
+      dispatch({
+        type: CREATE_STOCK_MOVEMENT_SUCCESS,
+        payload: response.data
+      });
+
+      // ✅ Refrescar lista de movimientos después de crear uno
+      dispatch(fetchStockMovements());
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error creating stock movement:", error);
+      
+      const errorMessage = error.response?.data?.error || error.message || 'Error al crear movimiento de stock';
+      
+      dispatch({
+        type: CREATE_STOCK_MOVEMENT_FAILURE,
+        payload: errorMessage
+      });
+      
+      throw error;
+    }
+  };
+};

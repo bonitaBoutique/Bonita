@@ -1237,8 +1237,8 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     });
     
     const queryString = queryParams.toString();
-    const url = queryString ? `/reservations?${queryString}` : '/reservations';
-    
+    const url = queryString ? `/reservations?${queryString}` : `${BASE_URL}/reservations`;
+
     console.log('🔵 [REDUX] Request URL:', url);
     
     const { data } = await axios.get(url);

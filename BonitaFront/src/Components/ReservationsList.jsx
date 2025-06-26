@@ -18,9 +18,11 @@ const ReservationList = () => {
   const loading = useSelector((state) => state.reservation.loading);
   const error = useSelector((state) => state.reservation.error);
   const latestReceipt = useSelector((state) => state.receiptNumber);
-  const orderDetails = useSelector((state) => state.orderById.orderDetail);
+  
+  // ✅ CORREGIR: Agregar verificación segura para orderById
+  const orderDetails = useSelector((state) => state.orderById?.orderDetail || null);
 
-  // Estados para filtros
+  // ✅ Estados para filtros
   const [filters, setFilters] = useState({
     fechaInicio: '',
     fechaFin: '',
@@ -37,7 +39,7 @@ const ReservationList = () => {
   const [reservationsPerPage] = useState(7);
   const { userInfo } = useSelector((state) => state.userLogin);
 
-  // Función para aplicar filtros
+  // ✅ Función para aplicar filtros
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
       ...prev,
@@ -45,7 +47,7 @@ const ReservationList = () => {
     }));
   };
 
-  // Buscar con filtros
+  // ✅ Buscar con filtros
   const searchWithFilters = () => {
     const filterObj = {};
     if (filters.fechaInicio) filterObj.fechaInicio = filters.fechaInicio;
@@ -59,7 +61,7 @@ const ReservationList = () => {
     setCurrentPage(1);
   };
 
-  // Limpiar filtros
+  // ✅ Limpiar filtros
   const clearFilters = () => {
     setFilters({
       fechaInicio: '',
@@ -73,16 +75,29 @@ const ReservationList = () => {
     setCurrentPage(1);
   };
 
+  // ✅ AGREGAR: useEffect con manejo de errores
   useEffect(() => {
-    dispatch(getAllReservations());
-    dispatch(fetchLatestReceipt());
+    const loadData = async () => {
+      try {
+        console.log('🔵 [ReservationsList] Cargando reservas...');
+        await dispatch(getAllReservations());
+        await dispatch(fetchLatestReceipt());
+      } catch (error) {
+        console.error('❌ [ReservationsList] Error cargando datos:', error);
+      }
+    };
+
+    loadData();
   }, [dispatch]);
 
-  // Calcular deuda pendiente
+  // ✅ Calcular deuda pendiente con verificación segura
   const calculatePendingDebt = (totalAmount, paidAmount) => {
-    return totalAmount - paidAmount;
+    const total = Number(totalAmount) || 0;
+    const paid = Number(paidAmount) || 0;
+    return Math.max(0, total - paid);
   };
 
+  // ✅ Resto de las funciones permanecen igual...
   // Paginación
   const indexOfLastReservation = currentPage * reservationsPerPage;
   const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
@@ -93,8 +108,18 @@ const ReservationList = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Abrir popup de pago
+  // ✅ Abrir popup de pago con verificación
   const handleOpenPaymentPopup = (reservation) => {
+    console.log('🔵 [ReservationsList] Abriendo popup para:', reservation);
+    if (!reservation || !reservation.OrderDetail) {
+      console.error('❌ [ReservationsList] Reserva sin OrderDetail:', reservation);
+      Swal.fire({
+        title: "Error",
+        text: "No se encontraron detalles de la orden para esta reserva.",
+        icon: "error",
+      });
+      return;
+    }
     setSelectedReservation(reservation);
     setIsPaymentPopupOpen(true);
   };
@@ -105,14 +130,20 @@ const ReservationList = () => {
     setIsPaymentPopupOpen(false);
   };
 
-  // Aplicar pago
+  // ✅ Aplicar pago con mejor manejo de errores
   const handlePayment = async (id_reservation, amount, paymentMethod) => {
     try {
+      console.log('🔵 [ReservationsList] Aplicando pago:', { id_reservation, amount, paymentMethod });
+      
       await dispatch(applyPayment(id_reservation, amount, paymentMethod));
+      
       const updatedReservation = reservations.find(
         (res) => res.id_reservation === id_reservation
       );
-      if (!updatedReservation) return;
+      
+      if (!updatedReservation || !updatedReservation.OrderDetail) {
+        throw new Error("No se encontró la reserva o los detalles de la orden");
+      }
 
       const buyerFirstName = updatedReservation.OrderDetail?.User?.first_name || "";
       const buyerLastName = updatedReservation.OrderDetail?.User?.last_name || "";
@@ -137,7 +168,10 @@ const ReservationList = () => {
 
       await dispatch(createReceipt(receiptData));
 
-      const saldoPendiente = updatedReservation.OrderDetail.amount - (updatedReservation.totalPaid + amount);
+      const saldoPendiente = calculatePendingDebt(
+        updatedReservation.OrderDetail.amount,
+        (updatedReservation.totalPaid || 0) + amount
+      );
 
       Swal.fire({
         title: "Recibo Creado",
@@ -153,180 +187,241 @@ const ReservationList = () => {
         }
       });
 
-      if (updatedReservation.totalPaid + amount >= updatedReservation.OrderDetail.amount) {
+      // ✅ Verificar si la reserva está completamente pagada
+      if ((updatedReservation.totalPaid || 0) + amount >= updatedReservation.OrderDetail.amount) {
         await dispatch(updateReservation(id_reservation, "Completada"));
       }
 
       await dispatch(getAllReservations());
       handleClosePaymentPopup();
     } catch (error) {
+      console.error('❌ [ReservationsList] Error aplicando pago:', error);
       Swal.fire({
         title: "Error",
-        text: "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
+        text: error.message || "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
         icon: "error",
       });
     }
   };
 
-  // Eliminar reserva
+  // ✅ Eliminar reserva con mejor manejo
   const handleDelete = async (id_reservation) => {
-    await dispatch(deleteReservation(id_reservation));
+    try {
+      console.log('🔵 [ReservationsList] Eliminando reserva:', id_reservation);
+      await dispatch(deleteReservation(id_reservation));
+      await dispatch(getAllReservations()); // Recargar lista
+    } catch (error) {
+      console.error('❌ [ReservationsList] Error eliminando reserva:', error);
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo eliminar la reserva. Por favor, inténtalo de nuevo.",
+        icon: "error",
+      });
+    }
   };
 
-  // Generar PDF de recibo
+  // ✅ Generar PDF con verificaciones mejoradas
   const generatePDF = (receiptData) => {
-    const {
-      receiptNumber,
-      date,
-      buyer_name,
-      buyer_email,
-      buyer_phone,
-      total_amount,
-      payMethod,
-      id_orderDetail,
-      saldoPendiente,
-    } = receiptData;
+    try {
+      console.log('🔵 [ReservationsList] Generando PDF:', receiptData);
+      
+      const {
+        receiptNumber,
+        date,
+        buyer_name,
+        buyer_email,
+        buyer_phone,
+        total_amount,
+        payMethod,
+        id_orderDetail,
+        saldoPendiente,
+      } = receiptData;
 
-    const doc = new jsPDF({
-      unit: "pt",
-      format: [226.77, 839.28],
-    });
+      const doc = new jsPDF({
+        unit: "pt",
+        format: [226.77, 839.28],
+      });
 
-    doc.setFontSize(18);
-    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
-      align: "center",
-    });
+      doc.setFontSize(18);
+      doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+        align: "center",
+      });
 
-    doc.setFontSize(10);
-    let currentY = 50;
+      doc.setFontSize(10);
+      let currentY = 50;
 
-    doc.text(
-      "Bonita Boutique  S.A.S NIT:",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+      doc.text(
+        "Bonita Boutique  S.A.S NIT:",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
 
-    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
+      doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 20;
 
-    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 30;
+      doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 30;
 
-    doc.text(
-      `RECIBO # ${receiptNumber}`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+      doc.text(
+        `RECIBO # ${receiptNumber}`,
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
 
-    doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 20;
+      doc.text(`Fecha: ${date}`, doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 20;
 
-    doc.text(
-      `Tipo: Pago Parcial Reserva`,
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+      doc.text(
+        `Tipo: Pago Parcial Reserva`,
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
 
-    currentY += 20;
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+      currentY += 20;
+      doc.text(
+        "***************************",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
 
-    doc.setFontSize(10);
-    doc.text(`Cliente: ${buyer_name}`, 20, currentY);
-    currentY += 20;
+      doc.setFontSize(10);
+      doc.text(`Cliente: ${buyer_name}`, 20, currentY);
+      currentY += 20;
 
-    doc.text(`Email: ${buyer_email}`, 20, currentY);
-    currentY += 20;
+      doc.text(`Email: ${buyer_email}`, 20, currentY);
+      currentY += 20;
 
-    doc.text(`Teléfono: ${buyer_phone || "N/A"}`, 20, currentY);
-    currentY += 20;
+      doc.text(`Teléfono: ${buyer_phone || "N/A"}`, 20, currentY);
+      currentY += 20;
 
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+      doc.text(
+        "***************************",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
 
-    doc.setFontSize(11);
-    doc.text(`Pago Parcial: $${total_amount?.toLocaleString("es-CO")}`, 20, currentY);
-    currentY += 20;
+      doc.setFontSize(11);
+      doc.text(`Pago Parcial: $${total_amount?.toLocaleString("es-CO")}`, 20, currentY);
+      currentY += 20;
 
-    doc.setFontSize(12);
-    doc.text(`Saldo Pendiente: $${saldoPendiente?.toLocaleString("es-CO")}`, 20, currentY);
-    currentY += 20;
+      doc.setFontSize(12);
+      doc.text(`Saldo Pendiente: $${saldoPendiente?.toLocaleString("es-CO")}`, 20, currentY);
+      currentY += 20;
 
-    doc.setFontSize(10);
-    doc.text(`Método de Pago: ${payMethod}`, 20, currentY);
-    currentY += 20;
+      doc.setFontSize(10);
+      doc.text(`Método de Pago: ${payMethod}`, 20, currentY);
+      currentY += 20;
 
-    doc.text(`Orden: ${id_orderDetail}`, 20, currentY);
-    currentY += 30;
+      doc.text(`Orden: ${id_orderDetail}`, 20, currentY);
+      currentY += 30;
 
-    doc.text(
-      "***************************",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
-    currentY += 20;
+      doc.text(
+        "***************************",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
+      currentY += 20;
 
-    doc.setFontSize(9);
-    doc.text("NOTA: Este es un pago parcial", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 15;
+      doc.setFontSize(9);
+      doc.text("NOTA: Este es un pago parcial", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 15;
 
-    doc.text("de una reserva. El saldo", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 15;
+      doc.text("de una reserva. El saldo", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 15;
 
-    doc.text("pendiente debe ser cancelado", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 15;
+      doc.text("pendiente debe ser cancelado", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 15;
 
-    doc.text("para completar la compra.", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 30;
+      doc.text("para completar la compra.", doc.internal.pageSize.width / 2, currentY, {
+        align: "center",
+      });
+      currentY += 30;
 
-    doc.setFontSize(12);
-    doc.text(
-      "Gracias por elegirnos!",
-      doc.internal.pageSize.width / 2,
-      currentY,
-      { align: "center" }
-    );
+      doc.setFontSize(12);
+      doc.text(
+        "Gracias por elegirnos!",
+        doc.internal.pageSize.width / 2,
+        currentY,
+        { align: "center" }
+      );
 
-    doc.autoPrint();
-    window.open(doc.output("bloburl"), "_blank");
+      doc.autoPrint();
+      window.open(doc.output("bloburl"), "_blank");
+    } catch (error) {
+      console.error('❌ [ReservationsList] Error generando PDF:', error);
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo generar el PDF. Por favor, inténtalo de nuevo.",
+        icon: "error",
+      });
+    }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  // ✅ Estados de carga y error mejorados
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 mt-12">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando reservas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4 mt-12">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-red-800 mb-2">
+            ❌ Error al cargar reservas
+          </h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => dispatch(getAllReservations())}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-200"
+          >
+            🔄 Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 mt-12">
       <h1 className="text-2xl font-bold mb-6">Gestión de Reservas</h1>
+
+      {/* ✅ Indicador de estado de datos */}
+      <div className="mb-4 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+        <p className="text-xs text-blue-600">
+          📊 Reservas cargadas: {reservations?.length || 0} | 
+          🔗 OrderDetails: {orderDetails ? 'Disponible' : 'No disponible'} |
+          🎫 Último recibo: {latestReceipt || 'N/A'}
+        </p>
+      </div>
 
       {/* Panel de filtros */}
       <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
@@ -447,6 +542,12 @@ const ReservationList = () => {
           <tbody>
             {currentReservations &&
               currentReservations.map((reservation) => {
+                // ✅ Verificación segura de datos
+                if (!reservation || !reservation.OrderDetail) {
+                  console.warn('⚠️ [ReservationsList] Reserva sin OrderDetail:', reservation);
+                  return null;
+                }
+
                 const pendingDebt = calculatePendingDebt(
                   reservation.OrderDetail?.amount || 0,
                   reservation.totalPaid || 0
@@ -467,6 +568,7 @@ const ReservationList = () => {
                     return 'Fecha inválida';
                   }
                 };
+                
                 const formatCreationDate = (createdAt) => {
                   try {
                     const date = new Date(createdAt);
@@ -480,6 +582,7 @@ const ReservationList = () => {
                     return 'Fecha inválida';
                   }
                 };
+                
                 const isOverdue = () => {
                   if (!reservation.dueDate) return false;
                   const today = new Date();
@@ -487,12 +590,14 @@ const ReservationList = () => {
                   const dueDate = new Date(reservation.dueDate);
                   return dueDate < colombiaToday;
                 };
+                
                 const getReservationStatus = () => {
                   if (reservation.status === 'Completada') return 'Completada';
                   if (reservation.status === 'Cancelada') return 'Cancelada';
                   if (isOverdue()) return 'Vencida';
                   return 'Pendiente';
                 };
+                
                 const status = getReservationStatus();
 
                 return (
@@ -575,19 +680,19 @@ const ReservationList = () => {
                     </td>
                     <td className="py-3 px-4 border-b">
                       <span className="font-semibold text-green-600">
-                        ${reservation.totalPaid?.toLocaleString() || '0'}
+                        ${(reservation.totalPaid || 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="py-3 px-4 border-b">
                       <span className="font-semibold">
-                        ${reservation.OrderDetail?.amount?.toLocaleString() || "N/A"}
+                        ${(reservation.OrderDetail?.amount || 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="py-3 px-4 border-b">
                       <span className={`font-bold ${
                         pendingDebt > 0 ? 'text-red-600' : 'text-green-600'
                       }`}>
-                        ${pendingDebt?.toLocaleString()}
+                        ${pendingDebt.toLocaleString()}
                       </span>
                       {pendingDebt <= 0 && (
                         <div className="text-xs text-green-600 mt-1">
@@ -785,13 +890,15 @@ const ReservationList = () => {
   );
 };
 
-// Componente para el Popup de Pago
+// ✅ Componente para el Popup de Pago mejorado
 const PaymentPopup = ({ reservation, onClose, onPayment }) => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
 
   const calculatePendingDebt = (totalAmount, paidAmount) => {
-    return totalAmount - paidAmount;
+    const total = Number(totalAmount) || 0;
+    const paid = Number(paidAmount) || 0;
+    return Math.max(0, total - paid);
   };
 
   const pendingDebt = calculatePendingDebt(
@@ -824,6 +931,24 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
     onPayment(reservation.id_reservation, amount, paymentMethod);
   };
 
+  // ✅ Verificar que la reserva tenga OrderDetail
+  if (!reservation || !reservation.OrderDetail) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">❌ Error</h2>
+          <p className="mb-4">No se encontraron detalles de la orden para esta reserva.</p>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -831,13 +956,13 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">Información de la Reserva</h3>
           <p className="text-sm text-gray-600">
-            <strong>Cliente:</strong> {reservation.OrderDetail?.User?.first_name} {reservation.OrderDetail?.User?.last_name}
+            <strong>Cliente:</strong> {reservation.OrderDetail?.User?.first_name || 'Sin nombre'} {reservation.OrderDetail?.User?.last_name || ''}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>Monto Total:</strong> ${reservation.OrderDetail?.amount?.toLocaleString() || 0}
+            <strong>Monto Total:</strong> ${(reservation.OrderDetail?.amount || 0).toLocaleString()}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>Ya Pagado:</strong> ${reservation.totalPaid?.toLocaleString() || 0}
+            <strong>Ya Pagado:</strong> ${(reservation.totalPaid || 0).toLocaleString()}
           </p>
           <p className="text-sm font-semibold text-red-600">
             <strong>Saldo Pendiente:</strong> ${pendingDebt.toLocaleString()}

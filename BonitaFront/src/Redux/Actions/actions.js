@@ -1713,4 +1713,4 @@ export const createStockMovement = (movementData) => {
       throw error;
     }
   };
-};
+};  // para deploy

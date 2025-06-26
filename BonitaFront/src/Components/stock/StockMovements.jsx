@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchStockMovements, createStockMovement } from '../../Redux/Actions/stockActions';
+import { fetchStockMovements, createStockMovement } from '../../Redux/Actions/actions';
 import TruncatedText from '../Informes/TruncatedText';
 
 const StockMovements = () => {

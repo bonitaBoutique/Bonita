@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-// *** 1. Importa la acción deleteOrderDetail ***
 import {
   fetchAllOrders,
   fetchOrdersByIdOrder,
@@ -11,15 +10,44 @@ import Swal from "sweetalert2";
 const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
   const dispatch = useDispatch();
-  const { orders, loading, error } = useSelector(
-    (state) => state.ordersGeneral
-  );
+  
+  // ✅ CORREGIR: Selector con verificación segura
+  const { orders, loading, error } = useSelector((state) => {
+    console.log('🔍 [OrdenesPendientes SELECTOR] State completo:', state);
+    console.log('🔍 [OrdenesPendientes SELECTOR] State.ordersGeneral:', state.ordersGeneral);
+    
+    return {
+      orders: state.ordersGeneral?.orders || state.ordersGeneral?.list || [],
+      loading: state.ordersGeneral?.loading || false,
+      error: state.ordersGeneral?.error || null
+    };
+  });
+
   const [hoveredOrderId, setHoveredOrderId] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
 
+  // ✅ AGREGAR: Log para debugging
+  console.log('🔍 [OrdenesPendientes COMPONENT] Orders data:', {
+    orders,
+    loading,
+    error,
+    count: orders?.length,
+    filterType,
+    mode
+  });
+
   useEffect(() => {
-    dispatch(fetchAllOrders());
+    const loadOrders = async () => {
+      try {
+        console.log('🔵 [OrdenesPendientes] Cargando órdenes...');
+        await dispatch(fetchAllOrders());
+      } catch (error) {
+        console.error('❌ [OrdenesPendientes] Error cargando órdenes:', error);
+      }
+    };
+
+    loadOrders();
   }, [dispatch]);
 
   const handleSelectOrder = (orderId) => {
@@ -29,7 +57,6 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
   };
 
   const handleMouseEnter = async (id_orderDetail, event) => {
-    // ... (código existente de handleMouseEnter) ...
     try {
       const rect = event.currentTarget.getBoundingClientRect();
       setTooltipPosition({
@@ -45,9 +72,10 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
       if (result) {
         setCurrentOrderDetail(result);
       } else {
-        const existingOrder = orders.find(
-          (o) => o.id_orderDetail === id_orderDetail
-        );
+        // ✅ VERIFICAR que orders sea un array antes de usar find
+        const existingOrder = Array.isArray(orders) 
+          ? orders.find((o) => o.id_orderDetail === id_orderDetail)
+          : null;
         setCurrentOrderDetail(existingOrder || null);
       }
     } catch (error) {
@@ -61,7 +89,6 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
     setCurrentOrderDetail(null);
   };
 
-  // *** 2. Función para manejar la eliminación ***
   const handleDeleteOrder = async (id_orderDetail) => {
     const result = await Swal.fire({
       title: "¿Estás seguro?",
@@ -76,66 +103,106 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
 
     if (result.isConfirmed) {
       try {
-        // Despacha la acción para borrar la orden
-        await dispatch(deleteOrderDetail(id_orderDetail)); // Llama a la acción importada
+        await dispatch(deleteOrderDetail(id_orderDetail));
         Swal.fire({
           title: "¡Borrada!",
           text: `La orden N° ${id_orderDetail} ha sido eliminada.`,
           icon: "success",
-          timer: 1500, // Cierra automáticamente después de 1.5 segundos
+          timer: 1500,
           showConfirmButton: false,
         });
-        // La lista se actualizará automáticamente porque el reducer modifica el estado 'orders'
+        // ✅ Refrescar la lista después de eliminar
+        dispatch(fetchAllOrders());
       } catch (deleteError) {
-        // El error ya fue re-lanzado desde la acción, lo capturamos aquí
-        console.error(
-          "Error al borrar la orden (capturado en componente):",
-          deleteError
-        );
+        console.error("Error al borrar la orden:", deleteError);
         Swal.fire(
           "Error",
-          deleteError.message ||
-            "No se pudo borrar la orden. Por favor, inténtalo de nuevo.", // Muestra el mensaje de error de la acción
+          deleteError.message || "No se pudo borrar la orden. Por favor, inténtalo de nuevo.",
           "error"
         );
       }
     }
   };
-  // ----------------------------------------------------
 
-  // ... (código de loading, error, no orders) ...
+  // ✅ ESTADOS DE CARGA Y ERROR MEJORADOS
   if (loading) {
-    return <p className="text-center mt-4">Cargando órdenes...</p>;
+    return (
+      <div className="bg-colorFooter relative">
+        <div className="container mx-auto px-4 py-8 mt-10">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-800 font-monserrat">Cargando órdenes...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    // Muestra el error general de carga, no el de borrado que se maneja en handleDeleteOrder
     return (
-      <p className="text-center mt-4 text-red-500">
-        Error al cargar órdenes:{" "}
-        {typeof error === "string" ? error : "Error desconocido"}
-      </p>
+      <div className="bg-colorFooter relative">
+        <div className="container mx-auto px-4 py-8 mt-10">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-red-800 mb-2">
+              ❌ Error al cargar órdenes
+            </h3>
+            <p className="text-red-600 mb-4">
+              {typeof error === "string" ? error : "Error desconocido"}
+            </p>
+            <button
+              onClick={() => dispatch(fetchAllOrders())}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-200"
+            >
+              🔄 Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  if (!orders || orders.length === 0) {
-    return <p className="text-center mt-4">No hay órdenes disponibles.</p>;
+  // ✅ VERIFICAR que orders sea un array antes de procesar
+  if (!Array.isArray(orders) || orders.length === 0) {
+    return (
+      <div className="bg-colorFooter relative">
+        <div className="container mx-auto px-4 py-8 mt-10">
+          <h2 className="text-2xl font-semibold mb-4 font-monserrat text-gray-900 bg-white p-2 rounded">
+            Lista de Pedidos
+          </h2>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📦</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              No hay órdenes disponibles
+            </h3>
+            <p className="text-gray-600">
+              No se encontraron órdenes para mostrar.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  let filteredOrders = orders;
+  // ✅ FILTRADO SEGURO con verificación de array
+  let filteredOrders = Array.isArray(orders) ? orders : [];
+  
   if (filterType === "facturablesPendientes") {
-    filteredOrders = orders.filter(
+    filteredOrders = filteredOrders.filter(
       (order) =>
-        order.isFacturable && order.status?.trim().toLowerCase() === "pendiente"
+        order?.isFacturable && 
+        order?.status?.trim().toLowerCase() === "pendiente"
     );
   }
 
-  // *** 3. Añadir el botón de borrar en renderActions ***
+  console.log('🔍 [OrdenesPendientes] Filtered orders:', {
+    originalCount: orders?.length || 0,
+    filteredCount: filteredOrders?.length || 0,
+    filterType
+  });
+
   const renderActions = (order) => {
     return (
       <div className="flex space-x-2">
-        {" "}
-        {/* Contenedor flex para los botones */}
         {mode === "billingForm" && (
           <button
             onClick={() => handleSelectOrder(order.n_document)}
@@ -152,9 +219,8 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
             Orden
           </button>
         )}
-        {/* Botón de Borrar */}
         <button
-          onClick={() => handleDeleteOrder(order.id_orderDetail)} // Llama a la función de borrado
+          onClick={() => handleDeleteOrder(order.id_orderDetail)}
           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
           title="Borrar Orden"
         >
@@ -163,7 +229,6 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
       </div>
     );
   };
-  // ----------------------------------------------------
 
   return (
     <div className="bg-colorFooter relative">
@@ -171,6 +236,16 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
         <h2 className="text-2xl font-semibold mb-4 font-monserrat text-gray-900 bg-white p-2 rounded">
           Lista de Pedidos
         </h2>
+
+        {/* ✅ Indicador de estado de datos */}
+        <div className="mb-4 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <p className="text-xs text-blue-600">
+            📊 Órdenes cargadas: {orders?.length || 0} | 
+            🔍 Filtradas: {filteredOrders?.length || 0} |
+            🏷️ Filtro: {filterType || 'ninguno'} |
+            🔄 Estado: {loading ? 'Cargando...' : 'Listo'}
+          </p>
+        </div>
 
         <div
           className="overflow-x-auto shadow-md sm:rounded-lg"
@@ -206,41 +281,67 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => (
-                <tr
-                  key={order.id_orderDetail}
-                  className="bg-white border-b text-black hover:bg-gray-100"
-                  onMouseEnter={(event) =>
-                    handleMouseEnter(order.id_orderDetail, event)
+              {/* ✅ VERIFICAR que filteredOrders sea un array y tenga elementos */}
+              {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => {
+                  // ✅ Verificación segura de order
+                  if (!order || !order.id_orderDetail) {
+                    console.warn('⚠️ [OrdenesPendientes] Orden inválida:', order);
+                    return null;
                   }
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <td className="px-6 py-4 font-medium text-black">
-                    {order.id_orderDetail}
-                    {order.user_info && (
-                      <span className="block text-xs text-gray-600">
-                        {order.user_info.first_name} {order.user_info.last_name}
-                      </span>
-                    )}
+
+                  return (
+                    <tr
+                      key={order.id_orderDetail}
+                      className="bg-white border-b text-black hover:bg-gray-100"
+                      onMouseEnter={(event) =>
+                        handleMouseEnter(order.id_orderDetail, event)
+                      }
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <td className="px-6 py-4 font-medium text-black">
+                        {order.id_orderDetail}
+                        {order.user_info && (
+                          <span className="block text-xs text-gray-600">
+                            {order.user_info.first_name} {order.user_info.last_name}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">{order.date || 'N/A'}</td>
+                      <td className="px-6 py-4">{order.quantity || 0}</td>
+                      <td className="px-6 py-4">
+                        ${order.amount?.toLocaleString("es-CO") || 0}
+                      </td>
+                      <td className="px-6 py-4">{order.n_document || 'N/A'}</td>
+                      <td className="px-6 py-4">{order.pointOfSale || 'N/A'}</td>
+                      <td className="px-6 py-4">{order.state_order || 'Sin estado'}</td>
+                      <td className="px-6 py-4">{renderActions(order)}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center">
+                    <div className="text-4xl mb-4">📦</div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      {filterType === "facturablesPendientes" 
+                        ? 'No hay órdenes facturables pendientes'
+                        : 'No hay órdenes que coincidan con el filtro'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {filterType === "facturablesPendientes"
+                        ? 'No se encontraron órdenes facturables con estado pendiente.'
+                        : 'Intenta modificar los filtros de búsqueda.'}
+                    </p>
                   </td>
-                  <td className="px-6 py-4">{order.date}</td>
-                  <td className="px-6 py-4">{order.quantity}</td>
-                  <td className="px-6 py-4">
-                    ${order.amount?.toLocaleString("es-CO")}
-                  </td>
-                  <td className="px-6 py-4">{order.n_document}</td>
-                  <td className="px-6 py-4">{order.pointOfSale}</td>
-                  <td className="px-6 py-4">{order.state_order}</td>
-                  {/* Celda para las acciones */}
-                  <td className="px-6 py-4">{renderActions(order)}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Tooltip JSX (sin cambios) */}
+      {/* ✅ TOOLTIP con verificación segura */}
       {hoveredOrderId && currentOrderDetail && (
         <div
           className="absolute bg-gray-800 text-white p-4 rounded shadow-lg z-50 max-w-xs text-xs"
@@ -255,20 +356,19 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
           </h4>
           {currentOrderDetail.userData ? (
             <p className="mb-1">
-              Cliente: {currentOrderDetail.userData.first_name}{" "}
-              {currentOrderDetail.userData.last_name} (
-              {currentOrderDetail.n_document})
+              Cliente: {currentOrderDetail.userData.first_name || ''}{" "}
+              {currentOrderDetail.userData.last_name || ''} (
+              {currentOrderDetail.n_document || 'N/A'})
             </p>
           ) : (
             <p className="mb-1">Cliente: (No disponible)</p>
           )}
           <h5 className="font-semibold mt-2 mb-1">Productos:</h5>
-          {currentOrderDetail.products &&
-          currentOrderDetail.products.length > 0 ? (
+          {currentOrderDetail.products && Array.isArray(currentOrderDetail.products) && currentOrderDetail.products.length > 0 ? (
             <ul className="list-disc list-inside space-y-1">
               {currentOrderDetail.products.map((product, index) => (
                 <li key={index}>
-                  {product.description} (Cod: {product.codigoBarra})
+                  {product.description || 'Sin descripción'} (Cod: {product.codigoBarra || 'N/A'})
                 </li>
               ))}
             </ul>

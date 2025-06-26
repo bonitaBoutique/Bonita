@@ -1223,7 +1223,7 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
 
 export const getAllReservations = (filters = {}) => async (dispatch) => {
   try {
-    dispatch({ type: 'GET_ALL_RESERVATIONS_REQUEST' });
+    dispatch({ type: GET_ALL_RESERVATIONS_REQUEST });
     
     console.log('🔵 [REDUX] Fetching reservations with filters:', filters);
     
@@ -1237,7 +1237,6 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
     });
     
     const queryString = queryParams.toString();
-    // ✅ CORREGIR: Usar BASE_URL y la ruta correcta /reservation/all
     const url = queryString ? `${BASE_URL}/reservation/all?${queryString}` : `${BASE_URL}/reservation/all`;
     
     console.log('🔵 [REDUX] Request URL:', url);
@@ -1246,15 +1245,29 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
     
     console.log('🔵 [REDUX] Response data:', data);
     
+    // ✅ CORREGIR: Acceder correctamente a los datos según la estructura real
+    const reservations = data.message?.reservations || [];
+    const statistics = data.message?.statistics || {};
+    const total = data.message?.total || 0;
+    const appliedFilters = data.message?.filters || {};
+    
+    console.log('🔵 [REDUX] Parsed reservations:', reservations);
+    console.log('🔵 [REDUX] Statistics:', statistics);
+    
     dispatch({
-      type: 'GET_ALL_RESERVATIONS_SUCCESS',
-      payload: data.reservations || []
+      type: GET_ALL_RESERVATIONS_SUCCESS,
+      payload: {
+        reservations,
+        statistics,
+        total,
+        filters: appliedFilters
+      }
     });
     
   } catch (error) {
     console.error('🔴 [REDUX] Error fetching reservations:', error);
     dispatch({
-      type: 'GET_ALL_RESERVATIONS_FAILURE',
+      type: GET_ALL_RESERVATIONS_FAILURE,
       payload: error.response?.data?.message || error.message
     });
   }
@@ -1686,7 +1699,6 @@ export const createStockMovement = (movementData) => {
     try {
       console.log("📤 Creando movimiento de stock:", movementData);
 
-      // ✅ CORREGIR: Usar BASE_URL en lugar de API_URL
       const response = await axios.post(`${BASE_URL}/products/stock`, movementData);
 
       console.log("📥 Movimiento creado:", response.data);
@@ -1713,4 +1725,4 @@ export const createStockMovement = (movementData) => {
       throw error;
     }
   };
-};  // para deploy
+};

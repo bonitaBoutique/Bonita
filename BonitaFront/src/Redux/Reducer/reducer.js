@@ -1318,100 +1318,150 @@ case FETCH_RECEIPTS_FAILURE:
       };
 
         case GET_ALL_RESERVATIONS_REQUEST:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              loading: true,
-              error: null,
-            },
-          };
-          case GET_ALL_RESERVATIONS_SUCCESS:
   return {
     ...state,
     reservation: {
       ...state.reservation,
-      list: action.payload || [], // <-- Aquí va el array directamente
+      loading: true,
+      error: null,
+    },
+  };
+
+case GET_ALL_RESERVATIONS_SUCCESS:
+  console.log('🟢 [REDUCER] GET_ALL_RESERVATIONS_SUCCESS payload:', action.payload);
+  
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      list: action.payload.reservations || [], // ✅ CORREGIR: Acceder a reservations dentro del payload
+      statistics: action.payload.statistics || {},
+      total: action.payload.total || 0,
+      filters: action.payload.filters || {},
       loading: false,
       error: null,
     },
   };
-        case GET_ALL_RESERVATIONS_FAILURE:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              loading: false,
-              error: action.payload,
-            },
-          };
-    
-        case APPLY_PAYMENT_REQUEST:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              updateStatus: {
-                loading: true,
-                error: null,
-                success: false,
-              },
-            },
-          };
-          case "APPLY_PAYMENT_SUCCESS":
-            return {
-              ...state,
-              reservation: {
-                ...state.reservation,
-                loading: false,
-                list: state.reservation.list.map((reservation) =>
-                  reservation.id_reservation === action.payload.reservation.id_reservation
-                    ? action.payload.reservation
-                    : reservation
-                ),
-              },
-            };
-        case APPLY_PAYMENT_FAILURE:
-          return {
-            ...state,
-            reservation: {
-              ...state.reservation,
-              updateStatus: {
-                loading: false,
-                error: action.payload,
-                success: false,
-              },
-            },
-          };
 
-          case DELETE_RESERVATION_REQUEST:
-            return {
-              ...state,
-              reservation: {
-                ...state.reservation,
-                loading: true,
-                error: null,
-              },
-            };
+case GET_ALL_RESERVATIONS_FAILURE:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      loading: false,
+      error: action.payload,
+      list: [], // ✅ Array vacío en caso de error
+    },
+  };
+
+// ✅ CORREGIR APPLY_PAYMENT_SUCCESS
+case APPLY_PAYMENT_SUCCESS:
+  console.log('🟢 [REDUCER] APPLY_PAYMENT_SUCCESS payload:', action.payload);
+  
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      loading: false,
+      error: null,
+      updateStatus: {
+        loading: false,
+        error: null,
+        success: true
+      },
+      // ✅ Actualizar la reserva específica en la lista
+      list: state.reservation.list.map((reservation) =>
+        reservation.id_reservation === action.payload.id_reservation
+          ? { ...reservation, ...action.payload }
+          : reservation
+      ),
+    },
+  };
+
+case APPLY_PAYMENT_FAILURE:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      updateStatus: {
+        loading: false,
+        error: action.payload,
+        success: false,
+      },
+    },
+  };
           case DELETE_RESERVATION_SUCCESS:
-            return {
-              ...state,
-              reservation: {
-                ...state.reservation,
-                list: state.reservation.list.filter((reservation) => reservation.id_reservation !== action.payload),
-                loading: false,
-                error: null,
-              },
-            };
-          case DELETE_RESERVATION_FAILURE:
-            return {
-              ...state,
-              reservation: {
-                ...state.reservation,
-                loading: false,
-                error: action.payload,
-              },
-            };
+  console.log('🟢 [REDUCER] DELETE_RESERVATION_SUCCESS payload:', action.payload);
+  
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      list: state.reservation.list.filter(
+        (reservation) => reservation.id_reservation !== action.payload
+      ),
+      loading: false,
+      error: null,
+    },
+  };
+
+case DELETE_RESERVATION_FAILURE:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      loading: false,
+      error: action.payload,
+    },
+  };
+
+  case UPDATE_RESERVATION_REQUEST:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      updateStatus: {
+        loading: true,
+        error: null,
+        success: false,
+      },
+    },
+  };
+
+case UPDATE_RESERVATION_SUCCESS:
+  console.log('🟢 [REDUCER] UPDATE_RESERVATION_SUCCESS payload:', action.payload);
+  
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      currentReservation: action.payload,
+      updateStatus: {
+        loading: false,
+        error: null,
+        success: true,
+      },
+      // ✅ También actualizar en la lista si existe
+      list: state.reservation.list.map((reservation) =>
+        reservation.id_reservation === action.payload.id_reservation
+          ? { ...reservation, ...action.payload }
+          : reservation
+      ),
+    },
+  };
+
+case UPDATE_RESERVATION_FAILURE:
+  return {
+    ...state,
+    reservation: {
+      ...state.reservation,
+      updateStatus: {
+        loading: false,
+        error: action.payload,
+        success: false,
+      },
+    },
+  };
             case GET_CLIENT_ACCOUNT_BALANCE_REQUEST:
               return {
                 ...state,

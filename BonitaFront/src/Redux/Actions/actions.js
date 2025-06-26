@@ -1221,7 +1221,7 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     }
   };
 
-  export const getAllReservations = (filters = {}) => async (dispatch) => {
+export const getAllReservations = (filters = {}) => async (dispatch) => {
   try {
     dispatch({ type: 'GET_ALL_RESERVATIONS_REQUEST' });
     
@@ -1237,8 +1237,9 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     });
     
     const queryString = queryParams.toString();
-    const url = queryString ? `/reservations?${queryString}` : `${BASE_URL}/reservations`;
-
+    // ✅ CORREGIR: Usar BASE_URL y la ruta correcta /reservation/all
+    const url = queryString ? `${BASE_URL}/reservation/all?${queryString}` : `${BASE_URL}/reservation/all`;
+    
     console.log('🔵 [REDUX] Request URL:', url);
     
     const { data } = await axios.get(url);

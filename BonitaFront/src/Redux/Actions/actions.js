@@ -1638,19 +1638,18 @@ export const fetchStockMovements = (filters = {}) => {
     try {
       const queryParams = new URLSearchParams();
       
-      // Agregar parámetros de filtro
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
 
-      console.log("📤 Enviando request a stock movements:", {
-        url: `${API_URL}/products/stock?${queryParams.toString()}`,
-        filters
-      });
+      // ✅ CORREGIR: Usar BASE_URL en lugar de API_URL
+      const url = `${BASE_URL}/products/stock?${queryParams.toString()}`;
 
-      const response = await axios.get(`${API_URL}/products/stock?${queryParams.toString()}`);
+      console.log("📤 Enviando request a stock movements:", { url, filters });
+
+      const response = await axios.get(url);
 
       console.log("📥 Response stock movements:", response.data);
 
@@ -1679,7 +1678,6 @@ export const fetchStockMovements = (filters = {}) => {
     }
   };
 };
-
 // ✅ ACTION: Crear movimiento de stock manual
 export const createStockMovement = (movementData) => {
   return async (dispatch) => {
@@ -1688,7 +1686,8 @@ export const createStockMovement = (movementData) => {
     try {
       console.log("📤 Creando movimiento de stock:", movementData);
 
-      const response = await axios.post(`${API_URL}/products/stock`, movementData);
+      // ✅ CORREGIR: Usar BASE_URL en lugar de API_URL
+      const response = await axios.post(`${BASE_URL}/products/stock`, movementData);
 
       console.log("📥 Movimiento creado:", response.data);
 

@@ -13,38 +13,43 @@ import {
   resetReceiptState,
   clearOrderState,
   updateOrderState,
+  getServerTime, // ✅ AGREGAR ESTA IMPORTACIÓN
 } from "../Redux/Actions/actions";
 import ReservationPopup from "./ReservationPopup";
 import {
   getColombiaDate,
   formatDateForDisplay,
   isValidDate,
+  getServerDate, // ✅ AGREGAR ESTAS IMPORTACIONES
+  getDateForInput,
 } from "../utils/dateUtils";
+import ServerTimeSync from "./ServerTimeSync"; 
 
 const Recibo = () => {
   const { idOrder } = useParams();
   const { n_document } = useParams();
 
   // ✅ ESTADOS LOCALES
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("Efectivo");
-  const [showSecondPayment, setShowSecondPayment] = useState(false);
-  const [paymentMethod2, setPaymentMethod2] = useState("");
-  const [amount1, setAmount1] = useState("");
-  const [amount2, setAmount2] = useState("");
-  const [loadingCashier, setLoadingCashier] = useState(true);
-  const [discount, setDiscount] = useState(0);
-  const [buyerName, setBuyerName] = useState("");
-  const [buyerEmail, setBuyerEmail] = useState("");
-  const [buyerPhone, setBuyerPhone] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
-  const [date, setDate] = useState(() => getColombiaDate());
-  const [cashGiven, setCashGiven] = useState("");
-  const [change, setChange] = useState(0);
-  const [observations, setObservations] = useState("");
-  const [reservationInfo, setReservationInfo] = useState(null);
-  const [isReservation, setIsReservation] = useState(false);
-  const [showReservationPopup, setShowReservationPopup] = useState(false);
+const [isSubmitted, setIsSubmitted] = useState(false);
+const [paymentMethod, setPaymentMethod] = useState("Efectivo");
+const [showSecondPayment, setShowSecondPayment] = useState(false);
+const [paymentMethod2, setPaymentMethod2] = useState("");
+const [amount1, setAmount1] = useState("");
+const [amount2, setAmount2] = useState("");
+const [loadingCashier, setLoadingCashier] = useState(true);
+const [discount, setDiscount] = useState(0);
+const [buyerName, setBuyerName] = useState("");
+const [buyerEmail, setBuyerEmail] = useState("");
+const [buyerPhone, setBuyerPhone] = useState("");
+const [totalAmount, setTotalAmount] = useState("");
+// ✅ CAMBIAR LA INICIALIZACIÓN DE FECHA
+const [date, setDate] = useState(() => getServerDate(serverTime) || getColombiaDate());
+const [cashGiven, setCashGiven] = useState("");
+const [change, setChange] = useState(0);
+const [observations, setObservations] = useState("");
+const [reservationInfo, setReservationInfo] = useState(null);
+const [isReservation, setIsReservation] = useState(false);
+const [showReservationPopup, setShowReservationPopup] = useState(false);
   // ✅ HOOKS
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -72,6 +77,8 @@ const Recibo = () => {
     error: cashierError,
   } = useSelector((state) => state.userTaxxa);
 
+  const serverTime = useSelector((state) => state.serverTime);
+
   // ✅ CÁLCULOS DERIVADOS
   const discountAmount = (Number(totalAmount) * Number(discount)) / 100;
   const totalWithDiscount = Math.max(0, Number(totalAmount) - discountAmount);
@@ -88,13 +95,13 @@ const Recibo = () => {
   setBuyerEmail("");
   setBuyerPhone("");
   setTotalAmount("");
-  setDate(getColombiaDate());
+  // ✅ USAR FECHA DEL SERVIDOR
+  setDate(getDateForInput(serverTime) || getColombiaDate());
   setCashGiven("");
   setChange(0);
   setDiscount(0);
   setObservations("");
   setIsSubmitted(false);
-  // ✅ LIMPIAR ESTADOS DE RESERVA
   setIsReservation(false);
   setReservationInfo(null);
   setShowReservationPopup(false);
@@ -154,33 +161,44 @@ const Recibo = () => {
 
   // ✅ EFFECTS
   useEffect(() => {
-    if (!order || order.id_orderDetail !== idOrder) {
-      dispatch(fetchOrdersByIdOrder(idOrder));
+  // ✅ OBTENER TIEMPO DEL SERVIDOR AL INICIALIZAR
+  dispatch(getServerTime());
+  
+  if (!order || order.id_orderDetail !== idOrder) {
+    dispatch(fetchOrdersByIdOrder(idOrder));
+  }
+  if (!receiptNumber) {
+    dispatch(fetchLatestReceipt());
+  }
+  dispatch(fetchLatestOrder());
+}, [dispatch, idOrder, order, receiptNumber]);
+
+useEffect(() => {
+  if (serverTime && !serverTime.loading) {
+    const currentServerDate = getServerDate(serverTime);
+    if (currentServerDate) {
+      setDate(getDateForInput(serverTime));
     }
-    if (!receiptNumber) {
-      dispatch(fetchLatestReceipt());
-    }
-    dispatch(fetchLatestOrder());
-  }, [dispatch, idOrder, order, receiptNumber]);
+  }
+}, [serverTime]);
 
  useEffect(() => {
   if (order && order.id_orderDetail === idOrder) {
     setTotalAmount(order.amount);
-    setDate(order.date);
+    // ✅ USAR FECHA DEL SERVIDOR SI ESTÁ DISPONIBLE, SI NO LA DE LA ORDEN
+    const orderDate = getServerDate(serverTime) || order.date;
+    setDate(getDateForInput(serverTime) || order.date);
     
     // ✅ MANEJAR DATOS DEL BUYER/CLIENTE (Usuario con rol "User")
     if (order.User) {
-      // Si la orden tiene relación directa con User
       setBuyerName(`${order.User.first_name} ${order.User.last_name}`);
       setBuyerEmail(order.User.email);
       setBuyerPhone(order.User.phone || "");
     } else if (order.userData) {
-      // Si los datos están en userData
       setBuyerName(`${order.userData.first_name} ${order.userData.last_name}`);
       setBuyerEmail(order.userData.email);
       setBuyerPhone(order.userData.phone || "");
     } else {
-      // Si no hay datos del usuario, dejar vacío para llenar manualmente
       setBuyerName("");
       setBuyerEmail("");
       setBuyerPhone("");
@@ -191,7 +209,7 @@ const Recibo = () => {
     setShowSecondPayment(false);
     setPaymentMethod2("");
   }
-}, [order, idOrder, dispatch]);
+}, [order, idOrder, dispatch, serverTime]);
 
 
   useEffect(() => {
@@ -597,9 +615,15 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
 };
 
   // ✅ MANEJO DE LOADING Y ERRORES
-  if (loading || userLoading || cashierLoading || receiptsLoading) {
-    return <p>Cargando detalles de la orden...</p>;
-  }
+  if (loading || userLoading || cashierLoading || receiptsLoading || serverTime?.loading) {
+  return (
+    <ServerTimeSync showDebug={false}>
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Cargando detalles de la orden...</p>
+      </div>
+    </ServerTimeSync>
+  );
+}
 
   if (error || userError || cashierError || receiptsError) {
     const getErrorMsg = (err) =>
@@ -623,6 +647,7 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
   }
 
   return (
+    <ServerTimeSync showDebug={false}>
     <div>
       <div className="flex justify-between items-center mb-6">
         <button
@@ -637,6 +662,17 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
         <h2 className="text-2xl font-semibold text-center mb-4">
           Formulario de Recibo
         </h2>
+
+        {/* ✅ AGREGAR INFORMACIÓN DE FECHA DEL SERVIDOR */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <p className="text-sm text-blue-800">
+            <strong>📅 Fecha actual del servidor (Colombia):</strong>{" "}
+            {formatDateForDisplay(getServerDate(serverTime))}
+          </p>
+          <p className="text-xs text-blue-600 mt-1">
+            🕒 Zona horaria: America/Bogota (UTC-5)
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Número de Recibo */}
@@ -930,9 +966,13 @@ if (userInfo?.n_document || cashierInfo?.n_document) { // ✅ CORREGIDO: user �
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              max={getDateForInput(serverTime)}
               required
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {formatDateForDisplay(date)}
+            </p>
           </div>
 
           {/* Botones */}
@@ -1116,6 +1156,7 @@ onSubmit={async (reservationData) => {
 )}
       </div>
     </div>
+    </ServerTimeSync>
   );
 };
 

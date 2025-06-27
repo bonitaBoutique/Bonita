@@ -1,31 +1,56 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getColombiaDate, formatDateForDisplay, isValidDate } from "../utils/dateUtils";
+import { 
+  getServerDate, 
+  formatDateForDisplay, 
+  isValidDate, 
+  validateDateNotFuture,
+  getDateForInput 
+} from "../utils/dateUtils";
 import Swal from "sweetalert2";
 import {
   fetchProducts,
   fetchFilteredProducts,
   createOrder,
   updateOrderState,
+  getServerTime,
+  fetchUserByDocument  // ✅ USAR fetchUser en lugar de verifyUserByDocument
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
+import ServerTimeSync from "./ServerTimeSync";
 
 const Caja = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // ✅ SELECTORES CON SERVIDOR TIME Y USER
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
   const searchTerm = useSelector((state) => state.searchTerm);
+  const serverTime = useSelector((state) => state.serverTime);
+  const userTaxxa = useSelector((state) => state.userTaxxa); // ✅ USAR userTaxxa
 
-  // ✅ Estados mejorados con fecha de Colombia
-  const [orderDate, setOrderDate] = useState(() => getColombiaDate());
+  // ✅ ESTADOS BÁSICOS
+  const [orderDate, setOrderDate] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [productCodes, setProductCodes] = useState("");
   const [nDocument, setNDocument] = useState("");
   const [formErrors, setFormErrors] = useState({});
+  
+  // ✅ ESTADO SIMPLE para tracking de validación
+  const [documentValidated, setDocumentValidated] = useState(false);
+  const [validationTimeout, setValidationTimeout] = useState(null);
+
+  // ✅ INICIALIZAR FECHA DEL SERVIDOR
+  useEffect(() => {
+    if (serverTime?.current?.date && !orderDate) {
+      const serverDate = serverTime.current.date;
+      console.log('🕒 [Caja] Inicializando con fecha del servidor:', serverDate);
+      setOrderDate(serverDate);
+    }
+  }, [serverTime?.current?.date]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -35,21 +60,160 @@ const Caja = () => {
     }
   }, [dispatch, searchTerm]);
 
-  // ✅ Depuración mejorada para fechas
+  // ✅ LOGS DE DEBUG
   useEffect(() => {
-    console.log("Fecha inicial de Colombia:", orderDate);
-    console.log("Fecha formateada para mostrar:", formatDateForDisplay(orderDate));
-  }, [orderDate]);
+    console.log("🕒 [Caja] Estado actual:");
+    console.log("- Fecha del servidor:", serverTime?.current?.date);
+    console.log("- Fecha seleccionada:", orderDate);
+    console.log("- Usuario validado:", userTaxxa);
+  }, [orderDate, serverTime, userTaxxa]);
 
   const filteredProducts = products.filter((product) => product.stock > 0);
 
-  // ✅ Limpiar errores cuando se corrigen
+  // ✅ LIMPIAR ERRORES
   const clearError = (field) => {
     if (formErrors[field]) {
       setFormErrors(prev => {
         const { [field]: removed, ...rest } = prev;
         return rest;
       });
+    }
+  };
+
+  // ✅ VERIFICAR USUARIO usando fetchUser existente
+  const verifyUserDocument = async (document) => {
+    if (!document || document.length < 8) return;
+
+    console.log('🔍 [Caja] Verificando usuario con documento:', document);
+    
+    try {
+      await dispatch(fetchUser(document));
+    } catch (error) {
+      console.log('❌ [Caja] Error verificando usuario:', error);
+    }
+  };
+
+  // ✅ EFECTO para manejar respuesta de verificación de usuario
+  useEffect(() => {
+    if (documentValidated && nDocument.length >= 8) {
+      if (userTaxxa.userInfo && !userTaxxa.loading && !userTaxxa.error) {
+        // ✅ Usuario encontrado
+        console.log('✅ [Caja] Usuario encontrado:', userTaxxa.userInfo);
+        
+        Swal.fire({
+          icon: "success",
+          title: "Usuario registrado",
+          html: `
+            <div class="text-left">
+              <p><strong>Nombre:</strong> ${userTaxxa.userInfo.first_name || ''} ${userTaxxa.userInfo.last_name || ''}</p>
+              <p><strong>Email:</strong> ${userTaxxa.userInfo.email || 'No disponible'}</p>
+              <p><strong>Teléfono:</strong> ${userTaxxa.userInfo.phone || 'No disponible'}</p>
+            </div>
+          `,
+          timer: 3000,
+          showConfirmButton: false
+        });
+
+      } else if (!userTaxxa.loading && userTaxxa.error) {
+        // ✅ Usuario no encontrado
+        console.log('❌ [Caja] Usuario no encontrado para documento:', nDocument);
+        
+        Swal.fire({
+          icon: "warning",
+          title: "Usuario no registrado",
+          html: `
+            <p>El documento <strong>${nDocument}</strong> no pertenece a un usuario registrado.</p>
+            <p>¿Deseas continuar con la orden o registrar al usuario?</p>
+          `,
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: "Continuar sin registro",
+          denyButtonText: "Ir a registrar usuario",
+          cancelButtonText: "Cambiar documento",
+          confirmButtonColor: "#10b981",
+          denyButtonColor: "#3b82f6",
+          cancelButtonColor: "#6b7280"
+        }).then((result) => {
+          if (result.isDenied) {
+            // Ir a la página de registro
+            navigate("/register", { 
+              state: { 
+                prefilledDocument: nDocument,
+                returnTo: "/caja"
+              }
+            });
+          } else if (result.isDismissed) {
+            // Limpiar el documento para que pueda cambiar
+            setNDocument("");
+            setDocumentValidated(false);
+          }
+          // Si confirma, continúa con la orden sin registro
+        });
+      }
+      
+      // Resetear flag de validación
+      setDocumentValidated(false);
+    }
+  }, [userTaxxa, documentValidated, nDocument, navigate]);
+
+  // ✅ FUNCIÓN PARA VALIDAR Y CAMBIAR FECHA
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+    console.log('📅 [Caja] Cambiando fecha a:', selectedDate);
+
+    // Validar fecha usando servidor
+    const validation = validateDateNotFuture(selectedDate, serverTime, 'Fecha de orden');
+    
+    if (!validation.valid) {
+      Swal.fire({
+        icon: "error",
+        title: "Fecha inválida",
+        text: validation.message,
+      });
+      return;
+    }
+
+    // Validar que no sea una fecha muy antigua (más de 30 días atrás)
+    const today = new Date(getServerDate(serverTime));
+    const selected = new Date(selectedDate);
+    const diffDays = Math.floor((today - selected) / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 30) {
+      Swal.fire({
+        icon: "warning",
+        title: "Fecha muy antigua",
+        text: "No se pueden crear órdenes con más de 30 días de antigüedad.",
+      });
+      return;
+    }
+
+    setOrderDate(selectedDate);
+    clearError('date');
+    console.log('✅ [Caja] Fecha actualizada a:', selectedDate);
+  };
+
+  // ✅ MANEJAR CAMBIO DE DOCUMENTO CON VALIDACIÓN USANDO fetchUser
+  const handleDocumentChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ''); // Solo números
+    setNDocument(value);
+    clearError('document');
+
+    // Limpiar timeout anterior
+    if (validationTimeout) {
+      clearTimeout(validationTimeout);
+    }
+
+    // Verificar usuario si el documento tiene la longitud mínima
+    if (value.length >= 8) {
+      // Usar debounce para evitar múltiples llamadas
+      const timeoutId = setTimeout(() => {
+        setDocumentValidated(true);
+        verifyUserDocument(value);
+      }, 1500); // 1.5 segundos de debounce
+
+      setValidationTimeout(timeoutId);
+    } else {
+      setDocumentValidated(false);
     }
   };
 
@@ -93,7 +257,6 @@ const Caja = () => {
       
       if (product) {
         if (product.stock > 0) {
-          // Verificar si el producto ya está seleccionado
           const existingProduct = selectedProducts.find(p => p.id_product === id_product);
           
           if (existingProduct) {
@@ -214,58 +377,23 @@ const Caja = () => {
     });
   };
 
-  // ✅ Validar fecha cuando cambia
-  const handleDateChange = (e) => {
-    const selectedDate = e.target.value;
-    
-    if (!isValidDate(selectedDate)) {
-      setFormErrors(prev => ({ ...prev, date: "Fecha inválida" }));
-      Swal.fire({
-        icon: "error",
-        title: "Fecha inválida",
-        text: "Por favor selecciona una fecha válida.",
-      });
-      return;
-    }
-
-    // Validar que no sea una fecha muy antigua (más de 30 días atrás)
-    const today = new Date(getColombiaDate());
-    const selected = new Date(selectedDate);
-    const diffDays = Math.floor((today - selected) / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 30) {
-      Swal.fire({
-        icon: "warning",
-        title: "Fecha muy antigua",
-        text: "No se pueden crear órdenes con más de 30 días de antigüedad.",
-      });
-      return;
-    }
-
-    setOrderDate(selectedDate);
-    clearError('date');
-    console.log("Fecha seleccionada (Colombia):", selectedDate);
-    console.log("Fecha formateada:", formatDateForDisplay(selectedDate));
-  };
-
-  const handleDocumentChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Solo números
-    setNDocument(value);
-    clearError('document');
-  };
-
-  // ✅ Validación completa del formulario
+  // ✅ VALIDACIÓN SIMPLIFICADA DEL FORMULARIO
   const validateForm = () => {
     const errors = {};
 
     if (!nDocument.trim()) {
       errors.document = "El número de documento es requerido";
-    } else if (nDocument.length < 6) {
-      errors.document = "El número de documento debe tener al menos 6 dígitos";
+    } else if (nDocument.length < 8) {
+      errors.document = "El número de documento debe tener al menos 8 dígitos";
     }
 
     if (!isValidDate(orderDate)) {
       errors.date = "Selecciona una fecha válida";
+    } else {
+      const validation = validateDateNotFuture(orderDate, serverTime, 'Fecha de orden');
+      if (!validation.valid) {
+        errors.date = validation.message;
+      }
     }
 
     if (selectedProducts.length === 0) {
@@ -314,9 +442,9 @@ const Caja = () => {
       quantity: product.quantity || 1,
     }));
 
-    // ✅ Datos con fecha correcta de Colombia
+    // ✅ DATOS CON FECHA DEL SERVIDOR
     const orderDataToSend = {
-      date: orderDate, // Ya está en formato YYYY-MM-DD de Colombia
+      date: orderDate,
       amount: totalPrice,
       quantity: totalQuantity,
       state_order: "Pedido Realizado",
@@ -328,7 +456,11 @@ const Caja = () => {
       pointOfSale: "Local",
     };
 
-    console.log("Enviando orden con fecha de Colombia:", orderDataToSend);
+    console.log("📤 [Caja] Enviando orden:", {
+      ...orderDataToSend,
+      serverDate: serverTime?.current?.date,
+      userFound: userTaxxa.userInfo ? true : false
+    });
 
     // Mostrar loading
     Swal.fire({
@@ -343,7 +475,7 @@ const Caja = () => {
 
     try {
       const orderDetail = await dispatch(createOrder(orderDataToSend));
-      console.log("Respuesta del backend:", orderDetail);
+      console.log("✅ [Caja] Respuesta del backend:", orderDetail);
 
       if (orderDetail && orderDetail.id_orderDetail) {
         Swal.fire({
@@ -358,12 +490,13 @@ const Caja = () => {
         setSelectedProducts([]);
         setProductCodes("");
         setNDocument("");
-        setOrderDate(getColombiaDate());
+        setOrderDate(getServerDate(serverTime));
         setFormErrors({});
+        setDocumentValidated(false);
 
         navigate(`/receipt/${orderDetail.id_orderDetail}`);
       } else {
-        console.error("Estructura de respuesta inválida:", orderDetail);
+        console.error("❌ [Caja] Estructura de respuesta inválida:", orderDetail);
         Swal.fire({
           title: "Error",
           text: "No se recibió el detalle de la orden correctamente",
@@ -371,22 +504,9 @@ const Caja = () => {
         });
       }
     } catch (error) {
-      console.error("Error al crear la orden:", error);
+      console.error("❌ [Caja] Error al crear la orden:", error);
       
-      if (error.message && error.message.includes("Usuario no registrado")) {
-        Swal.fire({
-          title: "Usuario no registrado",
-          text: "¿Deseas registrarte ahora?",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Registrarse",
-          cancelButtonText: "Cancelar",
-        }).then((result) => {
-          if (result.isConfirmed) {
-            navigate("/register");
-          }
-        });
-      } else if (error.message && error.message.includes("Stock insuficiente")) {
+      if (error.message && error.message.includes("Stock insuficiente")) {
         Swal.fire({
           title: "Stock insuficiente",
           text: "Algunos productos no tienen stock suficiente. Por favor revisa las cantidades.",
@@ -402,263 +522,321 @@ const Caja = () => {
     }
   };
 
-  // ✅ Estados de carga y error mejorados
-  if (loading) {
+  // ✅ ESTADOS DE CARGA MEJORADOS
+  if (loading || serverTime?.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-200">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando productos...</p>
+      <ServerTimeSync showDebug={false}>
+        <div className="min-h-screen flex items-center justify-center bg-slate-200">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">
+              {serverTime?.loading ? 'Sincronizando con servidor...' : 'Cargando productos...'}
+            </p>
+          </div>
         </div>
-      </div>
+      </ServerTimeSync>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-200">
-        <div className="text-center">
-          <p className="text-red-600 text-lg mb-4">Error: {error}</p>
-          <button
-            onClick={() => dispatch(fetchProducts())}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Reintentar
-          </button>
+      <ServerTimeSync showDebug={false}>
+        <div className="min-h-screen flex items-center justify-center bg-slate-200">
+          <div className="text-center">
+            <p className="text-red-600 text-lg mb-4">Error: {error}</p>
+            <button
+              onClick={() => dispatch(fetchProducts())}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Reintentar
+            </button>
+          </div>
         </div>
-      </div>
+      </ServerTimeSync>
     );
   }
 
   if (filteredProducts.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-slate-200 py-16">
-        <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">No hay productos disponibles con stock.</p>
-          <button
-            onClick={() => dispatch(fetchProducts())}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Actualizar productos
-          </button>
+      <ServerTimeSync showDebug={false}>
+        <div className="min-h-screen flex flex-col justify-center items-center bg-slate-200 py-16">
+          <div className="text-center">
+            <p className="text-gray-600 text-lg mb-4">No hay productos disponibles con stock.</p>
+            <button
+              onClick={() => dispatch(fetchProducts())}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Actualizar productos
+            </button>
+          </div>
         </div>
-      </div>
+      </ServerTimeSync>
     );
   }
 
   const { totalPrice, totalQuantity } = calculateTotals();
 
+  // ✅ FUNCIÓN para determinar el estado visual del input de documento
+  const getDocumentInputClass = () => {
+    if (formErrors.document) {
+      return 'border-red-500 focus:ring-red-500';
+    }
+    
+    if (nDocument.length >= 8) {
+      if (userTaxxa.loading) {
+        return 'border-blue-500 focus:ring-blue-500';
+      } else if (userTaxxa.userInfo && !userTaxxa.error) {
+        return 'border-green-500 focus:ring-green-500';
+      } else if (userTaxxa.error) {
+        return 'border-orange-500 focus:ring-orange-500';
+      }
+    }
+    
+    return 'border-gray-300 focus:ring-blue-500';
+  };
+
   return (
-    <div className="p-6 pt-20 bg-slate-200 min-h-screen">
-      <Navbar2 />
-      
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Crear Nueva Orden</h2>
+    <ServerTimeSync showDebug={false}>
+      <div className="p-6 pt-20 bg-slate-200 min-h-screen">
+        <Navbar2 />
+        
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-semibold mb-6 text-center">
+            Crear Nueva Orden
+          </h2>
 
-        {/* Información de fecha actual */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <p className="text-sm text-gray-600">
-            <strong>Fecha actual de Colombia:</strong> {formatDateForDisplay(getColombiaDate())}
-          </p>
-        </div>
+          {/* ✅ INFORMACIÓN DE FECHA ACTUAL DEL SERVIDOR */}
+          <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+            <p className="text-sm text-gray-600">
+              <strong>Fecha actual del servidor:</strong> {formatDateForDisplay(getServerDate(serverTime))}
+            </p>
+          </div>
 
-        {/* Input para los códigos de productos */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-          <h3 className="text-lg font-medium mb-4">Agregar Productos</h3>
-          <div className="mb-4">
-            <input
-              type="text"
-              value={productCodes}
-              onChange={handleProductCodesChange}
-              placeholder="Ingresa los códigos de los productos separados por coma (ej: PROD001, PROD002)"
-              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                formErrors.products 
-                  ? 'border-red-500 focus:ring-red-500' 
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-            />
-            {formErrors.products && (
-              <p className="text-red-500 text-sm mt-1">{formErrors.products}</p>
-            )}
+          {/* Input para los códigos de productos */}
+          <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h3 className="text-lg font-medium mb-4">Agregar Productos</h3>
+            <div className="mb-4">
+              <input
+                type="text"
+                value={productCodes}
+                onChange={handleProductCodesChange}
+                placeholder="Ingresa los códigos de los productos separados por coma (ej: PROD001, PROD002)"
+                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                  formErrors.products 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
+              />
+              {formErrors.products && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.products}</p>
+              )}
+              <button
+                onClick={handleAddProducts}
+                className="mt-3 w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300 font-medium"
+              >
+                Agregar Productos
+              </button>
+            </div>
+          </div>
+
+          {/* Mostrar productos seleccionados */}
+          {selectedProducts.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+              <h3 className="text-xl font-medium mb-4">
+                Productos Seleccionados ({selectedProducts.length})
+              </h3>
+              <div className="space-y-4">
+                {selectedProducts.map((product) => (
+                  <div
+                    key={product.id_product}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
+                  >
+                    <div className="flex items-center flex-1">
+                      {product.Images && product.Images.length > 0 && (
+                        <img
+                          src={product.Images[0].url}
+                          alt={product.description}
+                          className="w-16 h-16 mr-4 rounded-lg object-cover"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="text-lg font-semibold">{product.description}</p>
+                        <p className="text-sm text-gray-600">Código: {product.id_product}</p>
+                        <p className="text-sm text-gray-600">
+                          Precio: ${product.priceSell.toLocaleString("es-CO")}
+                        </p>
+                        <p className="text-sm text-gray-600">Stock: {product.stock} unidades</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <div className="text-center">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cantidad
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={product.stock}
+                          value={product.quantity || 1}
+                          onChange={(e) =>
+                            handleQuantityChange(
+                              product.id_product,
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-20 p-2 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-700">Subtotal</p>
+                        <p className="text-lg font-bold">
+                          ${(product.priceSell * (product.quantity || 1)).toLocaleString("es-CO")}
+                        </p>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleRemoveProduct(product.id_product)}
+                        className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-300"
+                        title="Eliminar producto"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ✅ INFORMACIÓN DEL CLIENTE Y FECHA CON VALIDACIÓN */}
+          <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+            <h3 className="text-lg font-medium mb-4">Información de la Orden</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ✅ NÚMERO DE DOCUMENTO CON VALIDACIÓN USANDO fetchUser */}
+              <div>
+                <label htmlFor="n_document" className="block text-sm font-medium text-gray-700 mb-2">
+                  Número de Documento *
+                </label>
+                <input
+                  type="text"
+                  id="n_document"
+                  value={nDocument}
+                  onChange={handleDocumentChange}
+                  placeholder="Ej: 12345678"
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${getDocumentInputClass()}`}
+                />
+                
+                {/* ✅ INDICADORES DE VALIDACIÓN */}
+                {nDocument.length >= 8 && userTaxxa.loading && (
+                  <p className="text-blue-500 text-sm mt-1 flex items-center">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></span>
+                    Verificando usuario...
+                  </p>
+                )}
+                
+                {nDocument.length >= 8 && userTaxxa.userInfo && !userTaxxa.loading && !userTaxxa.error && (
+                  <p className="text-green-600 text-sm mt-1 flex items-center">
+                    ✅ Usuario registrado: {userTaxxa.userInfo.first_name} {userTaxxa.userInfo.last_name}
+                  </p>
+                )}
+                
+                {nDocument.length >= 8 && !userTaxxa.loading && userTaxxa.error && (
+                  <p className="text-orange-600 text-sm mt-1 flex items-center">
+                    ⚠️ Usuario no registrado (puedes continuar)
+                  </p>
+                )}
+                
+                {formErrors.document && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.document}</p>
+                )}
+              </div>
+
+              {/* ✅ FECHA DEL PEDIDO CON SERVIDOR */}
+              <div>
+                <label htmlFor="order_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha del Pedido *
+                </label>
+                <input
+                  type="date"
+                  id="order_date"
+                  value={orderDate}
+                  onChange={handleDateChange}
+                  min={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  max={getDateForInput(serverTime)}
+                  className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                    formErrors.date 
+                      ? 'border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Fecha seleccionada: {formatDateForDisplay(orderDate)}
+                </p>
+                {formErrors.date && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Resumen de totales */}
+          {selectedProducts.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+              <h3 className="text-lg font-semibold mb-4">Resumen del Pedido</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Total de productos:</span>
+                  <span className="font-bold">{totalQuantity} unidades</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span className="font-bold">${totalPrice.toLocaleString("es-CO")}</span>
+                </div>
+                <div className="border-t pt-2">
+                  <div className="flex justify-between text-lg">
+                    <span className="font-semibold">Total a Pagar:</span>
+                    <span className="font-bold text-green-600">
+                      ${totalPrice.toLocaleString("es-CO")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ✅ BOTÓN DE CONFIRMAR CON SINCRONIZACIÓN */}
+          <div className="flex gap-4 mb-6">
+            <form onSubmit={handleSubmit} className="flex-1">
+              <button
+                type="submit"
+                disabled={selectedProducts.length === 0 || !nDocument || !orderDate}
+                className={`w-full p-4 text-white rounded-lg font-medium transition duration-300 ${
+                  selectedProducts.length === 0 || !nDocument || !orderDate
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                {selectedProducts.length === 0 
+                  ? 'Selecciona productos para continuar'
+                  : `Confirmar Pedido - ${totalPrice.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`
+                }
+              </button>
+            </form>
+            
             <button
-              onClick={handleAddProducts}
-              className="mt-3 w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300 font-medium"
+              onClick={() => dispatch(getServerTime())}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition duration-300"
+              title="Sincronizar con servidor"
             >
-              Agregar Productos
+              🕒 Sync
             </button>
           </div>
         </div>
-
-        {/* Mostrar productos seleccionados */}
-        {selectedProducts.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-            <h3 className="text-xl font-medium mb-4">
-              Productos Seleccionados ({selectedProducts.length})
-            </h3>
-            <div className="space-y-4">
-              {selectedProducts.map((product) => (
-                <div
-                  key={product.id_product}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border"
-                >
-                  <div className="flex items-center flex-1">
-                    {product.Images && product.Images.length > 0 && (
-                      <img
-                        src={product.Images[0].url}
-                        alt={product.description}
-                        className="w-16 h-16 mr-4 rounded-lg object-cover"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-lg font-semibold">{product.description}</p>
-                      <p className="text-sm text-gray-600">Código: {product.id_product}</p>
-                      <p className="text-sm text-gray-600">
-                        Precio: ${product.priceSell.toLocaleString("es-CO")}
-                      </p>
-                      <p className="text-sm text-gray-600">Stock: {product.stock} unidades</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="text-center">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cantidad
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={product.stock}
-                        value={product.quantity || 1}
-                        onChange={(e) =>
-                          handleQuantityChange(
-                            product.id_product,
-                            Number(e.target.value)
-                          )
-                        }
-                        className="w-20 p-2 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-gray-700">Subtotal</p>
-                      <p className="text-lg font-bold">
-                        ${(product.priceSell * (product.quantity || 1)).toLocaleString("es-CO")}
-                      </p>
-                    </div>
-                    
-                    <button
-                      onClick={() => handleRemoveProduct(product.id_product)}
-                      className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-300"
-                      title="Eliminar producto"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Información del cliente y fecha */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-          <h3 className="text-lg font-medium mb-4">Información de la Orden</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Número de documento */}
-            <div>
-              <label htmlFor="n_document" className="block text-sm font-medium text-gray-700 mb-2">
-                Número de Documento *
-              </label>
-              <input
-                type="text"
-                id="n_document"
-                value={nDocument}
-                onChange={handleDocumentChange}
-                placeholder="Ej: 12345678"
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                  formErrors.document 
-                    ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-              />
-              {formErrors.document && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.document}</p>
-              )}
-            </div>
-
-            {/* Fecha del pedido */}
-            <div>
-              <label htmlFor="order_date" className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha del Pedido *
-              </label>
-              <input
-                type="date"
-                id="order_date"
-                value={orderDate}
-                onChange={handleDateChange}
-                min={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Hasta 30 días atrás
-                max={getColombiaDate()} // No fechas futuras
-                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${
-                  formErrors.date 
-                    ? 'border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:ring-blue-500'
-                }`}
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Fecha seleccionada: {formatDateForDisplay(orderDate)}
-              </p>
-              {formErrors.date && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.date}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Resumen de totales */}
-        {selectedProducts.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-            <h3 className="text-lg font-semibold mb-4">Resumen del Pedido</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Total de productos:</span>
-                <span className="font-bold">{totalQuantity} unidades</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span className="font-bold">${totalPrice.toLocaleString("es-CO")}</span>
-              </div>
-              <div className="border-t pt-2">
-                <div className="flex justify-between text-lg">
-                  <span className="font-semibold">Total a Pagar:</span>
-                  <span className="font-bold text-green-600">
-                    ${totalPrice.toLocaleString("es-CO")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Botón de confirmar */}
-        <form onSubmit={handleSubmit}>
-          <button
-            type="submit"
-            disabled={selectedProducts.length === 0 || !nDocument || !orderDate}
-            className={`w-full p-4 text-white rounded-lg font-medium transition duration-300 ${
-              selectedProducts.length === 0 || !nDocument || !orderDate
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-500 hover:bg-green-600'
-            }`}
-          >
-            {selectedProducts.length === 0 
-              ? 'Selecciona productos para continuar'
-              : `Confirmar Pedido - ${totalPrice.toLocaleString("es-CO", { style: "currency", currency: "COP" })}`
-            }
-          </button>
-        </form>
       </div>
-    </div>
+    </ServerTimeSync>
   );
 };
 

@@ -10,6 +10,12 @@ const { getProductStock, createProduct, getStock,  returnProducts,
     getReceiptForReturn,
     getReturnHistory } = require("./Products");
 
+    const { 
+  getServerTime, 
+  getDateRange, 
+  getSystemInfo 
+} = require("./systemController");
+
 const {
   createReceipt, 
   lastReceipt, 
@@ -128,4 +134,8 @@ module.exports = {
   returnProducts: catchedAsync(require("./Products/returnProducts")),
   getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),
   getReturnHistory: catchedAsync(require("./Products/getReturnHistory")),
+  
+   getServerTime: catchedAsync(getServerTime),
+  getDateRange: catchedAsync(getDateRange),
+  getSystemInfo: catchedAsync(getSystemInfo),
 };

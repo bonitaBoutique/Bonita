@@ -1,22 +1,29 @@
 const { Receipt, OrderDetail, Product, Payment } = require("../../data");
-const { formatDateForDB } = require("../../utils/dateUtils");
+const { formatDateForDB, getColombiaDate } = require("../../utils/dateUtils"); // ✅ IMPORTAR getColombiaDate
 
 module.exports = async (req, res) => {
+  // ✅ OBTENER FECHA DEL SERVIDOR
+  const serverDate = getColombiaDate();
+  
   const {
     id_orderDetail,
     buyer_name,
     buyer_email,
     buyer_phone,
     total_amount,
-    date,
+    date, // ✅ Fecha del cliente (para logging)
     payMethod,
     amount,
     amount2,
     payMethod2,
     cashier_document,
     actualPaymentMethod,
-    discount = 0, // <-- Nuevo campo
+    discount = 0,
   } = req.body;
+
+  // ✅ LOGS DE FECHA
+  console.log('🕒 [CREATE RECEIPT] Fecha del cliente:', date);
+  console.log('🕒 [CREATE RECEIPT] Fecha del servidor (Colombia):', serverDate);
 
   // Validaciones iniciales
   const validPayMethods = [
@@ -36,7 +43,6 @@ module.exports = async (req, res) => {
     !buyer_name ||
     !buyer_email ||
     !total_amount ||
-    !date ||
     !payMethod
   ) {
     return res.status(400).json({ message: "Todos los campos son obligatorios" });
@@ -69,7 +75,7 @@ module.exports = async (req, res) => {
         buyer_email,
         buyer_phone,
         total_amount,
-        date: formatDateForDB(date), // ✅ Fecha correcta
+        date: formatDateForDB(serverDate), // ✅ Fecha del servidor
         payMethod: "GiftCard",
         amount,
         amount2: null,
@@ -77,7 +83,6 @@ module.exports = async (req, res) => {
         receipt_number: receiptNumber,
         cashier_document,
       });
-
 
       // Crear el Payment asociado
        await Payment.create({
@@ -87,18 +92,25 @@ module.exports = async (req, res) => {
         amount,
         payMethod: actualPaymentMethod,
         payment_state: "Pago",
-        date: formatDateForDB(date), // ✅ Fecha correcta
+        date: formatDateForDB(serverDate), // ✅ Fecha del servidor
         receipt_number: receiptNumber,
         cashier_document,
       });
+
+      console.log('🟢 [CREATE RECEIPT] GiftCard creado con fecha del servidor:', serverDate);
 
       return res.status(201).json({
         message: "Recibo de GiftCard creado exitosamente",
         receipt,
         products: [],
+        serverInfo: {
+          clientDate: date,
+          serverDate: serverDate,
+          timezone: 'America/Bogota'
+        }
       });
     } catch (error) {
-      console.error("Error al crear el recibo GiftCard:", error.message);
+      console.error("❌ [CREATE RECEIPT] Error al crear el recibo GiftCard:", error.message);
       return res.status(500).json({ message: "Error al crear el recibo GiftCard" });
     }
   }
@@ -146,7 +158,7 @@ module.exports = async (req, res) => {
       buyer_email,
       buyer_phone,
       total_amount: totalConDescuento,
-      date: formatDateForDB(date), // ✅ Fecha correcta
+      date: formatDateForDB(serverDate), // ✅ Fecha del servidor
       payMethod,
       amount,
       amount2: amount2 || null,
@@ -156,18 +168,26 @@ module.exports = async (req, res) => {
       discount,
     });
 
+    console.log('🟢 [CREATE RECEIPT] Recibo creado con fecha del servidor:', {
+      receiptNumber,
+      clientDate: date,
+      serverDate: serverDate,
+      timezone: 'America/Bogota'
+    });
+
     return res.status(201).json({
       message: "Recibo creado exitosamente",
       receipt,
       products: order.products || [],
+      serverInfo: {
+        clientDate: date,
+        serverDate: serverDate,
+        timezone: 'America/Bogota'
+      }
     });
 
   } catch (error) {
-    console.error("Error al crear el recibo:", error.message);
+    console.error("❌ [CREATE RECEIPT] Error al crear el recibo:", error.message);
     return res.status(500).json({ message: "Error al crear el recibo" });
   }
-}
-
-
-
-
+};

@@ -2,7 +2,7 @@ const { OrderDetail, Product, StockMovement, User, Reservation } = require("../.
 const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
-const { formatDateForDB } = require("../../utils/dateUtils");
+const { formatDateForDB, getColombiaDate } = require("../../utils/dateUtils"); // ✅ IMPORTAR getColombiaDate
 const secretoIntegridad = "prod_integrity_LpUoK811LHCRNykBpQQp67JwmjESi7OD";
 
 // ✅ FUNCIÓN HELPER PARA FORMATEAR FECHA
@@ -20,12 +20,15 @@ function generarFirmaIntegridad(referencia, montoEnCentavos, moneda, secretoInte
 
 module.exports = async (req, res) => {
   try {
+    // ✅ OBTENER FECHA DEL SERVIDOR
+    const serverDate = getColombiaDate();
+    
     // ✅ OBTENER orderId DESDE PARAMS O BODY
     let orderId = req.params.orderId || req.params.id;
     
     const {
       // Campos básicos de orden
-      date,
+      date, // ✅ Fecha del cliente (para logging)
       amount,
       quantity,
       state_order,
@@ -52,6 +55,10 @@ module.exports = async (req, res) => {
       buyer_phone,
       paymentMethod
     } = req.body;
+
+    // ✅ LOGS DE FECHA
+    console.log('🕒 [RESERVATION] Fecha del cliente:', date);
+    console.log('🕒 [RESERVATION] Fecha del servidor (Colombia):', serverDate);
 
     // ✅ SI NO HAY orderId EN PARAMS, USAR EL DEL BODY
     if (!orderId && id_orderDetail) {
@@ -119,12 +126,12 @@ module.exports = async (req, res) => {
         return response(res, 400, { error: "Ya existe una reserva para esta orden" });
       }
 
-      // ✅ CREAR LA RESERVA
+      // ✅ CREAR LA RESERVA CON FECHA DEL SERVIDOR
       const reservationData = {
         id_orderDetail: orderId,
         n_document: n_document,
         partialPayment: Number(partialPayment),
-        dueDate: formatDateForDB(dueDate),
+        dueDate: formatDateForDB(dueDate), // ✅ Mantener dueDate del cliente
         totalPaid: Number(partialPayment),
         remainingAmount: Number(existingOrder.amount) - Number(partialPayment),
         status: 'Pendiente',
@@ -132,7 +139,9 @@ module.exports = async (req, res) => {
         buyer_name: buyer_name,
         buyer_email: buyer_email,
         buyer_phone: buyer_phone,
-        cashier_document: cashier_document
+        cashier_document: cashier_document,
+        // ✅ AGREGAR fecha de creación del servidor
+        createdAt: serverDate
       };
 
       console.log('🟣 [BACK] Creando reserva con datos:', reservationData);
@@ -141,6 +150,7 @@ module.exports = async (req, res) => {
       try {
         newReservation = await Reservation.create(reservationData);
         console.log('🟢 [BACK] Reserva creada exitosamente:', newReservation.id);
+        console.log('🟢 [BACK] Fecha de creación (servidor):', serverDate);
       } catch (reservationCreateError) {
         console.log('🟡 [BACK] Error creando reserva (usando simulación):', reservationCreateError.message);
         newReservation = {
@@ -149,7 +159,8 @@ module.exports = async (req, res) => {
           partialPayment: Number(partialPayment),
           remainingAmount: Number(existingOrder.amount) - Number(partialPayment),
           dueDate: dueDate,
-          status: 'Pendiente'
+          status: 'Pendiente',
+          createdAt: serverDate
         };
         console.log('🟡 [BACK] Usando reserva simulada:', newReservation);
       }
@@ -160,7 +171,7 @@ module.exports = async (req, res) => {
       try {
         await existingOrder.update({
           state_order: 'Reserva a Crédito',
-          transaction_status: 'Pendiente' // ✅ VALOR VÁLIDO: "Pendiente", "Aprobado", "Rechazado", "Fallido", "Cancelado"
+          transaction_status: 'Pendiente'
         });
 
         console.log('🟢 [BACK] Orden actualizada exitosamente:');
@@ -168,7 +179,6 @@ module.exports = async (req, res) => {
         console.log('🟢 [BACK] - transaction_status: "Pendiente"');
       } catch (updateError) {
         console.log('🔴 [BACK] Error actualizando orden:', updateError.message);
-        // Continuar sin error crítico
       }
 
       return response(res, 201, {
@@ -179,12 +189,18 @@ module.exports = async (req, res) => {
           partialPayment: newReservation.partialPayment,
           remainingAmount: newReservation.remainingAmount,
           dueDate: formatDateForDisplay(newReservation.dueDate),
-          status: newReservation.status
+          status: newReservation.status,
+          createdAt: serverDate // ✅ Fecha del servidor
         },
         order: {
           id_orderDetail: existingOrder.id_orderDetail,
           state_order: 'Reserva a Crédito',
           amount: existingOrder.amount
+        },
+        serverInfo: {
+          clientDate: date,
+          serverDate: serverDate,
+          timezone: 'America/Bogota'
         }
       });
     }
@@ -193,7 +209,7 @@ module.exports = async (req, res) => {
     console.log('🟣 [BACK] Procesando como nueva orden con reserva');
 
     // Validaciones originales para orden nueva
-    if (!date || !amount || !quantity || !state_order || !products || !address) {
+    if (!amount || !quantity || !state_order || !products || !address) {
       console.log('🔴 [BACK] Missing Ordering Data para nueva orden');
       return response(res, 400, { error: "Missing Ordering Data" });
     }

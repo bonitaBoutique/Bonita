@@ -149,19 +149,20 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_RETURN_HISTORY_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
-
+  GET_SERVER_TIME_REQUEST,
+  GET_SERVER_TIME_SUCCESS,
+  GET_SERVER_TIME_FAILURE
 
 } from "../Actions/actions-type";
 
 const initialState = {
- receiptsLoading: false,
+  receiptsLoading: false,
   receiptsError: null,
   receiptsPagination: {
     total: 0,
     pages: 0,
     currentPage: 1
   },
-  // ✅ AGREGAR ESTA LÍNEA:
   receipts: [],
   receiptNumber: null,
   
@@ -187,7 +188,7 @@ const initialState = {
     error: null,
     data: null
   },
- clientAccountBalance: {
+  clientAccountBalance: {
     user: null,
     orderDetails: [],
     loading: false,
@@ -282,12 +283,123 @@ const initialState = {
     totalPages: 0
   },
   filters: {},
-  loading: false,
-  error: null,
-  success: false,
+  // ✅ QUITAR DUPLICADOS: ya tienes loading, error, success arriba
+  // loading: false,
+  // error: null,
+  // success: false,
   creating: false,
-  createError: null
-};
+  createError: null,
+
+  // ✅ AGREGAR serverTime DENTRO del initialState
+  serverTime: {
+    current: null,
+    loading: false,
+    error: null,
+    lastUpdate: null
+  },
+
+  // ✅ AGREGAR otros estados que faltan para el sistema de devoluciones
+  returns: {
+    receiptSearch: {
+      loading: false,
+      receipt: null,
+      canReturn: true,
+      daysSinceReceipt: 0,
+      error: null,
+    },
+    processing: {
+      loading: false,
+      result: null,
+      error: null,
+      success: false,
+    },
+    history: {
+      loading: false,
+      data: [],
+      pagination: null,
+      stats: [],
+      error: null,
+    },
+  },
+
+  // ✅ AGREGAR estados para stock movements
+  stockMovements: {
+    data: [],
+    loading: false,
+    error: null,
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 50,
+      totalPages: 0
+    },
+    filters: {},
+    creating: false,
+    createError: null
+  },
+
+  // ✅ AGREGAR estados para ordersGeneral si no existen
+  ordersGeneral: {
+    loading: false,
+    orders: [],
+    error: null,
+  },
+
+  // ✅ AGREGAR estados para orderById si no existen
+  orderById: {
+    loading: false,
+    order: {},
+    error: null,
+  },
+
+  // ✅ AGREGAR estados para orders si no existen
+  orders: {
+    loading: false,
+    orders: [],
+    error: null,
+  },
+
+  // ✅ AGREGAR estado para order si no existe
+  order: {
+    loading: false,
+    success: false,
+    order: null,
+    error: null,
+  },
+
+  // ✅ AGREGAR estado para latestOrder si no existe
+  latestOrder: {
+    loading: false,
+    success: false,
+    error: null,
+    data: {},
+  },
+
+  // ✅ AGREGAR estado para updateProduct si no existe
+  updateProduct: {
+    loading: false,
+    error: null,
+    product: null,
+  },
+
+  // ✅ AGREGAR estado para accountSummary si no existe
+  accountSummary: {
+    loading: false,
+    data: null,
+    error: null,
+  },
+
+  // ✅ MANTENER searchTerm para compatibilidad
+  searchTerm: "",
+
+  // ✅ AGREGAR paymentMethodBreakdown que se usa en Balance
+  paymentMethodBreakdown: {},
+  cashierTotals: {},
+  debug: null,
+  dateRange: null,
+}; 
+
+ 
   
  
  
@@ -1824,6 +1936,38 @@ case CREATE_SENDING_FAILURE:
           },
         },
       };  
+
+      case GET_SERVER_TIME_REQUEST:
+      return {
+        ...state,
+        serverTime: {
+          ...state.serverTime,
+          loading: true,
+          error: null
+        }
+      };
+
+    case GET_SERVER_TIME_SUCCESS:
+      console.log('🟢 [REDUCER] GET_SERVER_TIME_SUCCESS payload:', action.payload);
+      return {
+        ...state,
+        serverTime: {
+          current: action.payload,
+          loading: false,
+          error: null,
+          lastUpdate: Date.now()
+        }
+      };
+
+    case GET_SERVER_TIME_FAILURE:
+      return {
+        ...state,
+        serverTime: {
+          ...state.serverTime,
+          loading: false,
+          error: action.payload
+        }
+      };
 
           
     default:

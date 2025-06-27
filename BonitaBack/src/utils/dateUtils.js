@@ -1,63 +1,67 @@
+const { DateTime } = require('luxon'); // ✅ USAR LUXON para mejor manejo de zonas horarias
+
+// ✅ NUEVA IMPLEMENTACIÓN MÁS ROBUSTA
 const getColombiaDate = () => {
-  // ✅ USAR toLocaleString con zona horaria específica
-  const now = new Date();
-  const colombiaDate = now.toLocaleString('en-CA', { 
-    timeZone: 'America/Bogota',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).split(',')[0]; // Formato YYYY-MM-DD
-  
-  return colombiaDate;
+  // Usar Luxon para obtener fecha exacta de Colombia
+  return DateTime.now().setZone('America/Bogota').toISODate(); // YYYY-MM-DD
 };
 
 const getColombiaDateTime = () => {
-  // ✅ CREAR FECHA ESPECÍFICA PARA COLOMBIA
-  const now = new Date();
-  return new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  // Retornar DateTime object de Colombia
+  return DateTime.now().setZone('America/Bogota');
 };
 
 const getColombiaDateTimeISO = () => {
-  // ✅ OBTENER FECHA Y HORA COMPLETA EN ISO PARA COLOMBIA
-  const now = new Date();
-  const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-  return colombiaTime.toISOString();
+  // ISO string en zona horaria de Colombia
+  return DateTime.now().setZone('America/Bogota').toISO();
+};
+
+const getColombiaTimestamp = () => {
+  // Timestamp para base de datos
+  return DateTime.now().setZone('America/Bogota').toSQL(); // YYYY-MM-DD HH:mm:ss
+};
+
+// ✅ NUEVA: Obtener rango de fechas para filtros
+const getColombiaDateRange = (startDate = null, endDate = null) => {
+  const today = DateTime.now().setZone('America/Bogota');
+  
+  return {
+    start: startDate ? DateTime.fromISO(startDate).setZone('America/Bogota').toISODate() : today.toISODate(),
+    end: endDate ? DateTime.fromISO(endDate).setZone('America/Bogota').toISODate() : today.toISODate(),
+    todayColombia: today.toISODate(),
+    currentTime: today.toISO()
+  };
+};
+
+// ✅ NUEVA: Para debugging
+const getColombiaDebugInfo = () => {
+  const now = DateTime.now().setZone('America/Bogota');
+  return {
+    date: now.toISODate(),
+    time: now.toISOTime(),
+    iso: now.toISO(),
+    readable: now.toLocaleString(DateTime.DATETIME_FULL, { locale: 'es-CO' }),
+    timezone: 'America/Bogota',
+    offset: now.offset / 60, // Horas de diferencia con UTC
+    timestamp: now.toMillis()
+  };
 };
 
 const formatDateForDB = (dateString) => {
   if (!dateString) return getColombiaDate();
   
-  // Si ya es una fecha válida en formato YYYY-MM-DD, la retorna
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
-  }
-  
-  // ✅ MEJORAR LA CONVERSIÓN
   try {
-    const date = new Date(dateString);
-    // Convertir a fecha de Colombia
-    return date.toLocaleString('en-CA', { 
-      timeZone: 'America/Bogota',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).split(',')[0];
+    // ✅ USAR LUXON para conversión consistente
+    const date = DateTime.fromISO(dateString).setZone('America/Bogota');
+    return date.isValid ? date.toISODate() : getColombiaDate();
   } catch (error) {
     console.error('Error converting date:', error);
     return getColombiaDate();
   }
 };
 
-// ✅ NUEVA FUNCIÓN PARA TIMESTAMPS COMPLETOS
-const getColombiaTimestamp = () => {
-  const now = new Date();
-  return now.toLocaleString('sv-SE', { timeZone: 'America/Bogota' }); // YYYY-MM-DD HH:mm:ss
-};
-
-// ✅ FUNCIÓN PARA VALIDAR FECHAS
 const isValidDate = (dateString) => {
-  const date = new Date(dateString);
-  return date instanceof Date && !isNaN(date.getTime());
+  return DateTime.fromISO(dateString).isValid;
 };
 
 module.exports = {
@@ -66,5 +70,7 @@ module.exports = {
   getColombiaDateTimeISO,
   formatDateForDB,
   getColombiaTimestamp,
+  getColombiaDateRange,
+  getColombiaDebugInfo,
   isValidDate
 };

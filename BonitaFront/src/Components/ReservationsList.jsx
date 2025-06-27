@@ -8,9 +8,21 @@ import {
   updateReservation,
   fetchLatestReceipt,
   fetchOrdersByIdOrder,
+  getServerTime // ✅ AGREGAR getServerTime
 } from "../Redux/Actions/actions";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+
+import {
+  getServerDate,
+  formatDateForDisplay,
+  formatMovementDate,
+  getDateForInput,
+  isValidDate,
+  validateDateNotFuture
+} from "../utils/dateUtils";
+
+import ServerTimeSync from "./ServerTimeSync";
 
 const ReservationList = () => {
   const dispatch = useDispatch();
@@ -19,10 +31,13 @@ const ReservationList = () => {
   const error = useSelector((state) => state.reservation.error);
   const latestReceipt = useSelector((state) => state.receiptNumber);
   
+  // ✅ AGREGAR: Selector para serverTime
+  const serverTime = useSelector((state) => state.serverTime);
+  
   // ✅ CORREGIR: Agregar verificación segura para orderById
   const orderDetails = useSelector((state) => state.orderById?.orderDetail || null);
 
-  // ✅ Estados para filtros
+  // ✅ Estados para filtros CON FECHAS DEL SERVIDOR
   const [filters, setFilters] = useState({
     fechaInicio: '',
     fechaFin: '',
@@ -39,15 +54,90 @@ const ReservationList = () => {
   const [reservationsPerPage] = useState(7);
   const { userInfo } = useSelector((state) => state.userLogin);
 
-  // ✅ Función para aplicar filtros
+
+  
+
+const paginate = (pageNumber) => setCurrentPage(pageNumber);
+const indexOfLastReservation = currentPage * reservationsPerPage;
+const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
+const currentReservations = reservations?.slice(
+  indexOfFirstReservation,
+  indexOfLastReservation
+) || [];
+// ✅ INICIALIZAR fecha del servidor
+  useEffect(() => {
+    dispatch(getServerTime());
+  }, [dispatch]);
+
+  // ✅ INICIALIZAR filtros con fecha del servidor
+  useEffect(() => {
+    if (serverTime?.current?.date && !filters.fechaInicio) {
+      const serverDate = serverTime.current.date;
+      console.log('🕒 [ReservationsList] Inicializando con fecha del servidor:', serverDate);
+      
+      setFilters(prev => ({
+        ...prev,
+        fechaInicio: serverDate,
+        fechaFin: serverDate
+      }));
+    }
+  }, [serverTime?.current?.date]);
+
+  // ✅ Función para aplicar filtros CON VALIDACIÓN DE FECHA
   const handleFilterChange = (filterName, value) => {
+    // ✅ VALIDAR fechas usando servidor
+    if (filterName === 'fechaInicio' || filterName === 'fechaFin') {
+      if (value && !isValidDate(value)) {
+        Swal.fire({
+          icon: "error",
+          title: "Fecha inválida",
+          text: "Por favor selecciona una fecha válida",
+        });
+        return;
+      }
+
+      // Validar que no sea fecha futura
+      if (value) {
+        const validation = validateDateNotFuture(value, serverTime, 
+          filterName === 'fechaInicio' ? 'Fecha de inicio' : 'Fecha de fin');
+        
+        if (!validation.valid) {
+          Swal.fire({
+            icon: "warning",
+            title: "Fecha futura",
+            text: validation.message,
+          });
+          return;
+        }
+      }
+
+      // Validar orden de fechas
+      if (filterName === 'fechaInicio' && filters.fechaFin && value > filters.fechaFin) {
+        Swal.fire({
+          icon: "warning",
+          title: "Fechas inválidas",
+          text: "La fecha de inicio no puede ser mayor que la fecha de fin",
+        });
+        return;
+      }
+
+      if (filterName === 'fechaFin' && filters.fechaInicio && value < filters.fechaInicio) {
+        Swal.fire({
+          icon: "warning",
+          title: "Fechas inválidas", 
+          text: "La fecha de fin no puede ser menor que la fecha de inicio",
+        });
+        return;
+      }
+    }
+
     setFilters(prev => ({
       ...prev,
       [filterName]: value
     }));
   };
 
-  // ✅ Buscar con filtros
+  // ✅ Buscar con filtros ACTUALIZADO
   const searchWithFilters = () => {
     const filterObj = {};
     if (filters.fechaInicio) filterObj.fechaInicio = filters.fechaInicio;
@@ -57,25 +147,30 @@ const ReservationList = () => {
     if (filters.soloVencidas) filterObj.soloVencidas = 'true';
     if (filters.soloConDeuda) filterObj.soloConDeuda = 'true';
 
+    console.log('🔍 [ReservationsList] Buscando con filtros:', filterObj);
     dispatch(getAllReservations(filterObj));
     setCurrentPage(1);
   };
 
-  // ✅ Limpiar filtros
+  // ✅ Limpiar filtros CON FECHA DEL SERVIDOR
   const clearFilters = () => {
+    const serverDate = getServerDate(serverTime);
+    
     setFilters({
-      fechaInicio: '',
-      fechaFin: '',
+      fechaInicio: serverDate,
+      fechaFin: serverDate,
       usuario: '',
       documento: '',
       soloVencidas: false,
       soloConDeuda: false
     });
+    
+    console.log('🧹 [ReservationsList] Filtros limpiados, fecha del servidor:', serverDate);
     dispatch(getAllReservations());
     setCurrentPage(1);
   };
 
-  // ✅ AGREGAR: useEffect con manejo de errores
+  // ✅ CARGAR DATOS INICIALES
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -90,47 +185,36 @@ const ReservationList = () => {
     loadData();
   }, [dispatch]);
 
-  // ✅ Calcular deuda pendiente con verificación segura
+  // ✅ FUNCIONES DE FECHA MEJORADAS
+  const formatDueDate = (dueDate) => {
+    if (!dueDate) return 'Sin fecha';
+    return formatMovementDate(dueDate);
+  };
+  
+  const formatCreationDate = (createdAt) => {
+    if (!createdAt) return 'Fecha inválida';
+    return formatMovementDate(createdAt);
+  };
+  
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    
+    const today = new Date();
+    const serverToday = getServerDate(serverTime);
+    const todayDate = new Date(serverToday + 'T00:00:00');
+    const dueDateObj = new Date(dueDate);
+    
+    return dueDateObj < todayDate;
+  };
+
+  // ✅ Calcular deuda pendiente (sin cambios)
   const calculatePendingDebt = (totalAmount, paidAmount) => {
     const total = Number(totalAmount) || 0;
     const paid = Number(paidAmount) || 0;
     return Math.max(0, total - paid);
   };
 
-  // ✅ Resto de las funciones permanecen igual...
-  // Paginación
-  const indexOfLastReservation = currentPage * reservationsPerPage;
-  const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
-  const currentReservations = reservations.slice(
-    indexOfFirstReservation,
-    indexOfLastReservation
-  );
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  // ✅ Abrir popup de pago con verificación
-  const handleOpenPaymentPopup = (reservation) => {
-    console.log('🔵 [ReservationsList] Abriendo popup para:', reservation);
-    if (!reservation || !reservation.OrderDetail) {
-      console.error('❌ [ReservationsList] Reserva sin OrderDetail:', reservation);
-      Swal.fire({
-        title: "Error",
-        text: "No se encontraron detalles de la orden para esta reserva.",
-        icon: "error",
-      });
-      return;
-    }
-    setSelectedReservation(reservation);
-    setIsPaymentPopupOpen(true);
-  };
-
-  // Cerrar popup de pago
-  const handleClosePaymentPopup = () => {
-    setSelectedReservation(null);
-    setIsPaymentPopupOpen(false);
-  };
-
-  // ✅ Aplicar pago con mejor manejo de errores
+  // ✅ APLICAR PAGO con fecha del servidor
   const handlePayment = async (id_reservation, amount, paymentMethod) => {
     try {
       console.log('🔵 [ReservationsList] Aplicando pago:', { id_reservation, amount, paymentMethod });
@@ -150,6 +234,7 @@ const ReservationList = () => {
       const buyerName = `${buyerFirstName} ${buyerLastName}`.trim() || "Cliente no identificado";
       const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
 
+      // ✅ USAR FECHA DEL SERVIDOR
       const receiptData = {
         receiptNumber,
         id_orderDetail: updatedReservation.id_orderDetail,
@@ -161,7 +246,7 @@ const ReservationList = () => {
         payMethod: paymentMethod,
         payMethod2: null,
         amount2: null,
-        date: new Date().toISOString().split("T")[0],
+        date: getServerDate(serverTime), // ✅ FECHA DEL SERVIDOR
         cashier_document: userInfo?.n_document || "ADMIN",
         tipo_transaccion: "Pago Parcial Reserva"
       };
@@ -187,7 +272,7 @@ const ReservationList = () => {
         }
       });
 
-      // ✅ Verificar si la reserva está completamente pagada
+      // ✅ Verificar si está completamente pagada
       if ((updatedReservation.totalPaid || 0) + amount >= updatedReservation.OrderDetail.amount) {
         await dispatch(updateReservation(id_reservation, "Completada"));
       }
@@ -205,11 +290,11 @@ const ReservationList = () => {
   };
 
   // ✅ Eliminar reserva con mejor manejo
-  const handleDelete = async (id_reservation) => {
+ const handleDelete = async (id_reservation) => {
     try {
       console.log('🔵 [ReservationsList] Eliminando reserva:', id_reservation);
       await dispatch(deleteReservation(id_reservation));
-      await dispatch(getAllReservations()); // Recargar lista
+      await dispatch(getAllReservations());
     } catch (error) {
       console.error('❌ [ReservationsList] Error eliminando reserva:', error);
       Swal.fire({
@@ -218,6 +303,26 @@ const ReservationList = () => {
         icon: "error",
       });
     }
+  };
+
+  const handleOpenPaymentPopup = (reservation) => {
+    console.log('🔵 [ReservationsList] Abriendo popup para:', reservation);
+    if (!reservation || !reservation.OrderDetail) {
+      console.error('❌ [ReservationsList] Reserva sin OrderDetail:', reservation);
+      Swal.fire({
+        title: "Error",
+        text: "No se encontraron detalles de la orden para esta reserva.",
+        icon: "error",
+      });
+      return;
+    }
+    setSelectedReservation(reservation);
+    setIsPaymentPopupOpen(true);
+  };
+
+  const handleClosePaymentPopup = () => {
+    setSelectedReservation(null);
+    setIsPaymentPopupOpen(false);
   };
 
   // ✅ Generar PDF con verificaciones mejoradas
@@ -380,75 +485,93 @@ const ReservationList = () => {
   };
 
   // ✅ Estados de carga y error mejorados
-  if (loading) {
+ if (loading || serverTime?.loading) {
     return (
-      <div className="container mx-auto p-4 mt-12">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando reservas...</p>
+      <ServerTimeSync showDebug={false}>
+        <div className="container mx-auto p-4 mt-12">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">
+              {serverTime?.loading ? 'Sincronizando con servidor...' : 'Cargando reservas...'}
+            </p>
+          </div>
         </div>
-      </div>
+      </ServerTimeSync>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-4 mt-12">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-red-800 mb-2">
-            ❌ Error al cargar reservas
-          </h3>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => dispatch(getAllReservations())}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-200"
-          >
-            🔄 Reintentar
-          </button>
+      <ServerTimeSync showDebug={false}>
+        <div className="container mx-auto p-4 mt-12">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-red-800 mb-2">
+              ❌ Error al cargar reservas
+            </h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => dispatch(getAllReservations())}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition duration-200"
+            >
+              🔄 Reintentar
+            </button>
+          </div>
         </div>
-      </div>
+      </ServerTimeSync>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 mt-12">
-      <h1 className="text-2xl font-bold mb-6">Gestión de Reservas</h1>
-
-      {/* ✅ Indicador de estado de datos */}
-      <div className="mb-4 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-        <p className="text-xs text-blue-600">
-          📊 Reservas cargadas: {reservations?.length || 0} | 
-          🔗 OrderDetails: {orderDetails ? 'Disponible' : 'No disponible'} |
-          🎫 Último recibo: {latestReceipt || 'N/A'}
-        </p>
-      </div>
+    <ServerTimeSync showDebug={false}>
+      <div className="container mx-auto p-4 mt-12">
+        {/* ✅ AGREGAR información del servidor */}
+        <div className="mb-4 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <p className="text-xs text-blue-600">
+            📅 <strong>Fecha actual del servidor:</strong> {formatDateForDisplay(getServerDate(serverTime))} | 
+            📊 Reservas cargadas: {reservations?.length || 0} | 
+            🔗 OrderDetails: {orderDetails ? 'Disponible' : 'No disponible'} |
+            🎫 Último recibo: {latestReceipt || 'N/A'}
+          </p>
+        </div>
 
       {/* Panel de filtros */}
-      <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">🔍 Filtros de Búsqueda</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              📅 Fecha Inicio
-            </label>
-            <input
-              type="date"
-              value={filters.fechaInicio}
-              onChange={(e) => handleFilterChange('fechaInicio', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              📅 Fecha Fin
-            </label>
-            <input
-              type="date"
-              value={filters.fechaFin}
-              onChange={(e) => handleFilterChange('fechaFin', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+       <h1 className="text-2xl font-bold mb-6">Gestión de Reservas</h1>
+
+        {/* Panel de filtros CON VALIDACIÓN MEJORADA */}
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+          <h2 className="text-lg font-semibold mb-4 text-gray-700">🔍 Filtros de Búsqueda</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                📅 Fecha Inicio
+              </label>
+              <input
+                type="date"
+                value={filters.fechaInicio}
+                onChange={(e) => handleFilterChange('fechaInicio', e.target.value)}
+                max={getDateForInput(serverTime)} // ✅ USAR máximo del servidor
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {filters.fechaInicio ? formatDateForDisplay(filters.fechaInicio) : 'Sin fecha seleccionada'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                📅 Fecha Fin
+              </label>
+              <input
+                type="date"
+                value={filters.fechaFin}
+                onChange={(e) => handleFilterChange('fechaFin', e.target.value)}
+                min={filters.fechaInicio} // ✅ VALIDAR que sea después del inicio
+                max={getDateForInput(serverTime)} // ✅ USAR máximo del servidor
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {filters.fechaFin ? formatDateForDisplay(filters.fechaFin) : 'Sin fecha seleccionada'}
+              </p>
+            </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               👤 Nombre Cliente
@@ -501,27 +624,34 @@ const ReservationList = () => {
           >
             🔍 Buscar
           </button>
-          <button
-            onClick={clearFilters}
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-          >
-            🗑️ Limpiar Filtros
-          </button>
-        </div>
-        {(filters.fechaInicio || filters.fechaFin || filters.usuario || filters.documento || filters.soloVencidas || filters.soloConDeuda) && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md">
-            <p className="text-sm text-blue-800">
-              <strong>Filtros activos:</strong>
-              {filters.fechaInicio && ` Desde: ${filters.fechaInicio}`}
-              {filters.fechaFin && ` Hasta: ${filters.fechaFin}`}
-              {filters.usuario && ` Cliente: "${filters.usuario}"`}
-              {filters.documento && ` Documento: "${filters.documento}"`}
-              {filters.soloVencidas && ` Solo Vencidas`}
-              {filters.soloConDeuda && ` Solo Con Deuda`}
-            </p>
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              🗑️ Limpiar Filtros
+            </button>
+            <button
+              onClick={() => dispatch(getServerTime())}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors"
+              title="Sincronizar con servidor"
+            >
+              🕒 Sync Servidor
+            </button>
           </div>
-        )}
-      </div>
+          {(filters.fechaInicio || filters.fechaFin || filters.usuario || filters.documento || filters.soloVencidas || filters.soloConDeuda) && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Filtros activos:</strong>
+                {filters.fechaInicio && ` Desde: ${formatDateForDisplay(filters.fechaInicio)}`}
+                {filters.fechaFin && ` Hasta: ${formatDateForDisplay(filters.fechaFin)}`}
+                {filters.usuario && ` Cliente: "${filters.usuario}"`}
+                {filters.documento && ` Documento: "${filters.documento}"`}
+                {filters.soloVencidas && ` Solo Vencidas`}
+                {filters.soloConDeuda && ` Solo Con Deuda`}
+              </p>
+            </div>
+          )}
+        </div>
 
       {/* Tabla de reservas */}
       <div className="overflow-x-auto">
@@ -887,6 +1017,7 @@ const ReservationList = () => {
         />
       )}
     </div>
+    </ServerTimeSync>
   );
 };
 

@@ -1,9 +1,22 @@
-// Obtener fecha actual de Colombia
 export const getColombiaDate = () => {
   const now = new Date();
   // Obtener fecha en zona horaria de Colombia (UTC-5)
   const colombiaDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
   return colombiaDate.toISOString().split('T')[0]; // YYYY-MM-DD
+};
+
+// ✅ NUEVA: Obtener fecha del servidor desde el estado Redux
+export const getServerDate = (serverTime) => {
+  if (serverTime?.current?.date) {
+    return serverTime.current.date;
+  }
+  // Fallback a fecha de Colombia si no hay servidor
+  return getColombiaDate();
+};
+
+// ✅ NUEVA: Formatear fecha para input date (YYYY-MM-DD)
+export const getDateForInput = (serverTime) => {
+  return getServerDate(serverTime);
 };
 
 // ✅ Formatear fecha para enviar al backend
@@ -40,6 +53,39 @@ export const isDateInFuture = (dateString) => {
   const inputDate = new Date(dateString + 'T00:00:00');
   const today = new Date(getColombiaDate() + 'T00:00:00');
   return inputDate > today;
+};
+
+// ✅ NUEVA: Validar que la fecha no sea futura según el servidor
+export const validateDateNotFuture = (dateString, serverTime, fieldName = 'Fecha') => {
+  if (!dateString) {
+    return {
+      valid: false,
+      message: `${fieldName} es requerida`
+    };
+  }
+
+  if (!isValidDate(dateString)) {
+    return {
+      valid: false,
+      message: `${fieldName} no es válida`
+    };
+  }
+
+  const serverDate = getServerDate(serverTime);
+  const inputDate = new Date(dateString);
+  const maxDate = new Date(serverDate);
+
+  if (inputDate > maxDate) {
+    return {
+      valid: false,
+      message: `${fieldName} no puede ser futura según la fecha del servidor (${formatDateForDisplay(serverDate)})`
+    };
+  }
+
+  return {
+    valid: true,
+    message: null
+  };
 };
 
 // ✅ Función CORREGIDA para formatear fechas de movimientos

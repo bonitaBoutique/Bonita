@@ -155,10 +155,72 @@ SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   FETCH_STOCK_MOVEMENTS_FAILURE,
   CREATE_STOCK_MOVEMENT_REQUEST,
   CREATE_STOCK_MOVEMENT_SUCCESS,
-  CREATE_STOCK_MOVEMENT_FAILURE
-
+  CREATE_STOCK_MOVEMENT_FAILURE,
+  GET_SERVER_TIME_REQUEST,
+  GET_SERVER_TIME_SUCCESS,
+  GET_SERVER_TIME_FAILURE
   
 } from "./actions-type";
+
+// export const verifyUserByDocument = (document) => async (dispatch) => {
+//   try {
+//     console.log('🔍 [ACTION] Verificando usuario con documento:', document);
+    
+//     const response = await axios.get(`${BASE_URL}/users/verify-document/${document}`);
+    
+//     if (response.data.success) {
+//       return {
+//         success: true,
+//         data: response.data.data,
+//         message: 'Usuario encontrado'
+//       };
+//     } else {
+//       return {
+//         success: false,
+//         data: null,
+//         message: 'Usuario no encontrado'
+//       };
+//     }
+//   } catch (error) {
+//     console.error('❌ [ACTION] Error verificando usuario:', error);
+    
+//     if (error.response?.status === 404) {
+//       return {
+//         success: false,
+//         data: null,
+//         message: 'Usuario no registrado'
+//       };
+//     }
+    
+//     throw error;
+//   }
+// };
+
+export const getServerTime = () => async (dispatch) => {
+  try {
+    dispatch({ type: GET_SERVER_TIME_REQUEST });
+    
+    console.log('🕒 [REDUX] Solicitando hora del servidor...');
+    
+    const { data } = await axios.get(`${BASE_URL}/system/server-time`);
+    
+    console.log('🕒 [REDUX] Respuesta del servidor:', data);
+    
+    dispatch({
+      type: GET_SERVER_TIME_SUCCESS,
+      payload: data.data
+    });
+    
+    return data.data;
+  } catch (error) {
+    console.error('❌ [REDUX] Error obteniendo hora del servidor:', error);
+    dispatch({
+      type: GET_SERVER_TIME_FAILURE,
+      payload: error.response?.data?.message || error.message
+    });
+    throw error;
+  }
+};
 
 export const createProduct = (productData) => async (dispatch) => {
   dispatch({ type: CREATE_PRODUCT_REQUEST });
@@ -1227,12 +1289,29 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
     
     console.log('🔵 [REDUX] Fetching reservations with filters:', filters);
     
-    // ✅ CONSTRUIR QUERY STRING
+    // ✅ Si no hay fechas en filtros, obtener fecha del servidor
+    let finalFilters = { ...filters };
+    
+    if (!filters.fechaInicio && !filters.fechaFin) {
+      try {
+        console.log('🕒 [REDUX] Obteniendo fecha del servidor para filtros...');
+        const serverTime = await dispatch(getServerTime());
+        finalFilters = {
+          ...filters,
+          fechaInicio: serverTime.date,
+          fechaFin: serverTime.date
+        };
+        console.log('🕒 [REDUX] Usando fecha del servidor:', serverTime.date);
+      } catch (serverTimeError) {
+        console.warn('⚠️ [REDUX] Error obteniendo fecha del servidor, usando filtros originales');
+      }
+    }
+    
     const queryParams = new URLSearchParams();
     
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
-        queryParams.append(key, filters[key]);
+    Object.keys(finalFilters).forEach(key => {
+      if (finalFilters[key] !== '' && finalFilters[key] !== null && finalFilters[key] !== undefined) {
+        queryParams.append(key, finalFilters[key]);
       }
     });
     
@@ -1245,14 +1324,12 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
     
     console.log('🔵 [REDUX] Response data:', data);
     
-    // ✅ CORREGIR: Acceder correctamente a los datos según la estructura real
     const reservations = data.message?.reservations || [];
     const statistics = data.message?.statistics || {};
     const total = data.message?.total || 0;
     const appliedFilters = data.message?.filters || {};
     
     console.log('🔵 [REDUX] Parsed reservations:', reservations);
-    console.log('🔵 [REDUX] Statistics:', statistics);
     
     dispatch({
       type: GET_ALL_RESERVATIONS_SUCCESS,

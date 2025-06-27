@@ -15,7 +15,7 @@ import {
   createOrder,
   updateOrderState,
   getServerTime,
-  fetchUserByDocument  // ✅ USAR fetchUser en lugar de verifyUserByDocument
+  fetchUserByDocument
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
 import ServerTimeSync from "./ServerTimeSync";
@@ -30,7 +30,7 @@ const Caja = () => {
   const error = useSelector((state) => state.error);
   const searchTerm = useSelector((state) => state.searchTerm);
   const serverTime = useSelector((state) => state.serverTime);
-  const userTaxxa = useSelector((state) => state.userTaxxa); // ✅ USAR userTaxxa
+  const userTaxxa = useSelector((state) => state.userTaxxa);
 
   // ✅ ESTADOS BÁSICOS
   const [orderDate, setOrderDate] = useState('');
@@ -42,6 +42,37 @@ const Caja = () => {
   // ✅ ESTADO SIMPLE para tracking de validación
   const [documentValidated, setDocumentValidated] = useState(false);
   const [validationTimeout, setValidationTimeout] = useState(null);
+  const [userValidationState, setUserValidationState] = useState({
+    isValidating: false,
+    userFound: null,
+    lastValidatedDocument: null
+  });
+
+  // ✅ FUNCIÓN para validar si userInfo es un usuario válido
+  const isValidUserInfo = (userInfo) => {
+    return userInfo && 
+           typeof userInfo === 'object' && 
+           userInfo !== null &&
+           userInfo.n_document && 
+           userInfo.first_name;
+  };
+
+  // ✅ EFECTO DE DEBUG
+  useEffect(() => {
+    console.log("🔍 [Caja] Estado actual completo:", {
+      nDocument,
+      documentValidated,
+      userValidationState,
+      userTaxxa: {
+        loading: userTaxxa?.loading,
+        error: userTaxxa?.error,
+        userInfo: isValidUserInfo(userTaxxa?.userInfo) ? 'VALID_USER' : 'INVALID_OR_NULL',
+        userInfoRaw: userTaxxa?.userInfo,
+        fullState: userTaxxa
+      },
+      serverTime: serverTime?.current?.date
+    });
+  }, [nDocument, documentValidated, userValidationState, userTaxxa, serverTime]);
 
   // ✅ INICIALIZAR FECHA DEL SERVIDOR
   useEffect(() => {
@@ -80,31 +111,109 @@ const Caja = () => {
     }
   };
 
-  // ✅ VERIFICAR USUARIO usando fetchUser existente
+  // ✅ VERIFICAR USUARIO usando fetchUserByDocument
   const verifyUserDocument = async (document) => {
     if (!document || document.length < 8) return;
 
-    console.log('🔍 [Caja] Verificando usuario con documento:', document);
+    console.log('🔍 [Caja] Iniciando verificación de documento:', document);
     
+    // ✅ LIMPIAR estado anterior si es un documento diferente
+    if (userValidationState.lastValidatedDocument !== document) {
+      setUserValidationState({
+        isValidating: true,
+        userFound: null,
+        lastValidatedDocument: document
+      });
+    }
+
     try {
-      await dispatch(fetchUser(document));
+      console.log('📤 [Caja] Despachando fetchUserByDocument para:', document);
+      
+      const result = await dispatch(fetchUserByDocument(document));
+      
+      console.log('📥 [Caja] Respuesta de fetchUserByDocument:', result);
+      console.log('🔍 [Caja] Tipo de respuesta:', typeof result);
+      console.log('🔍 [Caja] Es objeto válido?:', isValidUserInfo(result));
+      
+      setUserValidationState(prev => ({
+        ...prev,
+        isValidating: false,
+      }));
+
     } catch (error) {
       console.log('❌ [Caja] Error verificando usuario:', error);
+      
+      setUserValidationState(prev => ({
+        ...prev,
+        isValidating: false,
+      }));
+    }
+  };
+
+  const handleDocumentChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ''); // Solo números
+    setNDocument(value);
+    clearError('document');
+
+    // ✅ LIMPIAR timeout anterior
+    if (validationTimeout) {
+      clearTimeout(validationTimeout);
+      setValidationTimeout(null);
+    }
+
+    // ✅ LIMPIAR estado de validación cuando cambia el documento
+    if (value !== userValidationState.lastValidatedDocument) {
+      setUserValidationState({
+        isValidating: false,
+        userFound: null,
+        lastValidatedDocument: null
+      });
+      setDocumentValidated(false);
+    }
+
+    // ✅ VERIFICAR usuario si el documento tiene la longitud mínima
+    if (value.length >= 8) {
+      console.log('⏱️ [Caja] Programando validación para documento:', value);
+      
+      const timeoutId = setTimeout(() => {
+        console.log('🚀 [Caja] Ejecutando validación para documento:', value);
+        setDocumentValidated(true);
+        verifyUserDocument(value);
+      }, 1000);
+
+      setValidationTimeout(timeoutId);
+    } else {
+      setDocumentValidated(false);
     }
   };
 
   // ✅ EFECTO para manejar respuesta de verificación de usuario
   useEffect(() => {
-    if (documentValidated && nDocument.length >= 8) {
-      if (userTaxxa.userInfo && !userTaxxa.loading && !userTaxxa.error) {
-        // ✅ Usuario encontrado
-        console.log('✅ [Caja] Usuario encontrado:', userTaxxa.userInfo);
+    console.log('🔄 [Caja] Estado de validación cambió:', {
+      documentValidated,
+      nDocument,
+      userValidationState,
+      userTaxxa: {
+        loading: userTaxxa?.loading,
+        error: userTaxxa?.error,
+        userInfo: isValidUserInfo(userTaxxa?.userInfo) ? 'VALID_USER' : 'INVALID_OR_NULL',
+        userInfoRaw: userTaxxa?.userInfo
+      }
+    });
+
+    // ✅ SOLO procesar si se completó una validación
+    if (documentValidated && nDocument.length >= 8 && userValidationState.lastValidatedDocument === nDocument) {
+      
+      // ✅ CASO 1: Usuario encontrado - USAR isValidUserInfo
+      if (isValidUserInfo(userTaxxa?.userInfo) && !userTaxxa?.loading) {
+        console.log('✅ [Caja] Usuario ENCONTRADO:', userTaxxa.userInfo);
         
         Swal.fire({
           icon: "success",
           title: "Usuario registrado",
           html: `
             <div class="text-left">
+              <p><strong>Documento:</strong> ${nDocument}</p>
               <p><strong>Nombre:</strong> ${userTaxxa.userInfo.first_name || ''} ${userTaxxa.userInfo.last_name || ''}</p>
               <p><strong>Email:</strong> ${userTaxxa.userInfo.email || 'No disponible'}</p>
               <p><strong>Teléfono:</strong> ${userTaxxa.userInfo.phone || 'No disponible'}</p>
@@ -114,9 +223,18 @@ const Caja = () => {
           showConfirmButton: false
         });
 
-      } else if (!userTaxxa.loading && userTaxxa.error) {
-        // ✅ Usuario no encontrado
-        console.log('❌ [Caja] Usuario no encontrado para documento:', nDocument);
+        // ✅ ACTUALIZAR estado correctamente
+        setUserValidationState(prev => ({
+          ...prev,
+          userFound: true
+        }));
+
+      } 
+      // ✅ CASO 2: Usuario NO encontrado - CORREGIR LA LÓGICA
+      else if (!userTaxxa?.loading && (!isValidUserInfo(userTaxxa?.userInfo) || userTaxxa?.error)) {
+        console.log('❌ [Caja] Usuario NO ENCONTRADO para documento:', nDocument);
+        console.log('📋 [Caja] userInfo recibido:', userTaxxa?.userInfo);
+        console.log('📋 [Caja] Es válido?:', isValidUserInfo(userTaxxa?.userInfo));
         
         Swal.fire({
           icon: "warning",
@@ -135,7 +253,6 @@ const Caja = () => {
           cancelButtonColor: "#6b7280"
         }).then((result) => {
           if (result.isDenied) {
-            // Ir a la página de registro
             navigate("/register", { 
               state: { 
                 prefilledDocument: nDocument,
@@ -143,18 +260,35 @@ const Caja = () => {
               }
             });
           } else if (result.isDismissed) {
-            // Limpiar el documento para que pueda cambiar
             setNDocument("");
             setDocumentValidated(false);
+            setUserValidationState({
+              isValidating: false,
+              userFound: null,
+              lastValidatedDocument: null
+            });
           }
-          // Si confirma, continúa con la orden sin registro
         });
+
+        // ✅ ACTUALIZAR estado
+        setUserValidationState(prev => ({
+          ...prev,
+          userFound: false
+        }));
       }
       
-      // Resetear flag de validación
+      // ✅ RESETEAR flag de validación
       setDocumentValidated(false);
     }
-  }, [userTaxxa, documentValidated, nDocument, navigate]);
+  }, [userTaxxa, documentValidated, nDocument, navigate, userValidationState]);
+
+  useEffect(() => {
+    return () => {
+      if (validationTimeout) {
+        clearTimeout(validationTimeout);
+      }
+    };
+  }, [validationTimeout]);
 
   // ✅ FUNCIÓN PARA VALIDAR Y CAMBIAR FECHA
   const handleDateChange = (e) => {
@@ -190,31 +324,6 @@ const Caja = () => {
     setOrderDate(selectedDate);
     clearError('date');
     console.log('✅ [Caja] Fecha actualizada a:', selectedDate);
-  };
-
-  // ✅ MANEJAR CAMBIO DE DOCUMENTO CON VALIDACIÓN USANDO fetchUser
-  const handleDocumentChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Solo números
-    setNDocument(value);
-    clearError('document');
-
-    // Limpiar timeout anterior
-    if (validationTimeout) {
-      clearTimeout(validationTimeout);
-    }
-
-    // Verificar usuario si el documento tiene la longitud mínima
-    if (value.length >= 8) {
-      // Usar debounce para evitar múltiples llamadas
-      const timeoutId = setTimeout(() => {
-        setDocumentValidated(true);
-        verifyUserDocument(value);
-      }, 1500); // 1.5 segundos de debounce
-
-      setValidationTimeout(timeoutId);
-    } else {
-      setDocumentValidated(false);
-    }
   };
 
   const handleProductCodesChange = (e) => {
@@ -459,7 +568,7 @@ const Caja = () => {
     console.log("📤 [Caja] Enviando orden:", {
       ...orderDataToSend,
       serverDate: serverTime?.current?.date,
-      userFound: userTaxxa.userInfo ? true : false
+      userFound: isValidUserInfo(userTaxxa?.userInfo)
     });
 
     // Mostrar loading
@@ -493,6 +602,11 @@ const Caja = () => {
         setOrderDate(getServerDate(serverTime));
         setFormErrors({});
         setDocumentValidated(false);
+        setUserValidationState({
+          isValidating: false,
+          userFound: null,
+          lastValidatedDocument: null
+        });
 
         navigate(`/receipt/${orderDetail.id_orderDetail}`);
       } else {
@@ -583,11 +697,16 @@ const Caja = () => {
     }
     
     if (nDocument.length >= 8) {
-      if (userTaxxa.loading) {
+      // ✅ PRIORIDAD 1: Estado de carga
+      if (userValidationState.isValidating || userTaxxa?.loading) {
         return 'border-blue-500 focus:ring-blue-500';
-      } else if (userTaxxa.userInfo && !userTaxxa.error) {
+      } 
+      // ✅ PRIORIDAD 2: Usuario encontrado - USAR isValidUserInfo
+      else if (isValidUserInfo(userTaxxa?.userInfo) && !userTaxxa?.error) {
         return 'border-green-500 focus:ring-green-500';
-      } else if (userTaxxa.error) {
+      } 
+      // ✅ PRIORIDAD 3: Error o no encontrado
+      else if (userTaxxa?.error || !isValidUserInfo(userTaxxa?.userInfo)) {
         return 'border-orange-500 focus:ring-orange-500';
       }
     }
@@ -715,7 +834,7 @@ const Caja = () => {
             <h3 className="text-lg font-medium mb-4">Información de la Orden</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* ✅ NÚMERO DE DOCUMENTO CON VALIDACIÓN USANDO fetchUser */}
+              {/* ✅ NÚMERO DE DOCUMENTO CON VALIDACIÓN CORREGIDA */}
               <div>
                 <label htmlFor="n_document" className="block text-sm font-medium text-gray-700 mb-2">
                   Número de Documento *
@@ -728,24 +847,26 @@ const Caja = () => {
                   placeholder="Ej: 12345678"
                   className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 ${getDocumentInputClass()}`}
                 />
-                
-                {/* ✅ INDICADORES DE VALIDACIÓN */}
-                {nDocument.length >= 8 && userTaxxa.loading && (
+                        
+                {/* ✅ INDICADOR DE CARGA */}
+                {nDocument.length >= 8 && (userValidationState.isValidating || userTaxxa?.loading) && (
                   <p className="text-blue-500 text-sm mt-1 flex items-center">
                     <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></span>
-                    Verificando usuario...
+                    Verificando usuario {nDocument}...
                   </p>
                 )}
-                
-                {nDocument.length >= 8 && userTaxxa.userInfo && !userTaxxa.loading && !userTaxxa.error && (
+
+                {/* ✅ USUARIO ENCONTRADO - USAR isValidUserInfo */}
+                {nDocument.length >= 8 && isValidUserInfo(userTaxxa?.userInfo) && !userTaxxa?.loading && !userTaxxa?.error && (
                   <p className="text-green-600 text-sm mt-1 flex items-center">
                     ✅ Usuario registrado: {userTaxxa.userInfo.first_name} {userTaxxa.userInfo.last_name}
                   </p>
                 )}
-                
-                {nDocument.length >= 8 && !userTaxxa.loading && userTaxxa.error && (
+
+                {/* ✅ USUARIO NO ENCONTRADO - USAR isValidUserInfo */}
+                {nDocument.length >= 8 && !userValidationState.isValidating && !userTaxxa?.loading && !isValidUserInfo(userTaxxa?.userInfo) && (
                   <p className="text-orange-600 text-sm mt-1 flex items-center">
-                    ⚠️ Usuario no registrado (puedes continuar)
+                    ⚠️ Usuario no registrado (Verifica antes de  continuar)
                   </p>
                 )}
                 

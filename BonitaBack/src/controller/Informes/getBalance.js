@@ -125,92 +125,15 @@ const getBalance = async (req, res) => {
       }
     });
 
-    // ✅ PASO 3: PAGOS PARCIALES DE RESERVAS
-    console.log("💳 Buscando pagos parciales...");
-    
-    let partialPayments = [];
-    try {
-      partialPayments = await CreditPayment.findAll({
-        where: dateFilter,
-        attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
-        include: [
-          {
-            model: Reservation,
-            attributes: ['n_document', 'id_orderDetail', 'status'],
-            required: true, // ✅ CAMBIAR: Requerir Reservation
-            include: [
-              {
-                model: OrderDetail,
-                attributes: ['id_orderDetail', 'n_document', 'state_order'],
-                required: false,
-                include: [
-                  {
-                    model: User,
-                    attributes: ['n_document', 'first_name', 'last_name', 'email'],
-                    required: false
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        order: [['date', 'DESC']]
-      });
-      
-      console.log(`✅ Pagos parciales encontrados: ${partialPayments.length}`);
-      
-      // ✅ LOG DE DEBUG para pagos parciales
-      partialPayments.forEach((payment, index) => {
-        console.log(`Pago parcial ${index + 1}:`, {
-          id: payment.id_payment,
-          reservationId: payment.id_reservation,
-          amount: payment.amount,
-          orderDetailId: payment.Reservation?.id_orderDetail || 'Sin OrderDetail',
-          orderState: payment.Reservation?.OrderDetail?.state_order || 'Sin estado'
-        });
-      });
-      
-    } catch (creditPaymentError) {
-      console.log('🟡 Error buscando pagos parciales (tabla CreditPayment puede no existir):', creditPaymentError.message);
-      console.log('🟡 Continuando sin pagos parciales...');
-      partialPayments = [];
-    }
-
-    // ✅ PASO 4: PAGOS INICIALES DE RESERVAS - CORREGIDO PARA EVITAR DUPLICACIÓN
-    console.log("💰 Buscando pagos iniciales de reservas...");
-    
-    let reservationDateFilter = {};
-    if (!startDate && !endDate) {
-      const today = getColombiaDate();
-      const nextDay = new Date(today);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayString = nextDay.toISOString().split('T')[0];
-      
-      reservationDateFilter.createdAt = {
-        [Op.gte]: today,
-        [Op.lt]: nextDayString
-      };
-    } else {
-      reservationDateFilter.createdAt = {};
-      
-      if (startDate) {
-        reservationDateFilter.createdAt[Op.gte] = startDate;
-      }
-      
-      if (endDate) {
-        const nextDay = new Date(endDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayString = nextDay.toISOString().split('T')[0];
-        reservationDateFilter.createdAt[Op.lt] = nextDayString;
-      }
-    }
-
-    // ✅ OBTENER IDS DE ORDENES QUE YA TIENEN RECEIPT
+    // ✅ OBTENER IDS DE ORDENES QUE YA TIENEN RECEIPT (ANTES DE PAGOS PARCIALES)
     const orderIdsWithReceipt = localSales
       .map(sale => sale.OrderDetail?.id_orderDetail)
       .filter(Boolean);
     
-    console.log("🔍 OrderDetails con Receipt (para excluir de pagos parciales):", orderIdsWithReceipt);
+    console.log("🔍 OrderDetails con Receipt (para excluir de pagos de reserva):", orderIdsWithReceipt);
+
+    // ✅ PASO 3: PAGOS PARCIALES DE RESERVAS - CORREGIDO PARA EVITAR DUPLICACIÓN
+    console.log("💳 Buscando pagos parciales...");
     
     let partialPayments = [];
     try {
@@ -268,7 +191,7 @@ const getBalance = async (req, res) => {
       partialPayments = [];
     }
 
-    // ✅ PASO 4: PAGOS INICIALES DE RESERVAS
+    // ✅ PASO 4: PAGOS INICIALES DE RESERVAS - CORREGIDO PARA EVITAR DUPLICACIÓN
     console.log("💰 Buscando pagos iniciales de reservas...");
     
     let reservationDateFilter = {};
@@ -296,8 +219,6 @@ const getBalance = async (req, res) => {
         reservationDateFilter.createdAt[Op.lt] = nextDayString;
       }
     }
-
-    // ✅ NOTA: orderIdsWithReceipt ya se obtuvo arriba para pagos parciales
 
     let initialReservationPayments = [];
     try {
@@ -536,8 +457,8 @@ const getBalance = async (req, res) => {
       destinatario: expense.destinatario || 'No especificado'
     }));
 
-    // ✅ VERIFICACIÓN DE DUPLICACIONES
-    console.log("🔍 VERIFICANDO DUPLICACIONES:");
+    // ✅ VERIFICACIÓN DE DUPLICACIONES ADICIONAL
+    console.log("🔍 VERIFICANDO DUPLICACIONES ADICIONALES:");
 
     const orderDetailsInLocal = formattedLocalSales
       .map(sale => sale.id_orderDetail)
@@ -566,7 +487,7 @@ const getBalance = async (req, res) => {
       formattedInitialReservationPayments.length = 0;
       formattedInitialReservationPayments.push(...filteredInitialPayments);
     } else {
-      console.log("✅ No se detectaron duplicaciones");
+      console.log("✅ No se detectaron duplicaciones adicionales");
     }
 
     // ✅ PASO 7: CALCULAR TOTALES POR MÉTODO DE PAGO
@@ -648,7 +569,13 @@ const getBalance = async (req, res) => {
         local: allLocalPayments
       },
       
-      expenses: formattedExpenses,
+      expenses: {
+        data: formattedExpenses,
+        loading: false,
+        success: true,
+        error: null
+      },
+      
       cashierTotals,
       
       // ✅ Desglose detallado por método de pago
@@ -695,7 +622,7 @@ const getBalance = async (req, res) => {
       totalIncome: responseData.totalIncome,
       onlineCount: responseData.income.online.length,
       localCount: responseData.income.local.length,
-      expensesCount: responseData.expenses.length,
+      expensesCount: responseData.expenses.data.length,
       paymentMethodBreakdown: responseData.paymentMethodBreakdown,
       combinedPayments: responseData.debug.combinedPaymentsCount,
       duplicatedOrdersFound: duplicatedOrders.length

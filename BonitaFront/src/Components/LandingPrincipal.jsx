@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../Redux/Actions/actions";
@@ -16,12 +16,16 @@ const LandingPrincipal = () => {
   
   // Estados locales
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [displayedProducts, setDisplayedProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
-  const [sortBy, setSortBy] = useState("newest"); // newest, price-asc, price-desc, name
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(12);
+  const [sortBy, setSortBy] = useState("newest");
+  
+  // Estados para scroll infinito
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const productsPerLoad = 12; // Productos por carga
 
   // Cargar productos al inicio
   useEffect(() => {
@@ -70,14 +74,44 @@ const LandingPrincipal = () => {
     }
 
     setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset página al filtrar
+    
+    // Resetear scroll infinito cuando cambian los filtros
+    const initialProducts = filtered.slice(0, productsPerLoad);
+    setDisplayedProducts(initialProducts);
+    setCurrentIndex(productsPerLoad);
+    setHasMore(filtered.length > productsPerLoad);
   }, [products, searchTerm, priceFilter, sortBy]);
 
-  // Paginación
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  // Función para cargar más productos
+  const loadMoreProducts = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    
+    // Simular delay de carga (opcional)
+    setTimeout(() => {
+      const nextProducts = filteredProducts.slice(currentIndex, currentIndex + productsPerLoad);
+      const newIndex = currentIndex + productsPerLoad;
+      
+      setDisplayedProducts(prev => [...prev, ...nextProducts]);
+      setCurrentIndex(newIndex);
+      setHasMore(newIndex < filteredProducts.length);
+      setIsLoadingMore(false);
+    }, 300);
+  }, [filteredProducts, currentIndex, isLoadingMore, hasMore]);
+
+  // Detectar scroll para cargar más productos
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop >= 
+          document.documentElement.offsetHeight - 1000) { // 1000px antes del final
+        loadMoreProducts();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMoreProducts]);
 
   // Función para limpiar filtros
   const clearFilters = () => {
@@ -93,11 +127,11 @@ const LandingPrincipal = () => {
       {/* Hero Section Minimalista */}
       <section className="relative bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen pt-20">
         {/* Header con título y carrito fijo */}
-        <div className="fixed top-20 left-0 right-0 bg-pink/95 backdrop-blur-sm border-b border-pink-500 z-40">
+        <div className="fixed top-20 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl md:text-4xl font-light text-pink-500 tracking-tight">
+                <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tight">
                   BONITA BOUTIQUE CUMARAL
                 </h1>
                 
@@ -110,7 +144,7 @@ const LandingPrincipal = () => {
               >
                 <FiShoppingBag className="w-6 h-6" />
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  0 {/* Aquí conectarías con tu estado del carrito */}
+                  0
                 </span>
               </button>
             </div>
@@ -184,142 +218,85 @@ const LandingPrincipal = () => {
             </div>
           ) : (
             <>
+              {/* Grid principal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {currentProducts.map((product) => (
+                {displayedProducts.map((product, index) => (
                   <ProductCard 
-                    key={product.id_product} 
+                    key={`${product.id_product}-${index}`}
                     product={product}
                     onProductClick={() => navigate(`/product/${product.id_product}`)}
                   />
                 ))}
               </div>
 
-              {/* Paginación */}
-             {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 py-12">
-                  {/* Botón Primera página */}
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-gray-600 disabled:text-gray-300 hover:text-black transition-colors disabled:cursor-not-allowed"
-                    title="Primera página"
-                  >
-                    ««
-                  </button>
-                  
-                  {/* Botón Anterior */}
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 text-gray-600 disabled:text-gray-300 hover:text-black transition-colors disabled:cursor-not-allowed"
-                  >
-                    « Anterior
-                  </button>
-                  
-                  {/* Páginas visibles - lógica de 5 páginas */}
-                  {(() => {
-                    const maxVisiblePages = 5;
-                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                    
-                    // Ajustar el inicio si no hay suficientes páginas al final
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                    }
-                    
-                    const pages = [];
-                    
-                    // Mostrar "..." si hay páginas anteriores
-                    if (startPage > 1) {
-                      pages.push(
-                        <button
-                          key={1}
-                          onClick={() => setCurrentPage(1)}
-                          className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
-                        >
-                          1
-                        </button>
-                      );
-                      if (startPage > 2) {
-                        pages.push(
-                          <span key="dots-start" className="px-2 py-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                    }
-                    
-                    // Páginas principales
-                    for (let i = startPage; i <= endPage; i++) {
-                      pages.push(
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(i)}
-                          className={`px-4 py-2 rounded-lg transition-all font-medium ${
-                            currentPage === i
-                              ? 'bg-black text-white shadow-md'
-                              : 'text-gray-600 hover:bg-gray-100 hover:text-black'
-                          }`}
-                        >
-                          {i}
-                        </button>
-                      );
-                    }
-                    
-                    // Mostrar "..." si hay páginas posteriores
-                    if (endPage < totalPages) {
-                      if (endPage < totalPages - 1) {
-                        pages.push(
-                          <span key="dots-end" className="px-2 py-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                      pages.push(
-                        <button
-                          key={totalPages}
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
-                        >
-                          {totalPages}
-                        </button>
-                      );
-                    }
-                    
-                    return pages;
-                  })()}
-                  
-                  {/* Botón Siguiente */}
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-gray-600 disabled:text-gray-300 hover:text-black transition-colors disabled:cursor-not-allowed"
-                  >
-                    Siguiente »
-                  </button>
-                  
-                  {/* Botón Última página */}
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-gray-600 disabled:text-gray-300 hover:text-black transition-colors disabled:cursor-not-allowed"
-                    title="Última página"
-                  >
-                    »»
-                  </button>
+              {/* Indicador de carga infinita */}
+              {isLoadingMore && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-black"></div>
+                    <span className="text-sm font-medium">Cargando más productos...</span>
+                  </div>
                 </div>
               )}
 
+              {/* Mensaje de final */}
+              {!hasMore && displayedProducts.length > 0 && (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 rounded-full text-gray-600">
+                    <span className="text-sm font-medium">
+                      ✨ Has visto todos los productos ({filteredProducts.length})
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Estado vacío */}
+              {displayedProducts.length === 0 && !loading && (
+                <div className="text-center py-20">
+                  <div className="max-w-md mx-auto">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                      <FiSearch className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                      No encontramos productos
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Intenta ajustar los filtros o buscar con otros términos.
+                    </p>
+                    <button
+                      onClick={clearFilters}
+                      className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      Limpiar filtros
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Botón scroll to top (aparece después de cargar varios productos) */}
+              {displayedProducts.length > 24 && (
+                <div className="fixed bottom-8 right-8 z-30">
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="p-3 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 transition-all duration-300 hover:scale-110"
+                    title="Volver arriba"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
       </section>
 
       {/* Footer minimalista */}
-     <footer className="bg-gray-50 border-t border-gray-100 py-12">
+      <footer className="bg-gray-50 border-t border-gray-100 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* ✅ NUEVA SECCIÓN: Trust Bar inspirada en la imagen */}
+          {/* Trust Bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {/* Cambios y Devoluciones */}
             <div className="flex items-center justify-center text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -370,7 +347,7 @@ const LandingPrincipal = () => {
             </div>
           </div>
 
-          {/* ✅ Información adicional del footer */}
+          {/* Información adicional del footer */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <h3 className="font-medium text-gray-900 mb-4">💳 Métodos de pago</h3>
@@ -401,7 +378,9 @@ const LandingPrincipal = () => {
           
           {/* Copyright */}
           <div className="mt-8 pt-8 border-t border-gray-200 text-center">
-            
+            <p className="text-sm text-gray-500">
+              © 2025 Bonita Boutique. Todos los derechos reservados.
+            </p>
           </div>
         </div>
       </footer>
@@ -409,7 +388,7 @@ const LandingPrincipal = () => {
   );
 };
 
-// Componente ProductCard minimalista
+// Componente ProductCard (sin cambios)
 const ProductCard = ({ product, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -424,7 +403,7 @@ const ProductCard = ({ product, onProductClick }) => {
       {/* Imagen del producto */}
       <div className="relative bg-gray-50 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
         <img
-          src={product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/300"}
+          src={product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/300x400/f3f4f6/9ca3af?text=Sin+Imagen"}
           alt={product.description}
           className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
         />
@@ -443,11 +422,29 @@ const ProductCard = ({ product, onProductClick }) => {
         </div>
 
         {/* Badge de stock bajo */}
-        {product.stock <= 5 && (
-          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Solo {product.stock} disponibles
-          </div>
-        )}
+        {/* Versión con función helper para mejor legibilidad */}
+{(() => {
+  if (product.stock === 1) {
+    return (
+      <div className="absolute top-4 left-4 bg-pink-400 text-white px-3 py-1 rounded-full text-xs font-medium">
+        ÚNICO
+      </div>
+    );
+  } else if (product.stock <= 5) {
+    return (
+      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+        Solo {product.stock} disponibles
+      </div>
+    );
+  } else if (product.stock <= 5) {
+    return (
+      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+        Solo {product.stock} disponibles
+      </div>
+    );
+  }
+  return null;
+})()}
       </div>
 
       {/* Información del producto */}

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Disclosure, Menu } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
@@ -24,8 +25,6 @@ export default function Navbar() {
   const userInfo = useSelector(state => state.userLogin.userInfo);
 
   useEffect(() => {
-    
-
     const handleScroll = () => {
       setIsTransparent(window.scrollY <= 50);
     };
@@ -47,14 +46,14 @@ export default function Navbar() {
         <>
           <Menu.Item>
             {({ active }) => (
-              <Link to="/login" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to="/login" className={classNames(active ? 'bg-gray-200' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Ingresar
               </Link>
             )}
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <Link to="/register" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to="/register" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Registrarse
               </Link>
             )}
@@ -66,14 +65,14 @@ export default function Navbar() {
         <>
           <Menu.Item>
             {({ active }) => (
-              <Link to={`/myOrders/${userInfo.n_document}`} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to={`/myOrders/${userInfo.n_document}`} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Mis Pedidos
               </Link>
             )}
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <Link to="/" onClick={() => dispatch(logout())} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to="/" onClick={() => dispatch(logout())} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Salir
               </Link>
             )}
@@ -89,7 +88,7 @@ export default function Navbar() {
                 to="/panel/caja"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
+                  'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900'
                 )}
               >
                 Caja
@@ -98,7 +97,7 @@ export default function Navbar() {
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <Link to="/allOrders" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to="/allOrders" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Pedidos
               </Link>
             )}
@@ -109,7 +108,7 @@ export default function Navbar() {
                 to="/panelGeneral"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
+                  'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900'
                 )}
               >
                 Panel General
@@ -122,7 +121,7 @@ export default function Navbar() {
                 to="/panelProductos"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
+                  'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900'
                 )}
               >
                 Panel Productos
@@ -135,7 +134,7 @@ export default function Navbar() {
                 to="/panel"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
+                  'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900'
                 )}
               >
                 Facturación
@@ -148,7 +147,7 @@ export default function Navbar() {
                 to="/register"
                 className={classNames(
                   active ? 'bg-gray-100' : '',
-                  'block px-4 py-2 text-sm text-gray-700'
+                  'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900'
                 )}
               >
                 Crear Administrador
@@ -157,37 +156,40 @@ export default function Navbar() {
           </Menu.Item>
           <Menu.Item>
             {({ active }) => (
-              <Link to="/" onClick={() => dispatch(logout())} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm')}>
+              <Link to="/" onClick={() => dispatch(logout())} className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700 hover:text-gray-900')}>
                 Salir
               </Link>
             )}
           </Menu.Item>
-          
         </>
       );
     }
   };
 
   return (
-    <Disclosure as="nav" className={`fixed top-0 left-0 w-full z-50 ${isTransparent ? 'bg-transparent' : 'bg-white'} transition-colors duration-300`}>
+    <Disclosure as="nav" className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+      isTransparent 
+        ? 'bg-white/10 backdrop-blur-md border-b border-white/20' 
+        : 'bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm'
+    }`}>
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
-              <div >
-                
-                  <FixedLogo/>
-            
+              <div>
+                <FixedLogo/>
               </div>
 
               <div className="hidden sm:flex sm:items-center sm:space-x-6">
-              {navigation.map((item) =>
+                {navigation.map((item) =>
                   item.isScroll ? (
                     <button
                       key={item.name}
-                      className={`text-lg font-medium ${
-                        isTransparent ? "text-white" : "text-slate-900"
-                      } hover:text-slate-600`}
+                      className={`text-lg font-medium transition-colors duration-300 ${
+                        isTransparent 
+                          ? "text-gray-800 hover:text-gray-600" 
+                          : "text-gray-900 hover:text-gray-600"
+                      }`}
                       onClick={handleScrollToFooter}
                     >
                       {item.name}
@@ -196,49 +198,101 @@ export default function Navbar() {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`text-lg font-medium ${
-                        isTransparent ? "text-white" : "text-slate-900"
-                      } hover:text-slate-600`}
+                      className={`text-lg font-medium transition-colors duration-300 ${
+                        isTransparent 
+                          ? "text-gray-800 hover:text-gray-600" 
+                          : "text-gray-900 hover:text-gray-600"
+                      }`}
                     >
                       {item.name}
                     </Link>
                   )
                 )}
-                {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="hidden lg:block px-3 py-2 border rounded-md" /> */}
-                <Link to="/cart" className={`${isTransparent ? 'text-white' : 'text-slate-900'}`}>
+                
+                {/* Carrito con mejor estilo */}
+                <Link 
+                  to="/cart" 
+                  className={`p-2 rounded-full transition-all duration-300 ${
+                    isTransparent 
+                      ? 'text-gray-800 hover:bg-white/20' 
+                      : 'text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
                   <ShoppingBagIcon className="h-6 w-6" />
                 </Link>
+                
+                {/* Menú mejorado */}
                 <Menu as="div" className="relative">
-                  <Menu.Button className={`${isTransparent ? 'text-white' : 'text-slate-900'}`}>Menu</Menu.Button>
-                  <Menu.Items className="absolute right-0 mt-2 w-48 bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                    {renderMenuItems()}
+                  <Menu.Button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isTransparent 
+                      ? 'text-gray-800 hover:bg-white/20' 
+                      : 'text-gray-900 hover:bg-gray-100'
+                  }`}>
+                    Menú
+                  </Menu.Button>
+                  <Menu.Items className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-md shadow-lg ring-1 ring-black/5 rounded-xl border border-gray-200 focus:outline-none">
+                    <div className="py-1">
+                      {renderMenuItems()}
+                    </div>
                   </Menu.Items>
                 </Menu>
               </div>
 
+              {/* Menú móvil */}
               <div className="sm:hidden">
-                <Disclosure.Button className="inline-flex items-center justify-center p-2">
-                  {open ? <XMarkIcon className={`${isTransparent ? 'text-white' : 'text-slate-900'} h-6 w-6`} /> : <Bars3Icon className={`${isTransparent ? 'text-white' : 'text-slate-900'} h-6 w-6`} />}
+                <Disclosure.Button className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors duration-300 ${
+                  isTransparent 
+                    ? 'text-gray-800 hover:bg-white/20' 
+                    : 'text-gray-900 hover:bg-gray-100'
+                }`}>
+                  {open ? (
+                    <XMarkIcon className="h-6 w-6" />
+                  ) : (
+                    <Bars3Icon className="h-6 w-6" />
+                  )}
                 </Disclosure.Button>
               </div>
             </div>
           </div>
 
-          <Disclosure.Panel className="sm:hidden">
-            <div className="space-y-1 px-2 pb-3 pt-2">
+          {/* Panel móvil mejorado */}
+          <Disclosure.Panel className="sm:hidden bg-white/95 backdrop-blur-md border-t border-gray-200">
+            <div className="space-y-1 px-4 pb-3 pt-2">
               {navigation.map((item) => (
-                <Disclosure.Button key={item.name} as={Link} to={item.href} className="block px-3 py-2 rounded-md text-base font-medium">
-                  {item.name}
-                </Disclosure.Button>
+                item.isScroll ? (
+                  <button
+                    key={item.name}
+                    onClick={handleScrollToFooter}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Disclosure.Button 
+                    key={item.name} 
+                    as={Link} 
+                    to={item.href} 
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                  >
+                    {item.name}
+                  </Disclosure.Button>
+                )
               ))}
-              {/* <input type="text" placeholder="Buscar productos" value={searchTerm} onChange={handleSearchChange} className="w-full px-3 py-2 border rounded-md" /> */}
-              <div className="border-t border-gray-200 pt-3">
-                <Menu as="div" className="relative">
-                  <Menu.Button className="block w-full text-left px-3 py-2">Menú</Menu.Button>
-                  <Menu.Items className="absolute right-0 mt-2 w-full bg-white shadow-lg">
-                    {renderMenuItems()}
-                  </Menu.Items>
-                </Menu>
+              
+              {/* Carrito en móvil */}
+              <Link 
+                to="/cart" 
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                <ShoppingBagIcon className="h-5 w-5 mr-2" />
+                Carrito
+              </Link>
+              
+              {/* Menú usuario en móvil */}
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="space-y-1">
+                  {renderMenuItems()}
+                </div>
               </div>
             </div>
           </Disclosure.Panel>

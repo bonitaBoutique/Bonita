@@ -89,7 +89,7 @@ function App() {
         {!isAdminRoute(location.pathname) && (
           <>
             <Footer />
-            <CartButton />
+            {/* <CartButton /> */}
             <WhatsappButton />
           </>
         )}

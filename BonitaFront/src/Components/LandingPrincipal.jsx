@@ -355,7 +355,7 @@ const LandingPrincipal = () => {
                 <p>💳 Todas las tarjetas</p>
                 <p>💰 Efectivo contra entrega</p>
                 <p>🏦 Transferencia bancaria</p>
-                <p>📱 Wompi Nequi & Bancolombia</p>
+                <p>📱 Wompi Nequi Addi Sistecrédito </p>
               </div>
             </div>
             <div>

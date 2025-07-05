@@ -210,7 +210,94 @@ const getBalance = async (req, res) => {
       .map(sale => sale.OrderDetail?.id_orderDetail)
       .filter(Boolean);
     
-    console.log("🔍 OrderDetails con Receipt:", orderIdsWithReceipt);
+    console.log("🔍 OrderDetails con Receipt (para excluir de pagos parciales):", orderIdsWithReceipt);
+    
+    let partialPayments = [];
+    try {
+      partialPayments = await CreditPayment.findAll({
+        where: dateFilter,
+        attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
+        include: [
+          {
+            model: Reservation,
+            attributes: ['n_document', 'id_orderDetail', 'status'],
+            required: true,
+            // ✅ CLAVE: Filtro para excluir reservas con órdenes que ya tienen Receipt
+            where: {
+              ...(orderIdsWithReceipt.length > 0 && {
+                id_orderDetail: {
+                  [Op.notIn]: orderIdsWithReceipt
+                }
+              })
+            },
+            include: [
+              {
+                model: OrderDetail,
+                attributes: ['id_orderDetail', 'n_document', 'state_order'],
+                required: false,
+                include: [
+                  {
+                    model: User,
+                    attributes: ['n_document', 'first_name', 'last_name', 'email'],
+                    required: false
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['date', 'DESC']]
+      });
+      
+      console.log(`✅ Pagos parciales encontrados (después de filtrar duplicados): ${partialPayments.length}`);
+      
+      // ✅ LOG DE DEBUG para pagos parciales
+      partialPayments.forEach((payment, index) => {
+        console.log(`Pago parcial ${index + 1}:`, {
+          id: payment.id_payment,
+          reservationId: payment.id_reservation,
+          amount: payment.amount,
+          orderDetailId: payment.Reservation?.id_orderDetail || 'Sin OrderDetail',
+          orderState: payment.Reservation?.OrderDetail?.state_order || 'Sin estado'
+        });
+      });
+      
+    } catch (creditPaymentError) {
+      console.log('🟡 Error buscando pagos parciales (tabla CreditPayment puede no existir):', creditPaymentError.message);
+      console.log('🟡 Continuando sin pagos parciales...');
+      partialPayments = [];
+    }
+
+    // ✅ PASO 4: PAGOS INICIALES DE RESERVAS
+    console.log("💰 Buscando pagos iniciales de reservas...");
+    
+    let reservationDateFilter = {};
+    if (!startDate && !endDate) {
+      const today = getColombiaDate();
+      const nextDay = new Date(today);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayString = nextDay.toISOString().split('T')[0];
+      
+      reservationDateFilter.createdAt = {
+        [Op.gte]: today,
+        [Op.lt]: nextDayString
+      };
+    } else {
+      reservationDateFilter.createdAt = {};
+      
+      if (startDate) {
+        reservationDateFilter.createdAt[Op.gte] = startDate;
+      }
+      
+      if (endDate) {
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayString = nextDay.toISOString().split('T')[0];
+        reservationDateFilter.createdAt[Op.lt] = nextDayString;
+      }
+    }
+
+    // ✅ NOTA: orderIdsWithReceipt ya se obtuvo arriba para pagos parciales
 
     let initialReservationPayments = [];
     try {
@@ -239,7 +326,7 @@ const getBalance = async (req, res) => {
           {
             model: OrderDetail,
             attributes: ['id_orderDetail', 'n_document', 'amount', 'state_order'],
-            required: true, // ✅ CAMBIAR: Requerir OrderDetail
+            required: true,
             where: {
               // ✅ FILTRO ADICIONAL: Solo órdenes en estado de reserva
               state_order: {

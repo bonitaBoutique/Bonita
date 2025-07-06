@@ -1728,28 +1728,39 @@ export const processReturn = (returnData) => async (dispatch) => {
       headers: { "Content-Type": "application/json" }
     });
 
+    // ✅ VERIFICAR RESPONSE STRUCTURE
+    console.log("📥 Response completa:", data);
+
     if (data.success) {
       dispatch({ 
         type: PROCESS_RETURN_SUCCESS, 
         payload: data.data 
       });
 
-      // ✅ Si se creó un nuevo recibo, actualizar la lista de recibos
+      // Si se creó un nuevo recibo, actualizar la lista de recibos
       if (data.data.newReceipt) {
-        // Refrescar la lista de recibos para incluir el nuevo
         dispatch(fetchAllReceipts());
       }
 
-      // Mostrar mensaje de éxito
+      // Mostrar mensaje de éxito específico
+      const { actionRequired } = data.data;
+      let successMessage = 'La devolución se ha procesado exitosamente';
+      
+      if (actionRequired.type === 'additional_payment') {
+        successMessage += `\n\nCliente debe pagar: $${actionRequired.amount.toLocaleString()}`;
+      } else if (actionRequired.type === 'credit_issued') {
+        successMessage += `\n\nCrédito emitido: $${actionRequired.amount.toLocaleString()}`;
+      }
+
       Swal.fire({
         title: '✅ Devolución Procesada',
-        text: 'La devolución se ha procesado exitosamente',
+        text: successMessage,
         icon: 'success',
-        timer: 3000,
+        timer: 5000,
         timerProgressBar: true
       });
 
-      return data.data; // Retornar resultado para el componente
+      return data.data;
     } else {
       throw new Error(data.message || 'Error al procesar devolución');
     }
@@ -1763,7 +1774,6 @@ export const processReturn = (returnData) => async (dispatch) => {
       payload: errorMessage
     });
 
-    // Mostrar mensaje de error
     Swal.fire({
       title: '❌ Error en Devolución',
       text: errorMessage,

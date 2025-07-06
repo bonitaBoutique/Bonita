@@ -12,6 +12,11 @@ module.exports = (sequelize) => {
       original_receipt_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        // ✅ AGREGAR REFERENCIA FORÁNEA
+        references: {
+          model: 'Receipts',
+          key: 'id_receipt'
+        }
       },
       return_date: {
         type: DataTypes.DATE,
@@ -31,7 +36,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 'Pendiente'
       },
-      // Montos calculados
       total_returned: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
@@ -48,15 +52,15 @@ module.exports = (sequelize) => {
         defaultValue: 0,
         comment: "Positivo: cliente debe pagar, Negativo: se le devuelve"
       },
-      // Referencias a nuevos registros generados
       new_receipt_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        // ✅ AGREGAR REFERENCIA FORÁNEA
+        references: {
+          model: 'Receipts',
+          key: 'id_receipt'
+        }
       },
-      // ❌ ELIMINADA COMPLETAMENTE - giftcard_id
-      // La gestión de GiftCards se hará desde otro componente
-      
-      // Datos JSON para productos
       returned_products: {
         type: DataTypes.TEXT,
         allowNull: false,

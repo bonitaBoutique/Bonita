@@ -483,7 +483,12 @@ export const registerUser = (userData) => async (dispatch) => {
       console.error('📋 [REDUX] Error de configuración:', error.message);
       errorMessage = error.message || 'Error en la configuración de la petición';
     }
-
+console.log('🔧 [DEBUG] Configuración completa:', {
+  BASE_URL,
+  fullURL: `${BASE_URL}/auth/register`,
+  userData: cleanUserData,
+  axiosConfig: config
+});
     // ✅ DISPATCH DEL ERROR
     dispatch({
       type: USER_REGISTER_FAIL,

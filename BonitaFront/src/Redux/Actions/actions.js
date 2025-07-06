@@ -379,7 +379,7 @@ export const registerUser = (userData) => async (dispatch) => {
       phone: userData.phone.trim(),
       city: userData.city?.trim() || 'No especificada',
       wdoctype: userData.wdoctype || 'CC',
-      role: 'User', // ✅ FORZAR ROLE A User
+      role: 'User',
       // ✅ CAMPOS TAXXA OPCIONALES
       wlegalorganizationtype: 'person',
       scostumername: `${userData.first_name} ${userData.last_name}`.trim(),
@@ -396,94 +396,103 @@ export const registerUser = (userData) => async (dispatch) => {
       },
     };
 
-    // ✅ USAR URL COMPLETA PARA EVITAR CONFLICTOS
+    // ✅ USAR URL COMPLETA Y CORRECTA
     const registerUrl = `${BASE_URL}/auth/register`;
     console.log('📡 [REDUX] URL de registro:', registerUrl);
+    console.log('📡 [REDUX] BASE_URL:', BASE_URL);
 
+    // ✅ HACER LA PETICIÓN
     const response = await axios.post(registerUrl, cleanUserData, config);
     
-    console.log('📥 [REDUX] Respuesta completa:', {
+    console.log('📥 [REDUX] Respuesta completa del servidor:', {
       status: response.status,
+      statusText: response.statusText,
       headers: response.headers,
       data: response.data
     });
 
-    // ✅ MANEJAR DIFERENTES FORMATOS DE RESPUESTA
+    // ✅ MANEJAR RESPUESTA EXITOSA
     if (response.status === 200 || response.status === 201) {
-      // El backend podría enviar diferentes estructuras
-      let userData = response.data;
+      // ✅ EXTRAER DATOS CORRECTAMENTE
+      let responseData = response.data;
       
       // Si viene anidado en data
-      if (response.data.data) {
-        userData = response.data.data;
+      if (response.data && response.data.data) {
+        responseData = response.data.data;
       }
-      // Si viene anidado en message
-      else if (response.data.message) {
-        userData = response.data.message;
+      // Si viene directamente en response.data
+      else if (response.data) {
+        responseData = response.data;
       }
+
+      console.log('✅ [REDUX] Datos procesados:', responseData);
 
       dispatch({
         type: USER_REGISTER_SUCCESS,
-        payload: userData,
+        payload: responseData,
       });
 
-      // ✅ MOSTRAR ÉXITO
-      Swal.fire({
-        icon: 'success',
-        title: '¡Usuario registrado!',
-        text: `${cleanUserData.first_name} ${cleanUserData.last_name} se ha registrado exitosamente`,
-        timer: 3000,
-        showConfirmButton: false
-      });
+      // ✅ MOSTRAR ÉXITO SIN IMPORTAR SWAL (para evitar conflictos)
+      console.log('✅ [REDUX] Usuario registrado exitosamente');
 
-      return userData; // Retornar para el componente
+      return responseData; // ✅ Retornar para el componente
     } else {
-      throw new Error(response.data?.message || 'Error en el registro');
+      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
     }
 
   } catch (error) {
-    console.error('❌ [REDUX] Error completo en registro:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      config: error.config
-    });
+    console.error('❌ [REDUX] Error completo en registro:', error);
     
-    // ✅ EXTRAER MENSAJE DE ERROR MÁS ESPECÍFICO
-    let errorMessage = 'Error en el registro';
-    
-    if (error.response?.status === 500) {
-      errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
-    } else if (error.response?.status === 400) {
-      errorMessage = error.response.data?.message || 'Datos inválidos';
-    } else if (error.response?.status === 409) {
-      errorMessage = 'El usuario ya existe con ese documento o email';
-    } else if (error.response?.data) {
-      // Manejar diferentes formatos de error del backend
-      if (typeof error.response.data === 'string') {
-        errorMessage = error.response.data;
-      } else if (error.response.data.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response.data.error) {
-        errorMessage = error.response.data.error;
+    // ✅ ANÁLISIS DETALLADO DEL ERROR
+    let errorMessage = 'Error desconocido en el registro';
+    let errorDetails = {};
+
+    if (error.response) {
+      // ✅ ERROR DE RESPUESTA DEL SERVIDOR
+      errorDetails = {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      };
+
+      console.error('📋 [REDUX] Detalles del error del servidor:', errorDetails);
+
+      switch (error.response.status) {
+        case 500:
+          errorMessage = 'Error interno del servidor. Contacta al administrador.';
+          break;
+        case 400:
+          errorMessage = error.response.data?.message || 'Datos inválidos enviados al servidor';
+          break;
+        case 409:
+          errorMessage = 'El usuario ya existe con ese documento o email';
+          break;
+        case 422:
+          errorMessage = 'Error de validación en los datos enviados';
+          break;
+        default:
+          errorMessage = error.response.data?.message || `Error ${error.response.status}`;
       }
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (error.request) {
+      // ✅ ERROR DE RED
+      console.error('📋 [REDUX] Error de red:', error.request);
+      errorMessage = 'Error de conexión. Verifica tu internet.';
+    } else {
+      // ✅ ERROR DE CONFIGURACIÓN
+      console.error('📋 [REDUX] Error de configuración:', error.message);
+      errorMessage = error.message || 'Error en la configuración de la petición';
     }
 
+    // ✅ DISPATCH DEL ERROR
     dispatch({
       type: USER_REGISTER_FAIL,
       payload: errorMessage,
     });
 
-    // ✅ MOSTRAR ERROR ESPECÍFICO
-    Swal.fire({
-      icon: 'error',
-      title: 'Error en el registro',
-      text: errorMessage,
-      footer: error.response?.status === 500 ? 'Contacta al administrador si el error persiste' : null
-    });
-
+    console.error('❌ [REDUX] Error final:', errorMessage);
+    
+    // ✅ RE-LANZAR EL ERROR PARA QUE EL COMPONENTE LO MANEJE
     throw new Error(errorMessage);
   }
 };

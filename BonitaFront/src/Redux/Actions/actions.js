@@ -383,7 +383,11 @@ export const registerUser = (userData) => async (dispatch) => {
         payload: response.data.data,
       });
     } else {
-      // Handle error from API
+          console.log('✅ [DEBUG] Response completa:', {
+  status: response.status,
+  data: response.data,
+  headers: response.headers
+});
       dispatch({
         type: USER_REGISTER_FAIL,
         payload: response.data.message,

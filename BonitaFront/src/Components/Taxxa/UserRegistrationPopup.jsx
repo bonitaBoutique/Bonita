@@ -6,6 +6,8 @@ import Swal from 'sweetalert2';
 
 const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
   const dispatch = useDispatch();
+  
+  // ✅ ESTADO SIMPLIFICADO - SOLO CAMPOS BÁSICOS
   const [userData, setUserData] = useState({
     n_document: prefilledDocument,
     first_name: '',
@@ -15,14 +17,8 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
     password: '',
     phone: '',
     city: '',
-    wdoctype: 'CC', // ✅ AGREGAR CAMPO OBLIGATORIO
-    role: 'User', // ✅ AGREGAR ROLE POR DEFECTO
-    // ✅ CAMPOS OPCIONALES PARA TAXXA (con valores por defecto)
-    wlegalorganizationtype: 'person',
-    scostumername: '',
-    stributaryidentificationkey: '',
-    sfiscalresponsibilities: 'R-99-PN',
-    sfiscalregime: 'ordinario'
+    wdoctype: 'CC'
+    // ✅ ELIMINAR CAMPOS TAXXA - SE MANEJAN EN LA ACTION
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -43,18 +39,9 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
       ...prev,
       [name]: value
     }));
-
-    // ✅ AUTO-LLENAR scostumername cuando se escriba el nombre
-    if (name === 'first_name' || name === 'last_name') {
-      setUserData(prev => ({
-        ...prev,
-        scostumername: `${name === 'first_name' ? value : prev.first_name} ${name === 'last_name' ? value : prev.last_name}`.trim()
-      }));
-    }
   };
 
   const validateForm = () => {
-    // ✅ VALIDACIONES MEJORADAS
     if (!userData.n_document || userData.n_document.length < 8) {
       Swal.fire({
         icon: "error",
@@ -103,56 +90,57 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
     return true;
   };
 
-const handleRegister = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-
-  try {
-    // ✅ ENVIAR SOLO DATOS BÁSICOS - Los TAXXA se manejan en la action
-    const cleanUserData = {
-      n_document: userData.n_document.toString().trim(),
-      first_name: userData.first_name.trim(),
-      last_name: userData.last_name.trim(),
-      gender: userData.gender,
-      email: userData.email.toLowerCase().trim(),
-      password: userData.password,
-      phone: userData.phone.trim(),
-      city: userData.city?.trim() || 'Cumaral',
-      wdoctype: userData.wdoctype || 'CC',
-    };
-
-    console.log('📤 [POPUP] Datos enviados:', cleanUserData);
-
-    // ✅ MOSTRAR LOADING
-    Swal.fire({
-      title: "Registrando usuario...",
-      text: "Por favor espera",
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      willOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    const result = await dispatch(registerUser(cleanUserData));
+  const handleRegister = async (e) => {
+    e.preventDefault();
     
-    console.log('✅ [POPUP] Usuario registrado:', result);
-    
-    // ✅ CERRAR POPUP DESPUÉS DEL ÉXITO
-    setTimeout(() => {
-      onClose();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('❌ [POPUP] Error en registro:', error);
-    // El error ya se maneja en la action
-  } finally {
-    setIsLoading(false);
-  }
-};
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
+    try {
+      // ✅ ENVIAR SOLO CAMPOS BÁSICOS Y LIMPIOS
+      const cleanUserData = {
+        n_document: userData.n_document.toString().trim(),
+        first_name: userData.first_name.trim(),
+        last_name: userData.last_name.trim(),
+        gender: userData.gender,
+        email: userData.email.toLowerCase().trim(),
+        password: userData.password,
+        phone: userData.phone.trim(),
+        city: userData.city?.trim() || 'Cumaral',
+        wdoctype: userData.wdoctype || 'CC'
+        // ✅ NO ENVIAR CAMPOS TAXXA - La action Redux los agregará con valores correctos
+      };
+
+      console.log('📤 [POPUP] Datos básicos enviados:', cleanUserData);
+
+      // ✅ MOSTRAR LOADING
+      Swal.fire({
+        title: "Registrando usuario...",
+        text: "Por favor espera",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const result = await dispatch(registerUser(cleanUserData));
+      
+      console.log('✅ [POPUP] Usuario registrado exitosamente:', result);
+      
+      // ✅ CERRAR POPUP DESPUÉS DEL ÉXITO
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ [POPUP] Error en registro:', error);
+      // El error ya se maneja en la action
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -192,7 +180,7 @@ const handleRegister = async (e) => {
               <option value="CC">Cédula de Ciudadanía</option>
               <option value="TI">Tarjeta de Identidad</option>
               <option value="CE">Cédula de Extranjería</option>
-              <option value="PP">Pasaporte</option>
+              <option value="PAS">Pasaporte</option>
             </select>
           </div>
           

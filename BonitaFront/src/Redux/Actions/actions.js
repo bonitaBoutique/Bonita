@@ -368,7 +368,7 @@ export const registerUser = (userData) => async (dispatch) => {
   try {
     dispatch({ type: USER_REGISTER_REQUEST });
 
-    // ✅ LIMPIAR DATOS ANTES DE ENVIAR
+    // ✅ LIMPIAR DATOS CON VALORES POR DEFECTO CORRECTOS
     const cleanUserData = {
       n_document: userData.n_document.toString().trim(),
       first_name: userData.first_name.trim(),
@@ -380,12 +380,12 @@ export const registerUser = (userData) => async (dispatch) => {
       city: userData.city?.trim() || 'No especificada',
       wdoctype: userData.wdoctype || 'CC',
       role: 'User',
-      // ✅ CAMPOS TAXXA OPCIONALES
+      // ✅ CAMPOS TAXXA CON VALORES POR DEFECTO DEL MODELO
       wlegalorganizationtype: 'person',
       scostumername: `${userData.first_name} ${userData.last_name}`.trim(),
-      stributaryidentificationkey: '',
+      stributaryidentificationkey: 'ZZ', // ✅ USAR VALOR POR DEFECTO DEL ENUM
       sfiscalresponsibilities: 'R-99-PN',
-      sfiscalregime: 'ordinario'
+      sfiscalregime: '48' // ✅ CORREGIR: usar '48' en lugar de 'ordinario'
     };
 
     console.log('📤 [REDUX] Datos limpios a enviar:', cleanUserData);
@@ -396,46 +396,41 @@ export const registerUser = (userData) => async (dispatch) => {
       },
     };
 
-    // ✅ USAR URL COMPLETA Y CORRECTA
-    const registerUrl = `${BASE_URL}/auth/register`;
-    console.log('📡 [REDUX] URL de registro:', registerUrl);
-    console.log('📡 [REDUX] BASE_URL:', BASE_URL);
-
-    // ✅ HACER LA PETICIÓN
-    const response = await axios.post(registerUrl, cleanUserData, config);
+    const response = await axios.post(`${BASE_URL}/auth/register`, cleanUserData, config);
     
     console.log('📥 [REDUX] Respuesta completa del servidor:', {
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
       data: response.data
     });
 
     // ✅ MANEJAR RESPUESTA EXITOSA
     if (response.status === 200 || response.status === 201) {
-      // ✅ EXTRAER DATOS CORRECTAMENTE
       let responseData = response.data;
       
-      // Si viene anidado en data
-      if (response.data && response.data.data) {
+      // Manejar diferentes estructuras de respuesta
+      if (response.data?.data) {
         responseData = response.data.data;
+      } else if (response.data?.message) {
+        responseData = response.data.message;
       }
-      // Si viene directamente en response.data
-      else if (response.data) {
-        responseData = response.data;
-      }
-
-      console.log('✅ [REDUX] Datos procesados:', responseData);
 
       dispatch({
         type: USER_REGISTER_SUCCESS,
         payload: responseData,
       });
 
-      // ✅ MOSTRAR ÉXITO SIN IMPORTAR SWAL (para evitar conflictos)
-      console.log('✅ [REDUX] Usuario registrado exitosamente');
+      // ✅ MOSTRAR ÉXITO
+      Swal.fire({
+        icon: 'success',
+        title: '¡Usuario registrado!',
+        text: `${cleanUserData.first_name} ${cleanUserData.last_name} se ha registrado exitosamente`,
+        timer: 3000,
+        showConfirmButton: false
+      });
 
-      return responseData; // ✅ Retornar para el componente
+      console.log('✅ [REDUX] Usuario registrado exitosamente');
+      return responseData;
     } else {
       throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
     }
@@ -443,24 +438,17 @@ export const registerUser = (userData) => async (dispatch) => {
   } catch (error) {
     console.error('❌ [REDUX] Error completo en registro:', error);
     
-    // ✅ ANÁLISIS DETALLADO DEL ERROR
     let errorMessage = 'Error desconocido en el registro';
-    let errorDetails = {};
 
     if (error.response) {
-      // ✅ ERROR DE RESPUESTA DEL SERVIDOR
-      errorDetails = {
+      console.error('📋 [REDUX] Detalles del error del servidor:', {
         status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers
-      };
-
-      console.error('📋 [REDUX] Detalles del error del servidor:', errorDetails);
+        data: error.response.data
+      });
 
       switch (error.response.status) {
         case 500:
-          errorMessage = 'Error interno del servidor. Contacta al administrador.';
+          errorMessage = 'Error interno del servidor. Verifica los datos e inténtalo de nuevo.';
           break;
         case 400:
           errorMessage = error.response.data?.message || 'Datos inválidos enviados al servidor';
@@ -475,33 +463,27 @@ export const registerUser = (userData) => async (dispatch) => {
           errorMessage = error.response.data?.message || `Error ${error.response.status}`;
       }
     } else if (error.request) {
-      // ✅ ERROR DE RED
-      console.error('📋 [REDUX] Error de red:', error.request);
       errorMessage = 'Error de conexión. Verifica tu internet.';
     } else {
-      // ✅ ERROR DE CONFIGURACIÓN
-      console.error('📋 [REDUX] Error de configuración:', error.message);
       errorMessage = error.message || 'Error en la configuración de la petición';
     }
-console.log('🔧 [DEBUG] Configuración completa:', {
-  BASE_URL,
-  fullURL: `${BASE_URL}/auth/register`,
-  userData: cleanUserData,
-  axiosConfig: config
-});
-    // ✅ DISPATCH DEL ERROR
+
     dispatch({
       type: USER_REGISTER_FAIL,
       payload: errorMessage,
     });
 
+    // ✅ MOSTRAR ERROR
+    Swal.fire({
+      icon: 'error',
+      title: 'Error en el registro',
+      text: errorMessage,
+    });
+
     console.error('❌ [REDUX] Error final:', errorMessage);
-    
-    // ✅ RE-LANZAR EL ERROR PARA QUE EL COMPONENTE LO MANEJE
     throw new Error(errorMessage);
   }
 };
-
 
 export const login = (email, password) => async (dispatch) => {
   try {

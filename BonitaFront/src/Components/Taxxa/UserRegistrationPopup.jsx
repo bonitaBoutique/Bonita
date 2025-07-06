@@ -103,7 +103,7 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
     return true;
   };
 
-  const handleRegister = async (e) => {
+const handleRegister = async (e) => {
   e.preventDefault();
   
   if (!validateForm()) return;
@@ -111,7 +111,7 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
   setIsLoading(true);
 
   try {
-    // ✅ PREPARAR DATOS EXACTOS
+    // ✅ ENVIAR SOLO DATOS BÁSICOS - Los TAXXA se manejan en la action
     const cleanUserData = {
       n_document: userData.n_document.toString().trim(),
       first_name: userData.first_name.trim(),
@@ -124,9 +124,9 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
       wdoctype: userData.wdoctype || 'CC',
     };
 
-    console.log('📤 [POPUP] Registrando usuario con datos:', cleanUserData);
+    console.log('📤 [POPUP] Datos enviados:', cleanUserData);
 
-    // ✅ MOSTRAR LOADING MANUAL
+    // ✅ MOSTRAR LOADING
     Swal.fire({
       title: "Registrando usuario...",
       text: "Por favor espera",
@@ -139,34 +139,16 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
 
     const result = await dispatch(registerUser(cleanUserData));
     
-    console.log('✅ [POPUP] Registro exitoso:', result);
+    console.log('✅ [POPUP] Usuario registrado:', result);
     
-    // ✅ MOSTRAR ÉXITO Y CERRAR
-    Swal.fire({
-      icon: 'success',
-      title: '¡Usuario registrado!',
-      text: `${cleanUserData.first_name} ${cleanUserData.last_name} se ha registrado exitosamente`,
-      timer: 2000,
-      showConfirmButton: false
-    });
-
     // ✅ CERRAR POPUP DESPUÉS DEL ÉXITO
     setTimeout(() => {
       onClose();
-    }, 2000);
+    }, 1000);
     
   } catch (error) {
     console.error('❌ [POPUP] Error en registro:', error);
-    
-    // ✅ MOSTRAR ERROR ESPECÍFICO
-    Swal.fire({
-      icon: 'error',
-      title: 'Error en el registro',
-      text: error.message || 'No se pudo registrar el usuario',
-      confirmButtonText: 'Intentar nuevamente'
-    });
-    
-    // ✅ NO cerrar el popup para que el usuario pueda corregir
+    // El error ya se maneja en la action
   } finally {
     setIsLoading(false);
   }

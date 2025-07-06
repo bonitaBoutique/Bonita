@@ -67,7 +67,7 @@ module.exports = (sequelize) => {
       stributaryidentificationkey: {
         type: DataTypes.ENUM("O-1", "O-4", "ZZ", "ZA"),
         allowNull: true,
-        defaultValue: "O-1",
+        defaultValue: "ZZ",
       },
       sfiscalresponsibilities: {
         type: DataTypes.ENUM("O-13", "O-15", "O-23", "O-47", "R-99-PN"),

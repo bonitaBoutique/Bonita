@@ -145,6 +145,16 @@ const ProductDetails = () => {
                   {referenceProduct.description}
                 </h1>
                 
+                {/* ✅ AGREGAR CÓDIGO DE PROVEEDOR */}
+                {referenceProduct.codigoProv && (
+                  <div className="bg-gray-50 p-3 rounded-lg border">
+                    
+                    <p className="text-lg font-mono text-gray-800 mt-1">
+                      {referenceProduct.codigoProv}
+                    </p>
+                  </div>
+                )}
+                
                 {/* Selector de tallas */}
                 {sizesArray.length > 0 && (
                   <div className="mt-4">

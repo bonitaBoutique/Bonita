@@ -29,7 +29,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       codigoProv: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true,
       },
 

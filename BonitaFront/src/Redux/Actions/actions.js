@@ -1717,60 +1717,202 @@ export const processReturn = (returnData) => async (dispatch) => {
 
     console.log("🔄 Procesando devolución:", returnData);
 
-    const { data } = await axios.post(`${BASE_URL}/product/process-return`, returnData, {
-      headers: { "Content-Type": "application/json" }
+    const response = await axios.post(`${BASE_URL}/product/process-return`, returnData, {
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      timeout: 30000
     });
 
-    // ✅ VERIFICAR RESPONSE STRUCTURE
-    console.log("📥 Response completa:", data);
+    console.log("📥 Response status:", response.status);
+    console.log("📥 Response completa:", response.data);
 
-    if (data.success) {
+    const data = response.data;
+
+    // ✅ VERIFICAR ESTRUCTURA DE RESPUESTA EXITOSA
+    if (data.status === "success" || data.success) {
+      const responseData = data.data || data;
+      
       dispatch({ 
         type: PROCESS_RETURN_SUCCESS, 
-        payload: data.data 
+        payload: responseData 
       });
 
       // Si se creó un nuevo recibo, actualizar la lista de recibos
-      if (data.data.newReceipt) {
+      if (responseData.newReceipt) {
         dispatch(fetchAllReceipts());
       }
 
-      // Mostrar mensaje de éxito específico
-      const { actionRequired } = data.data;
-      let successMessage = 'La devolución se ha procesado exitosamente';
-      
-      if (actionRequired.type === 'additional_payment') {
-        successMessage += `\n\nCliente debe pagar: $${actionRequired.amount.toLocaleString()}`;
-      } else if (actionRequired.type === 'credit_issued') {
-        successMessage += `\n\nCrédito emitido: $${actionRequired.amount.toLocaleString()}`;
+      // ✅ MEJORAR MENSAJE DE ÉXITO SEGÚN EL TIPO DE DEVOLUCIÓN
+      let successTitle = '✅ Devolución Procesada';
+      let successDetails = [];
+
+      if (responseData.actionRequired) {
+        const { actionRequired } = responseData;
+        
+        switch (actionRequired.type) {
+          case 'additional_payment':
+            successTitle = '💳 Pago Adicional Requerido';
+            successDetails.push(`Cliente debe pagar: $${actionRequired.amount?.toLocaleString("es-CO")}`);
+            break;
+          case 'credit_issued':
+            successTitle = '🎁 Crédito Emitido';
+            successDetails.push(`Crédito a favor del cliente: $${actionRequired.amount?.toLocaleString("es-CO")}`);
+            break;
+          case 'no_action':
+            successTitle = '🔄 Intercambio Exitoso';
+            successDetails.push('Intercambio realizado sin diferencia de precio');
+            break;
+          default:
+            successDetails.push(actionRequired.message || 'Procesado correctamente');
+        }
       }
 
+      // ✅ AGREGAR INFORMACIÓN ADICIONAL
+      if (responseData.stockUpdated) {
+        successDetails.push('📦 Inventario actualizado correctamente');
+      }
+
+      if (responseData.returnedProducts?.length > 0) {
+        successDetails.push(`📤 ${responseData.returnedProducts.length} producto(s) devuelto(s)`);
+      }
+
+      if (responseData.newProducts?.length > 0) {
+        successDetails.push(`📥 ${responseData.newProducts.length} producto(s) nuevo(s)`);
+      }
+
+      // ✅ MOSTRAR SWEETALERT CON INFORMACIÓN COMPLETA
       Swal.fire({
-        title: '✅ Devolución Procesada',
-        text: successMessage,
+        title: successTitle,
+        html: `
+          <div class="text-left">
+            <div class="mb-4">
+              <p class="font-medium text-green-600">La devolución se ha procesado exitosamente</p>
+            </div>
+            ${successDetails.length > 0 ? `
+              <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded">
+                <ul class="list-disc list-inside space-y-1 text-sm">
+                  ${successDetails.map(detail => `<li>${detail}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${responseData.calculations ? `
+              <div class="mt-4 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <p class="font-medium text-blue-800 mb-2">💰 Resumen de Cálculos</p>
+                <div class="text-sm text-blue-700 space-y-1">
+                  <p>• Total devuelto: $${responseData.calculations.totalReturned?.toLocaleString("es-CO")}</p>
+                  <p>• Total nuevo: $${responseData.calculations.totalNewPurchase?.toLocaleString("es-CO")}</p>
+                  <p>• Diferencia: $${responseData.calculations.difference?.toLocaleString("es-CO")}</p>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `,
         icon: 'success',
-        timer: 5000,
-        timerProgressBar: true
+        timer: 6000,
+        timerProgressBar: true,
+        showConfirmButton: true,
+        confirmButtonText: '👍 Entendido',
+        allowOutsideClick: false
       });
 
-      return data.data;
+      return responseData;
     } else {
-      throw new Error(data.message || 'Error al procesar devolución');
+      // ✅ MANEJAR RESPUESTAS DE ERROR DEL SERVIDOR
+      const errorMessage = data.message || data.error || 'Error desconocido del servidor';
+      console.error("❌ Error en respuesta del servidor:", data);
+      throw new Error(errorMessage);
     }
 
   } catch (error) {
-    console.error("❌ Error procesando devolución:", error);
-    const errorMessage = error.response?.data?.error || error.message;
+    console.error("❌ Error completo procesando devolución:", {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data
+      }
+    });
+
+    // ✅ EXTRAER INFORMACIÓN DETALLADA DEL ERROR
+    let errorMessage = 'Error desconocido al procesar devolución';
+    let errorDetails = [];
+
+    if (error.response) {
+      // Error de respuesta del servidor (4xx, 5xx)
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 400:
+          errorMessage = 'Datos de devolución inválidos';
+          if (data?.details) {
+            errorDetails.push(`Detalles: ${data.details}`);
+          }
+          break;
+        case 404:
+          errorMessage = 'Recibo no encontrado';
+          errorDetails.push('Verifica que el recibo exista y no haya sido eliminado');
+          break;
+        case 422:
+          errorMessage = 'Error de validación';
+          if (data?.details) {
+            errorDetails.push(`Detalles: ${data.details}`);
+          }
+          break;
+        case 500:
+          errorMessage = 'Error interno del servidor';
+          errorDetails.push('Contacta al administrador del sistema');
+          if (data?.details) {
+            errorDetails.push(`Detalles técnicos: ${data.details}`);
+          }
+          break;
+        default:
+          errorMessage = `Error del servidor (${status})`;
+      }
+
+      // Intentar extraer mensaje específico del backend
+      if (data?.message) {
+        errorMessage = data.message;
+      } else if (data?.error) {
+        errorMessage = data.error;
+      }
+
+    } else if (error.request) {
+      // Error de red (sin respuesta del servidor)
+      errorMessage = 'Error de conexión';
+      errorDetails.push('Verifica tu conexión a internet');
+      errorDetails.push('El servidor podría estar temporalmente inaccesible');
+    } else {
+      // Error en la configuración de la petición
+      errorMessage = error.message || 'Error en la configuración de la petición';
+    }
 
     dispatch({
       type: PROCESS_RETURN_FAILURE,
       payload: errorMessage
     });
 
+    // ✅ MOSTRAR ERROR DETALLADO AL USUARIO
     Swal.fire({
       title: '❌ Error en Devolución',
-      text: errorMessage,
-      icon: 'error'
+      html: `
+        <div class="text-left">
+          <p class="font-medium text-red-600 mb-3">${errorMessage}</p>
+          ${errorDetails.length > 0 ? `
+            <ul class="list-disc list-inside space-y-1 text-sm text-gray-600">
+              ${errorDetails.map(detail => `<li>${detail}</li>`).join('')}
+            </ul>
+          ` : ''}
+        </div>
+      `,
+      icon: 'error',
+      confirmButtonText: '🔄 Intentar de nuevo',
+      showCancelButton: true,
+      cancelButtonText: '❌ Cancelar'
     });
     
     throw new Error(errorMessage);

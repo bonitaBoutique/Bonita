@@ -1,9 +1,50 @@
-const { Receipt, OrderDetail, Product, sequelize } = require("../../data");
+const { Receipt, OrderDetail, Product, conn: sequelize } = require("../../data");
+// ✅ CAMBIO: Importar 'conn' y renombrarlo a 'sequelize'
 const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
-  // ✅ CREAR TRANSACCIÓN CORRECTAMENTE
-  const transaction = await sequelize.transaction();
+  // ✅ DEBUGGING DETALLADO
+  console.log("🔍 DEBUG - Verificando imports...");
+  console.log("Receipt:", typeof Receipt);
+  console.log("OrderDetail:", typeof OrderDetail);
+  console.log("Product:", typeof Product);
+  console.log("sequelize (conn):", typeof sequelize);
+  console.log("sequelize object:", sequelize ? "OK" : "UNDEFINED");
+  
+  // ✅ VERIFICAR SI SEQUELIZE ESTÁ DISPONIBLE
+  if (!sequelize) {
+    console.error("❌ ERROR: sequelize (conn) is undefined");
+    return response(res, 500, "error", {
+      success: false,
+      error: "Error de configuración del servidor - sequelize no disponible"
+    });
+  }
+
+  if (typeof sequelize.transaction !== 'function') {
+    console.error("❌ ERROR: sequelize.transaction is not a function");
+    console.log("sequelize methods:", Object.keys(sequelize));
+    return response(res, 500, "error", {
+      success: false,
+      error: "Error de configuración del servidor - transaction method no disponible"
+    });
+  }
+
+  console.log("✅ sequelize está disponible, creando transacción...");
+  
+  let transaction;
+  
+  try {
+    // ✅ CREAR TRANSACCIÓN CON MANEJO DE ERRORES
+    transaction = await sequelize.transaction();
+    console.log("✅ Transacción creada exitosamente:", typeof transaction);
+  } catch (transactionError) {
+    console.error("❌ Error creando transacción:", transactionError);
+    return response(res, 500, "error", {
+      success: false,
+      error: "Error creando transacción de base de datos",
+      details: transactionError.message
+    });
+  }
   
   try {
     console.log("🔄 Iniciando procesamiento de devolución");
@@ -20,6 +61,7 @@ module.exports = async (req, res) => {
 
     // ✅ VALIDACIONES BÁSICAS
     if (!original_receipt_id) {
+      console.log("❌ Validación fallida: No hay original_receipt_id");
       await transaction.rollback();
       return response(res, 400, "error", {
         success: false,
@@ -28,6 +70,7 @@ module.exports = async (req, res) => {
     }
 
     if (!cashier_document) {
+      console.log("❌ Validación fallida: No hay cashier_document");
       await transaction.rollback();
       return response(res, 400, "error", {
         success: false,
@@ -36,6 +79,7 @@ module.exports = async (req, res) => {
     }
 
     if (!returned_products || returned_products.length === 0) {
+      console.log("❌ Validación fallida: No hay returned_products");
       await transaction.rollback();
       return response(res, 400, "error", {
         success: false,
@@ -43,6 +87,7 @@ module.exports = async (req, res) => {
       });
     }
 
+    console.log("✅ Validaciones básicas pasadas");
     console.log("🔍 Buscando recibo original:", original_receipt_id);
 
     // ✅ BUSCAR RECIBO ORIGINAL
@@ -59,6 +104,7 @@ module.exports = async (req, res) => {
     });
 
     if (!originalReceipt) {
+      console.log("❌ Recibo original no encontrado");
       await transaction.rollback();
       return response(res, 404, "error", {
         success: false,
@@ -66,17 +112,22 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log("✅ Recibo original encontrado");
+    console.log("✅ Recibo original encontrado:", originalReceipt.id_receipt);
 
     // ✅ CALCULAR TOTALES
     let totalReturned = 0;
     let totalNewPurchase = 0;
 
+    console.log("💰 Procesando productos devueltos:", returned_products.length);
+
     // Calcular total de productos devueltos
     for (const returnedProduct of returned_products) {
       const { id_product, quantity, unit_price } = returnedProduct;
       
+      console.log(`📝 Procesando producto devuelto: ${id_product}, qty: ${quantity}, price: ${unit_price}`);
+      
       if (!id_product || !quantity || !unit_price) {
+        console.log("❌ Datos incompletos para producto devuelto:", returnedProduct);
         await transaction.rollback();
         return response(res, 400, "error", {
           success: false,
@@ -85,22 +136,28 @@ module.exports = async (req, res) => {
       }
 
       totalReturned += (unit_price * quantity);
-
-      // ✅ ACTUALIZAR STOCK (devolver productos al inventario)
       console.log(`📦 Devolviendo ${quantity} unidades del producto ${id_product}`);
       
+      // ✅ ACTUALIZAR STOCK (devolver productos al inventario)
       await Product.increment('stock', {
         by: quantity,
         where: { id_product },
         transaction
       });
+      
+      console.log(`✅ Stock incrementado para producto ${id_product}`);
     }
+
+    console.log("💰 Procesando productos nuevos:", new_products.length);
 
     // Calcular total de productos nuevos
     for (const newProduct of new_products) {
       const { id_product, quantity, unit_price } = newProduct;
       
+      console.log(`📝 Procesando producto nuevo: ${id_product}, qty: ${quantity}, price: ${unit_price}`);
+      
       if (!id_product || !quantity || !unit_price) {
+        console.log("❌ Datos incompletos para producto nuevo:", newProduct);
         await transaction.rollback();
         return response(res, 400, "error", {
           success: false,
@@ -111,9 +168,11 @@ module.exports = async (req, res) => {
       totalNewPurchase += (unit_price * quantity);
 
       // ✅ VERIFICAR STOCK DISPONIBLE
+      console.log(`🔍 Verificando stock para producto ${id_product}`);
       const product = await Product.findByPk(id_product, { transaction });
       
       if (!product) {
+        console.log(`❌ Producto no encontrado: ${id_product}`);
         await transaction.rollback();
         return response(res, 404, "error", {
           success: false,
@@ -121,7 +180,10 @@ module.exports = async (req, res) => {
         });
       }
 
+      console.log(`📦 Stock actual del producto ${id_product}: ${product.stock}`);
+
       if (product.stock < quantity) {
+        console.log(`❌ Stock insuficiente para ${id_product}. Disponible: ${product.stock}, Solicitado: ${quantity}`);
         await transaction.rollback();
         return response(res, 400, "error", {
           success: false,
@@ -137,12 +199,14 @@ module.exports = async (req, res) => {
         where: { id_product },
         transaction
       });
+      
+      console.log(`✅ Stock decrementado para producto ${id_product}`);
     }
 
     // ✅ CALCULAR DIFERENCIA
     const difference = totalNewPurchase - totalReturned;
 
-    console.log("💰 Cálculos:", {
+    console.log("💰 Cálculos finales:", {
       totalReturned,
       totalNewPurchase,
       difference
@@ -153,65 +217,21 @@ module.exports = async (req, res) => {
 
     // ✅ DETERMINAR ACCIÓN REQUERIDA
     if (difference > 0) {
-      // Cliente debe pagar diferencia
+      console.log("💳 Cliente debe pagar diferencia");
       actionRequired = {
         type: 'additional_payment',
         amount: difference,
         message: `Cliente debe pagar diferencia de $${difference.toLocaleString("es-CO")}`
       };
-
-      // ✅ CREAR NUEVO RECIBO PARA LA DIFERENCIA
-      if (new_products.length > 0) {
-        console.log("🧾 Creando nuevo recibo para productos nuevos...");
-        
-        // Obtener el siguiente número de recibo
-        const lastReceipt = await Receipt.findOne({
-          order: [['id_receipt', 'DESC']],
-          transaction
-        });
-        
-        const nextReceiptNumber = lastReceipt ? lastReceipt.id_receipt + 1 : 1001;
-
-        // ✅ CREAR NUEVO ORDER DETAIL PARA LOS PRODUCTOS NUEVOS
-        const newOrderDetail = await OrderDetail.create({
-          date: new Date().toISOString().split('T')[0],
-          quantity: new_products.reduce((sum, p) => sum + p.quantity, 0),
-          amount: totalNewPurchase,
-          shippingCost: 0,
-          address: "Retira en Local",
-          state_order: "Pedido Realizado",
-          transaction_status: "Pendiente",
-          pointOfSale: "Local",
-          discount: 0,
-          n_document: cashier_document
-        }, { transaction });
-
-        // ✅ CREAR NUEVO RECIBO
-        newReceipt = await Receipt.create({
-          id_receipt: nextReceiptNumber,
-          cashier_document,
-          buyer_name: originalReceipt.buyer_name || "Cliente",
-          buyer_email: originalReceipt.buyer_email || "",
-          buyer_phone: originalReceipt.buyer_phone || "",
-          total_amount: difference, // Solo la diferencia que debe pagar
-          payMethod: "Pendiente",
-          amount: difference,
-          date: new Date().toISOString().split('T')[0],
-          id_orderDetail: newOrderDetail.id_orderDetail
-        }, { transaction });
-
-        console.log("✅ Nuevo recibo creado:", newReceipt.id_receipt);
-      }
-
     } else if (difference < 0) {
-      // Se debe emitir crédito al cliente
+      console.log("🎁 Se debe emitir crédito al cliente");
       actionRequired = {
         type: 'credit_issued',
         amount: Math.abs(difference),
         message: `Crédito emitido por $${Math.abs(difference).toLocaleString("es-CO")}`
       };
     } else {
-      // Intercambio exacto
+      console.log("🔄 Intercambio exacto sin diferencia");
       actionRequired = {
         type: 'no_action',
         amount: 0,
@@ -220,7 +240,9 @@ module.exports = async (req, res) => {
     }
 
     // ✅ CONFIRMAR TRANSACCIÓN
+    console.log("💾 Confirmando transacción...");
     await transaction.commit();
+    console.log("✅ Transacción confirmada exitosamente");
 
     console.log("✅ Devolución procesada exitosamente");
 
@@ -250,9 +272,17 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     // ✅ ROLLBACK EN CASO DE ERROR
-    await transaction.rollback();
+    console.error("💥 Error durante el procesamiento:", error);
+    console.error("💥 Stack trace:", error.stack);
     
-    console.error("💥 Error procesando devolución:", error);
+    if (transaction) {
+      try {
+        await transaction.rollback();
+        console.log("🔄 Rollback ejecutado exitosamente");
+      } catch (rollbackError) {
+        console.error("💥 Error en rollback:", rollbackError);
+      }
+    }
     
     return response(res, 500, "error", {
       success: false,

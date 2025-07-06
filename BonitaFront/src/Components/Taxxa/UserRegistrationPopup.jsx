@@ -90,57 +90,56 @@ const UserRegistrationPopup = ({ onClose, prefilledDocument = '' }) => {
     return true;
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+ const handleRegister = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+
+  try {
+    // ✅ DATOS EXACTOS COMO EL BODY QUE FUNCIONA EN INSOMNIA
+    const cleanUserData = {
+      n_document: userData.n_document.toString().trim(),
+      first_name: userData.first_name.trim(),
+      last_name: userData.last_name.trim(),
+      email: userData.email.toLowerCase().trim(),
+      password: userData.password,
+      phone: userData.phone.trim(),
+      city: userData.city?.trim() || 'Bogotá',
+      wdoctype: userData.wdoctype || 'CC'
+      // ✅ NO ENVIAR CAMPOS ADICIONALES DESDE EL POPUP
+    };
+
+    console.log('📤 [POPUP] Datos enviados desde el popup:', cleanUserData);
+
+    // ✅ MOSTRAR LOADING
+    Swal.fire({
+      title: "Registrando usuario...",
+      text: "Por favor espera",
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      willOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const result = await dispatch(registerUser(cleanUserData));
     
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      // ✅ ENVIAR SOLO CAMPOS BÁSICOS Y LIMPIOS
-      const cleanUserData = {
-        n_document: userData.n_document.toString().trim(),
-        first_name: userData.first_name.trim(),
-        last_name: userData.last_name.trim(),
-        gender: userData.gender,
-        email: userData.email.toLowerCase().trim(),
-        password: userData.password,
-        phone: userData.phone.trim(),
-        city: userData.city?.trim() || 'Cumaral',
-        wdoctype: userData.wdoctype || 'CC'
-        // ✅ NO ENVIAR CAMPOS TAXXA - La action Redux los agregará con valores correctos
-      };
-
-      console.log('📤 [POPUP] Datos básicos enviados:', cleanUserData);
-
-      // ✅ MOSTRAR LOADING
-      Swal.fire({
-        title: "Registrando usuario...",
-        text: "Por favor espera",
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        willOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      const result = await dispatch(registerUser(cleanUserData));
-      
-      console.log('✅ [POPUP] Usuario registrado exitosamente:', result);
-      
-      // ✅ CERRAR POPUP DESPUÉS DEL ÉXITO
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-      
-    } catch (error) {
-      console.error('❌ [POPUP] Error en registro:', error);
-      // El error ya se maneja en la action
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    console.log('✅ [POPUP] Usuario registrado exitosamente:', result);
+    
+    // ✅ CERRAR POPUP DESPUÉS DEL ÉXITO
+    setTimeout(() => {
+      onClose();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('❌ [POPUP] Error en registro:', error);
+    // El error ya se maneja en la action
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">

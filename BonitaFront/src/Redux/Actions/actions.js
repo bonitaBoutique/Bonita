@@ -377,7 +377,7 @@ export const registerUser = (userData) => async (dispatch) => {
       email: userData.email.toLowerCase().trim(),
       password: userData.password,
       phone: userData.phone.trim(),
-      city: userData.city?.trim() || 'No especificada',
+      city: userData.city?.trim() || 'Bogotá',
       wdoctype: userData.wdoctype || 'CC',
       role: 'User',
       // ✅ CAMPOS TAXXA CON VALORES POR DEFECTO DEL MODELO
@@ -388,7 +388,18 @@ export const registerUser = (userData) => async (dispatch) => {
       sfiscalregime: '48' // ✅ CORREGIR: usar '48' en lugar de 'ordinario'
     };
 
-    console.log('📤 [REDUX] Datos limpios a enviar:', cleanUserData);
+    // ✅ DEBUG: COMPARAR CON EL BODY QUE FUNCIONA EN INSOMNIA
+    console.log('📤 [REDUX] Datos que va a enviar el frontend:', JSON.stringify(cleanUserData, null, 2));
+    
+    // ✅ DEBUG: VERIFICAR QUE TODOS LOS CAMPOS ENUM TENGAN VALORES VÁLIDOS
+    console.log('🔧 [DEBUG] Verificación de campos ENUM:', {
+      wdoctype: cleanUserData.wdoctype,
+      role: cleanUserData.role,
+      wlegalorganizationtype: cleanUserData.wlegalorganizationtype,
+      stributaryidentificationkey: cleanUserData.stributaryidentificationkey,
+      sfiscalresponsibilities: cleanUserData.sfiscalresponsibilities,
+      sfiscalregime: cleanUserData.sfiscalregime
+    });
 
     const config = {
       headers: {
@@ -396,9 +407,14 @@ export const registerUser = (userData) => async (dispatch) => {
       },
     };
 
-    const response = await axios.post(`${BASE_URL}/auth/register`, cleanUserData, config);
+    // ✅ DEBUG: VERIFICAR URL COMPLETA
+    const fullUrl = `${BASE_URL}/auth/register`;
+    console.log('📡 [REDUX] URL completa:', fullUrl);
+    console.log('📡 [REDUX] BASE_URL:', BASE_URL);
+
+    const response = await axios.post(fullUrl, cleanUserData, config);
     
-    console.log('📥 [REDUX] Respuesta completa del servidor:', {
+    console.log('📥 [REDUX] Respuesta exitosa del servidor:', {
       status: response.status,
       statusText: response.statusText,
       data: response.data
@@ -407,13 +423,6 @@ export const registerUser = (userData) => async (dispatch) => {
     // ✅ MANEJAR RESPUESTA EXITOSA
     if (response.status === 200 || response.status === 201) {
       let responseData = response.data;
-      
-      // Manejar diferentes estructuras de respuesta
-      if (response.data?.data) {
-        responseData = response.data.data;
-      } else if (response.data?.message) {
-        responseData = response.data.message;
-      }
 
       dispatch({
         type: USER_REGISTER_SUCCESS,
@@ -438,20 +447,30 @@ export const registerUser = (userData) => async (dispatch) => {
   } catch (error) {
     console.error('❌ [REDUX] Error completo en registro:', error);
     
+    // ✅ DEBUG: MOSTRAR DETALLES COMPLETOS DEL ERROR
+    if (error.response) {
+      console.error('📋 [DEBUG] Detalles completos del error:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
+    }
+    
     let errorMessage = 'Error desconocido en el registro';
 
     if (error.response) {
-      console.error('📋 [REDUX] Detalles del error del servidor:', {
-        status: error.response.status,
-        data: error.response.data
-      });
-
       switch (error.response.status) {
         case 500:
           errorMessage = 'Error interno del servidor. Verifica los datos e inténtalo de nuevo.';
           break;
         case 400:
-          errorMessage = error.response.data?.message || 'Datos inválidos enviados al servidor';
+          errorMessage = error.response.data?.message || error.response.data || 'Datos inválidos enviados al servidor';
           break;
         case 409:
           errorMessage = 'El usuario ya existe con ese documento o email';
@@ -460,7 +479,7 @@ export const registerUser = (userData) => async (dispatch) => {
           errorMessage = 'Error de validación en los datos enviados';
           break;
         default:
-          errorMessage = error.response.data?.message || `Error ${error.response.status}`;
+          errorMessage = error.response.data?.message || error.response.data || `Error ${error.response.status}`;
       }
     } else if (error.request) {
       errorMessage = 'Error de conexión. Verifica tu internet.';

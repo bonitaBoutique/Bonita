@@ -1687,33 +1687,26 @@ export const fetchAccountSummary = (n_document) => async (dispatch) => {
 // ===========================================
 
 // ✅ 1. BUSCAR RECIBO PARA DEVOLUCIÓN
+
 export const searchReceiptForReturn = (receiptId) => async (dispatch) => {
   try {
-    dispatch({ type: SEARCH_RECEIPT_FOR_RETURN_REQUEST });
-
-    const { data } = await axios.get(`${BASE_URL}/product/receipt-for-return/${receiptId}`);
-    console.log("🔍 Recibo encontrado:", data);
-
-    if (data.success) {
-      dispatch({ 
-        type: SEARCH_RECEIPT_FOR_RETURN_SUCCESS, 
-        payload: data.data 
-      });
-      return data.data; // Retornar para uso en el componente
+    console.log("🔍 Buscando recibo:", receiptId);
+    
+    const response = await axios.get(`${API_BASE_URL}/product/receipt-for-return/${receiptId}`);
+    
+    console.log("📥 Respuesta del API:", response.data);
+    
+    if (response.data.status === "success" && response.data.data.success) {
+      return {
+        success: true,
+        receipt: response.data.data.receipt
+      };
     } else {
-      throw new Error(data.message || 'Recibo no encontrado');
+      throw new Error("Recibo no encontrado");
     }
-
   } catch (error) {
-    console.error("❌ Error buscando recibo:", error);
-    const errorMessage = error.response?.data?.error || error.message;
-    
-    dispatch({
-      type: SEARCH_RECEIPT_FOR_RETURN_FAILURE,
-      payload: errorMessage
-    });
-    
-    throw new Error(errorMessage);
+    console.error("💥 Error buscando recibo:", error);
+    throw error;
   }
 };
 

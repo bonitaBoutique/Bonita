@@ -381,116 +381,266 @@ const ReturnManagement = () => {
   }, [products]);
 
   // ✅ MEJORA 9: Funciones con useCallback para optimización
-  const searchReceipt = useCallback(async () => {
-    console.log("🔍 INICIO searchReceipt");
-    console.log("📝 Datos de búsqueda:", {
-      receiptId: receiptId.trim(),
-      cashierDocument: cashierDocument.trim(),
+const searchReceipt = useCallback(async () => {
+  console.log("🔍 INICIO searchReceipt");
+  console.log("📝 Datos de búsqueda:", {
+    receiptId: receiptId.trim(),
+    cashierDocument: cashierDocument.trim(),
+  });
+
+  // ✅ VALIDACIONES MEJORADAS
+  if (!receiptId.trim()) {
+    console.log("❌ Error: No hay receiptId");
+    showSwal({
+      title: "⚠️ Campo requerido",
+      text: "Por favor, ingresa el número del recibo",
+      icon: "warning",
+      confirmButtonText: "Entendido"
     });
+    return;
+  }
 
-    if (!receiptId.trim()) {
-      console.log("❌ Error: No hay receiptId");
-      showSwal({
-        title: "Error",
-        text: "Ingresa el número del recibo",
-        icon: "error",
-      });
-      return;
-    }
+  if (!cashierDocument.trim()) {
+    console.log("❌ Error: No hay cashierDocument");
+    showSwal({
+      title: "⚠️ Campo requerido", 
+      text: "Por favor, ingresa tu documento de cajero",
+      icon: "warning",
+      confirmButtonText: "Entendido"
+    });
+    return;
+  }
 
-    if (!cashierDocument.trim()) {
-      console.log("❌ Error: No hay cashierDocument");
-      showSwal({
-        title: "Error",
-        text: "Ingresa tu documento de cajero",
-        icon: "error",
-      });
-      return;
-    }
+  console.log("🔄 Iniciando búsqueda...");
+  setLoading(true);
 
-    console.log("🔄 Iniciando búsqueda...");
-    setLoading(true);
-
+  try {
+    // ✅ BUSCAR PRIMERO EN LA API (más confiable)
+    console.log("🔍 Buscando recibo en API...");
+    
     try {
-      console.log("🔍 Buscando en receipts locales...");
-      const localReceipt = receipts?.find(
-        (receipt) => receipt.id_receipt.toString() === receiptId.trim()
-      );
+      const result = await dispatch(searchReceiptForReturn(receiptId.trim()));
+      
+      if (result && result.success && result.receipt) {
+        console.log("✅ Recibo encontrado en API:", result.receipt.id_receipt);
+        
+        // ✅ VALIDAR ESTRUCTURA DE DATOS
+        const apiReceipt = result.receipt;
+        
+        if (!apiReceipt.products || apiReceipt.products.length === 0) {
+          console.log("⚠️ Recibo sin productos");
+          showSwal({
+            title: "⚠️ Recibo sin productos",
+            text: "Este recibo no tiene productos asociados para devolver",
+            icon: "warning",
+            confirmButtonText: "Entendido"
+          });
+          return;
+        }
 
-      if (localReceipt) {
-        console.log("✅ Recibo encontrado localmente:", localReceipt.id_receipt);
-
+        // ✅ VERIFICAR ANTIGÜEDAD DEL RECIBO
+        const receiptDate = new Date(apiReceipt.date);
+        const currentDate = new Date();
         const daysSinceReceipt = Math.floor(
-          (new Date() - new Date(localReceipt.date)) / (1000 * 60 * 60 * 24)
+          (currentDate - receiptDate) / (1000 * 60 * 60 * 24)
         );
 
         console.log("📅 Días desde la compra:", daysSinceReceipt);
 
         if (daysSinceReceipt > 30) {
           console.log("⚠️ Recibo antiguo, solicitando confirmación...");
-          const result = await showSwal({
+          const confirmResult = await showSwal({
             title: "⚠️ Recibo Antiguo",
             html: `
-              <div class="text-left">
-                <p>Este recibo tiene <strong>${daysSinceReceipt} días</strong> de antigüedad.</p>
-                <p>La política estándar permite devoluciones hasta 30 días.</p>
-                <br>
-                <p>¿Deseas continuar con la devolución?</p>
+              <div class="text-left space-y-3">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                  <p class="font-medium text-yellow-800">⏰ Antigüedad del recibo</p>
+                  <p class="text-yellow-700">Este recibo tiene <strong>${daysSinceReceipt} días</strong> de antigüedad.</p>
+                </div>
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                  <p class="font-medium text-blue-800">📋 Política de devoluciones</p>
+                  <p class="text-blue-700">El período estándar es de <strong>30 días</strong>.</p>
+                </div>
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded">
+                  <p class="font-medium text-orange-800">❓ ¿Continuar?</p>
+                  <p class="text-orange-700">¿Deseas proceder con esta devolución excepcional?</p>
+                </div>
               </div>
             `,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonText: "✅ Continuar",
+            confirmButtonText: "✅ Sí, continuar",
             cancelButtonText: "❌ Cancelar",
+            confirmButtonColor: "#f59e0b",
+            cancelButtonColor: "#6b7280",
+            focusCancel: true
           });
 
-          if (!result.isConfirmed) {
+          if (!confirmResult.isConfirmed) {
             console.log("❌ Usuario canceló devolución de recibo antiguo");
-            setLoading(false);
             return;
           }
           console.log("✅ Usuario confirmó devolución de recibo antiguo");
         }
 
+        // ✅ TRANSFORMAR DATOS PARA CONSISTENCIA
+        const transformedReceipt = {
+          ...apiReceipt,
+          // Asegurar que tenga la estructura correcta
+          products: apiReceipt.products.map(item => ({
+            product: item.product,
+            quantity: item.quantity || 1,
+            unit_price: item.unit_price || item.product.priceSell
+          }))
+        };
+
         console.log("✅ Configurando recibo y avanzando al paso 2");
-        setOriginalReceipt(localReceipt);
+        setOriginalReceipt(transformedReceipt);
         setStep(2);
 
         showSwal({
           title: "✅ Recibo Encontrado",
+          html: `
+            <div class="text-left">
+              <p><strong>Recibo:</strong> ${apiReceipt.id_receipt}</p>
+              <p><strong>Cliente:</strong> ${apiReceipt.buyer_name || "No especificado"}</p>
+              <p><strong>Total:</strong> $${apiReceipt.totalAmount?.toLocaleString("es-CO")}</p>
+              <p><strong>Productos:</strong> ${apiReceipt.products.length}</p>
+            </div>
+          `,
           icon: "success",
-          timer: 2000,
+          timer: 3000,
+          showConfirmButton: false
         });
-      } else {
-        console.log("🔍 No encontrado localmente, buscando en API...");
-        try {
-          const result = await dispatch(searchReceiptForReturn(receiptId));
-          if (result && result.receipt) {
-            console.log("✅ Recibo encontrado en API:", result.receipt.id_receipt);
-            setOriginalReceipt(result.receipt);
-            setStep(2);
-          }
-        } catch (error) {
-          console.log("❌ Error buscando en API:", error);
-          showSwal({
-            title: "Error",
-            text: "Recibo no encontrado",
-            icon: "error"
-          });
+
+        return; // ✅ Salir si se encontró en API
+      }
+    } catch (apiError) {
+      console.log("🔍 No encontrado en API, buscando localmente...", apiError.message);
+    }
+
+    // ✅ FALLBACK: BUSCAR EN RECEIPTS LOCALES
+    console.log("🔍 Buscando en receipts locales...");
+    const localReceipt = receipts?.find(
+      (receipt) => receipt.id_receipt.toString() === receiptId.trim()
+    );
+
+    if (localReceipt) {
+      console.log("✅ Recibo encontrado localmente:", localReceipt.id_receipt);
+
+      // ✅ VERIFICAR ESTRUCTURA LOCAL
+      if (!localReceipt.OrderDetail?.products || localReceipt.OrderDetail.products.length === 0) {
+        console.log("⚠️ Recibo local sin productos");
+        showSwal({
+          title: "⚠️ Recibo incompleto",
+          text: "Este recibo no tiene información completa de productos. Intenta buscar por API.",
+          icon: "warning",
+          confirmButtonText: "Entendido"
+        });
+        return;
+      }
+
+      // ✅ TRANSFORMAR RECIBO LOCAL A FORMATO CONSISTENTE
+      const transformedLocalReceipt = {
+        id_receipt: localReceipt.id_receipt,
+        cashier_document: localReceipt.cashier_document,
+        buyer_name: localReceipt.buyer_name,
+        buyer_email: localReceipt.buyer_email,
+        buyer_phone: localReceipt.buyer_phone,
+        totalAmount: localReceipt.total_amount,
+        paymentMethod: localReceipt.payMethod,
+        date: localReceipt.date,
+        products: localReceipt.OrderDetail.products.map(product => ({
+          product: {
+            id_product: product.id_product,
+            description: product.description,
+            priceSell: product.priceSell,
+            stock: product.stock,
+            marca: product.marca,
+            codigoBarra: product.codigoBarra,
+            sizes: product.sizes,
+            colors: product.colors
+          },
+          quantity: product.OrderProduct?.quantity || 1,
+          unit_price: product.priceSell
+        }))
+      };
+
+      // ✅ VERIFICAR ANTIGÜEDAD
+      const daysSinceReceipt = Math.floor(
+        (new Date() - new Date(localReceipt.date)) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysSinceReceipt > 30) {
+        const confirmResult = await showSwal({
+          title: "⚠️ Recibo Antiguo",
+          text: `Este recibo tiene ${daysSinceReceipt} días. ¿Continuar?`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "✅ Continuar",
+          cancelButtonText: "❌ Cancelar"
+        });
+
+        if (!confirmResult.isConfirmed) {
+          console.log("❌ Usuario canceló devolución de recibo antiguo");
+          return;
         }
       }
-    } catch (error) {
-      console.error("💥 Error general en búsqueda:", error);
+
+      setOriginalReceipt(transformedLocalReceipt);
+      setStep(2);
+
       showSwal({
-        title: "Error",
-        text: "Error al buscar el recibo",
-        icon: "error"
+        title: "✅ Recibo Encontrado (Local)",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false
       });
-    } finally {
-      console.log("🏁 Finalizando búsqueda, loading = false");
-      setLoading(false);
+
+    } else {
+      // ✅ NO ENCONTRADO EN NINGÚN LADO
+      console.log("❌ Recibo no encontrado en ningún lado");
+      showSwal({
+        title: "❌ Recibo No Encontrado",
+        html: `
+          <div class="text-left">
+            <p>No se pudo encontrar el recibo <strong>${receiptId.trim()}</strong></p>
+            <br>
+            <p class="text-sm text-gray-600">Verifica que:</p>
+            <ul class="text-sm text-gray-600 list-disc list-inside mt-2">
+              <li>El número de recibo sea correcto</li>
+              <li>El recibo no haya sido eliminado</li>
+              <li>Tengas conexión a internet</li>
+            </ul>
+          </div>
+        `,
+        icon: "error",
+        confirmButtonText: "Intentar de nuevo"
+      });
     }
-  }, [receiptId, cashierDocument, receipts, dispatch, showSwal]);
+
+  } catch (error) {
+    console.error("💥 Error general en búsqueda:", error);
+    showSwal({
+      title: "💥 Error de Sistema",
+      html: `
+        <div class="text-left">
+          <p>Ocurrió un error al buscar el recibo.</p>
+          <br>
+          <details class="text-sm">
+            <summary>Detalles técnicos</summary>
+            <p class="mt-2 text-gray-600">${error.message}</p>
+          </details>
+        </div>
+      `,
+      icon: "error",
+      confirmButtonText: "Reintentar"
+    });
+  } finally {
+    console.log("🏁 Finalizando búsqueda, loading = false");
+    setLoading(false);
+  }
+}, [receiptId, cashierDocument, receipts, dispatch, showSwal]);
 
   const addReturnedProduct = useCallback((product, quantity, reason = "") => {
     console.log("🚀 INICIO addReturnedProduct");

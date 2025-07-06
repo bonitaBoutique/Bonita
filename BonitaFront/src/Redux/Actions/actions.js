@@ -374,27 +374,73 @@ export const registerUser = (userData) => async (dispatch) => {
       },
     };
 
+    console.log('📤 [REDUX] Enviando datos de registro:', userData);
+
     const response = await axios.post(`${BASE_URL}/auth/register`, userData, config);
     
-    // Handle success
-    if (response.data.status === 'success') {
+    console.log('📥 [REDUX] Respuesta del servidor:', response.data);
+
+    // ✅ CORREGIR: El backend no envía "status", envía "message" directamente
+    if (response.status === 201 || response.status === 200) {
       dispatch({
         type: USER_REGISTER_SUCCESS,
-        payload: response.data.data,
+        payload: response.data,
       });
+
+      // ✅ MOSTRAR ÉXITO
+      Swal.fire({
+        icon: 'success',
+        title: '¡Usuario registrado!',
+        text: 'El usuario se ha registrado exitosamente',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      return response.data; // ✅ Retornar data para el componente
     } else {
-      // Handle error from API
-      dispatch({
-        type: USER_REGISTER_FAIL,
-        payload: response.data.message,
-      });
+      throw new Error(response.data.message || 'Error en el registro');
     }
   } catch (error) {
-    // Handle axios error
+    console.error('❌ [REDUX] Error en registro:', error);
+    
+    // ✅ EXTRAER MENSAJE DE ERROR CORRECTAMENTE
+    let errorMessage = 'Error en el registro';
+    
+    if (error.response?.data) {
+      // Si el backend envía el error como string directo
+      if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      }
+      // Si el backend envía objeto con message
+      else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      // Si el backend envía objeto con error
+      else if (error.response.data.error) {
+        errorMessage = error.response.data.error;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    console.log('✅ [DEBUG] Response completa:', {
+  status: response.status,
+  data: response.data,
+  headers: response.headers
+});
+
     dispatch({
       type: USER_REGISTER_FAIL,
-      payload: error.response?.data?.message || 'Error en el registro',
+      payload: errorMessage,
     });
+
+    // ✅ MOSTRAR ERROR
+    Swal.fire({
+      icon: 'error',
+      title: 'Error en el registro',
+      text: errorMessage,
+    });
+
+    throw new Error(errorMessage); // ✅ Re-lanzar para que el componente lo maneje
   }
 };
 

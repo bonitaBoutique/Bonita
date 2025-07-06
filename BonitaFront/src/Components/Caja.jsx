@@ -19,6 +19,8 @@ import {
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
 import ServerTimeSync from "./ServerTimeSync";
+// ✅ IMPORTAR EL POPUP DE REGISTRO
+import UserRegistrationPopup from "./Taxxa/UserRegistrationPopup";
 
 const Caja = () => {
   const dispatch = useDispatch();
@@ -48,6 +50,9 @@ const Caja = () => {
     lastValidatedDocument: null
   });
 
+  // ✅ NUEVO ESTADO PARA EL POPUP DE REGISTRO
+  const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
+
   // ✅ FUNCIÓN para validar si userInfo es un usuario válido
   const isValidUserInfo = (userInfo) => {
     return userInfo && 
@@ -55,6 +60,23 @@ const Caja = () => {
            userInfo !== null &&
            userInfo.n_document && 
            userInfo.first_name;
+  };
+
+  // ✅ FUNCIÓN para cerrar el popup y actualizar datos
+  const handleRegistrationClose = () => {
+    setShowRegistrationPopup(false);
+    // Opcional: Re-verificar el usuario después del registro
+    if (nDocument.length >= 8) {
+      setTimeout(() => {
+        verifyUserDocument(nDocument);
+      }, 1000);
+    }
+  };
+
+  // ✅ FUNCIÓN para abrir el popup con documento prellenado
+  const handleOpenRegistration = (document) => {
+    setShowRegistrationPopup(true);
+    // El popup puede recibir el documento como prop si lo modificas
   };
 
   // ✅ EFECTO DE DEBUG
@@ -187,7 +209,7 @@ const Caja = () => {
     }
   };
 
-  // ✅ EFECTO para manejar respuesta de verificación de usuario
+  // ✅ EFECTO para manejar respuesta de verificación de usuario CON POPUP
   useEffect(() => {
     console.log('🔄 [Caja] Estado de validación cambió:', {
       documentValidated,
@@ -230,36 +252,37 @@ const Caja = () => {
         }));
 
       } 
-      // ✅ CASO 2: Usuario NO encontrado - CORREGIR LA LÓGICA
+      // ✅ CASO 2: Usuario NO encontrado - MOSTRAR POPUP EN LUGAR DE SWEETALERT
       else if (!userTaxxa?.loading && (!isValidUserInfo(userTaxxa?.userInfo) || userTaxxa?.error)) {
         console.log('❌ [Caja] Usuario NO ENCONTRADO para documento:', nDocument);
         console.log('📋 [Caja] userInfo recibido:', userTaxxa?.userInfo);
         console.log('📋 [Caja] Es válido?:', isValidUserInfo(userTaxxa?.userInfo));
         
+        // ✅ MOSTRAR SWEETALERT CON OPCIÓN DE POPUP
         Swal.fire({
           icon: "warning",
           title: "Usuario no registrado",
           html: `
             <p>El documento <strong>${nDocument}</strong> no pertenece a un usuario registrado.</p>
-            <p>¿Deseas continuar con la orden o registrar al usuario?</p>
+            <p>¿Qué deseas hacer?</p>
           `,
           showCancelButton: true,
           showDenyButton: true,
-          confirmButtonText: "Continuar sin registro",
-          denyButtonText: "Ir a registrar usuario",
+          confirmButtonText: "Registrar usuario",
+          denyButtonText: "Continuar sin registro",
           cancelButtonText: "Cambiar documento",
           confirmButtonColor: "#10b981",
           denyButtonColor: "#3b82f6",
           cancelButtonColor: "#6b7280"
         }).then((result) => {
-          if (result.isDenied) {
-            navigate("/register", { 
-              state: { 
-                prefilledDocument: nDocument,
-                returnTo: "/caja"
-              }
-            });
+          if (result.isConfirmed) {
+            // ✅ ABRIR EL POPUP DE REGISTRO
+            setShowRegistrationPopup(true);
+          } else if (result.isDenied) {
+            // ✅ CONTINUAR SIN REGISTRO (comportamiento anterior)
+            console.log('ℹ️ [Caja] Usuario decidió continuar sin registro');
           } else if (result.isDismissed) {
+            // ✅ LIMPIAR Y PERMITIR CAMBIAR DOCUMENTO
             setNDocument("");
             setDocumentValidated(false);
             setUserValidationState({
@@ -290,12 +313,11 @@ const Caja = () => {
     };
   }, [validationTimeout]);
 
-  // ✅ FUNCIÓN PARA VALIDAR Y CAMBIAR FECHA
+  // ✅ RESTO DE LAS FUNCIONES SIN CAMBIOS
   const handleDateChange = (e) => {
     const selectedDate = e.target.value;
     console.log('📅 [Caja] Cambiando fecha a:', selectedDate);
 
-    // Validar fecha usando servidor
     const validation = validateDateNotFuture(selectedDate, serverTime, 'Fecha de orden');
     
     if (!validation.valid) {
@@ -307,7 +329,6 @@ const Caja = () => {
       return;
     }
 
-    // Validar que no sea una fecha muy antigua (más de 30 días atrás)
     const today = new Date(getServerDate(serverTime));
     const selected = new Date(selectedDate);
     const diffDays = Math.floor((today - selected) / (1000 * 60 * 60 * 24));
@@ -392,7 +413,6 @@ const Caja = () => {
       }
     });
 
-    // Mostrar errores si existen
     if (notFoundCodes.length > 0) {
       Swal.fire({
         icon: "error",
@@ -409,7 +429,6 @@ const Caja = () => {
       });
     }
 
-    // Agregar productos válidos
     if (productsToAdd.length > 0) {
       setSelectedProducts((prevSelected) => [
         ...prevSelected,
@@ -509,7 +528,6 @@ const Caja = () => {
       errors.products = "Selecciona al menos un producto";
     }
 
-    // Validar cantidades
     const invalidQuantities = selectedProducts.some(product => 
       !product.quantity || product.quantity < 1
     );
@@ -551,7 +569,6 @@ const Caja = () => {
       quantity: product.quantity || 1,
     }));
 
-    // ✅ DATOS CON FECHA DEL SERVIDOR
     const orderDataToSend = {
       date: orderDate,
       amount: totalPrice,
@@ -571,7 +588,6 @@ const Caja = () => {
       userFound: isValidUserInfo(userTaxxa?.userInfo)
     });
 
-    // Mostrar loading
     Swal.fire({
       title: "Creando orden...",
       text: "Por favor espera mientras procesamos tu pedido",
@@ -595,7 +611,6 @@ const Caja = () => {
           showConfirmButton: false
         });
 
-        // Limpiar formulario
         setSelectedProducts([]);
         setProductCodes("");
         setNDocument("");
@@ -690,22 +705,18 @@ const Caja = () => {
 
   const { totalPrice, totalQuantity } = calculateTotals();
 
-  // ✅ FUNCIÓN para determinar el estado visual del input de documento
   const getDocumentInputClass = () => {
     if (formErrors.document) {
       return 'border-red-500 focus:ring-red-500';
     }
     
     if (nDocument.length >= 8) {
-      // ✅ PRIORIDAD 1: Estado de carga
       if (userValidationState.isValidating || userTaxxa?.loading) {
         return 'border-blue-500 focus:ring-blue-500';
       } 
-      // ✅ PRIORIDAD 2: Usuario encontrado - USAR isValidUserInfo
       else if (isValidUserInfo(userTaxxa?.userInfo) && !userTaxxa?.error) {
         return 'border-green-500 focus:ring-green-500';
       } 
-      // ✅ PRIORIDAD 3: Error o no encontrado
       else if (userTaxxa?.error || !isValidUserInfo(userTaxxa?.userInfo)) {
         return 'border-orange-500 focus:ring-orange-500';
       }
@@ -718,6 +729,14 @@ const Caja = () => {
     <ServerTimeSync showDebug={false}>
       <div className="p-6 pt-20 bg-slate-200 min-h-screen">
         <Navbar2 />
+        
+        {/* ✅ RENDERIZAR EL POPUP DE REGISTRO CONDICIONALMENTE */}
+        {showRegistrationPopup && (
+          <UserRegistrationPopup 
+            onClose={handleRegistrationClose}
+            prefilledDocument={nDocument}
+          />
+        )}
         
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-semibold mb-6 text-center">
@@ -865,9 +884,17 @@ const Caja = () => {
 
                 {/* ✅ USUARIO NO ENCONTRADO - USAR isValidUserInfo */}
                 {nDocument.length >= 8 && !userValidationState.isValidating && !userTaxxa?.loading && !isValidUserInfo(userTaxxa?.userInfo) && (
-                  <p className="text-orange-600 text-sm mt-1 flex items-center">
-                    ⚠️ Usuario no registrado (Verifica antes de  continuar)
-                  </p>
+                  <div className="mt-1">
+                    <p className="text-orange-600 text-sm flex items-center">
+                      ⚠️ Usuario no registrado
+                    </p>
+                    <button
+                      onClick={() => setShowRegistrationPopup(true)}
+                      className="text-blue-600 text-sm hover:text-blue-800 underline mt-1"
+                    >
+                      📝 Registrar usuario ahora
+                    </button>
+                  </div>
                 )}
                 
                 {formErrors.document && (

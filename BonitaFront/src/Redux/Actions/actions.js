@@ -368,39 +368,126 @@ export const registerUser = (userData) => async (dispatch) => {
   try {
     dispatch({ type: USER_REGISTER_REQUEST });
 
+    // ✅ LIMPIAR DATOS ANTES DE ENVIAR
+    const cleanUserData = {
+      n_document: userData.n_document.toString().trim(),
+      first_name: userData.first_name.trim(),
+      last_name: userData.last_name.trim(),
+      gender: userData.gender,
+      email: userData.email.toLowerCase().trim(),
+      password: userData.password,
+      phone: userData.phone.trim(),
+      city: userData.city?.trim() || 'No especificada',
+      wdoctype: userData.wdoctype || 'CC',
+      role: 'User', // ✅ FORZAR ROLE A User
+      // ✅ CAMPOS TAXXA OPCIONALES
+      wlegalorganizationtype: 'person',
+      scostumername: `${userData.first_name} ${userData.last_name}`.trim(),
+      stributaryidentificationkey: '',
+      sfiscalresponsibilities: 'R-99-PN',
+      sfiscalregime: 'ordinario'
+    };
+
+    console.log('📤 [REDUX] Datos limpios a enviar:', cleanUserData);
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
       },
     };
 
-    const response = await axios.post(`${BASE_URL}/auth/register`, userData, config);
+    // ✅ USAR URL COMPLETA PARA EVITAR CONFLICTOS
+    const registerUrl = `${BASE_URL}/auth/register`;
+    console.log('📡 [REDUX] URL de registro:', registerUrl);
+
+    const response = await axios.post(registerUrl, cleanUserData, config);
     
-    // Handle success
-    if (response.data.status === 'success') {
+    console.log('📥 [REDUX] Respuesta completa:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+
+    // ✅ MANEJAR DIFERENTES FORMATOS DE RESPUESTA
+    if (response.status === 200 || response.status === 201) {
+      // El backend podría enviar diferentes estructuras
+      let userData = response.data;
+      
+      // Si viene anidado en data
+      if (response.data.data) {
+        userData = response.data.data;
+      }
+      // Si viene anidado en message
+      else if (response.data.message) {
+        userData = response.data.message;
+      }
+
       dispatch({
         type: USER_REGISTER_SUCCESS,
-        payload: response.data.data,
+        payload: userData,
       });
+
+      // ✅ MOSTRAR ÉXITO
+      Swal.fire({
+        icon: 'success',
+        title: '¡Usuario registrado!',
+        text: `${cleanUserData.first_name} ${cleanUserData.last_name} se ha registrado exitosamente`,
+        timer: 3000,
+        showConfirmButton: false
+      });
+
+      return userData; // Retornar para el componente
     } else {
-          console.log('✅ [DEBUG] Response completa:', {
-  status: response.status,
-  data: response.data,
-  headers: response.headers
-});
-      dispatch({
-        type: USER_REGISTER_FAIL,
-        payload: response.data.message,
-      });
+      throw new Error(response.data?.message || 'Error en el registro');
     }
+
   } catch (error) {
-    // Handle axios error
+    console.error('❌ [REDUX] Error completo en registro:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config
+    });
+    
+    // ✅ EXTRAER MENSAJE DE ERROR MÁS ESPECÍFICO
+    let errorMessage = 'Error en el registro';
+    
+    if (error.response?.status === 500) {
+      errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
+    } else if (error.response?.status === 400) {
+      errorMessage = error.response.data?.message || 'Datos inválidos';
+    } else if (error.response?.status === 409) {
+      errorMessage = 'El usuario ya existe con ese documento o email';
+    } else if (error.response?.data) {
+      // Manejar diferentes formatos de error del backend
+      if (typeof error.response.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response.data.error) {
+        errorMessage = error.response.data.error;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
     dispatch({
       type: USER_REGISTER_FAIL,
-      payload: error.response?.data?.message || 'Error en el registro',
+      payload: errorMessage,
     });
+
+    // ✅ MOSTRAR ERROR ESPECÍFICO
+    Swal.fire({
+      icon: 'error',
+      title: 'Error en el registro',
+      text: errorMessage,
+      footer: error.response?.status === 500 ? 'Contacta al administrador si el error persiste' : null
+    });
+
+    throw new Error(errorMessage);
   }
 };
+
 
 export const login = (email, password) => async (dispatch) => {
   try {

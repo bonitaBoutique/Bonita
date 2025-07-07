@@ -193,76 +193,117 @@ const Balance = () => {
   };
 
   // ✅ Function to combine and filter all movements
- // ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
-const getAllMovements = () => {
-  if (!balanceData) return [];
+  const getAllMovements = () => {
+    const movements = [
+      // Map online sales
+      ...(income.online || []).map((sale) => ({
+        ...sale,
+        type: "Venta Online",
+        amount: sale.amount || 0,
+        date: sale.date,
+        paymentMethod: sale.paymentMethod || "Wompi",
+        pointOfSale: "Online",
+        id: `online-${sale.id_orderDetail}`,
+        description: `Pedido #${sale.id_orderDetail}` || "-",
+        cashier_document: null,
+      })),
 
-  let movements = [];
+      // ✅ Map local sales CON FILTRO PARA EXCLUIR ADDI Y SISTECREDITO
+      ...(income.local || [])
+        .filter((sale) => {
+          // ✅ FILTRAR: Excluir ventas a crédito que no ingresan dinero el mismo día
+          const paymentMethod = sale.paymentMethod;
+          return paymentMethod !== "Addi" && paymentMethod !== "Sistecredito";
+        })
+        .map((sale) => {
+          const getBuyerName = (saleData) => {
+            if (saleData.buyerName && saleData.buyerName !== "Desconocido") {
+              return saleData.buyerName;
+            }
+            if (saleData.buyer_name && saleData.buyer_name !== "Desconocido") {
+              return saleData.buyer_name;
+            }
+            if (saleData.User) {
+              const firstName = saleData.User.first_name || "";
+              const lastName = saleData.User.last_name || "";
+              const fullName = `${firstName} ${lastName}`.trim();
+              if (fullName) return fullName;
+            }
+            if (saleData.OrderDetail && saleData.OrderDetail.User) {
+              const firstName = saleData.OrderDetail.User.first_name || "";
+              const lastName = saleData.OrderDetail.User.last_name || "";
+              const fullName = `${firstName} ${lastName}`.trim();
+              if (fullName) return fullName;
+            }
+            if (saleData.Receipt && saleData.Receipt.buyer_name) {
+              return saleData.Receipt.buyer_name;
+            }
+            if (saleData.description && saleData.description !== "Desconocido") {
+              return saleData.description;
+            }
+            return "Cliente no identificado";
+          };
 
-  // ✅ AGREGAR INGRESOS ONLINE
-  if (balanceData.income?.online) {
-    const onlineMovements = balanceData.income.online.map(sale => ({
-      id: `online-${sale.id_orderDetail}`,
-      date: sale.date,
-      type: 'Venta Online',
-      description: `Venta Online - OrderDetail: ${sale.id_orderDetail}`,
-      paymentMethod: 'Wompi',
-      amount: sale.amount,
-      category: 'Ingreso'
-    }));
-    movements.push(...onlineMovements);
-  }
+          const buyerName = getBuyerName(sale);
 
-  // ✅ AGREGAR INGRESOS LOCALES (excluyendo Addi/Sistecredito para el balance)
-  if (balanceData.income?.local) {
-    const localMovements = balanceData.income.local
-      .filter(payment => !['Addi', 'Sistecredito'].includes(payment.paymentMethod))
-      .map(payment => ({
-        id: payment.id,
-        date: payment.date,
-        type: payment.type || 'Venta Local',
-        description: payment.description || `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
-        paymentMethod: payment.paymentMethod,
-        amount: payment.amount,
-        category: 'Ingreso',
-        // ✅ Datos adicionales útiles
-        cashierDocument: payment.cashierDocument,
-        buyerName: payment.buyerName,
-        originalReceiptId: payment.originalReceiptId,
-        isMainPayment: payment.isMainPayment
-      }));
-    movements.push(...localMovements);
-  }
+          return {
+            ...sale,
+            type: sale.type || "Venta Local",
+            amount: sale.amount || 0,
+            date: sale.date,
+            paymentMethod: sale.paymentMethod || "Desconocido",
+            pointOfSale: "Local",
+            id: `local-${sale.id}`,
+            description: buyerName,
+            cashier_document: sale.cashierDocument,
+          };
+        }),
 
-  // ✅ AGREGAR GASTOS DEL BACKEND
-  if (balanceData.expenses?.data) {
-    const expenseMovements = balanceData.expenses.data.map(expense => ({
-      id: `expense-${expense.id}`,
-      date: expense.date,
-      type: expense.type || 'Gasto',
-      description: expense.description || 'Sin descripción',
-      paymentMethod: expense.paymentMethods || 'No especificado',
-      amount: -Math.abs(expense.amount), // ✅ NEGATIVO para gastos
-      category: 'Gasto',
-      // ✅ Datos adicionales de gastos
-      destinatario: expense.destinatario,
-      originalExpenseId: expense.id
-    }));
-    movements.push(...expenseMovements);
-  }
+      // Map expenses
+      ...(Array.isArray(expenses.data) ? expenses.data : []).map((expense) => ({
+        ...expense,
+        type: `Gasto - ${expense.type}`,
+        amount: -(expense.amount || 0),
+        date: expense.date,
+        paymentMethod: expense.paymentMethods || "N/A",
+        pointOfSale: "N/A",
+        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`,
+        description: expense.description || expense.type || "-",
+        cashier_document: null,
+      })),
+    ];
 
-  // ✅ ORDENAR POR FECHA (más recientes primero)
-  movements.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Apply filters
+    let filteredMovements = movements;
 
-  console.log("🔄 getAllMovements() - Resumen:", {
-    totalMovimientos: movements.length,
-    ingresos: movements.filter(m => m.amount >= 0).length,
-    gastos: movements.filter(m => m.amount < 0).length,
-    gastosDelBackend: balanceData.expenses?.data?.length || 0
-  });
+    if (filters.pointOfSale) {
+      filteredMovements = filteredMovements.filter(
+        (m) => m.pointOfSale === filters.pointOfSale
+      );
+    }
+    if (filters.paymentMethod) {
+      filteredMovements = filteredMovements.filter(
+        (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
+      );
+    }
+    if (filters.expenseType) {
+      filteredMovements = filteredMovements.filter(
+        (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
+      );
+    }
+    if (filters.cashier) {
+      filteredMovements = filteredMovements.filter(
+        (m) =>
+          m.type !== "Venta Local" || m.cashier_document === filters.cashier
+      );
+    }
 
-  return movements;
-};
+    return filteredMovements.sort((a, b) => {
+      const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
+      const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
+      return dateB - dateA;
+    });
+  };
 
   // ✅ Function to handle Excel export
   // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos

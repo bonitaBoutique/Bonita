@@ -193,126 +193,145 @@ const Balance = () => {
   };
 
   // ✅ Function to combine and filter all movements
-  const getAllMovements = () => {
-    const movements = [
-      // Map online sales
-      ...(income.online || []).map((sale) => ({
-        ...sale,
-        type: "Venta Online",
-        amount: sale.amount || 0,
-        date: sale.date,
-        paymentMethod: sale.paymentMethod || "Wompi",
-        pointOfSale: "Online",
-        id: `online-${sale.id_orderDetail}`,
-        description: `Pedido #${sale.id_orderDetail}` || "-",
-        cashier_document: null,
-      })),
+ // ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
+const getAllMovements = () => {
+  if (!balanceData) return [];
 
-      // ✅ Map local sales CON FILTRO PARA EXCLUIR ADDI Y SISTECREDITO
-      ...(income.local || [])
-        .filter((sale) => {
-          // ✅ FILTRAR: Excluir ventas a crédito que no ingresan dinero el mismo día
-          const paymentMethod = sale.paymentMethod;
-          return paymentMethod !== "Addi" && paymentMethod !== "Sistecredito";
-        })
-        .map((sale) => {
-          const getBuyerName = (saleData) => {
-            if (saleData.buyerName && saleData.buyerName !== "Desconocido") {
-              return saleData.buyerName;
-            }
-            if (saleData.buyer_name && saleData.buyer_name !== "Desconocido") {
-              return saleData.buyer_name;
-            }
-            if (saleData.User) {
-              const firstName = saleData.User.first_name || "";
-              const lastName = saleData.User.last_name || "";
-              const fullName = `${firstName} ${lastName}`.trim();
-              if (fullName) return fullName;
-            }
-            if (saleData.OrderDetail && saleData.OrderDetail.User) {
-              const firstName = saleData.OrderDetail.User.first_name || "";
-              const lastName = saleData.OrderDetail.User.last_name || "";
-              const fullName = `${firstName} ${lastName}`.trim();
-              if (fullName) return fullName;
-            }
-            if (saleData.Receipt && saleData.Receipt.buyer_name) {
-              return saleData.Receipt.buyer_name;
-            }
-            if (saleData.description && saleData.description !== "Desconocido") {
-              return saleData.description;
-            }
-            return "Cliente no identificado";
-          };
+  let movements = [];
 
-          const buyerName = getBuyerName(sale);
+  // ✅ AGREGAR INGRESOS ONLINE
+  if (balanceData.income?.online) {
+    const onlineMovements = balanceData.income.online.map(sale => ({
+      id: `online-${sale.id_orderDetail}`,
+      date: sale.date,
+      type: 'Venta Online',
+      description: `Venta Online - OrderDetail: ${sale.id_orderDetail}`,
+      paymentMethod: 'Wompi',
+      amount: sale.amount,
+      category: 'Ingreso'
+    }));
+    movements.push(...onlineMovements);
+  }
 
-          return {
-            ...sale,
-            type: sale.type || "Venta Local",
-            amount: sale.amount || 0,
-            date: sale.date,
-            paymentMethod: sale.paymentMethod || "Desconocido",
-            pointOfSale: "Local",
-            id: `local-${sale.id}`,
-            description: buyerName,
-            cashier_document: sale.cashierDocument,
-          };
-        }),
+  // ✅ AGREGAR INGRESOS LOCALES (excluyendo Addi/Sistecredito para el balance)
+  if (balanceData.income?.local) {
+    const localMovements = balanceData.income.local
+      .filter(payment => !['Addi', 'Sistecredito'].includes(payment.paymentMethod))
+      .map(payment => ({
+        id: payment.id,
+        date: payment.date,
+        type: payment.type || 'Venta Local',
+        description: payment.description || `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
+        paymentMethod: payment.paymentMethod,
+        amount: payment.amount,
+        category: 'Ingreso',
+        // ✅ Datos adicionales útiles
+        cashierDocument: payment.cashierDocument,
+        buyerName: payment.buyerName,
+        originalReceiptId: payment.originalReceiptId,
+        isMainPayment: payment.isMainPayment
+      }));
+    movements.push(...localMovements);
+  }
 
-      // Map expenses
-      ...(Array.isArray(expenses.data) ? expenses.data : []).map((expense) => ({
-        ...expense,
-        type: `Gasto - ${expense.type}`,
-        amount: -(expense.amount || 0),
-        date: expense.date,
-        paymentMethod: expense.paymentMethods || "N/A",
-        pointOfSale: "N/A",
-        id: `expense-${expense.id || Math.random().toString(36).substr(2, 9)}`,
-        description: expense.description || expense.type || "-",
-        cashier_document: null,
-      })),
-    ];
+  // ✅ AGREGAR GASTOS DEL BACKEND
+  if (balanceData.expenses?.data) {
+    const expenseMovements = balanceData.expenses.data.map(expense => ({
+      id: `expense-${expense.id}`,
+      date: expense.date,
+      type: expense.type || 'Gasto',
+      description: expense.description || 'Sin descripción',
+      paymentMethod: expense.paymentMethods || 'No especificado',
+      amount: -Math.abs(expense.amount), // ✅ NEGATIVO para gastos
+      category: 'Gasto',
+      // ✅ Datos adicionales de gastos
+      destinatario: expense.destinatario,
+      originalExpenseId: expense.id
+    }));
+    movements.push(...expenseMovements);
+  }
 
-    // Apply filters
-    let filteredMovements = movements;
+  // ✅ ORDENAR POR FECHA (más recientes primero)
+  movements.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (filters.pointOfSale) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.pointOfSale === filters.pointOfSale
-      );
-    }
-    if (filters.paymentMethod) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.amount < 0 || m.paymentMethod === filters.paymentMethod
-      );
-    }
-    if (filters.expenseType) {
-      filteredMovements = filteredMovements.filter(
-        (m) => m.amount >= 0 || m.type === `Gasto - ${filters.expenseType}`
-      );
-    }
-    if (filters.cashier) {
-      filteredMovements = filteredMovements.filter(
-        (m) =>
-          m.type !== "Venta Local" || m.cashier_document === filters.cashier
-      );
-    }
+  console.log("🔄 getAllMovements() - Resumen:", {
+    totalMovimientos: movements.length,
+    ingresos: movements.filter(m => m.amount >= 0).length,
+    gastos: movements.filter(m => m.amount < 0).length,
+    gastosDelBackend: balanceData.expenses?.data?.length || 0
+  });
 
-    return filteredMovements.sort((a, b) => {
-      const dateA = dayjs(a.date).tz("America/Bogota").valueOf();
-      const dateB = dayjs(b.date).tz("America/Bogota").valueOf();
-      return dateB - dateA;
-    });
-  };
+  return movements;
+};
 
   // ✅ Function to handle Excel export
   // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
+// ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
 const handleExportExcel = () => {
+  console.log("🔍 DEBUGGING EXCEL EXPORT - INICIO");
+  
+  // ✅ LOG DEL ESTADO COMPLETO ANTES DE PROCESAR
+  console.log("📊 Estado completo del balance:", balanceData);
+  console.log("📊 Estructura de expenses:", balanceData?.expenses);
+  console.log("📊 Datos de gastos:", balanceData?.expenses?.data);
+  console.log("📊 Longitud de gastos:", balanceData?.expenses?.data?.length);
+  
   const movementsToExport = getAllMovements(); // Ya viene filtrado sin Addi/Sistecredito
+  
+  console.log("📋 Movimientos exportados:", movementsToExport);
+  console.log("📋 Total movimientos:", movementsToExport.length);
 
   // ✅ SEPARAR MOVIMIENTOS POR TIPO
   const ingresos = movementsToExport.filter(m => m.amount >= 0);
   const gastos = movementsToExport.filter(m => m.amount < 0);
+  
+  console.log("💰 Ingresos encontrados:", ingresos.length);
+  console.log("💸 Gastos encontrados:", gastos.length);
+  console.log("💸 Detalle de gastos:", gastos);
+  
+  // ✅ LOG ESPECÍFICO DE GASTOS DEL BACKEND
+  if (balanceData?.expenses?.data) {
+    console.log("🔍 GASTOS DIRECTOS DEL BACKEND:");
+    console.log("Total gastos del backend:", balanceData.expenses.data.length);
+    balanceData.expenses.data.forEach((expense, index) => {
+      console.log(`Gasto ${index + 1}:`, {
+        id: expense.id,
+        type: expense.type,
+        amount: expense.amount,
+        date: expense.date,
+        description: expense.description,
+        paymentMethod: expense.paymentMethods,
+        destinatario: expense.destinatario
+      });
+    });
+  } else {
+    console.warn("⚠️ No se encontraron gastos en balanceData.expenses.data");
+  }
+
+  // ✅ CREAR GASTOS DIRECTAMENTE DEL BACKEND SI NO HAY EN MOVIMIENTOS
+  let gastosParaExcel = [];
+  
+  if (gastos.length === 0 && balanceData?.expenses?.data?.length > 0) {
+    console.log("🔧 Usando gastos directamente del backend");
+    gastosParaExcel = balanceData.expenses.data.map(expense => ({
+      date: expense.date,
+      type: expense.type || 'Gasto',
+      description: expense.description || 'Sin descripción',
+      paymentMethod: expense.paymentMethods || 'No especificado',
+      amount: Math.abs(expense.amount) // Asegurar que sea positivo para el Excel
+    }));
+  } else {
+    console.log("🔧 Usando gastos de movimientos filtrados");
+    gastosParaExcel = gastos.map(g => ({
+      date: g.date,
+      type: g.type,
+      description: g.description || 'Sin descripción',
+      paymentMethod: g.paymentMethod || 'No especificado',
+      amount: Math.abs(g.amount)
+    }));
+  }
+  
+  console.log("📊 Gastos para Excel final:", gastosParaExcel);
 
   // ✅ CREAR HOJA DE RESUMEN
   const resumenData = [
@@ -355,18 +374,24 @@ const handleExportExcel = () => {
     ["", "", "", "TOTAL INGRESOS:", ingresos.reduce((sum, m) => sum + m.amount, 0)]
   ];
 
-  // ✅ CREAR HOJA DE GASTOS
+  // ✅ CREAR HOJA DE GASTOS MEJORADA
   const gastosData = [
-    ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto"],
-    ...gastos.map((m) => [
-      formatMovementDate(m.date),
-      m.type,
-      m.description || "-",
-      m.paymentMethod || "N/A",
-      Math.abs(m.amount), // Mostrar como positivo para claridad
+    ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto", "👤 Destinatario"],
+    ...gastosParaExcel.map((gasto) => [
+      formatMovementDate(gasto.date),
+      gasto.type || "Gasto",
+      gasto.description || "-",
+      gasto.paymentMethod || "N/A",
+      gasto.amount,
+      gasto.destinatario || "No especificado"
     ]),
-    ["", "", "", "TOTAL GASTOS:", Math.abs(gastos.reduce((sum, m) => sum + m.amount, 0))]
+    ["", "", "", "", "TOTAL GASTOS:", gastosParaExcel.reduce((sum, g) => sum + g.amount, 0)]
   ];
+
+  console.log("📊 Datos finales para Excel:");
+  console.log("- Resumen filas:", resumenData.length);
+  console.log("- Ingresos filas:", ingresosData.length);
+  console.log("- Gastos filas:", gastosData.length);
 
   // ✅ CREAR HOJA DE TODOS LOS MOVIMIENTOS
   const todosMovimientosData = [
@@ -379,9 +404,18 @@ const handleExportExcel = () => {
       m.amount,
       m.amount >= 0 ? "INGRESO" : "GASTO"
     ]),
+    // ✅ AGREGAR GASTOS DEL BACKEND SI NO ESTÁN EN MOVIMIENTOS
+    ...gastosParaExcel.map((gasto) => [
+      formatMovementDate(gasto.date),
+      gasto.type,
+      gasto.description || "-",
+      gasto.paymentMethod || "N/A",
+      -gasto.amount, // Negativo para diferenciarlo en la hoja combinada
+      "GASTO"
+    ]),
     ["", "", "", "", "", ""],
     ["", "", "", "TOTAL INGRESOS:", ingresos.reduce((sum, m) => sum + m.amount, 0), ""],
-    ["", "", "", "TOTAL GASTOS:", Math.abs(gastos.reduce((sum, m) => sum + m.amount, 0)), ""],
+    ["", "", "", "TOTAL GASTOS:", gastosParaExcel.reduce((sum, g) => sum + g.amount, 0), ""],
     ["", "", "", "BALANCE FINAL:", displayBalance, ""]
   ];
 
@@ -390,84 +424,30 @@ const handleExportExcel = () => {
 
   // ✅ AGREGAR HOJA DE RESUMEN
   const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-  // Configurar ancho de columnas para resumen
   wsResumen["!cols"] = [
-    { wch: 25 }, // Descripción
-    { wch: 15 }, // Valor 1
-    { wch: 5 },  // Separador
-    { wch: 15 }, // Valor 2
-    { wch: 20 }, // Monto
+    { wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 20 }
   ];
-  // Formatear celdas de montos en resumen
-  Object.keys(wsResumen).forEach((cell) => {
-    if (cell.startsWith("E") && cell !== "E1") {
-      if (wsResumen[cell].v && typeof wsResumen[cell].v === 'number') {
-        wsResumen[cell].z = "$ #,##0;[Red]$ -#,##0";
-        wsResumen[cell].t = "n";
-      }
-    }
-  });
   XLSX.utils.book_append_sheet(wb, wsResumen, "📊 Resumen");
 
   // ✅ AGREGAR HOJA DE INGRESOS
   const wsIngresos = XLSX.utils.aoa_to_sheet(ingresosData);
   wsIngresos["!cols"] = [
-    { wch: 12 }, // Fecha
-    { wch: 20 }, // Tipo
-    { wch: 35 }, // Descripción
-    { wch: 15 }, // Método de Pago
-    { wch: 15 }, // Monto
+    { wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }
   ];
-  // Formatear celdas de montos en ingresos
-  Object.keys(wsIngresos).forEach((cell) => {
-    if (cell.startsWith("E") && cell !== "E1") {
-      if (wsIngresos[cell].v && typeof wsIngresos[cell].v === 'number') {
-        wsIngresos[cell].z = "$ #,##0";
-        wsIngresos[cell].t = "n";
-      }
-    }
-  });
   XLSX.utils.book_append_sheet(wb, wsIngresos, "💰 Ingresos");
 
   // ✅ AGREGAR HOJA DE GASTOS
   const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
   wsGastos["!cols"] = [
-    { wch: 12 }, // Fecha
-    { wch: 25 }, // Tipo
-    { wch: 35 }, // Descripción
-    { wch: 15 }, // Método de Pago
-    { wch: 15 }, // Monto
+    { wch: 12 }, { wch: 25 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
   ];
-  // Formatear celdas de montos en gastos
-  Object.keys(wsGastos).forEach((cell) => {
-    if (cell.startsWith("E") && cell !== "E1") {
-      if (wsGastos[cell].v && typeof wsGastos[cell].v === 'number') {
-        wsGastos[cell].z = "$ #,##0";
-        wsGastos[cell].t = "n";
-      }
-    }
-  });
   XLSX.utils.book_append_sheet(wb, wsGastos, "💸 Gastos");
 
   // ✅ AGREGAR HOJA DE TODOS LOS MOVIMIENTOS
   const wsTodos = XLSX.utils.aoa_to_sheet(todosMovimientosData);
   wsTodos["!cols"] = [
-    { wch: 12 }, // Fecha
-    { wch: 20 }, // Tipo
-    { wch: 35 }, // Descripción
-    { wch: 15 }, // Método de Pago
-    { wch: 15 }, // Monto
-    { wch: 12 }, // Categoría
+    { wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 12 }
   ];
-  // Formatear celdas de montos en todos los movimientos
-  Object.keys(wsTodos).forEach((cell) => {
-    if (cell.startsWith("E") && cell !== "E1") {
-      if (wsTodos[cell].v && typeof wsTodos[cell].v === 'number') {
-        wsTodos[cell].z = "$ #,##0;[Red]$ -#,##0";
-        wsTodos[cell].t = "n";
-      }
-    }
-  });
   XLSX.utils.book_append_sheet(wb, wsTodos, "📋 Todos los Movimientos");
 
   // ✅ GENERAR NOMBRE DE ARCHIVO CON TIMESTAMP
@@ -478,17 +458,16 @@ const handleExportExcel = () => {
   XLSX.writeFile(wb, fileName);
 
   console.log(`📄 Archivo exportado: ${fileName}`);
-  console.log(`📊 Resumen de exportación:`, {
+  console.log(`📊 Resumen final:`, {
     totalIngresos: ingresos.length,
-    totalGastos: gastos.length,
+    totalGastos: gastosParaExcel.length,
     totalMovimientos: movementsToExport.length,
-    periodoDesde: filters.startDate,
-    periodoHasta: filters.endDate,
+    gastosDelBackend: balanceData?.expenses?.data?.length || 0,
     hojas: ["Resumen", "Ingresos", "Gastos", "Todos los Movimientos"]
   });
 
   // ✅ MOSTRAR CONFIRMACIÓN AL USUARIO
-  alert(`✅ Excel exportado exitosamente!\n\n📊 Resumen:\n• ${ingresos.length} ingresos\n• ${gastos.length} gastos\n• ${movementsToExport.length} movimientos totales\n\n📁 Archivo: ${fileName}`);
+  alert(`✅ Excel exportado exitosamente!\n\n📊 Resumen:\n• ${ingresos.length} ingresos\n• ${gastosParaExcel.length} gastos\n• ${movementsToExport.length} movimientos totales\n\n📁 Archivo: ${fileName}`);
 };
 
   // ✅ REEMPLAZAR: Usar datos del backend en lugar de calcular localmente

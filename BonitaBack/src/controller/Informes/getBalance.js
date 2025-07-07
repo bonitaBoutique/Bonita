@@ -65,8 +65,8 @@ const getBalance = async (req, res) => {
 
     console.log(`✅ Ventas online encontradas: ${onlineSales.length}`);
 
-    // ✅ PASO 2: VENTAS LOCALES CON PAGOS COMBINADOS
-    console.log("🏪 Buscando ventas locales...");
+    // ✅ PASO 2: VENTAS LOCALES CON PAGOS COMBINADOS - FILTRAR RESERVAS A CRÉDITO
+    console.log("🏪 Buscando ventas locales (excluyendo reservas a crédito)...");
     
     let localSalesFilter = { ...dateFilter };
 
@@ -91,13 +91,20 @@ const getBalance = async (req, res) => {
         {
           model: OrderDetail,
           attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
-          required: false
+          required: false,
+          // ✅ FILTRO CLAVE: Excluir órdenes que son reservas a crédito
+          where: {
+            [Op.or]: [
+              { state_order: { [Op.not]: 'Reserva a Crédito' } },
+              { state_order: { [Op.is]: null } }
+            ]
+          }
         }
       ],
       order: [['date', 'DESC']]
     });
 
-    console.log(`✅ Ventas locales encontradas: ${localSales.length}`);
+    console.log(`✅ Ventas locales encontradas (sin reservas a crédito): ${localSales.length}`);
 
     // ✅ LOG DETALLADO PARA DEBUG DE RECIBOS
     console.log("📋 Resumen de procesamiento de recibos:");
@@ -116,7 +123,8 @@ const getBalance = async (req, res) => {
         esCombinado: !!(saleData.payMethod2 && saleData.amount2),
         suma: suma,
         diferencia: diferencia,
-        orderDetailId: saleData.OrderDetail?.id_orderDetail || 'Sin OrderDetail'
+        orderDetailId: saleData.OrderDetail?.id_orderDetail || 'Sin OrderDetail',
+        orderState: saleData.OrderDetail?.state_order || 'Sin estado'
       });
 
       if (diferencia > 0.01) {

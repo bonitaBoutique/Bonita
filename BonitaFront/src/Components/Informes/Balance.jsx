@@ -195,8 +195,8 @@ const Balance = () => {
   // ✅ Function to combine and filter all movements
  // ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
 // ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
+// ✅ CORRECCIÓN: Asegurar que expenses.data sea siempre un array
 const getAllMovements = () => {
-  // ✅ USAR LOS DATOS DEL REDUX STATE EN LUGAR DE balanceData
   let movements = [];
 
   // ✅ AGREGAR INGRESOS ONLINE
@@ -225,7 +225,6 @@ const getAllMovements = () => {
         paymentMethod: payment.paymentMethod,
         amount: payment.amount,
         category: 'Ingreso',
-        // ✅ Datos adicionales útiles
         cashierDocument: payment.cashierDocument,
         buyerName: payment.buyerName,
         originalReceiptId: payment.originalReceiptId,
@@ -234,9 +233,23 @@ const getAllMovements = () => {
     movements.push(...localMovements);
   }
 
+  // ✅ CORRECCIÓN: Manejar estructura inconsistente de expenses
+  let expensesData = [];
+  
+  // Verificar si expenses.data es un array o un objeto con data anidada
+  if (Array.isArray(expenses?.data)) {
+    expensesData = expenses.data;
+  } else if (Array.isArray(expenses?.data?.data)) {
+    expensesData = expenses.data.data;
+  } else if (expenses?.data && typeof expenses.data === 'object') {
+    // Si expenses.data es un objeto pero no tiene data anidada, intentar extraer un array
+    expensesData = [];
+    console.warn("⚠️ expenses.data no es un array válido:", expenses.data);
+  }
+
   // ✅ AGREGAR GASTOS DEL BACKEND
-  if (expenses?.data) {
-    const expenseMovements = expenses.data.map(expense => ({
+  if (expensesData.length > 0) {
+    const expenseMovements = expensesData.map(expense => ({
       id: `expense-${expense.id}`,
       date: expense.date,
       type: expense.type || 'Gasto',
@@ -244,7 +257,6 @@ const getAllMovements = () => {
       paymentMethod: expense.paymentMethods || 'No especificado',
       amount: -Math.abs(expense.amount), // ✅ NEGATIVO para gastos
       category: 'Gasto',
-      // ✅ Datos adicionales de gastos
       destinatario: expense.destinatario,
       originalExpenseId: expense.id
     }));
@@ -258,7 +270,12 @@ const getAllMovements = () => {
     totalMovimientos: movements.length,
     ingresos: movements.filter(m => m.amount >= 0).length,
     gastos: movements.filter(m => m.amount < 0).length,
-    gastosDelBackend: expenses?.data?.length || 0
+    gastosDelBackend: expensesData.length,
+    expensesStructure: {
+      isArray: Array.isArray(expenses?.data),
+      hasNestedData: Array.isArray(expenses?.data?.data),
+      type: typeof expenses?.data
+    }
   });
 
   return movements;
@@ -268,33 +285,43 @@ const getAllMovements = () => {
   // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
 // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
 // ✅ FUNCIÓN CORREGIDA: handleExportExcel completa
+// ✅ CORRECCIÓN COMPLETA: handleExportExcel
 const handleExportExcel = () => {
   console.log("🔍 DEBUGGING EXCEL EXPORT - INICIO");
   
-  // ✅ LOG DEL ESTADO COMPLETO ANTES DE PROCESAR - USAR VARIABLES DEL REDUX
+  // ✅ LOG DEL ESTADO COMPLETO ANTES DE PROCESAR
   console.log("📊 Estado completo del balance:", { income, expenses, paymentMethodBreakdown });
   console.log("📊 Estructura de expenses:", expenses);
-  console.log("📊 Datos de gastos:", expenses?.data);
-  console.log("📊 Longitud de gastos:", expenses?.data?.length);
   
-  const movementsToExport = getAllMovements(); // Ya viene filtrado sin Addi/Sistecredito
+  // ✅ DETECTAR ESTRUCTURA DE EXPENSES
+  let expensesData = [];
+  if (Array.isArray(expenses?.data)) {
+    expensesData = expenses.data;
+  } else if (Array.isArray(expenses?.data?.data)) {
+    expensesData = expenses.data.data;
+  }
+  
+  console.log("📊 Datos de gastos procesados:", expensesData);
+  console.log("📊 Longitud de gastos:", expensesData.length);
+  
+  const movementsToExport = getAllMovements();
   
   console.log("📋 Movimientos exportados:", movementsToExport);
   console.log("📋 Total movimientos:", movementsToExport.length);
 
   // ✅ SEPARAR MOVIMIENTOS POR TIPO
   const ingresos = movementsToExport.filter(m => m.amount >= 0);
-  const gastos = movementsToExport.filter(m => m.amount < 0);
+  const gastos = movementsToExport.filter(m => m.amount < 0); // ✅ COMPLETAR LÍNEA 287
   
   console.log("💰 Ingresos encontrados:", ingresos.length);
   console.log("💸 Gastos encontrados:", gastos.length);
   console.log("💸 Detalle de gastos:", gastos);
   
-  // ✅ LOG ESPECÍFICO DE GASTOS DEL BACKEND - USAR VARIABLE DEL REDUX
-  if (expenses?.data) {
+  // ✅ LOG ESPECÍFICO DE GASTOS DEL BACKEND
+  if (expensesData.length > 0) {
     console.log("🔍 GASTOS DIRECTOS DEL BACKEND:");
-    console.log("Total gastos del backend:", expenses.data.length);
-    expenses.data.forEach((expense, index) => {
+    console.log("Total gastos del backend:", expensesData.length);
+    expensesData.forEach((expense, index) => {
       console.log(`Gasto ${index + 1}:`, {
         id: expense.id,
         type: expense.type,
@@ -309,17 +336,17 @@ const handleExportExcel = () => {
     console.warn("⚠️ No se encontraron gastos en expenses.data");
   }
 
-  // ✅ CREAR GASTOS DIRECTAMENTE DEL BACKEND SI NO HAY EN MOVIMIENTOS
+  // ✅ CREAR GASTOS PARA EXCEL
   let gastosParaExcel = [];
   
-  if (gastos.length === 0 && expenses?.data?.length > 0) {
+  if (gastos.length === 0 && expensesData.length > 0) {
     console.log("🔧 Usando gastos directamente del backend");
-    gastosParaExcel = expenses.data.map(expense => ({
+    gastosParaExcel = expensesData.map(expense => ({
       date: expense.date,
       type: expense.type || 'Gasto',
       description: expense.description || 'Sin descripción',
       paymentMethod: expense.paymentMethods || 'No especificado',
-      amount: Math.abs(expense.amount), // Asegurar que sea positivo para el Excel
+      amount: Math.abs(expense.amount),
       destinatario: expense.destinatario || 'No especificado'
     }));
   } else {
@@ -377,7 +404,7 @@ const handleExportExcel = () => {
     ["", "", "", "TOTAL INGRESOS:", ingresos.reduce((sum, m) => sum + m.amount, 0)]
   ];
 
-  // ✅ CREAR HOJA DE GASTOS MEJORADA
+  // ✅ CREAR HOJA DE GASTOS
   const gastosData = [
     ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto", "👤 Destinatario"],
     ...gastosParaExcel.map((gasto) => [
@@ -391,12 +418,7 @@ const handleExportExcel = () => {
     ["", "", "", "", "TOTAL GASTOS:", gastosParaExcel.reduce((sum, g) => sum + g.amount, 0)]
   ];
 
-  console.log("📊 Datos finales para Excel:");
-  console.log("- Resumen filas:", resumenData.length);
-  console.log("- Ingresos filas:", ingresosData.length);
-  console.log("- Gastos filas:", gastosData.length);
-
-  // ✅ CREAR HOJA DE TODOS LOS MOVIMIENTOS - EVITAR DUPLICACIÓN
+  // ✅ CREAR HOJA DE TODOS LOS MOVIMIENTOS
   const todosMovimientosData = [
     ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto", "🔄 Categoría"],
     ...movementsToExport.map((m) => [
@@ -407,13 +429,12 @@ const handleExportExcel = () => {
       m.amount,
       m.amount >= 0 ? "INGRESO" : "GASTO"
     ]),
-    // ✅ SOLO AGREGAR GASTOS DEL BACKEND SI NO ESTÁN YA EN MOVIMIENTOS
     ...(gastos.length === 0 && gastosParaExcel.length > 0 ? gastosParaExcel.map((gasto) => [
       formatMovementDate(gasto.date),
       gasto.type,
       gasto.description || "-",
       gasto.paymentMethod || "N/A",
-      -gasto.amount, // Negativo para diferenciarlo en la hoja combinada
+      -gasto.amount,
       "GASTO"
     ]) : []),
     ["", "", "", "", "", ""],
@@ -425,51 +446,30 @@ const handleExportExcel = () => {
   // ✅ CREAR LIBRO DE TRABAJO
   const wb = XLSX.utils.book_new();
 
-  // ✅ AGREGAR HOJA DE RESUMEN
+  // ✅ AGREGAR HOJAS
   const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-  wsResumen["!cols"] = [
-    { wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 20 }
-  ];
+  wsResumen["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(wb, wsResumen, "📊 Resumen");
 
-  // ✅ AGREGAR HOJA DE INGRESOS
   const wsIngresos = XLSX.utils.aoa_to_sheet(ingresosData);
-  wsIngresos["!cols"] = [
-    { wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }
-  ];
+  wsIngresos["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }];
   XLSX.utils.book_append_sheet(wb, wsIngresos, "💰 Ingresos");
 
-  // ✅ AGREGAR HOJA DE GASTOS
   const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
-  wsGastos["!cols"] = [
-    { wch: 12 }, { wch: 25 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
-  ];
+  wsGastos["!cols"] = [{ wch: 12 }, { wch: 25 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(wb, wsGastos, "💸 Gastos");
 
-  // ✅ AGREGAR HOJA DE TODOS LOS MOVIMIENTOS
   const wsTodos = XLSX.utils.aoa_to_sheet(todosMovimientosData);
-  wsTodos["!cols"] = [
-    { wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 12 }
-  ];
+  wsTodos["!cols"] = [{ wch: 12 }, { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, wsTodos, "📋 Todos los Movimientos");
 
-  // ✅ GENERAR NOMBRE DE ARCHIVO CON TIMESTAMP
+  // ✅ EXPORTAR
   const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
   const fileName = `balance_completo_${filters.startDate}_${filters.endDate}_${timestamp}.xlsx`;
 
-  // ✅ DESCARGAR ARCHIVO
   XLSX.writeFile(wb, fileName);
 
   console.log(`📄 Archivo exportado: ${fileName}`);
-  console.log(`📊 Resumen final:`, {
-    totalIngresos: ingresos.length,
-    totalGastos: gastosParaExcel.length,
-    totalMovimientos: movementsToExport.length,
-    gastosDelBackend: expenses?.data?.length || 0,
-    hojas: ["Resumen", "Ingresos", "Gastos", "Todos los Movimientos"]
-  });
-
-  // ✅ MOSTRAR CONFIRMACIÓN AL USUARIO
   alert(`✅ Excel exportado exitosamente!\n\n📊 Resumen:\n• ${ingresos.length} ingresos\n• ${gastosParaExcel.length} gastos\n• ${movementsToExport.length} movimientos totales\n\n📁 Archivo: ${fileName}`);
 };
 

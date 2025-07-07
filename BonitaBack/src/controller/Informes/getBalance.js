@@ -10,7 +10,7 @@ const getBalance = async (req, res) => {
 
     let dateFilter = {};
 
-    // ✅ MANEJO DE FECHAS CORREGIDO
+    // ✅ MANEJO DE FECHAS PARA RECEIPTS
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       console.log("📅 Sin fechas especificadas, usando día actual:", today);
@@ -40,37 +40,76 @@ const getBalance = async (req, res) => {
       }
     }
 
-    // ✅ FILTRO DE FECHA PARA RESERVAS (SEPARADO Y CORREGIDO)
+    // ✅ FILTRO DE FECHA PARA RESERVAS (CORREGIDO)
     let reservationDateFilter = {};
     if (!startDate && !endDate) {
       const today = getColombiaDate();
-      const nextDay = new Date(today);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayString = nextDay.toISOString().split('T')[0];
+      console.log("📅 Usando día actual para reservas:", today);
+      
+      // ✅ CREAR RANGO COMPLETO DEL DÍA
+      const startOfDay = `${today}T00:00:00.000Z`;
+      const endOfDay = `${today}T23:59:59.999Z`;
       
       reservationDateFilter.createdAt = {
-        [Op.gte]: today,
-        [Op.lt]: nextDayString
+        [Op.gte]: startOfDay,
+        [Op.lte]: endOfDay
       };
     } else {
-      if (startDate || endDate) {
-        reservationDateFilter.createdAt = {};
-        
-        if (startDate) {
-          reservationDateFilter.createdAt[Op.gte] = startDate;
-        }
-        
-        if (endDate) {
-          const nextDay = new Date(endDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          const nextDayString = nextDay.toISOString().split('T')[0];
-          reservationDateFilter.createdAt[Op.lt] = nextDayString;
-        }
+      reservationDateFilter.createdAt = {};
+      
+      if (startDate) {
+        const startOfDay = `${startDate}T00:00:00.000Z`;
+        reservationDateFilter.createdAt[Op.gte] = startOfDay;
+        console.log("📅 Fecha inicio reservas:", startOfDay);
+      }
+      
+      if (endDate) {
+        const endOfDay = `${endDate}T23:59:59.999Z`;
+        reservationDateFilter.createdAt[Op.lte] = endOfDay;
+        console.log("📅 Fecha fin reservas:", endOfDay);
       }
     }
 
     console.log("🔍 Filtro de fecha para Receipt:", JSON.stringify(dateFilter, null, 2));
-    console.log("🔍 Filtro de fecha para Reservation:", JSON.stringify(reservationDateFilter, null, 2));
+    console.log("🔍 Filtro FINAL para reservas:", JSON.stringify(reservationDateFilter, null, 2));
+
+    // ✅ DEBUG ESPECÍFICO PARA LA RESERVA DE LIGIA
+    console.log("🔍 DEBUG: Buscando específicamente la reserva de Ligia...");
+    try {
+      const ligiaReservation = await Reservation.findOne({
+        where: {
+          id_reservation: "73039467-7e4f-460e-a6b1-19b5e97c9673"
+        },
+        attributes: ['id_reservation', 'createdAt', 'partialPayment', 'status']
+      });
+      
+      if (ligiaReservation) {
+        console.log("✅ Reserva de Ligia encontrada:", {
+          id: ligiaReservation.id_reservation,
+          createdAt: ligiaReservation.createdAt,
+          partialPayment: ligiaReservation.partialPayment,
+          status: ligiaReservation.status,
+          createdAtType: typeof ligiaReservation.createdAt,
+          createdAtString: ligiaReservation.createdAt.toString()
+        });
+        
+        // ✅ VERIFICAR SI LA FECHA ESTÁ EN EL RANGO
+        const reservationDate = new Date(ligiaReservation.createdAt);
+        const filterStart = new Date(reservationDateFilter.createdAt[Op.gte] || reservationDateFilter.createdAt[Op.lte]);
+        const filterEnd = new Date(reservationDateFilter.createdAt[Op.lte] || reservationDateFilter.createdAt[Op.gte]);
+        
+        console.log("🔍 Comparación de fechas:", {
+          reservationDate: reservationDate.toISOString(),
+          filterStart: filterStart.toISOString(),
+          filterEnd: filterEnd.toISOString(),
+          isInRange: reservationDate >= filterStart && reservationDate <= filterEnd
+        });
+      } else {
+        console.log("❌ No se encontró la reserva de Ligia");
+      }
+    } catch (debugError) {
+      console.log("🟡 Error en debug de Ligia:", debugError.message);
+    }
 
     // ✅ PASO 1: VENTAS ONLINE
     console.log("🌐 Buscando ventas online...");
@@ -141,6 +180,32 @@ const getBalance = async (req, res) => {
     
     let reservationPayments = [];
     try {
+      // ✅ PRIMERO: Consulta sin filtros para debug
+      const allReservations = await Reservation.findAll({
+        attributes: ['id_reservation', 'createdAt', 'partialPayment', 'status'],
+        limit: 5
+      });
+      
+      console.log("🔍 DEBUG - Todas las reservas (primeras 5):");
+      allReservations.forEach((res, idx) => {
+        console.log(`  ${idx + 1}. ID: ${res.id_reservation}, createdAt: ${res.createdAt}, partialPayment: ${res.partialPayment}`);
+      });
+
+      // ✅ SEGUNDO: Consulta con filtro de fecha pero sin includes
+      const reservationsWithDateFilter = await Reservation.findAll({
+        where: {
+          ...reservationDateFilter,
+          partialPayment: { [Op.gt]: 0 }
+        },
+        attributes: ['id_reservation', 'id_orderDetail', 'partialPayment', 'createdAt', 'status']
+      });
+      
+      console.log(`🔍 DEBUG - Reservas con filtro de fecha: ${reservationsWithDateFilter.length}`);
+      reservationsWithDateFilter.forEach((res, idx) => {
+        console.log(`  ${idx + 1}. ID: ${res.id_reservation}, OrderDetail: ${res.id_orderDetail}, Payment: ${res.partialPayment}`);
+      });
+
+      // ✅ TERCERO: Consulta completa con includes
       reservationPayments = await Reservation.findAll({
         where: {
           ...reservationDateFilter,
@@ -161,12 +226,7 @@ const getBalance = async (req, res) => {
           {
             model: OrderDetail,
             attributes: ['id_orderDetail', 'n_document', 'amount', 'state_order'],
-            required: true,
-            where: {
-              state_order: {
-                [Op.in]: ['Reserva a Crédito', 'Pendiente', 'Reserva Activa', 'Pedido Realizado']
-              }
-            },
+            required: false, // ✅ CAMBIAR A FALSE PARA NO FILTRAR
             include: [
               {
                 model: User,
@@ -195,9 +255,30 @@ const getBalance = async (req, res) => {
         });
       });
       
+      // ✅ CONSULTA ALTERNATIVA SI NO HAY RESULTADOS
+      if (reservationPayments.length === 0) {
+        console.log("🟡 No se encontraron pagos de reservas. Intentando consulta alternativa...");
+        
+        const allReservationsToday = await Reservation.findAll({
+          where: {
+            createdAt: {
+              [Op.gte]: `${startDate || getColombiaDate()}T00:00:00.000Z`,
+              [Op.lte]: `${endDate || getColombiaDate()}T23:59:59.999Z`
+            }
+          },
+          attributes: ['id_reservation', 'partialPayment', 'createdAt', 'status'],
+          limit: 10
+        });
+        
+        console.log(`🔍 Reservas alternativas encontradas: ${allReservationsToday.length}`);
+        allReservationsToday.forEach((res, idx) => {
+          console.log(`  ${idx + 1}. ${res.id_reservation} - $${res.partialPayment} - ${res.createdAt}`);
+        });
+      }
+      
     } catch (reservationError) {
       console.log('🟡 Error buscando pagos de reservas:', reservationError.message);
-      console.log('🟡 Continuando sin pagos de reservas...');
+      console.log('🟡 Stack trace:', reservationError.stack);
       reservationPayments = [];
     }
 
@@ -206,9 +287,8 @@ const getBalance = async (req, res) => {
     
     let partialPayments = [];
     try {
-      // ✅ USAR EL MISMO FILTRO DE FECHA QUE PARA RESERVAS
       partialPayments = await CreditPayment.findAll({
-        where: dateFilter, // Mantener el filtro original por fecha de pago
+        where: dateFilter,
         attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
         include: [
           {
@@ -232,7 +312,7 @@ const getBalance = async (req, res) => {
           }
         ],
         order: [['date', 'DESC']],
-        logging: console.log // ✅ ACTIVAR LOGGING PARA DEBUG
+        logging: console.log
       });
       
       console.log(`✅ Pagos parciales adicionales encontrados: ${partialPayments.length}`);

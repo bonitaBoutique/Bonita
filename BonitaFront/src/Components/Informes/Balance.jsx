@@ -306,40 +306,190 @@ const Balance = () => {
   };
 
   // ✅ Function to handle Excel export
-  const handleExportExcel = () => {
-    const movementsToExport = getAllMovements(); // Ya viene filtrado sin Addi/Sistecredito
+  // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
+const handleExportExcel = () => {
+  const movementsToExport = getAllMovements(); // Ya viene filtrado sin Addi/Sistecredito
 
-    const wsData = movementsToExport.map((m) => ({
-      Fecha: formatMovementDate(m.date),
-      Tipo: m.type,
-      Descripción: m.description || "-",
-      "Método de Pago": m.paymentMethod || "N/A",
-      Monto: m.amount,
-    }));
+  // ✅ SEPARAR MOVIMIENTOS POR TIPO
+  const ingresos = movementsToExport.filter(m => m.amount >= 0);
+  const gastos = movementsToExport.filter(m => m.amount < 0);
 
-    const ws = XLSX.utils.json_to_sheet(wsData);
-    ws["!cols"] = [
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 15 },
-      { wch: 15 },
-    ];
-    Object.keys(ws).forEach((cell) => {
-      if (cell.startsWith("E") && cell !== "E1") {
-        ws[cell].z = "$ #,##0;[Red]$ -#,##0";
-        ws[cell].t = "n";
+  // ✅ CREAR HOJA DE RESUMEN
+  const resumenData = [
+    ["📊 RESUMEN FINANCIERO", "", "", "", ""],
+    ["Período:", formatDateForDisplay(filters.startDate), "a", formatDateForDisplay(filters.endDate), ""],
+    ["", "", "", "", ""],
+    ["💰 TOTALES", "", "", "", ""],
+    ["Total Ingresos:", "", "", "", displayTotalIncome],
+    ["Total Gastos:", "", "", "", Math.abs(totalExpenses)],
+    ["Balance Final:", "", "", "", displayBalance],
+    ["", "", "", "", ""],
+    ["💳 INGRESOS POR MÉTODO DE PAGO", "", "", "", ""],
+    ["Efectivo:", "", "", "", ingresosEfectivo],
+    ["Tarjeta:", "", "", "", ingresosTarjeta],
+    ["Nequi:", "", "", "", ingresosNequi],
+    ["Bancolombia:", "", "", "", ingresosBancolombia],
+    ["Crédito:", "", "", "", ingresosCredito],
+    ["GiftCard:", "", "", "", ingresosGiftCard],
+    ["Otro:", "", "", "", ingresosOtro],
+    ["Wompi (Online):", "", "", "", totalOnlineSales],
+    ["Pagos Iniciales:", "", "", "", ingresosPagosIniciales],
+    ["Pagos Parciales:", "", "", "", ingresosPagosParciales],
+    ["", "", "", "", ""],
+    ["📋 INFORMACIÓN ADICIONAL", "", "", "", ""],
+    ["Addi (Crédito):", "", "", "", ingresosAddi],
+    ["Sistecredito (Crédito):", "", "", "", ingresosSistecredito],
+    ["Nota:", "Los créditos no se incluyen en el balance", "", "", ""],
+  ];
+
+  // ✅ CREAR HOJA DE INGRESOS
+  const ingresosData = [
+    ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto"],
+    ...ingresos.map((m) => [
+      formatMovementDate(m.date),
+      m.type,
+      m.description || "-",
+      m.paymentMethod || "N/A",
+      m.amount,
+    ]),
+    ["", "", "", "TOTAL INGRESOS:", ingresos.reduce((sum, m) => sum + m.amount, 0)]
+  ];
+
+  // ✅ CREAR HOJA DE GASTOS
+  const gastosData = [
+    ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto"],
+    ...gastos.map((m) => [
+      formatMovementDate(m.date),
+      m.type,
+      m.description || "-",
+      m.paymentMethod || "N/A",
+      Math.abs(m.amount), // Mostrar como positivo para claridad
+    ]),
+    ["", "", "", "TOTAL GASTOS:", Math.abs(gastos.reduce((sum, m) => sum + m.amount, 0))]
+  ];
+
+  // ✅ CREAR HOJA DE TODOS LOS MOVIMIENTOS
+  const todosMovimientosData = [
+    ["📅 Fecha", "📝 Tipo", "📄 Descripción", "💳 Método de Pago", "💰 Monto", "🔄 Categoría"],
+    ...movementsToExport.map((m) => [
+      formatMovementDate(m.date),
+      m.type,
+      m.description || "-",
+      m.paymentMethod || "N/A",
+      m.amount,
+      m.amount >= 0 ? "INGRESO" : "GASTO"
+    ]),
+    ["", "", "", "", "", ""],
+    ["", "", "", "TOTAL INGRESOS:", ingresos.reduce((sum, m) => sum + m.amount, 0), ""],
+    ["", "", "", "TOTAL GASTOS:", Math.abs(gastos.reduce((sum, m) => sum + m.amount, 0)), ""],
+    ["", "", "", "BALANCE FINAL:", displayBalance, ""]
+  ];
+
+  // ✅ CREAR LIBRO DE TRABAJO
+  const wb = XLSX.utils.book_new();
+
+  // ✅ AGREGAR HOJA DE RESUMEN
+  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+  // Configurar ancho de columnas para resumen
+  wsResumen["!cols"] = [
+    { wch: 25 }, // Descripción
+    { wch: 15 }, // Valor 1
+    { wch: 5 },  // Separador
+    { wch: 15 }, // Valor 2
+    { wch: 20 }, // Monto
+  ];
+  // Formatear celdas de montos en resumen
+  Object.keys(wsResumen).forEach((cell) => {
+    if (cell.startsWith("E") && cell !== "E1") {
+      if (wsResumen[cell].v && typeof wsResumen[cell].v === 'number') {
+        wsResumen[cell].z = "$ #,##0;[Red]$ -#,##0";
+        wsResumen[cell].t = "n";
       }
-    });
+    }
+  });
+  XLSX.utils.book_append_sheet(wb, wsResumen, "📊 Resumen");
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Balance");
+  // ✅ AGREGAR HOJA DE INGRESOS
+  const wsIngresos = XLSX.utils.aoa_to_sheet(ingresosData);
+  wsIngresos["!cols"] = [
+    { wch: 12 }, // Fecha
+    { wch: 20 }, // Tipo
+    { wch: 35 }, // Descripción
+    { wch: 15 }, // Método de Pago
+    { wch: 15 }, // Monto
+  ];
+  // Formatear celdas de montos en ingresos
+  Object.keys(wsIngresos).forEach((cell) => {
+    if (cell.startsWith("E") && cell !== "E1") {
+      if (wsIngresos[cell].v && typeof wsIngresos[cell].v === 'number') {
+        wsIngresos[cell].z = "$ #,##0";
+        wsIngresos[cell].t = "n";
+      }
+    }
+  });
+  XLSX.utils.book_append_sheet(wb, wsIngresos, "💰 Ingresos");
 
-    const fileName = `balance_${filters.startDate}_${filters.endDate}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+  // ✅ AGREGAR HOJA DE GASTOS
+  const wsGastos = XLSX.utils.aoa_to_sheet(gastosData);
+  wsGastos["!cols"] = [
+    { wch: 12 }, // Fecha
+    { wch: 25 }, // Tipo
+    { wch: 35 }, // Descripción
+    { wch: 15 }, // Método de Pago
+    { wch: 15 }, // Monto
+  ];
+  // Formatear celdas de montos en gastos
+  Object.keys(wsGastos).forEach((cell) => {
+    if (cell.startsWith("E") && cell !== "E1") {
+      if (wsGastos[cell].v && typeof wsGastos[cell].v === 'number') {
+        wsGastos[cell].z = "$ #,##0";
+        wsGastos[cell].t = "n";
+      }
+    }
+  });
+  XLSX.utils.book_append_sheet(wb, wsGastos, "💸 Gastos");
 
-    console.log(`📄 Archivo exportado: ${fileName} (sin Addi/Sistecredito)`);
-  };
+  // ✅ AGREGAR HOJA DE TODOS LOS MOVIMIENTOS
+  const wsTodos = XLSX.utils.aoa_to_sheet(todosMovimientosData);
+  wsTodos["!cols"] = [
+    { wch: 12 }, // Fecha
+    { wch: 20 }, // Tipo
+    { wch: 35 }, // Descripción
+    { wch: 15 }, // Método de Pago
+    { wch: 15 }, // Monto
+    { wch: 12 }, // Categoría
+  ];
+  // Formatear celdas de montos en todos los movimientos
+  Object.keys(wsTodos).forEach((cell) => {
+    if (cell.startsWith("E") && cell !== "E1") {
+      if (wsTodos[cell].v && typeof wsTodos[cell].v === 'number') {
+        wsTodos[cell].z = "$ #,##0;[Red]$ -#,##0";
+        wsTodos[cell].t = "n";
+      }
+    }
+  });
+  XLSX.utils.book_append_sheet(wb, wsTodos, "📋 Todos los Movimientos");
+
+  // ✅ GENERAR NOMBRE DE ARCHIVO CON TIMESTAMP
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+  const fileName = `balance_completo_${filters.startDate}_${filters.endDate}_${timestamp}.xlsx`;
+
+  // ✅ DESCARGAR ARCHIVO
+  XLSX.writeFile(wb, fileName);
+
+  console.log(`📄 Archivo exportado: ${fileName}`);
+  console.log(`📊 Resumen de exportación:`, {
+    totalIngresos: ingresos.length,
+    totalGastos: gastos.length,
+    totalMovimientos: movementsToExport.length,
+    periodoDesde: filters.startDate,
+    periodoHasta: filters.endDate,
+    hojas: ["Resumen", "Ingresos", "Gastos", "Todos los Movimientos"]
+  });
+
+  // ✅ MOSTRAR CONFIRMACIÓN AL USUARIO
+  alert(`✅ Excel exportado exitosamente!\n\n📊 Resumen:\n• ${ingresos.length} ingresos\n• ${gastos.length} gastos\n• ${movementsToExport.length} movimientos totales\n\n📁 Archivo: ${fileName}`);
+};
 
   // ✅ REEMPLAZAR: Usar datos del backend en lugar de calcular localmente
   const ingresosEfectivo = paymentMethodBreakdown.efectivo || 0;

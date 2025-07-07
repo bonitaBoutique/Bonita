@@ -65,13 +65,19 @@ const getBalance = async (req, res) => {
 
     console.log(`✅ Ventas online encontradas: ${onlineSales.length}`);
 
-    // ✅ PASO 2: VENTAS LOCALES CON PAGOS COMBINADOS - FILTRAR RESERVAS A CRÉDITO
-    console.log("🏪 Buscando ventas locales (excluyendo reservas a crédito)...");
+    // ✅ PASO 2: VENTAS LOCALES NORMALES (EXCLUYENDO RESERVAS A CRÉDITO)
+    console.log("🏪 Buscando ventas locales normales (sin reservas a crédito)...");
     
     let localSalesFilter = { ...dateFilter };
 
     const localSales = await Receipt.findAll({
-      where: localSalesFilter,
+      where: {
+        ...localSalesFilter,
+        // ✅ EXCLUIR recibos con método de pago "Crédito"
+        payMethod: {
+          [Op.not]: 'Crédito'
+        }
+      },
       attributes: [
         'id_receipt',
         'buyer_name',
@@ -91,116 +97,16 @@ const getBalance = async (req, res) => {
         {
           model: OrderDetail,
           attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
-          required: false,
-          // ✅ FILTRO CLAVE: Excluir órdenes que son reservas a crédito
-          where: {
-            [Op.or]: [
-              { state_order: { [Op.not]: 'Reserva a Crédito' } },
-              { state_order: { [Op.is]: null } }
-            ]
-          }
+          required: false
         }
       ],
       order: [['date', 'DESC']]
     });
 
-    console.log(`✅ Ventas locales encontradas (sin reservas a crédito): ${localSales.length}`);
+    console.log(`✅ Ventas locales normales encontradas: ${localSales.length}`);
 
-    // ✅ LOG DETALLADO PARA DEBUG DE RECIBOS
-    console.log("📋 Resumen de procesamiento de recibos:");
-    localSales.forEach((sale, index) => {
-      const saleData = sale.toJSON();
-      const suma = (saleData.amount || 0) + (saleData.amount2 || 0);
-      const diferencia = Math.abs((saleData.total_amount || 0) - suma);
-      
-      console.log(`Recibo ${index + 1}:`, {
-        id: saleData.id_receipt,
-        total: saleData.total_amount,
-        metodo1: saleData.payMethod,
-        monto1: saleData.amount,
-        metodo2: saleData.payMethod2 || 'N/A',
-        monto2: saleData.amount2 || 0,
-        esCombinado: !!(saleData.payMethod2 && saleData.amount2),
-        suma: suma,
-        diferencia: diferencia,
-        orderDetailId: saleData.OrderDetail?.id_orderDetail || 'Sin OrderDetail',
-        orderState: saleData.OrderDetail?.state_order || 'Sin estado'
-      });
-
-      if (diferencia > 0.01) {
-        console.warn(`⚠️ Discrepancia en recibo ${saleData.id_receipt}: 
-          Suma calculada: ${suma}, Total registrado: ${saleData.total_amount}`);
-      }
-    });
-
-    // ✅ OBTENER IDS DE ORDENES QUE YA TIENEN RECEIPT (ANTES DE PAGOS PARCIALES)
-    const orderIdsWithReceipt = localSales
-      .map(sale => sale.OrderDetail?.id_orderDetail)
-      .filter(Boolean);
-    
-    console.log("🔍 OrderDetails con Receipt (para excluir de pagos de reserva):", orderIdsWithReceipt);
-
-    // ✅ PASO 3: PAGOS PARCIALES DE RESERVAS - CORREGIDO PARA EVITAR DUPLICACIÓN
-    console.log("💳 Buscando pagos parciales...");
-    
-    let partialPayments = [];
-    try {
-      partialPayments = await CreditPayment.findAll({
-        where: dateFilter,
-        attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
-        include: [
-          {
-            model: Reservation,
-            attributes: ['n_document', 'id_orderDetail', 'status'],
-            required: true,
-            // ✅ CLAVE: Filtro para excluir reservas con órdenes que ya tienen Receipt
-            where: {
-              ...(orderIdsWithReceipt.length > 0 && {
-                id_orderDetail: {
-                  [Op.notIn]: orderIdsWithReceipt
-                }
-              })
-            },
-            include: [
-              {
-                model: OrderDetail,
-                attributes: ['id_orderDetail', 'n_document', 'state_order'],
-                required: false,
-                include: [
-                  {
-                    model: User,
-                    attributes: ['n_document', 'first_name', 'last_name', 'email'],
-                    required: false
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        order: [['date', 'DESC']]
-      });
-      
-      console.log(`✅ Pagos parciales encontrados (después de filtrar duplicados): ${partialPayments.length}`);
-      
-      // ✅ LOG DE DEBUG para pagos parciales
-      partialPayments.forEach((payment, index) => {
-        console.log(`Pago parcial ${index + 1}:`, {
-          id: payment.id_payment,
-          reservationId: payment.id_reservation,
-          amount: payment.amount,
-          orderDetailId: payment.Reservation?.id_orderDetail || 'Sin OrderDetail',
-          orderState: payment.Reservation?.OrderDetail?.state_order || 'Sin estado'
-        });
-      });
-      
-    } catch (creditPaymentError) {
-      console.log('🟡 Error buscando pagos parciales (tabla CreditPayment puede no existir):', creditPaymentError.message);
-      console.log('🟡 Continuando sin pagos parciales...');
-      partialPayments = [];
-    }
-
-    // ✅ PASO 4: PAGOS INICIALES DE RESERVAS - CORREGIDO PARA EVITAR DUPLICACIÓN
-    console.log("💰 Buscando pagos iniciales de reservas...");
+    // ✅ PASO 3: PAGOS DE RESERVAS A CRÉDITO (USAR SOLO DATOS DE RESERVATION)
+    console.log("💳 Buscando pagos de reservas a crédito...");
     
     let reservationDateFilter = {};
     if (!startDate && !endDate) {
@@ -228,26 +134,21 @@ const getBalance = async (req, res) => {
       }
     }
 
-    let initialReservationPayments = [];
+    let reservationPayments = [];
     try {
-      initialReservationPayments = await Reservation.findAll({
+      reservationPayments = await Reservation.findAll({
         where: {
           ...reservationDateFilter,
           partialPayment: {
             [Op.gt]: 0
-          },
-          // ✅ CLAVE: Excluir reservas cuyas órdenes ya tienen Receipt
-          ...(orderIdsWithReceipt.length > 0 && {
-            id_orderDetail: {
-              [Op.notIn]: orderIdsWithReceipt
-            }
-          })
+          }
         },
         attributes: [
           'id_reservation',
-          'id_orderDetail', 
+          'id_orderDetail',
           'n_document',
           'partialPayment',
+          'totalPaid',
           'createdAt',
           'status'
         ],
@@ -257,15 +158,14 @@ const getBalance = async (req, res) => {
             attributes: ['id_orderDetail', 'n_document', 'amount', 'state_order'],
             required: true,
             where: {
-              // ✅ FILTRO ADICIONAL: Solo órdenes en estado de reserva
               state_order: {
-                [Op.in]: ['Reserva a Crédito', 'Pendiente', 'Reserva Activa']
+                [Op.in]: ['Reserva a Crédito', 'Pendiente', 'Reserva Activa', 'Pedido Realizado']
               }
             },
             include: [
               {
                 model: User,
-                attributes: ['n_document', 'first_name', 'last_name', 'email'],
+                attributes: ['n_document', 'first_name', 'last_name', 'email', 'phone'],
                 required: false
               }
             ]
@@ -274,23 +174,63 @@ const getBalance = async (req, res) => {
         order: [['createdAt', 'DESC']]
       });
       
-      console.log(`✅ Pagos iniciales de reservas encontrados (sin duplicar): ${initialReservationPayments.length}`);
+      console.log(`✅ Pagos iniciales de reservas encontrados: ${reservationPayments.length}`);
       
-      // ✅ LOG DE DEBUG para pagos iniciales
-      initialReservationPayments.forEach((reservation, index) => {
-        console.log(`Pago inicial ${index + 1}:`, {
+      // ✅ LOG DE DEBUG para pagos de reservas
+      reservationPayments.forEach((reservation, index) => {
+        console.log(`Pago reserva ${index + 1}:`, {
           id: reservation.id_reservation,
           orderDetailId: reservation.id_orderDetail,
-          amount: reservation.partialPayment,
+          partialPayment: reservation.partialPayment,
+          totalPaid: reservation.totalPaid,
           orderState: reservation.OrderDetail?.state_order || 'Sin estado',
           status: reservation.status
         });
       });
       
     } catch (reservationError) {
-      console.log('🟡 Error buscando pagos iniciales de reservas:', reservationError.message);
-      console.log('🟡 Continuando sin pagos iniciales...');
-      initialReservationPayments = [];
+      console.log('🟡 Error buscando pagos de reservas:', reservationError.message);
+      console.log('🟡 Continuando sin pagos de reservas...');
+      reservationPayments = [];
+    }
+
+    // ✅ PASO 4: PAGOS PARCIALES ADICIONALES
+    console.log("💰 Buscando pagos parciales adicionales...");
+    
+    let partialPayments = [];
+    try {
+      partialPayments = await CreditPayment.findAll({
+        where: dateFilter,
+        attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
+        include: [
+          {
+            model: Reservation,
+            attributes: ['n_document', 'id_orderDetail', 'status'],
+            required: true,
+            include: [
+              {
+                model: OrderDetail,
+                attributes: ['id_orderDetail', 'n_document', 'state_order'],
+                required: false,
+                include: [
+                  {
+                    model: User,
+                    attributes: ['n_document', 'first_name', 'last_name', 'email'],
+                    required: false
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['date', 'DESC']]
+      });
+      
+      console.log(`✅ Pagos parciales adicionales encontrados: ${partialPayments.length}`);
+      
+    } catch (creditPaymentError) {
+      console.log('🟡 Error buscando pagos parciales:', creditPaymentError.message);
+      partialPayments = [];
     }
 
     // ✅ PASO 5: GASTOS
@@ -338,20 +278,11 @@ const getBalance = async (req, res) => {
       };
     });
 
-    // ✅ Ventas locales CON SEPARACIÓN DE PAGOS COMBINADOS
+    // ✅ Ventas locales normales CON SEPARACIÓN DE PAGOS COMBINADOS
     const formattedLocalSales = [];
     
     localSales.forEach(sale => {
       const saleData = sale.toJSON();
-      
-      // ✅ VALIDACIÓN: Verificar que amount + amount2 = total_amount
-      const calculatedTotal = (saleData.amount || 0) + (saleData.amount2 || 0);
-      const actualTotal = saleData.total_amount || 0;
-      
-      if (Math.abs(calculatedTotal - actualTotal) > 0.01) {
-        console.warn(`⚠️ Discrepancia en recibo ${saleData.id_receipt}: 
-          Calculado: ${calculatedTotal}, Total: ${actualTotal}`);
-      }
       
       // ✅ PAGO PRINCIPAL (siempre existe)
       const mainPayment = {
@@ -398,10 +329,36 @@ const getBalance = async (req, res) => {
       }
     });
 
-    console.log(`✅ Total ventas locales formateadas: ${formattedLocalSales.length}`);
-    console.log(`✅ Pagos combinados detectados: ${formattedLocalSales.filter(sale => !sale.isMainPayment).length}`);
+    // ✅ Pagos de reservas (SOLO PAGOS INICIALES)
+    const formattedReservationPayments = reservationPayments.map(reservation => {
+      let buyerName = 'Cliente no identificado';
+      
+      if (reservation.OrderDetail?.User) {
+        const user = reservation.OrderDetail.User;
+        buyerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Cliente no identificado';
+      }
 
-    // ✅ Pagos parciales
+      return {
+        id: `reservation-${reservation.id_reservation}`,
+        date: reservation.createdAt,
+        amount: parseFloat(reservation.partialPayment || 0), // ✅ SOLO EL PAGO INICIAL
+        pointOfSale: 'Local',
+        paymentMethod: 'Efectivo',
+        cashierDocument: 'Sin asignar',
+        buyerName: buyerName,
+        buyerEmail: reservation.OrderDetail?.User?.email || '',
+        buyerPhone: reservation.OrderDetail?.User?.phone || '',
+        type: 'Pago Inicial Reserva',
+        isMainPayment: true,
+        totalReceiptAmount: parseFloat(reservation.partialPayment || 0),
+        hasSecondaryPayment: false,
+        id_orderDetail: reservation.id_orderDetail,
+        reservationId: reservation.id_reservation,
+        totalReservationAmount: reservation.OrderDetail?.amount || 0
+      };
+    });
+
+    // ✅ Pagos parciales adicionales
     const formattedPartialPayments = partialPayments.map(payment => {
       let buyerName = 'Cliente no identificado';
       
@@ -427,33 +384,6 @@ const getBalance = async (req, res) => {
       };
     });
 
-    // ✅ Pagos iniciales de reservas
-    const formattedInitialReservationPayments = initialReservationPayments.map(reservation => {
-      let buyerName = 'Cliente no identificado';
-      
-      if (reservation.OrderDetail?.User) {
-        const user = reservation.OrderDetail.User;
-        buyerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Cliente no identificado';
-      }
-
-      return {
-        id: `initial-${reservation.id_reservation}`,
-        date: reservation.createdAt,
-        amount: parseFloat(reservation.partialPayment || 0),
-        pointOfSale: 'Local',
-        paymentMethod: 'Efectivo',
-        type: 'Pago Inicial Reserva',
-        reservationId: reservation.id_reservation,
-        reservationStatus: reservation.status || 'Sin estado',
-        n_document: reservation.n_document || null,
-        id_orderDetail: reservation.id_orderDetail || null,
-        buyerName: buyerName,
-        buyer_name: buyerName,
-        description: `${buyerName} - Pago inicial reserva`,
-        totalReservationAmount: reservation.OrderDetail?.amount || 0
-      };
-    });
-
     // ✅ Gastos
     const formattedExpenses = expenses.map(expense => ({
       id: expense.id,
@@ -465,38 +395,9 @@ const getBalance = async (req, res) => {
       destinatario: expense.destinatario || 'No especificado'
     }));
 
-    // ✅ VERIFICACIÓN DE DUPLICACIONES ADICIONAL
-    console.log("🔍 VERIFICANDO DUPLICACIONES ADICIONALES:");
-
-    const orderDetailsInLocal = formattedLocalSales
-      .map(sale => sale.id_orderDetail)
-      .filter(Boolean);
-      
-    const orderDetailsInReservations = formattedInitialReservationPayments
-      .map(payment => payment.id_orderDetail)
-      .filter(Boolean);
-
-    const duplicatedOrders = orderDetailsInLocal.filter(orderId => 
-      orderDetailsInReservations.includes(orderId)
-    );
-
-    if (duplicatedOrders.length > 0) {
-      console.warn("⚠️ ORDENES DUPLICADAS DETECTADAS:", duplicatedOrders);
-      console.warn("Estas órdenes aparecen tanto en ventas locales como en pagos de reserva");
-      
-      // ✅ FILTRAR duplicados de pagos iniciales
-      const filteredInitialPayments = formattedInitialReservationPayments.filter(payment => 
-        !duplicatedOrders.includes(payment.id_orderDetail)
-      );
-      
-      console.log(`🔧 Pagos iniciales filtrados: ${formattedInitialReservationPayments.length} -> ${filteredInitialPayments.length}`);
-      
-      // ✅ ACTUALIZAR la lista
-      formattedInitialReservationPayments.length = 0;
-      formattedInitialReservationPayments.push(...filteredInitialPayments);
-    } else {
-      console.log("✅ No se detectaron duplicaciones adicionales");
-    }
+    console.log(`✅ Total ventas locales formateadas: ${formattedLocalSales.length}`);
+    console.log(`✅ Total pagos de reservas formateados: ${formattedReservationPayments.length}`);
+    console.log(`✅ Total pagos parciales formateados: ${formattedPartialPayments.length}`);
 
     // ✅ PASO 7: CALCULAR TOTALES POR MÉTODO DE PAGO
     console.log("📊 Calculando totales por método de pago...");
@@ -504,8 +405,8 @@ const getBalance = async (req, res) => {
     // ✅ Combinar todos los pagos locales
     const allLocalPayments = [
       ...formattedLocalSales,
-      ...formattedPartialPayments,
-      ...formattedInitialReservationPayments
+      ...formattedReservationPayments,
+      ...formattedPartialPayments
     ];
 
     // ✅ Función para calcular ingresos por método
@@ -528,7 +429,7 @@ const getBalance = async (req, res) => {
 
     // ✅ Separar pagos específicos
     const ingresosPagosParciales = formattedPartialPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const ingresosPagosIniciales = formattedInitialReservationPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const ingresosPagosIniciales = formattedReservationPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
     // ✅ Totales generales
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
@@ -555,11 +456,8 @@ const getBalance = async (req, res) => {
       totalLocalSales: totalLocalSales.toFixed(2),
       totalLocalSalesForBalance: totalLocalSalesForBalance.toFixed(2),
       ingresosEfectivo: ingresosEfectivo.toFixed(2),
-      ingresosTarjeta: ingresosTarjeta.toFixed(2),
-      ingresosNequi: ingresosNequi.toFixed(2),
-      ingresosBancolombia: ingresosBancolombia.toFixed(2),
-      ingresosAddi: ingresosAddi.toFixed(2),
-      ingresosSistecredito: ingresosSistecredito.toFixed(2),
+      ingresosPagosIniciales: ingresosPagosIniciales.toFixed(2),
+      ingresosPagosParciales: ingresosPagosParciales.toFixed(2),
       totalExpenses: totalExpenses.toFixed(2),
       balance: balance.toFixed(2)
     });
@@ -611,14 +509,11 @@ const getBalance = async (req, res) => {
         queriesExecuted: {
           onlineSales: onlineSales.length,
           localSales: localSales.length,
-          formattedLocalSales: formattedLocalSales.length,
+          reservationPayments: reservationPayments.length,
           partialPayments: partialPayments.length,
-          initialReservationPayments: initialReservationPayments.length,
           expenses: expenses.length
         },
         combinedPaymentsCount: formattedLocalSales.filter(sale => !sale.isMainPayment).length,
-        duplicatedOrders: duplicatedOrders,
-        orderIdsWithReceipt: orderIdsWithReceipt,
         dateFilter: dateFilter,
         reservationDateFilter: reservationDateFilter,
         filtersApplied: { paymentMethod, pointOfSale }
@@ -631,9 +526,7 @@ const getBalance = async (req, res) => {
       onlineCount: responseData.income.online.length,
       localCount: responseData.income.local.length,
       expensesCount: responseData.expenses.data.length,
-      paymentMethodBreakdown: responseData.paymentMethodBreakdown,
-      combinedPayments: responseData.debug.combinedPaymentsCount,
-      duplicatedOrdersFound: duplicatedOrders.length
+      paymentMethodBreakdown: responseData.paymentMethodBreakdown
     });
 
     return res.status(200).json(responseData);

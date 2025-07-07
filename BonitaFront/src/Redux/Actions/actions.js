@@ -1160,34 +1160,181 @@ export const fetchLatestReceipt = () => async (dispatch) => {
   }
 };
 
-export const fetchAllReceipts = () => async (dispatch) => {
+export const fetchAllReceipts = (options = {}) => async (dispatch) => {
   try {
     dispatch({ type: FETCH_RECEIPTS_REQUEST });
 
-    const { data } = await axios.get(`${BASE_URL}/caja/receipts`);
-    console.log("API response data:", data);
+    // ✅ OPCIONES CONFIGURABLES
+    const {
+      all = true,           // Por defecto traer todos los recibos
+      page = 1,
+      limit = 50,
+      cashier_document,
+      date_from,
+      date_to
+    } = options;
 
-    // ✅ CORREGIR: Los recibos están en data.receipts, no en data.data.receipts
-    dispatch({ 
-      type: FETCH_RECEIPTS_SUCCESS, 
-      payload: {
-        receipts: data.receipts,
-        total: data.total,
-        pages: data.pages,
-        currentPage: data.currentPage
+    // ✅ CONSTRUIR PARÁMETROS DE CONSULTA
+    const queryParams = new URLSearchParams();
+    
+    if (all) {
+      queryParams.append('all', 'true');
+    } else {
+      queryParams.append('page', page);
+      queryParams.append('limit', limit);
+    }
+    
+    if (cashier_document) {
+      queryParams.append('cashier_document', cashier_document);
+    }
+    
+    if (date_from) {
+      queryParams.append('date_from', date_from);
+    }
+    
+    if (date_to) {
+      queryParams.append('date_to', date_to);
+    }
+
+    const url = `${BASE_URL}/caja/receipts?${queryParams.toString()}`;
+    console.log("📡 Fetching receipts from:", url);
+
+    const { data } = await axios.get(url);
+    console.log("📥 API response data:", data);
+
+    // ✅ MANEJAR RESPUESTA EXITOSA
+    if (data && data.receipts) {
+      dispatch({ 
+        type: FETCH_RECEIPTS_SUCCESS, 
+        payload: {
+          receipts: data.receipts,
+          total: data.total || data.receipts.length,
+          pages: data.pages || 1,
+          currentPage: data.currentPage || 1,
+          message: data.message || `${data.receipts.length} recibos cargados`
+        }
+      });
+
+      console.log(`✅ ${data.receipts.length} recibos cargados exitosamente`);
+    } else {
+      // ✅ MANEJAR RESPUESTA VACÍA
+      console.warn("⚠️ No se encontraron recibos en la respuesta");
+      dispatch({ 
+        type: FETCH_RECEIPTS_SUCCESS, 
+        payload: {
+          receipts: [],
+          total: 0,
+          pages: 1,
+          currentPage: 1,
+          message: "No se encontraron recibos"
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error("❌ Error fetching receipts:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method
       }
     });
-  } catch (error) {
-    console.error("Error fetching receipts:", error);
+
+    // ✅ EXTRAER MENSAJE DE ERROR ESPECÍFICO
+    let errorMessage = 'Error desconocido al obtener recibos';
+    
+    if (error.response) {
+      switch (error.response.status) {
+        case 404:
+          errorMessage = 'Endpoint de recibos no encontrado';
+          break;
+        case 500:
+          errorMessage = 'Error interno del servidor';
+          break;
+        case 401:
+          errorMessage = 'No autorizado para acceder a los recibos';
+          break;
+        default:
+          errorMessage = error.response.data?.message || 
+                        error.response.data?.error || 
+                        `Error ${error.response.status}`;
+      }
+    } else if (error.request) {
+      errorMessage = 'Error de conexión al servidor';
+    } else {
+      errorMessage = error.message || 'Error en la configuración de la petición';
+    }
+
     dispatch({
       type: FETCH_RECEIPTS_FAILURE,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: errorMessage
     });
-    Swal.fire('Error', 'Error al obtener los recibos', 'error');
+
+    // ✅ MOSTRAR ERROR AL USUARIO
+    Swal.fire({
+      title: '❌ Error al obtener recibos',
+      html: `
+        <div class="text-left">
+          <p class="font-medium text-red-600 mb-2">${errorMessage}</p>
+          <div class="text-sm text-gray-600">
+            <p>Posibles causas:</p>
+            <ul class="list-disc list-inside mt-1">
+              <li>Problemas de conexión a internet</li>
+              <li>Servidor temporalmente inaccesible</li>
+              <li>Error en la configuración del backend</li>
+            </ul>
+          </div>
+        </div>
+      `,
+      icon: 'error',
+      confirmButtonText: '🔄 Reintentar',
+      showCancelButton: true,
+      cancelButtonText: '❌ Cerrar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // ✅ REINTENTAR AUTOMÁTICAMENTE
+        dispatch(fetchAllReceipts(options));
+      }
+    });
   }
+};
+
+// ✅ ACTION ESPECÍFICO PARA OBTENER RECIBOS PAGINADOS
+export const fetchReceiptsPaginated = (page = 1, limit = 50, filters = {}) => async (dispatch) => {
+  return dispatch(fetchAllReceipts({ 
+    all: false, 
+    page, 
+    limit, 
+    ...filters 
+  }));
+};
+
+// ✅ ACTION ESPECÍFICO PARA OBTENER TODOS LOS RECIBOS
+export const fetchAllReceiptsComplete = (filters = {}) => async (dispatch) => {
+  return dispatch(fetchAllReceipts({ 
+    all: true, 
+    ...filters 
+  }));
+};
+
+// ✅ ACTION ESPECÍFICO PARA OBTENER RECIBOS POR CAJERO
+export const fetchReceiptsByCashier = (cashier_document, options = {}) => async (dispatch) => {
+  return dispatch(fetchAllReceipts({ 
+    cashier_document, 
+    ...options 
+  }));
+};
+
+// ✅ ACTION ESPECÍFICO PARA OBTENER RECIBOS POR FECHA
+export const fetchReceiptsByDateRange = (date_from, date_to, options = {}) => async (dispatch) => {
+  return dispatch(fetchAllReceipts({ 
+    date_from, 
+    date_to, 
+    ...options 
+  }));
 };
 
 export const createExpense = (expenseData) => async (dispatch) => {

@@ -10,7 +10,7 @@ const getBalance = async (req, res) => {
 
     let dateFilter = {};
 
-    // ✅ MANEJO DE FECHAS
+    // ✅ MANEJO DE FECHAS CORREGIDO
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       console.log("📅 Sin fechas especificadas, usando día actual:", today);
@@ -40,7 +40,37 @@ const getBalance = async (req, res) => {
       }
     }
 
-    console.log("🔍 Filtro de fecha aplicado:", JSON.stringify(dateFilter, null, 2));
+    // ✅ FILTRO DE FECHA PARA RESERVAS (SEPARADO Y CORREGIDO)
+    let reservationDateFilter = {};
+    if (!startDate && !endDate) {
+      const today = getColombiaDate();
+      const nextDay = new Date(today);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayString = nextDay.toISOString().split('T')[0];
+      
+      reservationDateFilter.createdAt = {
+        [Op.gte]: today,
+        [Op.lt]: nextDayString
+      };
+    } else {
+      if (startDate || endDate) {
+        reservationDateFilter.createdAt = {};
+        
+        if (startDate) {
+          reservationDateFilter.createdAt[Op.gte] = startDate;
+        }
+        
+        if (endDate) {
+          const nextDay = new Date(endDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const nextDayString = nextDay.toISOString().split('T')[0];
+          reservationDateFilter.createdAt[Op.lt] = nextDayString;
+        }
+      }
+    }
+
+    console.log("🔍 Filtro de fecha para Receipt:", JSON.stringify(dateFilter, null, 2));
+    console.log("🔍 Filtro de fecha para Reservation:", JSON.stringify(reservationDateFilter, null, 2));
 
     // ✅ PASO 1: VENTAS ONLINE
     console.log("🌐 Buscando ventas online...");
@@ -107,33 +137,8 @@ const getBalance = async (req, res) => {
 
     // ✅ PASO 3: PAGOS DE RESERVAS A CRÉDITO (USAR SOLO DATOS DE RESERVATION)
     console.log("💳 Buscando pagos de reservas a crédito...");
+    console.log("💳 Usando filtro:", reservationDateFilter);
     
-    let reservationDateFilter = {};
-    if (!startDate && !endDate) {
-      const today = getColombiaDate();
-      const nextDay = new Date(today);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayString = nextDay.toISOString().split('T')[0];
-      
-      reservationDateFilter.createdAt = {
-        [Op.gte]: today,
-        [Op.lt]: nextDayString
-      };
-    } else {
-      reservationDateFilter.createdAt = {};
-      
-      if (startDate) {
-        reservationDateFilter.createdAt[Op.gte] = startDate;
-      }
-      
-      if (endDate) {
-        const nextDay = new Date(endDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayString = nextDay.toISOString().split('T')[0];
-        reservationDateFilter.createdAt[Op.lt] = nextDayString;
-      }
-    }
-
     let reservationPayments = [];
     try {
       reservationPayments = await Reservation.findAll({
@@ -171,7 +176,8 @@ const getBalance = async (req, res) => {
             ]
           }
         ],
-        order: [['createdAt', 'DESC']]
+        order: [['createdAt', 'DESC']],
+        logging: console.log // ✅ ACTIVAR LOGGING PARA DEBUG
       });
       
       console.log(`✅ Pagos iniciales de reservas encontrados: ${reservationPayments.length}`);
@@ -184,7 +190,8 @@ const getBalance = async (req, res) => {
           partialPayment: reservation.partialPayment,
           totalPaid: reservation.totalPaid,
           orderState: reservation.OrderDetail?.state_order || 'Sin estado',
-          status: reservation.status
+          status: reservation.status,
+          createdAt: reservation.createdAt
         });
       });
       
@@ -199,8 +206,9 @@ const getBalance = async (req, res) => {
     
     let partialPayments = [];
     try {
+      // ✅ USAR EL MISMO FILTRO DE FECHA QUE PARA RESERVAS
       partialPayments = await CreditPayment.findAll({
-        where: dateFilter,
+        where: dateFilter, // Mantener el filtro original por fecha de pago
         attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
         include: [
           {
@@ -223,7 +231,8 @@ const getBalance = async (req, res) => {
             ]
           }
         ],
-        order: [['date', 'DESC']]
+        order: [['date', 'DESC']],
+        logging: console.log // ✅ ACTIVAR LOGGING PARA DEBUG
       });
       
       console.log(`✅ Pagos parciales adicionales encontrados: ${partialPayments.length}`);

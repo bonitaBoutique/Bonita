@@ -13,6 +13,7 @@ const LandingPrincipal = () => {
   // Redux state
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
+  const searchResults = useSelector((state) => state.searchResults || []);
   
   // Estados locales
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -34,25 +35,60 @@ const LandingPrincipal = () => {
     }
   }, [dispatch, products.length]);
 
-  // Filtrar y ordenar productos
+  // ✅ NUEVA LÓGICA DE AGRUPACIÓN (desde ProductsList)
   useEffect(() => {
-    let filtered = products.filter(
-      (product) => product.stock > 0 && product.tiendaOnLine === true
-    );
+    // Mostrar productos filtrados si existen, de lo contrario, mostrar todos.
+    // Filtramos por stock y que sea tiendaOnLine.
+    const activeProducts = (
+      searchResults.length > 0 ? searchResults : products
+    ).filter((product) => product.stock > 0 && product.tiendaOnLine === true);
 
-    // Filtro por búsqueda
-    if (searchTerm) {
-      filtered = filtered.filter((product) =>
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    // Agrupamos productos por descripción para mostrar solo uno por grupo.
+    const groupedProducts = {};
+    activeProducts.forEach((product) => {
+      const key = product.description.trim();
+      if (groupedProducts[key]) {
+        groupedProducts[key].push(product);
+      } else {
+        groupedProducts[key] = [product];
+      }
+    });
+
+    // Convertimos el objeto en un arreglo donde cada elemento es un grupo.
+    const uniqueGroups = Object.values(groupedProducts);
+
+    // Aplicar filtros adicionales
+    let filtered = uniqueGroups.map(group => {
+      // Tomar el primer producto de cada grupo como representante
+      const representative = group[0];
+      // Calcular stock total del grupo
+      const totalStock = group.reduce((sum, product) => sum + product.stock, 0);
+      
+      return {
+        ...representative,
+        groupStock: totalStock,
+        groupSize: group.length,
+        group: group
+      };
+    });
+
+    // Filtro por búsqueda (ya aplicado en activeProducts)
+    if (searchTerm && searchResults.length === 0) {
+      filtered = filtered.filter((representative) =>
+        representative.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtro por precio
     if (priceFilter.min) {
-      filtered = filtered.filter((product) => product.priceSell >= parseFloat(priceFilter.min));
+      filtered = filtered.filter((representative) => 
+        representative.priceSell >= parseFloat(priceFilter.min)
+      );
     }
     if (priceFilter.max) {
-      filtered = filtered.filter((product) => product.priceSell <= parseFloat(priceFilter.max));
+      filtered = filtered.filter((representative) => 
+        representative.priceSell <= parseFloat(priceFilter.max)
+      );
     }
 
     // Ordenamiento
@@ -69,6 +105,9 @@ const LandingPrincipal = () => {
       case "name":
         filtered.sort((a, b) => a.description.localeCompare(b.description));
         break;
+      case "stock":
+        filtered.sort((a, b) => b.groupStock - a.groupStock);
+        break;
       default:
         break;
     }
@@ -80,7 +119,7 @@ const LandingPrincipal = () => {
     setDisplayedProducts(initialProducts);
     setCurrentIndex(productsPerLoad);
     setHasMore(filtered.length > productsPerLoad);
-  }, [products, searchTerm, priceFilter, sortBy]);
+  }, [products, searchResults, searchTerm, priceFilter, sortBy]);
 
   // Función para cargar más productos
   const loadMoreProducts = useCallback(() => {
@@ -134,7 +173,9 @@ const LandingPrincipal = () => {
                 <h1 className="text-3xl md:text-4xl font-light text-gray-900 tracking-tight">
                   BONITA BOUTIQUE CUMARAL
                 </h1>
-                
+                <p className="text-sm text-gray-600 mt-1">
+                  {filteredProducts.length} productos únicos disponibles
+                </p>
               </div>
               
               {/* Carrito fijo en header */}
@@ -198,6 +239,7 @@ const LandingPrincipal = () => {
                 <option value="price-asc">Precio: menor a mayor</option>
                 <option value="price-desc">Precio: mayor a menor</option>
                 <option value="name">Nombre A-Z</option>
+                <option value="stock">Mayor stock disponible</option>
               </select>
 
               {/* Botón limpiar filtros */}
@@ -220,11 +262,14 @@ const LandingPrincipal = () => {
             <>
               {/* Grid principal */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {displayedProducts.map((product, index) => (
+                {displayedProducts.map((representative, index) => (
                   <ProductCard 
-                    key={`${product.id_product}-${index}`}
-                    product={product}
-                    onProductClick={() => navigate(`/product/${product.id_product}`)}
+                    key={`${representative.id_product}-${index}`}
+                    product={representative}
+                    group={representative.group}
+                    onProductClick={() => navigate(`/product/${representative.id_product}`, {
+                      state: { group: representative.group }
+                    })}
                   />
                 ))}
               </div>
@@ -388,10 +433,14 @@ const LandingPrincipal = () => {
   );
 };
 
-// Componente ProductCard (sin cambios)
-const ProductCard = ({ product, onProductClick }) => {
+// ✅ COMPONENTE PRODUCTCARD ACTUALIZADO CON LÓGICA DE GRUPOS
+const ProductCard = ({ product, group, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  // Calcular stock total del grupo
+  const totalStock = group ? group.reduce((sum, p) => sum + p.stock, 0) : product.stock;
+  const hasMultipleVariants = group && group.length > 1;
 
   return (
     <div 
@@ -421,30 +470,26 @@ const ProductCard = ({ product, onProductClick }) => {
           </button>
         </div>
 
-        {/* Badge de stock bajo */}
-        {/* Versión con función helper para mejor legibilidad */}
-{(() => {
-  if (product.stock === 1) {
-    return (
-      <div className="absolute top-4 left-4 bg-pink-400 text-white px-3 py-1 rounded-full text-xs font-medium">
-        ÚNICO
-      </div>
-    );
-  } else if (product.stock <= 5) {
-    return (
-      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-        Solo {product.stock} disponibles
-      </div>
-    );
-  } else if (product.stock <= 5) {
-    return (
-      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-        Solo {product.stock} disponibles
-      </div>
-    );
-  }
-  return null;
-})()}
+        {/* Badges */}
+        <div className="absolute top-4 left-4 space-y-2">
+          {/* Badge de múltiples variantes */}
+          {hasMultipleVariants && (
+            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+              +{group.length} variantes
+            </div>
+          )}
+          
+          {/* Badge de stock */}
+          {totalStock === 1 ? (
+            <div className="bg-pink-400 text-white px-3 py-1 rounded-full text-xs font-medium">
+              ÚNICO
+            </div>
+          ) : totalStock <= 5 ? (
+            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+              Solo {totalStock} disponibles
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* Información del producto */}
@@ -462,17 +507,18 @@ const ProductCard = ({ product, onProductClick }) => {
             }).format(product.priceSell)}
           </p>
           
-          {product.stock > 0 && (
-            <span className="text-sm text-gray-500">
-              {product.stock} en stock
-            </span>
-          )}
+          <span className="text-sm text-gray-500">
+            {totalStock} en stock
+          </span>
         </div>
 
-        {/* Código del producto */}
-        <p className="text-xs text-gray-400 font-mono">
-          {product.id_product}
-        </p>
+        {/* Información adicional */}
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <span className="font-mono">{product.id_product}</span>
+          {hasMultipleVariants && (
+            <span className="text-blue-500 font-medium">Ver todas las opciones</span>
+          )}
+        </div>
       </div>
     </div>
   );

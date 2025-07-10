@@ -2132,11 +2132,11 @@ export const fetchStockMovements = (filters = {}) => {
       if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
 
-      // ✅ CORREGIR: Usar BASE_URL en lugar de API_URL
-      const url = `${BASE_URL}/products/stock?${queryParams.toString()}`;
+      // ✅ CORREGIDO: Usar la ruta correcta del backend
+      const url = `${BASE_URL}/products/stock-movements?${queryParams.toString()}`;
 
       console.log("📤 Enviando request a stock movements:", { url, filters });
-
+    
       const response = await axios.get(url);
 
       console.log("📥 Response stock movements:", response.data);

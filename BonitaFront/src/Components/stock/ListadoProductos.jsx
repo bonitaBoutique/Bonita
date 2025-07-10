@@ -68,13 +68,9 @@ const ListadoProductos = () => {
   };
 
   // ✅ Cargar movimientos cuando se cargan los productos
-useEffect(() => {
+ useEffect(() => {
   if (products.length > 0) {
-    products.forEach(product => {
-      if (product.id_product) {
-        fetchStockMovements(product.id_product);
-      }
-    });
+    fetchStockMovements(); // Implementa esta función para pedir todos los movimientos
   }
 }, [products]);
 

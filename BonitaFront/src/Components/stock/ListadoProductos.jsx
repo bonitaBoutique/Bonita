@@ -28,7 +28,7 @@ const ListadoProductos = () => {
   // ✅ NUEVO: Función para obtener movimientos de stock
   const fetchStockMovements = async (productId) => {
     try {
-      const response = await fetch(`/api/products/stock/${productId}`);
+      const response = await fetch(`/products/stock/${productId}`);
       const data = await response.json();
       if (data.success) {
         setStockMovements(prev => ({

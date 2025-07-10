@@ -22,10 +22,10 @@ const ListadoProductos = () => {
   const [editForm, setEditForm] = useState({});
   const [selectedProducts, setSelectedProducts] = useState([]);
 
-  // ✅ NUEVO: Estado para movimientos de stock
+  // Estado para movimientos de stock
   const [stockMovements, setStockMovements] = useState({});
 
-  // ✅ NUEVO: Función para obtener movimientos de stock
+  // Función para obtener movimientos de stock de un producto
   const fetchStockMovements = async (productId) => {
     try {
       const response = await fetch(`/products/stock/${productId}`);
@@ -41,65 +41,36 @@ const ListadoProductos = () => {
     }
   };
 
-  // ✅ NUEVO: Función para calcular stock actual
+  // Cargar movimientos cuando se cargan los productos
+  useEffect(() => {
+    if (products.length > 0) {
+      products.forEach(product => {
+        if (product.id_product) {
+          fetchStockMovements(product.id_product);
+        }
+      });
+    }
+  }, [products]);
+
+  // Calcular stock actual
   const calculateCurrentStock = (product) => {
     const movements = stockMovements[product.id_product] || [];
-    
-    // Stock inicial (cuando se creó el producto)
     const initialStock = product.stock;
-    
-    // Calcular movimientos posteriores
     const totalOut = movements
       .filter(mov => mov.type === 'OUT')
       .reduce((sum, mov) => sum + mov.quantity, 0);
-    
     const totalIn = movements
       .filter(mov => mov.type === 'IN')
       .reduce((sum, mov) => sum + mov.quantity, 0);
-    
-    // Stock actual = inicial + entradas - salidas
     const currentStock = initialStock + totalIn - totalOut;
-    
     return {
       initial: initialStock,
-      current: Math.max(0, currentStock), // No permitir stock negativo
+      current: Math.max(0, currentStock),
       movements: movements.length
     };
   };
 
-  // ✅ Cargar movimientos cuando se cargan los productos
- useEffect(() => {
-  if (products.length > 0) {
-    fetchStockMovements(); // Implementa esta función para pedir todos los movimientos
-  }
-}, [products]);
-
-  // ... resto de funciones existentes (sin cambios) ...
-  const handleImageUpload = (productId) => {
-    openCloudinaryWidget((uploadedImageUrl) => {
-      if (uploadedImageUrl) {
-        console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
-        const productToUpdate = products.find(
-          (p) => p.id_product === productId
-        );
-        const newImages =
-          productToUpdate && productToUpdate.images
-            ? [...productToUpdate.images, uploadedImageUrl]
-            : [uploadedImageUrl];
-        dispatch(updateProduct(productId, { images: newImages }));
-      } else {
-        console.error("Error al subir la imagen.");
-      }
-    });
-  };
-
-  const handleDeleteImage = (productId, imageUrl) => {
-    const productToUpdate = products.find((p) => p.id_product === productId);
-    if (!productToUpdate || !productToUpdate.images) return;
-    const newImages = productToUpdate.images.filter((img) => img !== imageUrl);
-    dispatch(updateProduct(productId, { images: newImages }));
-  };
-
+  // Cargar productos al montar
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
@@ -121,13 +92,37 @@ const ListadoProductos = () => {
     }));
   };
 
-  const handleSave = (id) => {
-    dispatch(updateProduct(id, editForm));
+  const handleSave = async (id) => {
+    await dispatch(updateProduct(id, editForm));
     setEditRowId(null);
   };
 
   const handleCancel = () => {
     setEditRowId(null);
+  };
+
+  const handleImageUpload = (productId) => {
+    openCloudinaryWidget((uploadedImageUrl) => {
+      if (uploadedImageUrl) {
+        const productToUpdate = products.find(
+          (p) => p.id_product === productId
+        );
+        const newImages =
+          productToUpdate && productToUpdate.images
+            ? [...productToUpdate.images, uploadedImageUrl]
+            : [uploadedImageUrl];
+        dispatch(updateProduct(productId, { images: newImages }));
+      } else {
+        console.error("Error al subir la imagen.");
+      }
+    });
+  };
+
+  const handleDeleteImage = (productId, imageUrl) => {
+    const productToUpdate = products.find((p) => p.id_product === productId);
+    if (!productToUpdate || !productToUpdate.images) return;
+    const newImages = productToUpdate.images.filter((img) => img !== imageUrl);
+    dispatch(updateProduct(productId, { images: newImages }));
   };
 
   const toggleProductSelection = (productId) => {
@@ -145,7 +140,6 @@ const ListadoProductos = () => {
         tiendaOnLine: !producto.tiendaOnLine,
       };
       await dispatch(updateProduct(producto.id_product, updatedProduct));
-      dispatch(fetchProducts());
     } catch (error) {
       console.error("Error al actualizar el estado:", error);
     }
@@ -180,8 +174,8 @@ const ListadoProductos = () => {
         Descripción: producto.description,
         Costo: producto.price,
         Precio_Venta: producto.priceSell,
-        Stock_Inicial: stockInfo.initial, // ✅ NUEVO
-        Stock_Actual: stockInfo.current,  // ✅ NUEVO
+        Stock_Inicial: stockInfo.initial,
+        Stock_Actual: stockInfo.current,
         Tamaños: producto.sizes,
         Colores: producto.colors,
         Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
@@ -247,8 +241,8 @@ const ListadoProductos = () => {
                   "Descripción",
                   "Costo",
                   "Precio Venta",
-                  "Stock Inicial", // ✅ CAMBIO: Renombrado
-                  "Stock Actual",  // ✅ NUEVO
+                  "Stock Inicial",
+                  "Stock Actual",
                   "Tamaños",
                   "Colores",
                   "Tienda Online",
@@ -273,149 +267,147 @@ const ListadoProductos = () => {
             </thead>
             <tbody>
               {currentItems.map((producto) => {
-                const stockInfo = calculateCurrentStock(producto); // ✅ NUEVO
-                
+                const stockInfo = calculateCurrentStock(producto);
                 return (
                   <tr key={producto.id_product} className="hover:bg-gray-50">
-                  {/* Imágenes */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {producto.images && producto.images.length > 0 ? (
-                      <div className="flex flex-col items-center gap-2">
-                        {producto.images.map((img, idx) => (
-                          <div key={idx} className="flex flex-col items-center">
-                            <img
-                              src={img}
-                              alt={producto.description}
-                              className="w-20 h-20 object-cover"
-                            />
-                            <button
-                              onClick={() =>
-                                handleDeleteImage(producto.id_product, img)
-                              }
-                              className="px-2 py-1 bg-red-500 text-white text-sm rounded mt-1"
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        ))}
+                    {/* Imágenes */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {producto.images && producto.images.length > 0 ? (
+                        <div className="flex flex-col items-center gap-2">
+                          {producto.images.map((img, idx) => (
+                            <div key={idx} className="flex flex-col items-center">
+                              <img
+                                src={img}
+                                alt={producto.description}
+                                className="w-20 h-20 object-cover"
+                              />
+                              <button
+                                onClick={() =>
+                                  handleDeleteImage(producto.id_product, img)
+                                }
+                                className="px-2 py-1 bg-red-500 text-white text-sm rounded mt-1"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => handleImageUpload(producto.id_product)}
+                            className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
+                          >
+                            Agregar Imagen
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => handleImageUpload(producto.id_product)}
-                          className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
+                          className="px-4 py-2 bg-green-500 text-white rounded"
                         >
                           Agregar Imagen
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleImageUpload(producto.id_product)}
-                        className="px-4 py-2 bg-green-500 text-white rounded"
-                      >
-                        Agregar Imagen
-                      </button>
-                    )}
-                  </td>
-                  {/* Seleccionar */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.includes(producto.id_product)}
-                      onChange={() =>
-                        toggleProductSelection(producto.id_product)
-                      }
-                      className="form-checkbox h-5 w-5"
-                    />
-                  </td>
-                  {/* Código Barra */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
+                      )}
+                    </td>
+                    {/* Seleccionar */}
+                    <td className="px-4 py-2 border border-gray-300">
                       <input
-                        name="codigoBarra"
-                        value={editForm.codigoBarra || ""}
-                        onChange={handleEditChange}
-                        className="w-24 px-2 py-1 border rounded"
+                        type="checkbox"
+                        checked={selectedProducts.includes(producto.id_product)}
+                        onChange={() =>
+                          toggleProductSelection(producto.id_product)
+                        }
+                        className="form-checkbox h-5 w-5"
                       />
-                    ) : (
-                      producto.codigoBarra
-                    )}
-                  </td>
-                  {/* Marca */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="marca"
-                        value={editForm.marca || ""}
-                        onChange={handleEditChange}
-                        className="w-24 px-2 py-1 border rounded"
-                      />
-                    ) : (
-                      producto.marca
-                    )}
-                  </td>
-                  {/* Código Proveedor */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="codigoProv"
-                        value={editForm.codigoProv || ""}
-                        onChange={handleEditChange}
-                        className="w-24 px-2 py-1 border rounded"
-                      />
-                    ) : (
-                      producto.codigoProv
-                    )}
-                  </td>
-                  {/* Descripción */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="description"
-                        value={editForm.description || ""}
-                        onChange={handleEditChange}
-                        className="w-32 px-2 py-1 border rounded"
-                      />
-                    ) : (
-                      producto.description
-                    )}
-                  </td>
-                  {/* Costo */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="price"
-                        type="number"
-                        value={editForm.price || ""}
-                        onChange={handleEditChange}
-                        className="w-20 px-2 py-1 border rounded"
-                        min={0}
-                      />
-                    ) : (
-                      `$${producto.price}`
-                    )}
-                  </td>
-                  {/* Precio Venta */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="priceSell"
-                        type="number"
-                        value={editForm.priceSell || ""}
-                        onChange={handleEditChange}
-                        className="w-20 px-2 py-1 border rounded"
-                        min={0}
-                      />
-                    ) : (
-                      `$${producto.priceSell}`
-                    )}
-                  </td>
-                  {/* Stock */}
-                  <td className="px-4 py-2 border border-gray-300">
+                    </td>
+                    {/* Código Barra */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="codigoBarra"
+                          value={editForm.codigoBarra || ""}
+                          onChange={handleEditChange}
+                          className="w-24 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.codigoBarra
+                      )}
+                    </td>
+                    {/* Marca */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="marca"
+                          value={editForm.marca || ""}
+                          onChange={handleEditChange}
+                          className="w-24 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.marca
+                      )}
+                    </td>
+                    {/* Código Proveedor */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="codigoProv"
+                          value={editForm.codigoProv || ""}
+                          onChange={handleEditChange}
+                          className="w-24 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.codigoProv
+                      )}
+                    </td>
+                    {/* Descripción */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="description"
+                          value={editForm.description || ""}
+                          onChange={handleEditChange}
+                          className="w-32 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.description
+                      )}
+                    </td>
+                    {/* Costo */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="price"
+                          type="number"
+                          value={editForm.price || ""}
+                          onChange={handleEditChange}
+                          className="w-20 px-2 py-1 border rounded"
+                          min={0}
+                        />
+                      ) : (
+                        `$${producto.price}`
+                      )}
+                    </td>
+                    {/* Precio Venta */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="priceSell"
+                          type="number"
+                          value={editForm.priceSell || ""}
+                          onChange={handleEditChange}
+                          className="w-20 px-2 py-1 border rounded"
+                          min={0}
+                        />
+                      ) : (
+                        `$${producto.priceSell}`
+                      )}
+                    </td>
+                    {/* Stock Inicial */}
+                    <td className="px-4 py-2 border border-gray-300">
                       <div className="flex flex-col">
                         <span className="font-medium">{stockInfo.initial}</span>
                         <span className="text-xs text-gray-500">Inicial</span>
                       </div>
                     </td>
-                    
-                    {/* ✅ Stock Actual (CALCULADO) */}
+                    {/* Stock Actual */}
                     <td className="px-4 py-2 border border-gray-300">
                       <div className="flex flex-col">
                         <span className={`font-medium ${
@@ -429,102 +421,102 @@ const ListadoProductos = () => {
                         </span>
                       </div>
                     </td>
-                  {/* Tamaños */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="sizes"
-                        value={editForm.sizes || ""}
-                        onChange={handleEditChange}
-                        className="w-24 px-2 py-1 border rounded"
-                      />
-                    ) : (
-                      producto.sizes
-                    )}
-                  </td>
-                  {/* Colores */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <input
-                        name="colors"
-                        value={editForm.colors || ""}
-                        onChange={handleEditChange}
-                        className="w-24 px-2 py-1 border rounded"
-                      />
-                    ) : (
-                      producto.colors
-                    )}
-                  </td>
-                  {/* Tienda Online */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <select
-                        name="tiendaOnLine"
-                        value={editForm.tiendaOnLine ? "true" : "false"}
-                        onChange={e =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            tiendaOnLine: e.target.value === "true",
-                          }))
-                        }
-                        className="w-24 px-2 py-1 border rounded"
-                      >
-                        <option value="true">Activo</option>
-                        <option value="false">Inactivo</option>
-                      </select>
-                    ) : (
-                      <button
-                        onClick={() => toggleTiendaOnline(producto)}
-                        className={`px-4 py-2 rounded-lg ${
-                          producto.tiendaOnLine
-                            ? "bg-green-500 text-white"
-                            : "bg-gray-300 text-black"
-                        }`}
-                      >
-                        {producto.tiendaOnLine ? "Activo" : "Inactivo"}
-                      </button>
-                    )}
-                  </td>
-                  {/* Acciones */}
-                  <td className="px-4 py-2 border border-gray-300">
-                    {editRowId === producto.id_product ? (
-                      <>
-                        <button
-                          onClick={() => handleSave(producto.id_product)}
-                          className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+                    {/* Tamaños */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="sizes"
+                          value={editForm.sizes || ""}
+                          onChange={handleEditChange}
+                          className="w-24 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.sizes
+                      )}
+                    </td>
+                    {/* Colores */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          name="colors"
+                          value={editForm.colors || ""}
+                          onChange={handleEditChange}
+                          className="w-24 px-2 py-1 border rounded"
+                        />
+                      ) : (
+                        producto.colors
+                      )}
+                    </td>
+                    {/* Tienda Online */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <select
+                          name="tiendaOnLine"
+                          value={editForm.tiendaOnLine ? "true" : "false"}
+                          onChange={e =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              tiendaOnLine: e.target.value === "true",
+                            }))
+                          }
+                          className="w-24 px-2 py-1 border rounded"
                         >
-                          Guardar
-                        </button>
+                          <option value="true">Activo</option>
+                          <option value="false">Inactivo</option>
+                        </select>
+                      ) : (
                         <button
-                          onClick={handleCancel}
-                          className="bg-gray-400 text-white px-2 py-1 rounded"
+                          onClick={() => toggleTiendaOnline(producto)}
+                          className={`px-4 py-2 rounded-lg ${
+                            producto.tiendaOnLine
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300 text-black"
+                          }`}
                         >
-                          Cancelar
+                          {producto.tiendaOnLine ? "Activo" : "Inactivo"}
                         </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleEditClick(producto)}
-                          className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(producto.id_product)}
-                          className="bg-red-500 text-white px-2 py-1 rounded"
-                        >
-                          Eliminar
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
+                      )}
+                    </td>
+                    {/* Acciones */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      {editRowId === producto.id_product ? (
+                        <>
+                          <button
+                            onClick={() => handleSave(producto.id_product)}
+                            className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            onClick={handleCancel}
+                            className="bg-gray-400 text-white px-2 py-1 rounded"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(producto)}
+                            className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(producto.id_product)}
+                            className="bg-red-500 text-white px-2 py-1 rounded"
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
           </table>
-  
+
           {/* Paginación */}
           <div className="flex justify-center mt-8 w-full overflow-x-auto">
             <div className="flex space-x-1">
@@ -542,7 +534,7 @@ const ListadoProductos = () => {
               >
                 {"<"}
               </button>
-  
+
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
                 <button
                   key={i + 1}
@@ -556,7 +548,7 @@ const ListadoProductos = () => {
                   {i + 1}
                 </button>
               ))}
-  
+
               <button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -573,7 +565,7 @@ const ListadoProductos = () => {
               </button>
             </div>
           </div>
-  
+
           <div className="mt-2 text-sm text-gray-600">
             Mostrando {indexOfFirstItem + 1} -{" "}
             {Math.min(indexOfLastItem, productosFiltrados.length)} de{" "}

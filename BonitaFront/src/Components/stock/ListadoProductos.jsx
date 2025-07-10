@@ -4,7 +4,7 @@ import {
   fetchProducts,
   updateProduct,
   deleteProduct,
-  fetchProductStock
+  fetchProductStock,
 } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import Navbar2 from "../Navbar2";
@@ -15,7 +15,9 @@ const ListadoProductos = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
-  const stockMovements = useSelector((state) => state.stockMovements?.data || {});
+  const stockMovements = useSelector(
+    (state) => state.stockMovements?.data || {}
+  );
   const [filtro, setFiltro] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -41,14 +43,15 @@ const ListadoProductos = () => {
   };
 
   const handleEditChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setEditForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "number" ? Number(value) : value,
     }));
   };
 
   const handleSave = async (id) => {
+    console.log("Datos enviados al backend:", editForm); // Depuración
     await dispatch(updateProduct(id, editForm));
     setEditRowId(null);
   };
@@ -165,16 +168,16 @@ const ListadoProductos = () => {
     const movements = stockMovements[product.id_product] || [];
     const initialStock = product.stock;
     const totalOut = movements
-      .filter(mov => mov.type === 'OUT')
+      .filter((mov) => mov.type === "OUT")
       .reduce((sum, mov) => sum + mov.quantity, 0);
     const totalIn = movements
-      .filter(mov => mov.type === 'IN')
+      .filter((mov) => mov.type === "IN")
       .reduce((sum, mov) => sum + mov.quantity, 0);
     const currentStock = initialStock + totalIn - totalOut;
     return {
       initial: initialStock,
       current: Math.max(0, currentStock),
-      movements: movements.length
+      movements: movements.length,
     };
   };
 
@@ -249,7 +252,10 @@ const ListadoProductos = () => {
                       {producto.images && producto.images.length > 0 ? (
                         <div className="flex flex-col items-center gap-2">
                           {producto.images.map((img, idx) => (
-                            <div key={idx} className="flex flex-col items-center">
+                            <div
+                              key={idx}
+                              className="flex flex-col items-center"
+                            >
                               <img
                                 src={img}
                                 alt={producto.description}
@@ -266,7 +272,9 @@ const ListadoProductos = () => {
                             </div>
                           ))}
                           <button
-                            onClick={() => handleImageUpload(producto.id_product)}
+                            onClick={() =>
+                              handleImageUpload(producto.id_product)
+                            }
                             className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
                           >
                             Agregar Imagen
@@ -295,149 +303,83 @@ const ListadoProductos = () => {
                     {/* Código Barra */}
                     <td className="px-4 py-2 border border-gray-300">
                       {editRowId === producto.id_product ? (
-                        <input
-                          name="codigoBarra"
-                          value={editForm.codigoBarra || ""}
-                          onChange={handleEditChange}
-                          className="w-24 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.codigoBarra
-                      )}
-                    </td>
-                    {/* Marca */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="marca"
-                          value={editForm.marca || ""}
-                          onChange={handleEditChange}
-                          className="w-24 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.marca
-                      )}
-                    </td>
-                    {/* Código Proveedor */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="codigoProv"
-                          value={editForm.codigoProv || ""}
-                          onChange={handleEditChange}
-                          className="w-24 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.codigoProv
-                      )}
-                    </td>
-                    {/* Descripción */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="description"
-                          value={editForm.description || ""}
-                          onChange={handleEditChange}
-                          className="w-32 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.description
-                      )}
-                    </td>
-                    {/* Costo */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="price"
-                          type="number"
-                          value={editForm.price || ""}
-                          onChange={handleEditChange}
-                          className="w-20 px-2 py-1 border rounded"
-                          min={0}
-                        />
-                      ) : (
-                        `$${producto.price}`
-                      )}
-                    </td>
-                    {/* Precio Venta */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="priceSell"
-                          type="number"
-                          value={editForm.priceSell || ""}
-                          onChange={handleEditChange}
-                          className="w-20 px-2 py-1 border rounded"
-                          min={0}
-                        />
-                      ) : (
-                        `$${producto.priceSell}`
-                      )}
-                    </td>
-                    {/* Stock Inicial */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{stockInfo.initial}</span>
-                        <span className="text-xs text-gray-500">Inicial</span>
-                      </div>
-                    </td>
-                    {/* Stock Actual */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      <div className="flex flex-col">
-                        <span className={`font-medium ${
-                          stockInfo.current <= 5 ? 'text-red-600' : 
-                          stockInfo.current <= 10 ? 'text-yellow-600' : 'text-green-600'
-                        }`}>
-                          {stockInfo.current}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {stockInfo.movements} movimientos
-                        </span>
-                      </div>
-                    </td>
-                    {/* Tamaños */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="sizes"
-                          value={editForm.sizes || ""}
-                          onChange={handleEditChange}
-                          className="w-24 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.sizes
-                      )}
-                    </td>
-                    {/* Colores */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <input
-                          name="colors"
-                          value={editForm.colors || ""}
-                          onChange={handleEditChange}
-                          className="w-24 px-2 py-1 border rounded"
-                        />
-                      ) : (
-                        producto.colors
-                      )}
-                    </td>
-                    {/* Tienda Online */}
-                    <td className="px-4 py-2 border border-gray-300">
-                      {editRowId === producto.id_product ? (
-                        <select
-                          name="tiendaOnLine"
-                          value={editForm.tiendaOnLine ? "true" : "false"}
-                          onChange={e =>
-                            setEditForm((prev) => ({
-                              ...prev,
-                              tiendaOnLine: e.target.value === "true",
-                            }))
-                          }
-                          className="w-24 px-2 py-1 border rounded"
-                        >
-                          <option value="true">Activo</option>
-                          <option value="false">Inactivo</option>
-                        </select>
+                        <>
+                          {/* Código Barra */}
+                          <input
+                            name="codigoBarra"
+                            value={editForm.codigoBarra || ""}
+                            onChange={handleEditChange}
+                            className="w-24 px-2 py-1 border rounded"
+                          />
+                          {/* Marca */}
+                          <input
+                            name="marca"
+                            value={editForm.marca || ""}
+                            onChange={handleEditChange}
+                            className="w-24 px-2 py-1 border rounded"
+                          />
+                          {/* Código Proveedor */}
+                          <input
+                            name="codigoProv"
+                            value={editForm.codigoProv || ""}
+                            onChange={handleEditChange}
+                            className="w-24 px-2 py-1 border rounded"
+                          />
+                          {/* Descripción */}
+                          <input
+                            name="description"
+                            value={editForm.description || ""}
+                            onChange={handleEditChange}
+                            className="w-32 px-2 py-1 border rounded"
+                          />
+                          {/* Costo */}
+                          <input
+                            name="price"
+                            type="number"
+                            value={editForm.price || ""}
+                            onChange={handleEditChange}
+                            className="w-20 px-2 py-1 border rounded"
+                            min={0}
+                          />
+                          {/* Precio Venta */}
+                          <input
+                            name="priceSell"
+                            type="number"
+                            value={editForm.priceSell || ""}
+                            onChange={handleEditChange}
+                            className="w-20 px-2 py-1 border rounded"
+                            min={0}
+                          />
+                          {/* Tamaños */}
+                          <input
+                            name="sizes"
+                            value={editForm.sizes || ""}
+                            onChange={handleEditChange}
+                            className="w-24 px-2 py-1 border rounded"
+                          />
+                          {/* Colores */}
+                          <input
+                            name="colors"
+                            value={editForm.colors || ""}
+                            onChange={handleEditChange}
+                            className="w-24 px-2 py-1 border rounded"
+                          />
+                          {/* Tienda Online */}
+                          <select
+                            name="tiendaOnLine"
+                            value={editForm.tiendaOnLine ? "true" : "false"}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({
+                                ...prev,
+                                tiendaOnLine: e.target.value === "true",
+                              }))
+                            }
+                            className="w-24 px-2 py-1 border rounded"
+                          >
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                          </select>
+                        </>
                       ) : (
                         <button
                           onClick={() => toggleTiendaOnline(producto)}
@@ -477,7 +419,9 @@ const ListadoProductos = () => {
                             Editar
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(producto.id_product)}
+                            onClick={() =>
+                              handleDeleteProduct(producto.id_product)
+                            }
                             className="bg-red-500 text-white px-2 py-1 rounded"
                           >
                             Eliminar

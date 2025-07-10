@@ -4,6 +4,7 @@ import {
   fetchProducts,
   updateProduct,
   deleteProduct,
+  fetchProductStock
 } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import Navbar2 from "../Navbar2";
@@ -14,6 +15,7 @@ const ListadoProductos = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
+  const stockMovements = useSelector((state) => state.stockMovements?.data || {});
   const [filtro, setFiltro] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -21,54 +23,6 @@ const ListadoProductos = () => {
   const [editRowId, setEditRowId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [selectedProducts, setSelectedProducts] = useState([]);
-
-  // Estado para movimientos de stock
-  const [stockMovements, setStockMovements] = useState({});
-
-  // Función para obtener movimientos de stock de un producto
-  const fetchStockMovements = async (productId) => {
-    try {
-      const response = await fetch(`/products/stock/${productId}`);
-      const data = await response.json();
-      if (data.success) {
-        setStockMovements(prev => ({
-          ...prev,
-          [productId]: data.movements || []
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching stock movements:", error);
-    }
-  };
-
-  // Cargar movimientos cuando se cargan los productos
-  useEffect(() => {
-    if (products.length > 0) {
-      products.forEach(product => {
-        if (product.id_product) {
-          fetchStockMovements(product.id_product);
-        }
-      });
-    }
-  }, [products]);
-
-  // Calcular stock actual
-  const calculateCurrentStock = (product) => {
-    const movements = stockMovements[product.id_product] || [];
-    const initialStock = product.stock;
-    const totalOut = movements
-      .filter(mov => mov.type === 'OUT')
-      .reduce((sum, mov) => sum + mov.quantity, 0);
-    const totalIn = movements
-      .filter(mov => mov.type === 'IN')
-      .reduce((sum, mov) => sum + mov.quantity, 0);
-    const currentStock = initialStock + totalIn - totalOut;
-    return {
-      initial: initialStock,
-      current: Math.max(0, currentStock),
-      movements: movements.length
-    };
-  };
 
   // Cargar productos al montar
   useEffect(() => {
@@ -79,9 +33,11 @@ const ListadoProductos = () => {
     setFiltro(e.target.value.toLowerCase());
   };
 
+  // Al editar, cargar movimientos de stock solo para ese producto
   const handleEditClick = (producto) => {
     setEditRowId(producto.id_product);
     setEditForm({ ...producto });
+    dispatch(fetchProductStock(producto.id_product));
   };
 
   const handleEditChange = (e) => {
@@ -203,6 +159,24 @@ const ListadoProductos = () => {
   const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Calcular stock actual usando movimientos desde Redux
+  const calculateCurrentStock = (product) => {
+    const movements = stockMovements[product.id_product] || [];
+    const initialStock = product.stock;
+    const totalOut = movements
+      .filter(mov => mov.type === 'OUT')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    const totalIn = movements
+      .filter(mov => mov.type === 'IN')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    const currentStock = initialStock + totalIn - totalOut;
+    return {
+      initial: initialStock,
+      current: Math.max(0, currentStock),
+      movements: movements.length
+    };
+  };
 
   if (loading)
     return <p className="text-center text-blue-500">Cargando productos...</p>;

@@ -2122,24 +2122,16 @@ export const resetReceiptSearch = () => ({
 export const fetchStockMovements = (filters = {}) => {
   return async (dispatch) => {
     dispatch({ type: FETCH_STOCK_MOVEMENTS_REQUEST });
-    
     try {
       const queryParams = new URLSearchParams();
-      
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.limit) queryParams.append('limit', filters.limit);
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
 
-      // ✅ CORREGIDO: Usar la ruta correcta del backend
       const url = `${BASE_URL}/products/stock-movements?${queryParams.toString()}`;
-
-      console.log("📤 Enviando request a stock movements:", { url, filters });
-    
       const response = await axios.get(url);
-
-      console.log("📥 Response stock movements:", response.data);
 
       dispatch({
         type: FETCH_STOCK_MOVEMENTS_SUCCESS,
@@ -2153,19 +2145,39 @@ export const fetchStockMovements = (filters = {}) => {
 
       return response.data;
     } catch (error) {
-      console.error("❌ Error fetching stock movements:", error);
-      
-      const errorMessage = error.response?.data?.error || error.message || 'Error al obtener movimientos de stock';
-      
       dispatch({
         type: FETCH_STOCK_MOVEMENTS_FAILURE,
-        payload: errorMessage
+        payload: error.response?.data?.error || error.message
       });
-      
       throw error;
     }
   };
 };
+
+export const fetchProductStock = (id_product) => async (dispatch) => {
+  dispatch({ type: FETCH_STOCK_MOVEMENTS_REQUEST });
+  try {
+    const response = await axios.get(`${BASE_URL}/products/stock/${id_product}`);
+    // La respuesta tiene: { id_product, codigoBarra, stock, movements }
+    dispatch({
+      type: FETCH_STOCK_MOVEMENTS_SUCCESS,
+      payload: {
+        product: response.data.id_product,
+        codigoBarra: response.data.codigoBarra,
+        stock: response.data.stock,
+        movements: response.data.movements,
+      }
+    });
+    return response.data;
+  } catch (error) {
+    dispatch({
+      type: FETCH_STOCK_MOVEMENTS_FAILURE,
+      payload: error.response?.data?.error || error.message,
+    });
+    throw error;
+  }
+};
+
 // ✅ ACTION: Crear movimiento de stock manual
 export const createStockMovement = (movementData) => {
   return async (dispatch) => {

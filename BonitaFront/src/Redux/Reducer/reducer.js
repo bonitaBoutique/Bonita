@@ -1969,6 +1969,43 @@ case CREATE_SENDING_FAILURE:
         }
       };
 
+      case FETCH_STOCK_MOVEMENTS_REQUEST:
+  return {
+    ...state,
+    stockMovements: {
+      ...state.stockMovements,
+      loading: true,
+      error: null,
+    },
+  };
+
+case FETCH_STOCK_MOVEMENTS_SUCCESS:
+  return {
+    ...state,
+    stockMovements: {
+      ...state.stockMovements,
+      loading: false,
+      error: null,
+      // Si la action es para un solo producto, puedes guardar así:
+      data: Array.isArray(action.payload.movements)
+        ? action.payload.movements
+        : [action.payload.movements],
+      product: action.payload.product || null,
+      codigoBarra: action.payload.codigoBarra || null,
+      stock: action.payload.stock || null,
+    },
+  };
+
+case FETCH_STOCK_MOVEMENTS_FAILURE:
+  return {
+    ...state,
+    stockMovements: {
+      ...state.stockMovements,
+      loading: false,
+      error: action.payload,
+    },
+  };
+
           
     default:
       return state;

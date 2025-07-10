@@ -700,25 +700,23 @@ export const updateOrderState =
 
 // eslint-disable-next-line no-unused-vars
 export const updateProduct =
-  // eslint-disable-next-line no-unused-vars
   (id, productData) => async (dispatch, getState) => {
     dispatch({ type: UPDATE_PRODUCT_REQUEST });
 
     try {
+      console.log("Datos enviados al backend:", productData); // <-- LOG ANTES DE ENVIAR
       const response = await axios.put(
         `${BASE_URL}/product/updateProducts/${id}`,
         productData
       );
 
       const updatedProduct = response.data.data.product;
+      console.log("Producto actualizado recibido del backend:", updatedProduct); // <-- LOG DESPUÉS DE RECIBIR
 
       dispatch({
         type: UPDATE_PRODUCT_SUCCESS,
         payload: updatedProduct, // Producto actualizado desde el backend
       });
-
-      // Opcional: puedes usar console.log para depurar
-      console.log("Producto actualizado:", updatedProduct);
     } catch (error) {
       dispatch({ type: UPDATE_PRODUCT_FAILURE, payload: error.message });
     }

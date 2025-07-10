@@ -821,20 +821,21 @@ const rootReducer = (state = initialState, action) => {
         },
       };
       case UPDATE_PRODUCT_SUCCESS:
-        return {
-          ...state,
-          updateProduct: {
-            ...state.updateProduct,
-            loading: false,
-            error: null,
-            product: action.payload,
-          },
-          products: state.products.map(product =>
-            product.id_product === action.payload.id_product
-              ? { ...product, ...action.payload }
-              : product
-          ),
-        };
+  console.log("Reducer actualiza producto:", action.payload); // <-- LOG AQUÍ
+  return {
+    ...state,
+    updateProduct: {
+      ...state.updateProduct,
+      loading: false,
+      error: null,
+      product: action.payload,
+    },
+    products: state.products.map(product =>
+      product.id_product === action.payload.id_product
+        ? { ...product, ...action.payload }
+        : product
+    ),
+  };
 
     case UPDATE_PRODUCT_FAILURE:
       return {

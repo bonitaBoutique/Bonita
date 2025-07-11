@@ -36,8 +36,7 @@ module.exports = async (req, res) => {
     product.tiendaOnLine = tiendaOnLine !== undefined ? JSON.parse(tiendaOnLine) : product.tiendaOnLine;
     product.sizes = sizes !== undefined ? sizes : product.sizes;
     product.colors = colors !== undefined ? colors : product.colors;
-    
-    // Actualizar la imagesn si se proporciona
+    product.codigoProv = codigoProv !== undefined ? codigoProv : product.codigoProv; // <-- AGREGADO
     product.images = images !== undefined ? images : product.images;
 
     // Guardar los cambios en la base de datos

@@ -2156,7 +2156,6 @@ export const fetchProductStock = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_STOCK_MOVEMENTS_REQUEST });
   try {
     const response = await axios.get(`${BASE_URL}/products/stock/${id_product}`);
-    // La respuesta tiene: { id_product, codigoBarra, stock, movements }
     dispatch({
       type: FETCH_STOCK_MOVEMENTS_SUCCESS,
       payload: {
@@ -2168,6 +2167,10 @@ export const fetchProductStock = (id_product) => async (dispatch) => {
     });
     return response.data;
   } catch (error) {
+    if (error.response?.status === 404) {
+      console.warn(`Producto no encontrado: ${id_product}`);
+      return; // Ignora el error 404
+    }
     dispatch({
       type: FETCH_STOCK_MOVEMENTS_FAILURE,
       payload: error.response?.data?.error || error.message,

@@ -67,14 +67,16 @@ const ListadoProductos = () => {
     };
   };
 
-  // ✅ Cargar movimientos cuando se cargan los productos
-  useEffect(() => {
-    if (products.length > 0) {
-      products.forEach(product => {
+
+useEffect(() => {
+  if (products.length > 0) {
+    products.forEach(product => {
+      if (product.id_product) {
         fetchStockMovements(product.id_product);
-      });
-    }
-  }, [products]);
+      }
+    });
+  }
+}, [products]);
 
   // ... resto de funciones existentes (sin cambios) ...
   const handleImageUpload = (productId) => {

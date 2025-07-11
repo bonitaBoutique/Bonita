@@ -164,11 +164,14 @@ const getBalance = async (req, res) => {
       ],
       include: [
         {
-          model: OrderDetail,
-          attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
-          required: false
-        }
-      ],
+      model: OrderDetail,
+      attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
+      required: false,
+      where: {
+        state_order: { [Op.not]: 'Reserva a Crédito' } // <-- EXCLUIR RESERVAS A CRÉDITO
+      }
+    }
+  ],
       order: [['date', 'DESC']]
     });
 

@@ -216,7 +216,7 @@ const getAllMovements = () => {
   // ✅ AGREGAR INGRESOS LOCALES (excluyendo Addi/Sistecredito para el balance)
   if (income?.local) {
     const localMovements = income.local
-      .filter(payment => !['Addi', 'Sistecredito'].includes(payment.paymentMethod))
+      .filter(payment => !['Addi', 'Sistecredito', 'Crédito'].includes(payment.paymentMethod))
       .map(payment => ({
         id: payment.id,
         date: payment.date,

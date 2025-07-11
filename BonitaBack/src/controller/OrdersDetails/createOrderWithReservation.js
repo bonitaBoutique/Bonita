@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
         totalPaid: Number(partialPayment),
         remainingAmount: Number(existingOrder.amount) - Number(partialPayment),
         status: 'Pendiente',
-        paymentMethod: paymentMethod || 'Efectivo',
+        paymentMethod: paymentMethod || 'Crédito',
         buyer_name: buyer_name,
         buyer_email: buyer_email,
         buyer_phone: buyer_phone,

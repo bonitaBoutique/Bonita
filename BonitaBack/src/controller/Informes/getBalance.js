@@ -146,7 +146,6 @@ const getBalance = async (req, res) => {
         payMethod: {
           [Op.not]: 'Crédito'
         },
-         id_reservation: null
       },
       attributes: [
         'id_receipt',

@@ -3,11 +3,12 @@ const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   const { id } = req.params;
-  const { marca, description, price, priceSell, stock, sizes, colors, tiendaOnLine } = req.body;
+  const { marca, codigoProv, description, price, priceSell, stock, sizes, colors, tiendaOnLine } = req.body;
   const images = req.body.images; // Recoger la propiedad images
 
   if (
     !marca &&
+    !codigoProv &&
     !description &&
     !price &&
     !stock &&

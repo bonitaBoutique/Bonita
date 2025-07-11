@@ -39,7 +39,7 @@ const ReservationList = () => {
 
   // ✅ Estados para filtros CON FECHAS DEL SERVIDOR
   const [filters, setFilters] = useState({
-    fechaInicio: '',
+    fechaInicio: '2025-07-01',
     fechaFin: '',
     usuario: '',
     documento: '',

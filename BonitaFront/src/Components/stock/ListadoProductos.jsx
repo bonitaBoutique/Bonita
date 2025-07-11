@@ -4,6 +4,7 @@ import {
   fetchProducts,
   updateProduct,
   deleteProduct,
+  fetchProductStock
 } from "../../Redux/Actions/actions";
 import * as XLSX from "xlsx";
 import Navbar2 from "../Navbar2";
@@ -14,6 +15,8 @@ const ListadoProductos = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
+  const stockMovements = useSelector((state) => state.stockMovements?.data || {});
+
   const [filtro, setFiltro] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -23,60 +26,44 @@ const ListadoProductos = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
 
   // ✅ NUEVO: Estado para movimientos de stock
-  const [stockMovements, setStockMovements] = useState({});
+  
 
   // ✅ NUEVO: Función para obtener movimientos de stock
-  const fetchStockMovements = async (productId) => {
-    try {
-      const response = await fetch(`/api/products/stock/${productId}`);
-      const data = await response.json();
-      if (data.success) {
-        setStockMovements(prev => ({
-          ...prev,
-          [productId]: data.movements || []
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching stock movements:", error);
-    }
-  };
+  // const fetchStockMovements = async (productId) => {
+  //   try {
+  //     const response = await fetch(`/api/products/stock/${productId}`);
+  //     const data = await response.json();
+  //     if (data.success) {
+  //       setStockMovements(prev => ({
+  //         ...prev,
+  //         [productId]: data.movements || []
+  //       }));
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching stock movements:", error);
+  //   }
+  // };
 
   // ✅ NUEVO: Función para calcular stock actual
   const calculateCurrentStock = (product) => {
-    const movements = stockMovements[product.id_product] || [];
-    
-    // Stock inicial (cuando se creó el producto)
-    const initialStock = product.stock;
-    
-    // Calcular movimientos posteriores
-    const totalOut = movements
-      .filter(mov => mov.type === 'OUT')
-      .reduce((sum, mov) => sum + mov.quantity, 0);
-    
-    const totalIn = movements
-      .filter(mov => mov.type === 'IN')
-      .reduce((sum, mov) => sum + mov.quantity, 0);
-    
-    // Stock actual = inicial + entradas - salidas
-    const currentStock = initialStock + totalIn - totalOut;
-    
-    return {
-      initial: initialStock,
-      current: Math.max(0, currentStock), // No permitir stock negativo
-      movements: movements.length
-    };
+  const movements = stockMovements[product.id_product] || [];
+  const initialStock = product.stock;
+  const totalOut = movements
+    .filter(mov => mov.type === 'OUT')
+    .reduce((sum, mov) => sum + mov.quantity, 0);
+  const totalIn = movements
+    .filter(mov => mov.type === 'IN')
+    .reduce((sum, mov) => sum + mov.quantity, 0);
+  const currentStock = initialStock + totalIn - totalOut;
+  return {
+    initial: initialStock,
+    current: Math.max(0, currentStock),
+    movements: movements.length
   };
+};
 
 
-useEffect(() => {
-  if (products.length > 0) {
-    products.forEach(product => {
-      if (product.id_product) {
-        fetchStockMovements(product.id_product);
-      }
-    });
-  }
-}, [products]);
+
 
   // ... resto de funciones existentes (sin cambios) ...
   const handleImageUpload = (productId) => {
@@ -112,10 +99,11 @@ useEffect(() => {
     setFiltro(e.target.value.toLowerCase());
   };
 
-  const handleEditClick = (producto) => {
-    setEditRowId(producto.id_product);
-    setEditForm({ ...producto });
-  };
+ const handleEditClick = (producto) => {
+  setEditRowId(producto.id_product);
+  setEditForm({ ...producto });
+  dispatch(fetchProductStock(producto.id_product)); // <-- Carga movimientos solo para ese producto
+};
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
@@ -179,6 +167,7 @@ useEffect(() => {
       const stockInfo = calculateCurrentStock(producto);
       return {
         Código_Barra: producto.codigoBarra,
+        ProductId: producto.id_product,
         Marca: producto.marca,
         Código_Proveedor: producto.codigoProv,
         Descripción: producto.description,

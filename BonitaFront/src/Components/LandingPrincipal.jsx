@@ -405,8 +405,8 @@ const LandingPrincipal = () => {
             </div>
             <div>
               <h3 className="font-medium text-gray-900 mb-4">🕒 Atención</h3>
-              <p className="text-sm text-gray-600">Lun - Sáb: 9AM - 7PM</p>
-              <p className="text-sm text-gray-600">Dom: 10AM - 5PM</p>
+              <p className="text-sm text-gray-600">Lun - Dom: 9AM - 12AM</p>
+              <p className="text-sm text-gray-600">Lun - Dom: 2PM - 8PM</p>
             </div>
             <div>
               <h3 className="font-medium text-gray-900 mb-4">🚚 Envíos</h3>
@@ -474,7 +474,7 @@ const ProductCard = ({ product, group, onProductClick }) => {
         <div className="absolute top-4 left-4 space-y-2">
           {/* Badge de múltiples variantes */}
           {hasMultipleVariants && (
-            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               +{group.length} variantes
             </div>
           )}
@@ -485,7 +485,7 @@ const ProductCard = ({ product, group, onProductClick }) => {
               ÚNICO
             </div>
           ) : totalStock <= 5 ? (
-            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               Solo {totalStock} disponibles
             </div>
           ) : null}

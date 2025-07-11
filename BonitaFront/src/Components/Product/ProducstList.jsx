@@ -417,7 +417,7 @@ const ProductCard = ({
         <div className="absolute top-4 left-4 space-y-2">
           {/* Badge de múltiples variantes */}
           {hasMultipleVariants && (
-            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               +{group.length} variantes
             </div>
           )}
@@ -428,7 +428,7 @@ const ProductCard = ({
               ÚNICO
             </div>
           ) : totalStock <= 5 ? (
-            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               Solo {totalStock} disponibles
             </div>
           ) : null}

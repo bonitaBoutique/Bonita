@@ -4,8 +4,8 @@ import {
   fetchProducts,
   updateProduct,
   deleteProduct,
-  fetchProductStock,
 } from "../../Redux/Actions/actions";
+import * as XLSX from "xlsx";
 import Navbar2 from "../Navbar2";
 import { openCloudinaryWidget } from "../../cloudinaryConfig";
 
@@ -14,47 +14,117 @@ const ListadoProductos = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const error = useSelector((state) => state.error);
-
+  const [filtro, setFiltro] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectAll, setSelectAll] = useState(false);
   const [editRowId, setEditRowId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const [filtro, setFiltro] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState([]);
+
+  // ✅ NUEVO: Estado para movimientos de stock
+  const [stockMovements, setStockMovements] = useState({});
+
+  // ✅ NUEVO: Función para obtener movimientos de stock
+  const fetchStockMovements = async (productId) => {
+    try {
+      const response = await fetch(`/api/products/stock/${productId}`);
+      const data = await response.json();
+      if (data.success) {
+        setStockMovements(prev => ({
+          ...prev,
+          [productId]: data.movements || []
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching stock movements:", error);
+    }
+  };
+
+  // ✅ NUEVO: Función para calcular stock actual
+  const calculateCurrentStock = (product) => {
+    const movements = stockMovements[product.id_product] || [];
+    
+    // Stock inicial (cuando se creó el producto)
+    const initialStock = product.stock;
+    
+    // Calcular movimientos posteriores
+    const totalOut = movements
+      .filter(mov => mov.type === 'OUT')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    
+    const totalIn = movements
+      .filter(mov => mov.type === 'IN')
+      .reduce((sum, mov) => sum + mov.quantity, 0);
+    
+    // Stock actual = inicial + entradas - salidas
+    const currentStock = initialStock + totalIn - totalOut;
+    
+    return {
+      initial: initialStock,
+      current: Math.max(0, currentStock), // No permitir stock negativo
+      movements: movements.length
+    };
+  };
+
+  // ✅ Cargar movimientos cuando se cargan los productos
+  useEffect(() => {
+    if (products.length > 0) {
+      products.forEach(product => {
+        fetchStockMovements(product.id_product);
+      });
+    }
+  }, [products]);
+
+  // ... resto de funciones existentes (sin cambios) ...
+  const handleImageUpload = (productId) => {
+    openCloudinaryWidget((uploadedImageUrl) => {
+      if (uploadedImageUrl) {
+        console.log("Imagen subida correctamente, URL:", uploadedImageUrl);
+        const productToUpdate = products.find(
+          (p) => p.id_product === productId
+        );
+        const newImages =
+          productToUpdate && productToUpdate.images
+            ? [...productToUpdate.images, uploadedImageUrl]
+            : [uploadedImageUrl];
+        dispatch(updateProduct(productId, { images: newImages }));
+      } else {
+        console.error("Error al subir la imagen.");
+      }
+    });
+  };
+
+  const handleDeleteImage = (productId, imageUrl) => {
+    const productToUpdate = products.find((p) => p.id_product === productId);
+    if (!productToUpdate || !productToUpdate.images) return;
+    const newImages = productToUpdate.images.filter((img) => img !== imageUrl);
+    dispatch(updateProduct(productId, { images: newImages }));
+  };
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  // Filtro de productos
-  const productosFiltrados = products.filter((producto) =>
-    `${producto.codigoBarra} ${producto.marca} ${producto.codigoProv} ${producto.description}`
-      .toLowerCase()
-      .includes(filtro.toLowerCase())
-  );
+  const handleFiltroChange = (e) => {
+    setFiltro(e.target.value.toLowerCase());
+  };
 
-  // Paginación
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = productosFiltrados.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
-
-  // Editar producto
   const handleEditClick = (producto) => {
     setEditRowId(producto.id_product);
     setEditForm({ ...producto });
-    dispatch(fetchProductStock(producto.id_product));
   };
 
   const handleEditChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setEditForm((prev) => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value,
+      [name]: value,
     }));
   };
 
-  const handleSave = async (id) => {
-    await dispatch(updateProduct(id, editForm));
+  const handleSave = (id) => {
+    dispatch(updateProduct(id, editForm));
     setEditRowId(null);
   };
 
@@ -62,117 +132,203 @@ const ListadoProductos = () => {
     setEditRowId(null);
   };
 
-  // Eliminar producto
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts((prevSelected) =>
+      prevSelected.includes(productId)
+        ? prevSelected.filter((id) => id !== productId)
+        : [...prevSelected, productId]
+    );
+  };
+
+  const toggleTiendaOnline = async (producto) => {
+    try {
+      const updatedProduct = {
+        ...producto,
+        tiendaOnLine: !producto.tiendaOnLine,
+      };
+      await dispatch(updateProduct(producto.id_product, updatedProduct));
+      dispatch(fetchProducts());
+    } catch (error) {
+      console.error("Error al actualizar el estado:", error);
+    }
+  };
+
+  const handleSelectAll = () => {
+    setSelectAll(!selectAll);
+    if (!selectAll) {
+      setSelectedProducts(productosFiltrados.map((p) => p.id_product));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
   const handleDeleteProduct = (id_product) => {
-    if (window.confirm("¿Eliminar este producto?")) {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
       dispatch(deleteProduct(id_product));
     }
   };
 
-  // Imagenes
-  const handleImageUpload = (productId) => {
-    openCloudinaryWidget((uploadedImageUrl) => {
-      if (uploadedImageUrl) {
-        const productToUpdate = products.find((p) => p.id_product === productId);
-        const newImages = productToUpdate?.images
-          ? [...productToUpdate.images, uploadedImageUrl]
-          : [uploadedImageUrl];
-        dispatch(updateProduct(productId, { images: newImages }));
-      }
+  const handleDownloadExcel = () => {
+    const selectedData = products.filter((producto) =>
+      selectedProducts.includes(producto.id_product)
+    );
+
+    const dataForExcel = selectedData.map((producto) => {
+      const stockInfo = calculateCurrentStock(producto);
+      return {
+        Código_Barra: producto.codigoBarra,
+        Marca: producto.marca,
+        Código_Proveedor: producto.codigoProv,
+        Descripción: producto.description,
+        Costo: producto.price,
+        Precio_Venta: producto.priceSell,
+        Stock_Inicial: stockInfo.initial, // ✅ NUEVO
+        Stock_Actual: stockInfo.current,  // ✅ NUEVO
+        Tamaños: producto.sizes,
+        Colores: producto.colors,
+        Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
+      };
     });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+    XLSX.writeFile(workbook, "productos_seleccionados.xlsx");
   };
 
-  const handleDeleteImage = (productId, imageUrl) => {
-    const productToUpdate = products.find((p) => p.id_product === productId);
-    if (!productToUpdate?.images) return;
-    const newImages = productToUpdate.images.filter((img) => img !== imageUrl);
-    dispatch(updateProduct(productId, { images: newImages }));
-  };
+  const productosFiltrados = products.filter((producto) =>
+    `${producto.codigoBarra} ${producto.marca} ${producto.description}`
+      .toLowerCase()
+      .includes(filtro)
+  );
 
-  // Tienda Online toggle
-  const toggleTiendaOnline = async (producto) => {
-    const updatedProduct = {
-      ...producto,
-      tiendaOnLine: !producto.tiendaOnLine,
-    };
-    await dispatch(updateProduct(producto.id_product, updatedProduct));
-  };
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = productosFiltrados.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(productosFiltrados.length / itemsPerPage);
 
-  // Render
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  if (loading)
+    return <p className="text-center text-blue-500">Cargando productos...</p>;
+  if (error) return <p className="text-center text-red-500">Error: {error}</p>;
+
   return (
     <>
       <Navbar2 />
-      <div className="max-w-7xl mx-auto p-6 mt-36">
-        <div className="flex gap-4 mb-6 items-center">
+      <div className="p-6 mt-36">
+        <div className="flex gap-4 mb-4">
           <input
             type="text"
-            placeholder="Buscar por marca, código de barra, proveedor o descripción"
+            placeholder="Buscar por marca, código de barra o proveedor"
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
+            onChange={handleFiltroChange}
           />
+          <button
+            onClick={handleDownloadExcel}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedProducts.length === 0}
+          >
+            Descargar Excel
+          </button>
         </div>
 
-        {loading && (
-          <div className="text-center text-blue-500 font-semibold py-8">
-            Cargando productos...
-          </div>
-        )}
-        {error && (
-          <div className="text-center text-red-500 font-semibold py-8">
-            Error: {error}
-          </div>
-        )}
-
-        <div className="overflow-x-auto rounded-lg shadow">
-          <table className="min-w-full table-auto border border-gray-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border-collapse border border-gray-300">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-4 py-2 border">Imágenes</th>
-                <th className="px-4 py-2 border">Código Barra</th>
-                <th className="px-4 py-2 border">Marca</th>
-                <th className="px-4 py-2 border">Código Proveedor</th>
-                <th className="px-4 py-2 border">Descripción</th>
-                <th className="px-4 py-2 border">Costo</th>
-                <th className="px-4 py-2 border">Precio Venta</th>
-                <th className="px-4 py-2 border">Tamaños</th>
-                <th className="px-4 py-2 border">Colores</th>
-                <th className="px-4 py-2 border">Tienda Online</th>
-                <th className="px-4 py-2 border">Acciones</th>
+                {[
+                  "Imágenes",
+                  "Seleccionar",
+                  "Código Barra",
+                  "Marca",
+                  "Código Proveedor",
+                  "Descripción",
+                  "Costo",
+                  "Precio Venta",
+                  "Stock Inicial", // ✅ CAMBIO: Renombrado
+                  "Stock Actual",  // ✅ NUEVO
+                  "Tamaños",
+                  "Colores",
+                  "Tienda Online",
+                  "Acciones",
+                ].map((header) => (
+                  <th
+                    key={header}
+                    className="px-4 py-2 border border-gray-300 text-left text-gray-600"
+                  >
+                    {header}
+                  </th>
+                ))}
+                <th className="px-4 py-2 border border-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className="form-checkbox h-5 w-5"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((producto) => (
-                <tr key={producto.id_product} className="hover:bg-gray-50">
+              {currentItems.map((producto) => {
+                const stockInfo = calculateCurrentStock(producto); // ✅ NUEVO
+                
+                return (
+                  <tr key={producto.id_product} className="hover:bg-gray-50">
                   {/* Imágenes */}
-                  <td className="px-4 py-2 border">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {producto.images?.map((img, idx) => (
-                        <div key={idx} className="relative group">
-                          <img
-                            src={img}
-                            alt={producto.description}
-                            className="w-16 h-16 object-cover rounded border"
-                          />
-                          <button
-                            onClick={() => handleDeleteImage(producto.id_product, img)}
-                            className="absolute top-0 right-0 bg-red-600 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition"
-                            title="Eliminar imagen"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                  <td className="px-4 py-2 border border-gray-300">
+                    {producto.images && producto.images.length > 0 ? (
+                      <div className="flex flex-col items-center gap-2">
+                        {producto.images.map((img, idx) => (
+                          <div key={idx} className="flex flex-col items-center">
+                            <img
+                              src={img}
+                              alt={producto.description}
+                              className="w-20 h-20 object-cover"
+                            />
+                            <button
+                              onClick={() =>
+                                handleDeleteImage(producto.id_product, img)
+                              }
+                              className="px-2 py-1 bg-red-500 text-white text-sm rounded mt-1"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => handleImageUpload(producto.id_product)}
+                          className="px-2 py-1 bg-blue-500 text-white text-sm rounded"
+                        >
+                          Agregar Imagen
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         onClick={() => handleImageUpload(producto.id_product)}
-                        className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                        className="px-4 py-2 bg-green-500 text-white rounded"
                       >
-                        + Imagen
+                        Agregar Imagen
                       </button>
-                    </div>
+                    )}
+                  </td>
+                  {/* Seleccionar */}
+                  <td className="px-4 py-2 border border-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(producto.id_product)}
+                      onChange={() =>
+                        toggleProductSelection(producto.id_product)
+                      }
+                      className="form-checkbox h-5 w-5"
+                    />
                   </td>
                   {/* Código Barra */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="codigoBarra"
@@ -185,7 +341,7 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Marca */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="marca"
@@ -198,7 +354,7 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Código Proveedor */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="codigoProv"
@@ -211,7 +367,7 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Descripción */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="description"
@@ -224,7 +380,7 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Costo */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="price"
@@ -235,11 +391,11 @@ const ListadoProductos = () => {
                         min={0}
                       />
                     ) : (
-                      producto.price
+                      `$${producto.price}`
                     )}
                   </td>
                   {/* Precio Venta */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="priceSell"
@@ -250,11 +406,33 @@ const ListadoProductos = () => {
                         min={0}
                       />
                     ) : (
-                      producto.priceSell
+                      `$${producto.priceSell}`
                     )}
                   </td>
+                  {/* Stock */}
+                  <td className="px-4 py-2 border border-gray-300">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{stockInfo.initial}</span>
+                        <span className="text-xs text-gray-500">Inicial</span>
+                      </div>
+                    </td>
+                    
+                    {/* ✅ Stock Actual (CALCULADO) */}
+                    <td className="px-4 py-2 border border-gray-300">
+                      <div className="flex flex-col">
+                        <span className={`font-medium ${
+                          stockInfo.current <= 5 ? 'text-red-600' : 
+                          stockInfo.current <= 10 ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {stockInfo.current}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {stockInfo.movements} movimientos
+                        </span>
+                      </div>
+                    </td>
                   {/* Tamaños */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="sizes"
@@ -267,7 +445,7 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Colores */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <input
                         name="colors"
@@ -280,12 +458,12 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Tienda Online */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
                       <select
                         name="tiendaOnLine"
                         value={editForm.tiendaOnLine ? "true" : "false"}
-                        onChange={(e) =>
+                        onChange={e =>
                           setEditForm((prev) => ({
                             ...prev,
                             tiendaOnLine: e.target.value === "true",
@@ -299,7 +477,7 @@ const ListadoProductos = () => {
                     ) : (
                       <button
                         onClick={() => toggleTiendaOnline(producto)}
-                        className={`px-4 py-1 rounded-lg text-xs ${
+                        className={`px-4 py-2 rounded-lg ${
                           producto.tiendaOnLine
                             ? "bg-green-500 text-white"
                             : "bg-gray-300 text-black"
@@ -310,94 +488,99 @@ const ListadoProductos = () => {
                     )}
                   </td>
                   {/* Acciones */}
-                  <td className="px-4 py-2 border">
+                  <td className="px-4 py-2 border border-gray-300">
                     {editRowId === producto.id_product ? (
-                      <div className="flex gap-2">
+                      <>
                         <button
                           onClick={() => handleSave(producto.id_product)}
-                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                          className="bg-green-500 text-white px-2 py-1 rounded mr-2"
                         >
                           Guardar
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+                          className="bg-gray-400 text-white px-2 py-1 rounded"
                         >
                           Cancelar
                         </button>
-                      </div>
+                      </>
                     ) : (
-                      <div className="flex gap-2">
+                      <>
                         <button
                           onClick={() => handleEditClick(producto)}
-                          className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                          className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(producto.id_product)}
-                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                          className="bg-red-500 text-white px-2 py-1 rounded"
                         >
                           Eliminar
                         </button>
-                      </div>
+                      </>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
-        </div>
-
-        {/* Paginación */}
-        <div className="flex justify-center mt-8 w-full">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="mx-1 px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-            >
-              {"<<"}
-            </button>
-            <button
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="mx-1 px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-            >
-              {"<"}
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => (
+  
+          {/* Paginación */}
+          <div className="flex justify-center mt-8 w-full overflow-x-auto">
+            <div className="flex space-x-1">
               <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`mx-1 px-2 py-1 rounded ${
-                  currentPage === i + 1
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
+                onClick={() => paginate(1)}
+                disabled={currentPage === 1}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
               >
-                {i + 1}
+                {"<<"}
               </button>
-            ))}
-            <button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="mx-1 px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-            >
-              {">"}
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="mx-1 px-2 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
-            >
-              {">>"}
-            </button>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+              >
+                {"<"}
+              </button>
+  
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => paginate(i + 1)}
+                  className={`mx-1 px-2 py-1 rounded-md ${
+                    currentPage === i + 1
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+  
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+              >
+                {">"}
+              </button>
+              <button
+                onClick={() => paginate(totalPages)}
+                disabled={currentPage === totalPages}
+                className="mx-1 px-2 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+              >
+                {">>"}
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-4 text-sm text-gray-600 text-center">
-          Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, productosFiltrados.length)} de {productosFiltrados.length} productos
+  
+          <div className="mt-2 text-sm text-gray-600">
+            Mostrando {indexOfFirstItem + 1} -{" "}
+            {Math.min(indexOfLastItem, productosFiltrados.length)} de{" "}
+            {productosFiltrados.length} productos
+          </div>
         </div>
       </div>
     </>

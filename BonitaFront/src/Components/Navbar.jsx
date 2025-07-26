@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Disclosure, Menu } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
@@ -40,6 +39,7 @@ export default function Navbar() {
     }
   };
 
+  // Función para renderizar items de escritorio (mantiene Menu.Item)
   const renderMenuItems = () => {
     if (!userInfo) {
       return (
@@ -79,7 +79,7 @@ export default function Navbar() {
           </Menu.Item>
         </>
       );
-    } else if (userInfo.role === 'Admin' || userInfo.role === 'Cajero' ) {
+    } else if (userInfo.role === 'Admin' || userInfo.role === 'Cajero') {
       return (
         <>
          <Menu.Item>
@@ -161,6 +161,81 @@ export default function Navbar() {
               </Link>
             )}
           </Menu.Item>
+        </>
+      );
+    }
+  };
+
+  // Nueva función para renderizar items móviles (usa Disclosure.Button)
+  const renderMobileMenuItems = () => {
+    if (!userInfo) {
+      return (
+        <>
+          <Disclosure.Button as="div">
+            <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Ingresar
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/register" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Registrarse
+            </Link>
+          </Disclosure.Button>
+        </>
+      );
+    } else if (userInfo.role === 'User') {
+      return (
+        <>
+          <Disclosure.Button as="div">
+            <Link to={`/myOrders/${userInfo.n_document}`} className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Mis Pedidos
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/" onClick={() => dispatch(logout())} className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Salir
+            </Link>
+          </Disclosure.Button>
+        </>
+      );
+    } else if (userInfo.role === 'Admin' || userInfo.role === 'Cajero') {
+      return (
+        <>
+          <Disclosure.Button as="div">
+            <Link to="/panel/caja" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Caja
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/allOrders" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Pedidos
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/panelGeneral" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Panel General
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/panelProductos" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Panel Productos
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/panel" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Facturación
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/register" className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Crear Administrador
+            </Link>
+          </Disclosure.Button>
+          <Disclosure.Button as="div">
+            <Link to="/" onClick={() => dispatch(logout())} className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              Salir
+            </Link>
+          </Disclosure.Button>
         </>
       );
     }
@@ -260,38 +335,45 @@ export default function Navbar() {
             <div className="space-y-1 px-4 pb-3 pt-2">
               {navigation.map((item) => (
                 item.isScroll ? (
-                  <button
+                  <Disclosure.Button
                     key={item.name}
+                    as="button"
                     onClick={handleScrollToFooter}
                     className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
                   >
                     {item.name}
-                  </button>
+                  </Disclosure.Button>
                 ) : (
-                  <Disclosure.Button 
-                    key={item.name} 
-                    as={Link} 
-                    to={item.href} 
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                  <Disclosure.Button
+                    key={item.name}
+                    as="div"
+                    className="block"
                   >
-                    {item.name}
+                    <Link 
+                      to={item.href} 
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                    >
+                      {item.name}
+                    </Link>
                   </Disclosure.Button>
                 )
               ))}
               
               {/* Carrito en móvil */}
-              <Link 
-                to="/cart" 
-                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
-              >
-                <ShoppingBagIcon className="h-5 w-5 mr-2" />
-                Carrito
-              </Link>
+              <Disclosure.Button as="div" className="block">
+                <Link 
+                  to="/cart" 
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                  <ShoppingBagIcon className="h-5 w-5 mr-2" />
+                  Carrito
+                </Link>
+              </Disclosure.Button>
               
-              {/* Menú usuario en móvil */}
+              {/* Menú usuario en móvil - CORREGIDO */}
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <div className="space-y-1">
-                  {renderMenuItems()}
+                  {renderMobileMenuItems()}
                 </div>
               </div>
             </div>

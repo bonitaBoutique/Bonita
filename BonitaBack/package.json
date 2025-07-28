@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
+   "scripts": {
     "start": "node index.js",
     "dev": "nodemon -L index.js",
-    "build": "node index.js"
+    "build": "node index.js",
+    "migrate": "node scripts/run-migrations.js",
+    "migrate:rollback": "node scripts/rollback-migrations.js",
+    "migrate:status": "node scripts/migration-status.js"
   },
   "keywords": [],
   "author": "",

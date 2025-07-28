@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
       original_receipt_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        // ✅ AGREGAR REFERENCIA FORÁNEA
+       
         references: {
           model: 'Receipts',
           key: 'id_receipt'

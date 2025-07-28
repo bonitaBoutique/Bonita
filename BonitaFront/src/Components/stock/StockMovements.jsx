@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchStockMovements, createStockMovement } from '../../Redux/Actions/actions';
+import { fetchStockMovements } from '../../Redux/Actions/actions';
 import TruncatedText from '../Informes/TruncatedText';
 
 const StockMovements = () => {
   const dispatch = useDispatch();
-  const { 
-    movements, 
-    pagination, 
-    loading, 
-    error, 
-    creating, 
-    createError 
-  } = useSelector((state) => state.stock);
+  const {
+    data: movements = [],
+    pagination,
+    loading,
+    error,
+    product,
+    codigoBarra,
+    stock,
+    stock_initial,
+    stats
+  } = useSelector((state) => state.stockMovements);
 
-  // ✅ Estados locales para filtros
   const [filters, setFilters] = useState({
     page: 1,
     limit: 50,
@@ -23,39 +25,36 @@ const StockMovements = () => {
     dateTo: ''
   });
 
-  // ✅ Effect para cargar datos iniciales
   useEffect(() => {
     dispatch(fetchStockMovements(filters));
-  }, [dispatch]);
+    // eslint-disable-next-line
+  }, []);
 
-  // ✅ Función para manejar cambio de filtros
   const handleFilterChange = (field, value) => {
     const newFilters = { ...filters, [field]: value, page: 1 };
     setFilters(newFilters);
     dispatch(fetchStockMovements(newFilters));
   };
 
-  // ✅ Función para cambiar página
   const handlePageChange = (newPage) => {
     const newFilters = { ...filters, page: newPage };
     setFilters(newFilters);
     dispatch(fetchStockMovements(newFilters));
   };
 
-  // ✅ Función para resetear filtros
   const resetFilters = () => {
     const newFilters = {
       page: 1,
       limit: 50,
       type: '',
       dateFrom: '',
-      dateTo: ''
+      dateTo: '',
+      id_product: ''
     };
     setFilters(newFilters);
     dispatch(fetchStockMovements(newFilters));
   };
 
-  // ✅ Formatear fecha
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('es-CO', {
       year: 'numeric',
@@ -66,7 +65,6 @@ const StockMovements = () => {
     });
   };
 
-  // ✅ Estados de carga y error
   if (loading && movements.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -103,7 +101,19 @@ const StockMovements = () => {
         📦 Movimientos de Stock
       </h1>
 
-      {/* ✅ Sección de Filtros */}
+      {/* Estadísticas generales */}
+      {stats && (
+        <div className="mb-4 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+          <p className="text-sm text-green-800">
+            <strong>Entradas totales:</strong> {stats.totalIn} &nbsp;|&nbsp;
+            <strong>Salidas totales:</strong> {stats.totalOut} &nbsp;|&nbsp;
+            <strong>Movimientos:</strong> {stats.movementsCount} &nbsp;|&nbsp;
+            <strong>Último movimiento:</strong> {stats.lastMovementDate ? formatDate(stats.lastMovementDate) : 'N/A'}
+          </p>
+        </div>
+      )}
+
+      {/* Filtros */}
       <div className="mb-6 p-4 border rounded-lg shadow-sm bg-gray-50">
         <h2 className="text-xl font-semibold mb-3 flex items-center">
           🔍 Filtros de Búsqueda
@@ -123,7 +133,6 @@ const StockMovements = () => {
               <option value="OUT">Salidas (OUT)</option>
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Desde
@@ -135,7 +144,6 @@ const StockMovements = () => {
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📅 Fecha Hasta
@@ -147,7 +155,18 @@ const StockMovements = () => {
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              🔎 ID Producto
+            </label>
+            <input
+              type="text"
+              value={filters.id_product}
+              onChange={(e) => handleFilterChange('id_product', e.target.value)}
+              placeholder="Ej: B001"
+              className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               📄 Por Página
@@ -163,7 +182,6 @@ const StockMovements = () => {
             </select>
           </div>
         </div>
-
         <div className="mt-4 flex gap-2 flex-wrap">
           <button
             onClick={resetFilters}
@@ -181,11 +199,11 @@ const StockMovements = () => {
         </div>
       </div>
 
-      {/* ✅ Información de Paginación */}
+      {/* Información de Paginación */}
       <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
         <p className="text-sm text-blue-800">
-          <strong>📊 Resultados:</strong> Mostrando {movements.length} de {pagination.total} movimientos
-          {pagination.totalPages > 1 && (
+          <strong>📊 Resultados:</strong> Mostrando {movements.length} de {pagination?.total || 0} movimientos
+          {pagination?.totalPages > 1 && (
             <span className="ml-2">
               (Página {pagination.page} de {pagination.totalPages})
             </span>
@@ -193,26 +211,20 @@ const StockMovements = () => {
         </p>
       </div>
 
-      {/* ✅ Tabla de Movimientos */}
+      {/* Tabla de Movimientos */}
       <div className="overflow-x-auto shadow-lg rounded-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                📅 Fecha
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                📦 Producto
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                📊 Tipo
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                🔢 Cantidad
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                📊 Stock Actual
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📅 Fecha</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📦 Producto</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📊 Tipo</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">🔢 Cantidad</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">📊 Stock Actual</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">📝 Motivo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">🔗 Referencia</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">💲 Unitario</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">🗒️ Notas</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -229,9 +241,9 @@ const StockMovements = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     <div>
-                      <div className="font-medium">{movement.Product?.description}</div>
+                      <div className="font-medium">{movement.Product?.description || product || movement.id_product}</div>
                       <div className="text-gray-500">
-                        {movement.Product?.marca} - {movement.Product?.codigoBarra}
+                        {movement.Product?.marca || ''} {movement.Product?.codigoBarra || codigoBarra || ''}
                       </div>
                     </div>
                   </td>
@@ -252,13 +264,27 @@ const StockMovements = () => {
                     {movement.type === 'IN' ? '+' : '-'}{movement.quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
-                    {movement.Product?.stock}
+                    {movement.Product?.stock || stock || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {movement.reason || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {movement.reference_type
+                      ? `${movement.reference_type}${movement.reference_id ? ` (${movement.reference_id})` : ''}`
+                      : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                    {movement.unit_price != null ? `$${movement.unit_price}` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <TruncatedText text={movement.notes} maxLength={30} />
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="text-center py-8 text-gray-500">
+                <td colSpan="9" className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-2">📭</div>
                   <p>No hay movimientos de stock para mostrar</p>
                   <button
@@ -273,8 +299,8 @@ const StockMovements = () => {
           </tbody>
         </table>
 
-        {/* ✅ Controles de Paginación */}
-        {pagination.totalPages > 1 && (
+        {/* Controles de Paginación */}
+        {pagination?.totalPages > 1 && (
           <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="flex-1 flex justify-between sm:hidden">
               <button

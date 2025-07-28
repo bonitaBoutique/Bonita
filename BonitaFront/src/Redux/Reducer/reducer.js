@@ -1987,13 +1987,20 @@ case FETCH_STOCK_MOVEMENTS_SUCCESS:
       ...state.stockMovements,
       loading: false,
       error: null,
-      // Si la action es para un solo producto, puedes guardar así:
+      // Si es listado global (movements es array y hay paginación)
       data: Array.isArray(action.payload.movements)
         ? action.payload.movements
-        : [action.payload.movements],
+        : action.payload.movements
+          ? [action.payload.movements]
+          : [],
+      pagination: action.payload.pagination || state.stockMovements.pagination,
+      filters: action.payload.filters || state.stockMovements.filters,
+      // Si es detalle de producto
       product: action.payload.product || null,
       codigoBarra: action.payload.codigoBarra || null,
       stock: action.payload.stock || null,
+      stock_initial: action.payload.stock_initial || null,
+      stats: action.payload.stats || null,
     },
   };
 
@@ -2006,7 +2013,6 @@ case FETCH_STOCK_MOVEMENTS_FAILURE:
       error: action.payload,
     },
   };
-
           
     default:
       return state;

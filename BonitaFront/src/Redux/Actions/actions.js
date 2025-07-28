@@ -2127,16 +2127,19 @@ export const fetchStockMovements = (filters = {}) => {
       if (filters.type) queryParams.append('type', filters.type);
       if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
+      if (filters.id_product) queryParams.append('id_product', filters.id_product); // ✅ Nuevo filtro
 
-      const url = `${BASE_URL}/products/stock-movements?${queryParams.toString()}`;
+      const url = `${BASE_URL}/product/stock-movements?${queryParams.toString()}`;
       const response = await axios.get(url);
+
+      const { data: movements, pagination, filters: appliedFilters } = response.data.message;
 
       dispatch({
         type: FETCH_STOCK_MOVEMENTS_SUCCESS,
         payload: {
-          movements: response.data.data,
-          pagination: response.data.pagination,
-          filters: response.data.filters,
+          movements,
+          pagination,
+          filters: appliedFilters,
           success: response.data.success
         }
       });
@@ -2155,14 +2158,19 @@ export const fetchStockMovements = (filters = {}) => {
 export const fetchProductStock = (id_product) => async (dispatch) => {
   dispatch({ type: FETCH_STOCK_MOVEMENTS_REQUEST });
   try {
-    const response = await axios.get(`${BASE_URL}/products/stock/${id_product}`);
+    const response = await axios.get(`${BASE_URL}/product/stock/${id_product}`);
+    // Accede a la estructura real de la respuesta
+    const { id_product: product, codigoBarra, stock, movements, stats, stock_initial } = response.data.message;
+
     dispatch({
       type: FETCH_STOCK_MOVEMENTS_SUCCESS,
       payload: {
-        product: response.data.id_product,
-        codigoBarra: response.data.codigoBarra,
-        stock: response.data.stock,
-        movements: response.data.movements,
+        product,
+        codigoBarra,
+        stock,
+        stock_initial,
+        movements,
+        stats
       }
     });
     return response.data;
@@ -2187,7 +2195,7 @@ export const createStockMovement = (movementData) => {
     try {
       console.log("📤 Creando movimiento de stock:", movementData);
 
-      const response = await axios.post(`${BASE_URL}/products/stock`, movementData);
+      const response = await axios.post(`${BASE_URL}/product/stock`, movementData);
 
       console.log("📥 Movimiento creado:", response.data);
 

@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
       taxes_rate,
       unit,
       images,
-      
+      stockInicial,
       codigoBarra,
     } = req.body;
 
@@ -74,6 +74,7 @@ module.exports = async (req, res) => {
       price: parseFloat(price),
       priceSell: parseFloat(priceSell),
       stock: parseInt(stock, 10),
+      stockInicial: parseInt(stock, 10), 
       sizes, 
       colors,
       tax,

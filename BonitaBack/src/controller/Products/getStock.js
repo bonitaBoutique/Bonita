@@ -1,12 +1,12 @@
 const { Product, StockMovement } = require("../../data");
-const { Op } = require("sequelize"); // ✅ AGREGAR: Faltaba importar Op
+const { Op } = require("sequelize");
 const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
   try {
-    const { page = 1, limit = 50, type, dateFrom, dateTo } = req.query;
+    const { page = 1, limit = 50, type, dateFrom, dateTo, id_product } = req.query;
 
-    console.log("📦 Obteniendo movimientos de stock:", { page, limit, type, dateFrom, dateTo });
+    console.log("📦 Obteniendo movimientos de stock:", { page, limit, type, dateFrom, dateTo, id_product });
 
     // ✅ OBTENER TODOS LOS MOVIMIENTOS DE STOCK CON FILTROS
     let whereClause = {};
@@ -21,14 +21,19 @@ module.exports = async (req, res) => {
       if (dateTo) whereClause.date[Op.lte] = new Date(dateTo);
     }
 
+    // ✅ FILTRO POR PRODUCTO
+    if (id_product) {
+      whereClause.id_product = id_product;
+    }
+
     const movements = await StockMovement.findAndCountAll({
       where: whereClause,
       include: {
         model: Product,
-        attributes: ["id_product", "codigoBarra", "description", "marca", "stock"], // ✅ AGREGAR: stock actual
+        attributes: ["id_product", "codigoBarra", "description", "marca", "stock"],
         required: true
       },
-      order: [["date", "DESC"], ["createdAt", "DESC"]], // ✅ MEJORAR: Ordenar por fecha y creación
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
       limit: parseInt(limit),
       offset: (page - 1) * parseInt(limit)
     });
@@ -47,10 +52,11 @@ module.exports = async (req, res) => {
         limit: parseInt(limit),
         totalPages: Math.ceil(movements.count / parseInt(limit))
       },
-      filters: { // ✅ AGREGAR: Devolver filtros aplicados
+      filters: {
         type,
         dateFrom,
-        dateTo
+        dateTo,
+        id_product // ✅ Devuelve el filtro aplicado
       }
     });
   } catch (error) {

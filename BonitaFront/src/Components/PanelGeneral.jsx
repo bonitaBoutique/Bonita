@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Navbar2 from "./Navbar2";
 
 const PanelGeneral = () => {
+  // ✅ Obtener información del usuario logueado
+  const userInfo = useSelector((state) => state.userLogin.userInfo);
+  const isCajero = userInfo?.role === 'Cajero';
+
   return (
     <>
       <Navbar2 />
@@ -11,35 +16,50 @@ const PanelGeneral = () => {
         </div>
 
         <div className="bg-gray-200 w-full max-w-4xl p-8 rounded-lg shadow-lg mt-32">
+          {/* ✅ Mostrar información del rol si es cajero */}
+          {isCajero && (
+            <div className="mb-6 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <p className="text-sm text-blue-800">
+                <strong>👤 Panel de Cajero:</strong> Acceso limitado a las funciones principales de caja.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <>
-              {/* Botón Panel Productos */}
-              <div className="text-center space-y-2">
-                <Link
-                  to="/panelProductos"
-                  className="bg-slate-300 text-slate-600 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
-                >
-                  Productos
-                </Link>
-                <p className="text-sm text-slate-600">
-                  Administra y gestiona todos los Artículos disponibles en el
-                  sistema.
-                </p>
-              </div>
+              {/* ✅ Productos - OCULTO para Cajeros */}
+              {!isCajero && (
+                <div className="text-center space-y-2">
+                  <Link
+                    to="/panelProductos"
+                    className="bg-slate-300 text-slate-600 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
+                  >
+                    Productos
+                  </Link>
+                  <p className="text-sm text-slate-600">
+                    Administra y gestiona todos los Artículos disponibles en el
+                    sistema.
+                  </p>
+                </div>
+              )}
 
-              {/* Botón Facturación */}
-              <div className="text-center space-y-2">
-                <Link
-                  to="/panel"
-                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
-                >
-                  Facturación
-                </Link>
-                <p className="text-sm text-slate-600">
-                  Accede al módulo Facturación, Órdenes pendientes, Datos del
-                  Comercio .
-                </p>
-              </div>
+              {/* ✅ Facturación - OCULTO para Cajeros */}
+              {!isCajero && (
+                <div className="text-center space-y-2">
+                  <Link
+                    to="/panel"
+                    className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
+                  >
+                    Facturación
+                  </Link>
+                  <p className="text-sm text-slate-600">
+                    Accede al módulo Facturación, Órdenes pendientes, Datos del
+                    Comercio.
+                  </p>
+                </div>
+              )}
+
+              {/* ✅ Clientes - VISIBLE para todos */}
               <div className="text-center space-y-2">
                 <Link
                   to="/accountClient"
@@ -51,6 +71,8 @@ const PanelGeneral = () => {
                   Listado de clientes y saldos
                 </p>
               </div>
+
+              {/* ✅ Gastos - VISIBLE para todos */}
               <div className="text-center space-y-2">
                 <Link
                   to="/panelGastos"
@@ -59,9 +81,11 @@ const PanelGeneral = () => {
                   Gastos
                 </Link>
                 <p className="text-sm text-slate-600">
-                  Accede al módulo de Gastos .
+                  Accede al módulo de Gastos.
                 </p>
               </div>
+
+              {/* ✅ Informes - VISIBLE para todos */}
               <div className="text-center space-y-2">
                 <Link
                   to="/informes"
@@ -73,6 +97,8 @@ const PanelGeneral = () => {
                   Informes de Ingresos y Egresos
                 </p>
               </div>
+
+              {/* ✅ Cuentas por cobrar - VISIBLE para todos */}
               <div className="text-center space-y-2">
                 <Link
                   to="/reservas"
@@ -82,6 +108,8 @@ const PanelGeneral = () => {
                 </Link>
                 <p className="text-sm text-slate-600">Listado de Reservas</p>
               </div>
+
+              {/* ✅ Gift Cards - VISIBLE para todos */}
               <div className="text-center space-y-2">
                 <Link
                   to="/active-giftcards"
@@ -93,17 +121,21 @@ const PanelGeneral = () => {
                   Listado de Gift Cards Activas
                 </p>
               </div>
-              <div className="text-center space-y-2">
-                <Link
-                  to="/pagoCredito"
-                  className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
-                >
-                  Addi / Sistecredito{" "}
-                </Link>
-                <p className="text-sm text-slate-600">
-                  Listado de Pagos Addi / Sistecredito
-                </p>
-              </div>
+
+              {/* ✅ Addi/Sistecredito - OCULTO para Cajeros */}
+              {!isCajero && (
+                <div className="text-center space-y-2">
+                  <Link
+                    to="/pagoCredito"
+                    className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                  >
+                    Addi / Sistecredito
+                  </Link>
+                  <p className="text-sm text-slate-600">
+                    Listado de Pagos Addi / Sistecredito
+                  </p>
+                </div>
+              )}
             </>
           </div>
         </div>

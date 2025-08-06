@@ -82,10 +82,7 @@ export const adminRoutes = [
     path: '/panelGastos/filtroGastos', 
     component: lazy(() => import('../Informes/FilterExpenses')) 
   },
-  { 
-    path: '/panelGeneral', 
-    component: lazy(() => import('../PanelGeneral')) 
-  },
+  
   { 
     path: '/resumenDeCuenta/:n_document',
     component: lazy(() => import('../Informes/AccountSummary')) 
@@ -136,10 +133,7 @@ export const adminRoutes = [
     component: lazy(() => import('../Informes/PanelInformes')) 
   },
   
-  { 
-    path: '/informes', 
-    component: lazy(() => import('../Informes/Balance')) 
-  },
+ 
   { 
     path: '/invoice', 
     component: lazy(() => import('../Taxxa/Invoice')) 

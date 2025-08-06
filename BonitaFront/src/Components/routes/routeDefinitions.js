@@ -193,6 +193,10 @@ export const cashierRoutes = [
     path: '/accountClient', 
     component: lazy(() => import('../ClientAccountBalance')) 
   },
+   { 
+    path: '/panelGeneral', 
+    component: lazy(() => import('../PanelGeneral')) 
+  },
 ];
 
 // Lista de rutas administrativas para verificación

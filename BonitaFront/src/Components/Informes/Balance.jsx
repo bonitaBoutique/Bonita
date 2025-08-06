@@ -30,6 +30,21 @@ const Balance = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+
+  const userInfo = useSelector((state) => state.userLogin.userInfo);
+  
+  // ✅ VERIFICAR SI ES CAJERO (quien tiene la restricción)
+  const isCajero = userInfo?.role === 'Cajero';
+
+useEffect(() => {
+    console.log('🔍 [Balance] UserInfo cambió:', {
+      userInfo,
+      role: userInfo?.role,
+      isLoggedIn: !!userInfo,
+      isCajero: userInfo?.role === 'Cajero'
+    });
+  }, [userInfo]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -141,6 +156,12 @@ const Balance = () => {
 
   // ✅ FUNCIÓN MEJORADA: Validar cambios de fecha usando servidor
   const handleDateFilterChange = (field, value) => {
+    // ✅ BLOQUEAR cambios de fecha SOLO para CAJEROS
+    if (isCajero) {
+      alert("⚠️ Como cajero, solo puedes ver el informe de la fecha actual.");
+      return;
+    }
+
     console.log(`📅 [Balance] Cambiando ${field} a:`, value);
 
     if (!isValidDate(value)) {
@@ -566,7 +587,21 @@ const handleExportExcel = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
         <h1 className="text-3xl font-bold mb-6 text-center">
           💰 Balance Financiero (Sincronizado)
+          {isCajero && (
+            <span className="block text-sm text-orange-600 mt-2">
+              👤 Vista de Cajero - Solo fecha actual
+            </span>
+          )}
         </h1>
+
+        {isCajero && (
+          <div className="mb-4 p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+            <p className="text-sm text-orange-800">
+              <strong>🔒 Restricción de Cajero:</strong> Como cajero, solo puedes ver el informe de la fecha actual. 
+              Los filtros de fecha están bloqueados para tu rol.
+            </p>
+          </div>
+        )}
 
         {/* ✅ NUEVO: Información de debug si está disponible */}
         {debug && (
@@ -615,42 +650,53 @@ const handleExportExcel = () => {
         <div className="mb-6 p-4 border rounded-lg shadow-sm bg-gray-50">
           <h2 className="text-xl font-semibold mb-3 flex items-center">
             🔍 Filtros de Búsqueda
+            {isCajero && (
+              <span className="ml-2 text-sm text-orange-600">(Fechas bloqueadas)</span>
+            )}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 📅 Fecha Inicio
+                {isCajero && <span className="text-orange-600 ml-1">🔒</span>}
               </label>
               <input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) =>
-                  handleDateFilterChange("startDate", e.target.value)
-                }
+                onChange={(e) => handleDateFilterChange("startDate", e.target.value)}
                 max={getDateForInput(serverTime)}
-                className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isCajero} // ✅ DESHABILITAR solo para cajeros
+                className={`border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  isCajero ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''
+                }`}
+                title={isCajero ? "Los cajeros solo pueden ver la fecha actual" : ""}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {formatDateForDisplay(filters.startDate)}
+                {isCajero && <span className="text-orange-600 ml-1">(Solo fecha actual)</span>}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 📅 Fecha Fin
+                {isCajero && <span className="text-orange-600 ml-1">🔒</span>}
               </label>
               <input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) =>
-                  handleDateFilterChange("endDate", e.target.value)
-                }
+                onChange={(e) => handleDateFilterChange("endDate", e.target.value)}
                 min={filters.startDate}
                 max={getDateForInput(serverTime)}
-                className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isCajero} // ✅ DESHABILITAR solo para cajeros
+                className={`border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  isCajero ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''
+                }`}
+                title={isCajero ? "Los cajeros solo pueden ver la fecha actual" : ""}
               />
               <p className="text-xs text-gray-500 mt-1">
                 {formatDateForDisplay(filters.endDate)}
+                {isCajero && <span className="text-orange-600 ml-1">(Solo fecha actual)</span>}
               </p>
             </div>
 

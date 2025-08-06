@@ -169,6 +169,10 @@ export const cashierRoutes = [
     component: lazy(() => import('../Caja')) 
   },
   { 
+    path: '/informes', 
+    component: lazy(() => import('../Informes/Balance')) 
+  },
+  { 
     path: '/receipt/:idOrder', 
     component: lazy(() => import('../Recibo')) 
   },

@@ -1837,7 +1837,7 @@ export const searchReceiptForReturn = (receiptId) => async (dispatch) => {
   try {
     console.log("🔍 Buscando recibo:", receiptId);
     
-    const response = await axios.get(`${API_BASE_URL}/product/receipt-for-return/${receiptId}`);
+    const response = await axios.get(`${BASE_URL}/product/receipt-for-return/${receiptId}`);
     
     console.log("📥 Respuesta del API:", response.data);
     

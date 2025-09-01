@@ -1,4 +1,4 @@
-const { Return, Receipt, User, sequelize } = require("../../data");
+const { Return, Receipt, User, conn: sequelize } = require("../../data"); // ✅ CORREGIR: usar conn
 const { Op } = require("sequelize");
 const response = require("../../utils/response");
 
@@ -64,12 +64,13 @@ module.exports = async (req, res) => {
           model: User,
           as: 'cashier',
           required: false,
-          attributes: ['n_document', 'name', 'email']
+          // ✅ CORREGIR: Usar los campos que SÍ existen en el modelo User
+          attributes: ['n_document', 'first_name', 'last_name', 'email']
         }
       ]
     });
 
-    // Calcular estadísticas
+    // ✅ CORREGIR: Calcular estadísticas con sequelize correcto
     const stats = await Return.findAll({
       attributes: [
         'status',

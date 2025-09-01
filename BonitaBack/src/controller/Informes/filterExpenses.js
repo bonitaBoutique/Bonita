@@ -1,64 +1,84 @@
 const { Expense } = require('../../data');
 const { Op } = require('sequelize');
+const { formatDateForDB, getColombiaDate } = require('../../utils/dateUtils'); // ✅ IMPORTAR utilidades de fecha
 
 const filterExpenses = async (req, res) => {
   try {
-    // Agrega 'destinatario' a la desestructuración de req.query
+    // ✅ OBTENER FECHA DEL SERVIDOR (igual que en createExpense)
+    const serverDate = getColombiaDate();
+    
     const { startDate, endDate, minAmount, maxAmount, type, paymentMethods, destinatario } = req.query;
+
+    // ✅ LOGS DE FECHA (para debugging)
+    console.log('🕒 [FILTER EXPENSES] Fecha del servidor (Colombia):', serverDate);
+    console.log('🕒 [FILTER EXPENSES] Filtros recibidos:', { startDate, endDate, type, paymentMethods, destinatario });
+
     const where = {};
 
+    // ✅ LÓGICA DE FECHAS CORREGIDA
     if (startDate || endDate) {
       where.date = {};
+      
       if (startDate) {
-        where.date[Op.gte] = new Date(startDate);
+        // ✅ Usar formatDateForDB para consistencia con createExpense
+        where.date[Op.gte] = formatDateForDB(startDate);
+        console.log('🟢 [FILTER EXPENSES] StartDate formateada:', formatDateForDB(startDate));
       }
+      
       if (endDate) {
-        // Asegúrate de incluir todo el día de endDate
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.date[Op.lte] = endOfDay;
+        // ✅ Usar formatDateForDB para consistencia con createExpense
+        where.date[Op.lte] = formatDateForDB(endDate);
+        console.log('🟢 [FILTER EXPENSES] EndDate formateada:', formatDateForDB(endDate));
       }
+    } else {
+      // ✅ Si no hay filtros de fecha, usar fecha del servidor como filtro por defecto
+      // Esto asegura que se muestren los gastos del día actual del servidor
+      where.date = formatDateForDB(serverDate);
+      console.log('🟡 [FILTER EXPENSES] Sin filtros de fecha, usando fecha del servidor:', formatDateForDB(serverDate));
     }
 
     if (minAmount || maxAmount) {
       where.amount = {};
       if (minAmount) {
-        where.amount[Op.gte] = parseFloat(minAmount); // Asegurar que sea número
+        where.amount[Op.gte] = parseFloat(minAmount);
       }
       if (maxAmount) {
-        where.amount[Op.lte] = parseFloat(maxAmount); // Asegurar que sea número
+        where.amount[Op.lte] = parseFloat(maxAmount);
       }
     }
 
     if (type) {
-      // Si 'type' puede ser un array de tipos, usa Op.in
-      // where.type = { [Op.in]: type.split(',') };
-      // Si es solo uno:
       where.type = type;
     }
+    
     if (paymentMethods) {
-      // Si 'paymentMethods' puede ser un array, usa Op.in
-      // where.paymentMethods = { [Op.in]: paymentMethods.split(',') };
-      // Si es solo uno:
       where.paymentMethods = paymentMethods;
     }
 
-    // NUEVO: Filtrar por destinatario si se proporciona
     if (destinatario) {
-      // Puedes usar Op.like para búsquedas parciales (case-insensitive en algunos DBs)
-      // where.destinatario = { [Op.like]: `%${destinatario}%` };
-      // O para coincidencia exacta:
       where.destinatario = destinatario;
     }
 
+    console.log('🔍 [FILTER EXPENSES] Consulta WHERE final:', where);
 
     const expenses = await Expense.findAll({
        where,
-       order: [['date', 'DESC']] // Opcional: ordenar resultados
+       order: [['date', 'DESC']]
     });
-    res.status(200).json(expenses);
+
+    console.log(`🟢 [FILTER EXPENSES] Encontrados ${expenses.length} gastos`);
+
+    res.status(200).json({
+      expenses,
+      serverInfo: {
+        serverDate: serverDate,
+        timezone: 'America/Bogota',
+        filters: { startDate, endDate, type, paymentMethods, destinatario }
+      }
+    });
+
   } catch (error) {
-    console.error('Error al filtrar gastos:', error); // Loguear el error
+    console.error('❌ [FILTER EXPENSES] Error al filtrar gastos:', error);
     res.status(500).json({ error: `Error al filtrar gastos: ${error.message}` });
   }
 };

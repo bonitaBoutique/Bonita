@@ -331,7 +331,22 @@ const ReturnManagement = () => {
 
     const difference = totalNewPurchase - totalReturned;
 
-    return { totalReturned, totalNewPurchase, difference };
+    const calculatedTotals = { totalReturned, totalNewPurchase, difference };
+    
+    console.log("🧮 RECALCULANDO TOTALES:");
+    console.log("🧮 Productos devueltos:", returnData.returned_products.length);
+    console.log("🧮 Productos nuevos:", returnData.new_products.length);
+    console.log("🧮 Total devuelto:", totalReturned);
+    console.log("🧮 Total nueva compra:", totalNewPurchase);
+    console.log("🧮 Diferencia:", difference);
+    console.log("🧮 Detalle productos devueltos:", returnData.returned_products.map(item => ({
+      id: item.id_product,
+      qty: item.quantity,
+      price: item.unit_price,
+      subtotal: (item.unit_price || 0) * (item.quantity || 0)
+    })));
+
+    return calculatedTotals;
   }, [returnData.returned_products, returnData.new_products]);
 
   // ✅ LOG DEL ESTADO ACTUAL AL RENDERIZAR
@@ -371,11 +386,18 @@ const ReturnManagement = () => {
   useEffect(() => {
     console.log("🔄 useEffect products - Products cambió");
     console.log("📦 Nuevos products recibidos:", products?.length);
+    console.log("📦 Primeros 3 productos como muestra:", products?.slice(0, 3)?.map(p => ({
+      id: p.id_product,
+      name: p.description,
+      stock: p.stock,
+      price: p.priceSell
+    })));
 
     if (products && products.length > 0) {
       const available = products.filter((product) => product.stock > 0);
       console.log("📦 Products con stock:", available.length);
       console.log("📦 Products sin stock:", products.length - available.length);
+      console.log("📦 IDs de productos con stock:", available.map(p => p.id_product).slice(0, 10)); // Primeros 10
       setAvailableProducts(available);
     }
   }, [products]);
@@ -644,7 +666,14 @@ const searchReceipt = useCallback(async () => {
 
   const addReturnedProduct = useCallback((product, quantity, reason = "") => {
     console.log("🚀 INICIO addReturnedProduct");
-    console.log("📦 Parámetros recibidos:", { product: product.id_product, quantity, reason });
+    console.log("📦 Parámetros recibidos:", { 
+      product_id: product.id_product,
+      product_name: product.description,
+      quantity, 
+      reason,
+      unit_price: product.priceSell,
+      current_stock: product.stock
+    });
 
     try {
       const newProduct = {
@@ -659,12 +688,15 @@ const searchReceipt = useCallback(async () => {
         current_stock: product.stock,
       };
 
+      console.log("📦 Producto a agregar:", newProduct);
+
       dispatchReturnData({
         type: 'ADD_RETURNED_PRODUCT',
         payload: { product, quantity, reason, newProduct }
       });
 
       console.log("✅ Producto agregado exitosamente para devolución");
+      console.log("📋 Estado actual returned_products después de agregar:", returnData.returned_products.length + 1);
     } catch (error) {
       console.error("💥 ERROR en addReturnedProduct:", error);
       showSwal({
@@ -673,7 +705,7 @@ const searchReceipt = useCallback(async () => {
         text: "Error al agregar el producto para devolución",
       });
     }
-  }, [showSwal]);
+  }, [showSwal, returnData.returned_products.length]);
 
   const removeReturnedProduct = useCallback((productId) => {
     console.log("🗑️ INICIO removeReturnedProduct:", productId);
@@ -918,8 +950,13 @@ const searchReceipt = useCallback(async () => {
 
   const handleProcessReturnWithDifference = useCallback(async () => {
     console.log("⚙️ INICIO handleProcessReturnWithDifference");
+    console.log("📊 Estado inicial de returnData:", returnData);
+    console.log("📊 Totales calculados:", totals);
+    console.log("📊 Recibo original:", originalReceipt?.id_receipt);
+    console.log("📊 Documento cajero:", cashierDocument);
 
     if (returnData.returned_products.length === 0) {
+      console.log("❌ Error: No hay productos para devolver");
       showSwal({
         icon: "error",
         title: "Error",
@@ -936,6 +973,7 @@ const searchReceipt = useCallback(async () => {
 
     if (returnData.customer_payment_method === "Cambio") {
       if (returnData.new_products.length === 0) {
+        console.log("ℹ️ Cambio seleccionado pero sin productos nuevos");
         showSwal({
           icon: "info",
           title: "Info",
@@ -944,15 +982,12 @@ const searchReceipt = useCallback(async () => {
         return;
       }
 
-      if (totals.difference < 0) {
-        handleCreateGiftCard(
-          Math.abs(totals.difference),
-          `Saldo a favor por cambio - Recibo #${originalReceipt.id_receipt}`
-        );
-        return;
-      }
+      // ✅ CAMBIO: NO CREAR GIFTCARD AQUÍ, PROCESAR PRIMERO EN BACKEND
+      console.log("🔄 Cambio con productos nuevos - diferencia:", totals.difference);
+      console.log("🔄 Procesaremos en backend y después manejaremos GiftCard si es necesario");
     }
 
+    console.log("🔄 Continuando con el procesamiento normal de devolución...");
     setLoading(true);
 
     try {
@@ -971,73 +1006,145 @@ const searchReceipt = useCallback(async () => {
         },
       };
 
-      console.log("📤 Enviando datos al backend:", requestData);
+      console.log("📤 DATOS COMPLETOS enviando al backend:");
+      console.log("📤 original_receipt_id:", requestData.original_receipt_id);
+      console.log("📤 returned_products:", requestData.returned_products);
+      console.log("📤 new_products:", requestData.new_products);
+      console.log("📤 cashier_document:", requestData.cashier_document);
+      console.log("📤 customer_payment_method:", requestData.customer_payment_method);
+      console.log("📤 totals:", requestData.totals);
+      console.log("📤 REQUEST DATA COMPLETO:", JSON.stringify(requestData, null, 2));
 
-      const result = await dispatch(processReturn(requestData));
-      console.log("📥 Respuesta del backend:", result);
+    const result = await dispatch(processReturn(requestData));
+    console.log("📥 Respuesta del backend:", result);
+    console.log("📥 Estructura completa de la respuesta:", JSON.stringify(result, null, 2));
 
-      if (result.success) {
-        console.log("✅ Devolución procesada exitosamente");
+    if (result && result.success) {
+      console.log("✅ Devolución procesada exitosamente");
+      console.log("📊 Datos de respuesta del backend:", result.data);
+      
+      // ✅ VERIFICAR QUE EL BACKEND HAYA ACTUALIZADO EL STOCK
+      if (result.data?.stockUpdated) {
+        console.log("✅ Backend confirmó actualización de stock");
+      } else {
+        console.warn("⚠️ Backend no confirmó actualización de stock");
+      }
 
-        // Actualizar productos devueltos (aumentar stock)
-        returnData.returned_products.forEach((returnedProduct) => {
-          dispatch({
-            type: "UPDATE_PRODUCT_STOCK",
-            payload: {
-              id_product: returnedProduct.id_product,
-              stock_change: +returnedProduct.quantity,
-              reason: "RETURN",
-            },
-          });
+      // ✅ LOG DE PRODUCTOS ANTES DE ACTUALIZAR STOCK LOCAL
+      console.log("📦 Productos devueltos a procesar:", returnData.returned_products.map(p => ({
+        id: p.id_product,
+        cantidad: p.quantity,
+        accion: "DEVOLVER (aumentar stock)"
+      })));
+      
+      console.log("📦 Productos nuevos a procesar:", returnData.new_products.map(p => ({
+        id: p.id_product,
+        cantidad: p.quantity,
+        accion: "VENDER (disminuir stock)"
+      })));
+
+      // Actualizar productos devueltos (aumentar stock)
+      returnData.returned_products.forEach((returnedProduct) => {
+        console.log(`🔄 Actualizando stock LOCAL para producto devuelto ${returnedProduct.id_product}: +${returnedProduct.quantity}`);
+        dispatch({
+          type: "UPDATE_PRODUCT_STOCK",
+          payload: {
+            id_product: returnedProduct.id_product,
+            stock_change: +returnedProduct.quantity,
+            reason: "RETURN",
+          },
         });
+      });
 
-        // Actualizar productos nuevos (disminuir stock)
-        returnData.new_products.forEach((newProduct) => {
-          dispatch({
-            type: "UPDATE_PRODUCT_STOCK",
-            payload: {
-              id_product: newProduct.id_product,
-              stock_change: -newProduct.quantity,
-              reason: "EXCHANGE",
-            },
-          });
+      // Actualizar productos nuevos (disminuir stock)
+      returnData.new_products.forEach((newProduct) => {
+        console.log(`🔄 Actualizando stock LOCAL para producto nuevo ${newProduct.id_product}: -${newProduct.quantity}`);
+        dispatch({
+          type: "UPDATE_PRODUCT_STOCK",
+          payload: {
+            id_product: newProduct.id_product,
+            stock_change: -newProduct.quantity,
+            reason: "EXCHANGE",
+          },
         });
+      });
 
-        await dispatch(fetchProducts());
+      // ✅ RECARGAR PRODUCTOS DESDE BACKEND
+      console.log("🔄 Recargando productos desde backend...");
+      const fetchResult = await dispatch(fetchProducts());
+      console.log("📦 Resultado de fetchProducts:", fetchResult);
 
-        setReturnResult(result);
-        setStep(4);
+      setReturnResult(result);
+      setStep(4);
 
-        if (totals.difference > 0) {
-          showSwal({
-            title: "✅ Devolución Procesada",
-            html: `
-              <div class="text-left">
-                <p>✅ Stock actualizado correctamente</p>
-                <p>💳 Cliente debe pagar diferencia: $${totals.difference.toLocaleString("es-CO")}</p>
-                <p>📄 Generar recibo por la diferencia</p>
-              </div>
-            `,
-            icon: "success",
-            timer: 3000,
-          });
-        } else if (totals.difference === 0) {
-          showSwal({
-            title: "✅ Devolución Procesada",
-            text: "Intercambio exacto - Stock actualizado correctamente",
-            icon: "success",
-            timer: 2000,
-          });
-        }
+      // ✅ MANEJAR ACCIONES POST-PROCESAMIENTO SEGÚN LA DIFERENCIA
+      if (totals.difference > 0) {
+        showSwal({
+          title: "✅ Devolución Procesada",
+          html: `
+            <div class="text-left">
+              <p>✅ Stock actualizado correctamente</p>
+              <p>💳 Cliente debe pagar diferencia: $${totals.difference.toLocaleString("es-CO")}</p>
+              <p>📄 Generar recibo por la diferencia</p>
+            </div>
+          `,
+          icon: "success",
+          timer: 3000,
+        });
+      } else if (totals.difference === 0) {
+        showSwal({
+          title: "✅ Devolución Procesada",
+          text: "Intercambio exacto - Stock actualizado correctamente",
+          icon: "success",
+          timer: 2000,
+        });
+      } else if (totals.difference < 0) {
+        // ✅ CREAR GIFTCARD DESPUÉS DEL PROCESAMIENTO EXITOSO
+        console.log("🎁 Procesamiento exitoso - ahora crear GiftCard por saldo a favor");
+        showSwal({
+          title: "✅ Devolución Procesada",
+          html: `
+            <div class="text-left">
+              <p>✅ Stock actualizado correctamente</p>
+              <p>🎁 Saldo a favor: $${Math.abs(totals.difference).toLocaleString("es-CO")}</p>
+              <p>Se creará GiftCard automáticamente</p>
+            </div>
+          `,
+          icon: "success",
+          timer: 3000,
+        }).then(() => {
+          // Crear GiftCard después de mostrar el éxito
+          console.log("🎁 Redirigiendo a crear GiftCard...");
+          handleCreateGiftCard(
+            Math.abs(totals.difference),
+            `Saldo a favor por cambio - Recibo #${originalReceipt.id_receipt}`
+          );
+        });
+      }
+      } else {
+        // ✅ MANEJO DE ERRORES DEL BACKEND
+        console.error("❌ Backend retornó error:", result);
+        console.error("❌ Mensaje de error:", result?.message || "Sin mensaje");
+        console.error("❌ Datos de error:", result?.data || "Sin datos");
+        showSwal({
+          icon: "error",
+          title: "Error del servidor",
+          text: result?.message || result?.error || "El servidor reportó un error al procesar la devolución",
+        });
       }
     } catch (error) {
-      console.error("💥 ERROR procesando devolución:", error);
+      console.error("💥 ERROR COMPLETO procesando devolución:", error);
+      console.error("💥 ERROR mensaje:", error.message);
+      console.error("💥 ERROR respuesta:", error.response?.data);
+      console.error("💥 ERROR status:", error.response?.status);
       showSwal({
         icon: "error",
         title: "Error",
-        text: error.response?.data?.error || "Error al procesar la devolución",
+        text: error.response?.data?.error || error.message || "Error al procesar la devolución",
       });
     } finally {
+      console.log("🏁 FINALIZANDO handleProcessReturnWithDifference");
+      console.log("🏁 Cambiando loading a false");
       setLoading(false);
     }
   }, [
@@ -1094,20 +1201,14 @@ const searchReceipt = useCallback(async () => {
                 </div>
 
                 {totals.difference < 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleCreateGiftCard(
-                        Math.abs(totals.difference),
-                        `Saldo a favor por cambio - Recibo #${originalReceipt.id_receipt}`
-                      );
-                    }}
-                    type="button"
-                    className="mt-3 w-full bg-blue-500 text-white py-2 px-3 rounded text-sm hover:bg-blue-600 transition-colors"
-                  >
-                    🎁 Crear GiftCard por Saldo a Favor
-                  </button>
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                    <div className="flex items-center space-x-2">
+                      <span>ℹ️</span>
+                      <span className="text-blue-800">
+                        <strong>Saldo a favor:</strong> Se creará GiftCard automáticamente después de procesar la devolución.
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
             </>

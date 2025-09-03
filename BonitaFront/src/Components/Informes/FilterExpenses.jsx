@@ -14,6 +14,11 @@ const FilterExpenses = () => {
   const navigate = useNavigate();
   const { data, loading, error } = useSelector(state => state.expenses); // Asumiendo que los gastos filtrados se guardan aquí
 
+  // ✅ DEBUG: Ver qué está llegando en data
+  console.log("🔍 DEBUG - data from Redux:", data);
+  console.log("🔍 DEBUG - type of data:", typeof data);
+  console.log("🔍 DEBUG - is Array:", Array.isArray(data));
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -36,8 +41,26 @@ const FilterExpenses = () => {
     return date.toLocaleDateString('es-CO', options); // Formato Colombiano
   };
 
-  // Calcular subtotales
-  const totalAmount = data ? data.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0) : 0;
+  // ✅ SOLUCIÓN: Calcular subtotales de forma segura
+  const getExpensesArray = () => {
+    // Si data es un array, usarlo directamente
+    if (Array.isArray(data)) {
+      return data;
+    }
+    // Si data es un objeto con una propiedad array (ej: data.expenses)
+    if (data && Array.isArray(data.expenses)) {
+      return data.expenses;
+    }
+    // Si data es un objeto con otra estructura (ej: data.data)
+    if (data && Array.isArray(data.data)) {
+      return data.data;
+    }
+    // Si nada funciona, retornar array vacío
+    return [];
+  };
+
+  const expensesArray = getExpensesArray();
+  const totalAmount = expensesArray.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0);
 
   // Función para eliminar gasto con confirmación
   const handleDelete = (id) => {
@@ -135,10 +158,10 @@ const FilterExpenses = () => {
       <div className="mt-6">
         <h3 className="text-xl font-bold mb-4">Resultados</h3>
         {loading && <p>Cargando resultados...</p>}
-        {!loading && data && data.length > 0 ? (
+        {!loading && expensesArray && expensesArray.length > 0 ? (
           <>
             <ul className="space-y-3">
-              {data.map(expense => (
+              {expensesArray.map(expense => (
                 <li key={expense.id} className="p-4 bg-white rounded-lg shadow flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>

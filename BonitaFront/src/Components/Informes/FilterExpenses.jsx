@@ -83,18 +83,25 @@ const FilterExpenses = () => {
             onChange={(e) => setType(e.target.value)}
             className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           >
-            <option value="">Todos los tipos</option> {/* Cambiado para permitir "todos" */}
+            <option value="">Todos los tipos</option>
             <option value="Impuestos">Impuestos</option>
-            <option value="Nomina Colaboradores">Nomina Colaboradores</option>
-            <option value="Nomina Contratistas Externos">Nomina Contratistas Externos</option>
-            <option value="Seguridad Social">Seguridad Social</option> {/* Agregado si falta */}
+            <option value="Nomina Colaboradores">Nómina Colaboradores</option>
+            <option value="Nomina Contratistas Externos">
+              Nómina Contratistas Externos
+            </option>
+            <option value="Seguridad Social">Seguridad Social</option>
             <option value="Publicidad">Publicidad</option>
             <option value="Servicio Agua">Servicio Agua</option>
-            <option value="Servicio Energia">Servicio Energia</option>
+            <option value="Servicio Energia">Servicio Energía</option>
             <option value="Servicio Internet">Servicio Internet</option>
             <option value="Suministros">Suministros</option>
-            <option value="Viaticos y Transportes">Viaticos y Transportes</option>
+            <option value="Viaticos y Transportes">
+              Viáticos y Transportes
+            </option>
             <option value="Inventario">Inventario</option>
+            <option value="Arriendo">Arriendo</option>
+            <option value="Proveedores">Proveedores</option>
+            <option value="Otros">Otros</option>
           </select>
         </div>
         <div className="col-span-1">

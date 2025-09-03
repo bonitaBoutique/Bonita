@@ -30,12 +30,10 @@ const filterExpenses = async (req, res) => {
         where.date[Op.lte] = formatDateForDB(endDate);
         console.log('🟢 [FILTER EXPENSES] EndDate formateada:', formatDateForDB(endDate));
       }
-    } else {
-      // ✅ Si no hay filtros de fecha, usar fecha del servidor como filtro por defecto
-      // Esto asegura que se muestren los gastos del día actual del servidor
-      where.date = formatDateForDB(serverDate);
-      console.log('🟡 [FILTER EXPENSES] Sin filtros de fecha, usando fecha del servidor:', formatDateForDB(serverDate));
     }
+    // ✅ CAMBIO: Si no hay filtros de fecha, NO agregar filtro de fecha (mostrar todos)
+    // Esto permite ver todos los gastos sin importar la fecha
+    console.log('🟡 [FILTER EXPENSES] Sin filtros de fecha específicos - mostrando todos los gastos');
 
     if (minAmount || maxAmount) {
       where.amount = {};

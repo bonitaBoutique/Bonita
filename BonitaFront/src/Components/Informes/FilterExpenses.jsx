@@ -14,11 +14,6 @@ const FilterExpenses = () => {
   const navigate = useNavigate();
   const { data, loading, error } = useSelector(state => state.expenses); // Asumiendo que los gastos filtrados se guardan aquí
 
-  // ✅ DEBUG: Ver qué está llegando en data
-  console.log("🔍 DEBUG - data from Redux:", data);
-  console.log("🔍 DEBUG - type of data:", typeof data);
-  console.log("🔍 DEBUG - is Array:", Array.isArray(data));
-
   const handleBack = () => {
     navigate(-1);
   };
@@ -33,6 +28,13 @@ const FilterExpenses = () => {
     dispatch(getFilteredExpenses(filters));
   };
 
+  // Debug logging
+  console.log("🔍 FilterExpenses - data:", data);
+  console.log("🔍 FilterExpenses - data type:", typeof data);
+  console.log("🔍 FilterExpenses - Array.isArray(data):", Array.isArray(data));
+  console.log("🔍 FilterExpenses - loading:", loading);
+  console.log("🔍 FilterExpenses - error:", error);
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     // Asegurarse que la fecha se interpreta correctamente (puede necesitar ajustar zona horaria si hay problemas)
@@ -41,26 +43,10 @@ const FilterExpenses = () => {
     return date.toLocaleDateString('es-CO', options); // Formato Colombiano
   };
 
-  // ✅ SOLUCIÓN: Calcular subtotales de forma segura
-  const getExpensesArray = () => {
-    // Si data es un array, usarlo directamente
-    if (Array.isArray(data)) {
-      return data;
-    }
-    // Si data es un objeto con una propiedad array (ej: data.expenses)
-    if (data && Array.isArray(data.expenses)) {
-      return data.expenses;
-    }
-    // Si data es un objeto con otra estructura (ej: data.data)
-    if (data && Array.isArray(data.data)) {
-      return data.data;
-    }
-    // Si nada funciona, retornar array vacío
-    return [];
-  };
-
-  const expensesArray = getExpensesArray();
-  const totalAmount = expensesArray.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0);
+  // Calcular subtotales
+  console.log("🔍 BEFORE totalAmount calculation - data:", data);
+  console.log("🔍 BEFORE totalAmount calculation - Array.isArray(data):", Array.isArray(data));
+  const totalAmount = (data && Array.isArray(data)) ? data.reduce((acc, expense) => acc + (parseFloat(expense.amount) || 0), 0) : 0;
 
   // Función para eliminar gasto con confirmación
   const handleDelete = (id) => {
@@ -158,10 +144,13 @@ const FilterExpenses = () => {
       <div className="mt-6">
         <h3 className="text-xl font-bold mb-4">Resultados</h3>
         {loading && <p>Cargando resultados...</p>}
-        {!loading && expensesArray && expensesArray.length > 0 ? (
+        {console.log("🔍 RENDER CHECK - data:", data)}
+        {console.log("🔍 RENDER CHECK - Array.isArray(data):", Array.isArray(data))}
+        {console.log("🔍 RENDER CHECK - data.length:", data?.length)}
+        {!loading && data && Array.isArray(data) && data.length > 0 ? (
           <>
             <ul className="space-y-3">
-              {expensesArray.map(expense => (
+              {data.map(expense => (
                 <li key={expense.id} className="p-4 bg-white rounded-lg shadow flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <p><strong>Fecha:</strong> {formatDate(expense.date)}</p>

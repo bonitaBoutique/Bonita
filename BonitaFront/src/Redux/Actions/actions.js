@@ -1364,8 +1364,21 @@ export const getFilteredExpenses = (filters) => async (dispatch) => {
     const response = await axios.get(`${BASE_URL}/expense/filter`, { params: filters });
     console.log('Filtered expenses response:', response.data);
 
-    // Ensure we have an array of expenses, even if empty
-    const expenses = Array.isArray(response.data) ? response.data : [];
+    // ✅ CORRECCIÓN: Extraer expenses del objeto respuesta
+    let expenses = [];
+    if (Array.isArray(response.data)) {
+      // Si response.data es directamente un array
+      expenses = response.data;
+    } else if (response.data && Array.isArray(response.data.expenses)) {
+      // Si response.data es un objeto con propiedad expenses
+      expenses = response.data.expenses;
+    } else if (response.data && Array.isArray(response.data.data)) {
+      // Si response.data es un objeto con propiedad data
+      expenses = response.data.data;
+    }
+    
+    console.log('🔍 Expenses extracted for Redux:', expenses);
+    console.log('🔍 Expenses array length:', expenses.length);
 
     dispatch({ 
       type: GET_FILTERED_EXPENSES_SUCCESS, 

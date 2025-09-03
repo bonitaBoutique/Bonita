@@ -4,21 +4,30 @@ const { formatDateForDB, getColombiaDate } = require('../../utils/dateUtils'); /
 
 module.exports = async (req, res) => {
   try {
-    // ✅ OBTENER FECHA DEL SERVIDOR (igual que en recibos)
-    const serverDate = getColombiaDate();
-    
     const { date, type, description, paymentMethods, amount, destinatario } = req.body;
 
     // ✅ LOGS DE FECHA (para debugging)
     console.log('🕒 [CREATE EXPENSE] Fecha del cliente:', date);
-    console.log('🕒 [CREATE EXPENSE] Fecha del servidor (Colombia):', serverDate);
+    console.log('🕒 [CREATE EXPENSE] Tipo de fecha del cliente:', typeof date);
 
     if (!type || !paymentMethods || !amount) {
       return response(res, 400, 'Faltan campos obligatorios (type, paymentMethods, amount)');
     }
 
+    // ✅ VALIDAR Y USAR LA FECHA DEL CLIENTE
+    let expenseDate;
+    if (date) {
+      // Si el cliente envía una fecha, usarla (ya validada en el frontend)
+      expenseDate = date;
+      console.log('🕒 [CREATE EXPENSE] Usando fecha del cliente:', expenseDate);
+    } else {
+      // Solo si no hay fecha del cliente, usar fecha del servidor
+      expenseDate = getColombiaDate();
+      console.log('🕒 [CREATE EXPENSE] Usando fecha del servidor (fallback):', expenseDate);
+    }
+
     const newExpense = await Expense.create({
-      date: formatDateForDB(serverDate), // ✅ Usar fecha del servidor, no del cliente
+      date: expenseDate, // ✅ Usar la fecha seleccionada por el usuario
       type,
       description,
       paymentMethods,
@@ -26,14 +35,14 @@ module.exports = async (req, res) => {
       destinatario
     });
 
-    console.log('🟢 [CREATE EXPENSE] Gasto creado con fecha del servidor:', serverDate);
+    console.log('🟢 [CREATE EXPENSE] Gasto creado con fecha:', expenseDate);
 
     response(res, 201, { 
       message: 'Gasto creado con éxito', 
       newExpense,
       serverInfo: {
-        clientDate: date,
-        serverDate: serverDate,
+        selectedDate: expenseDate,
+        serverCurrentDate: getColombiaDate(),
         timezone: 'America/Bogota'
       }
     });

@@ -56,7 +56,7 @@ const InvoicesList = () => {
     if (scufe) {
       const normalizedScufe = encodeURIComponent(scufe.trim());
       console.log("Normalized SCUFE:", normalizedScufe);
-      return `https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${normalizedScufe}`;
+      return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic?documentKey=${normalizedScufe}`;
     }
 
     return null;

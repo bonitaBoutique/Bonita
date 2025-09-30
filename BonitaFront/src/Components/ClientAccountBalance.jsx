@@ -81,13 +81,16 @@ const ClientAccountBalance = () => {
 
   const handleOrderDetailClick = async (orderId, event) => {
     try {
+      console.log("🔍 handleOrderDetailClick - orderId:", orderId);
       if (hoveredOrderId === orderId) {
+        console.log("ℹ️ Tooltip ya abierto, cerrando...");
         setHoveredOrderId(null);
         setCurrentOrderDetail(null);
         return;
       }
 
       const rect = event.currentTarget.getBoundingClientRect();
+      console.log("📐 Tooltip position:", rect.left, rect.bottom);
       setTooltipPosition({
         x: rect.left,
         y: rect.bottom + window.scrollY + 5,
@@ -97,6 +100,7 @@ const ClientAccountBalance = () => {
       setCurrentOrderDetail(null);
 
       const result = await dispatch(fetchOrdersByIdOrder(orderId));
+      console.log("✅ Resultado fetchOrdersByIdOrder:", result);
 
       if (result) {
         setCurrentOrderDetail(result);

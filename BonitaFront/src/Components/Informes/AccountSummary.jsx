@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getClientAccountBalance } from "../../Redux/Actions/actions"; // ✅ Usar la misma action
+import { getClientAccountBalance, fetchOrdersByIdOrder } from "../../Redux/Actions/actions"; // ✅ Usar la misma action
 import { useParams, useNavigate } from "react-router-dom";
 
 const AccountSummary = (props) => {
@@ -16,6 +16,9 @@ const AccountSummary = (props) => {
   // Estado para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [hoveredOrderId, setHoveredOrderId] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
 
   console.log('🔍 AccountSummary - Datos del Redux:', {
     user,
@@ -123,8 +126,48 @@ const AccountSummary = (props) => {
     )
   ).length;
 
+  const handleOrderDetailClick = async (orderId, event) => {
+    try {
+      if (!orderId) return;
+
+      if (hoveredOrderId === orderId) {
+        setHoveredOrderId(null);
+        setCurrentOrderDetail(null);
+        return;
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left,
+        y: rect.bottom + window.scrollY + 5,
+      });
+
+      setHoveredOrderId(orderId);
+      setCurrentOrderDetail(null);
+
+      const result = await dispatch(fetchOrdersByIdOrder(orderId));
+
+      if (result) {
+        setCurrentOrderDetail(result);
+      } else {
+        const existingOrder = Array.isArray(orderDetails)
+          ? orderDetails.find((o) => o.id_orderDetail === orderId)
+          : null;
+        setCurrentOrderDetail(existingOrder || null);
+      }
+    } catch (error) {
+      console.error("Error al obtener detalles de la orden:", error);
+      setCurrentOrderDetail(null);
+    }
+  };
+
+  const handleTooltipClose = () => {
+    setHoveredOrderId(null);
+    setCurrentOrderDetail(null);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg relative">
       {/* ✅ Header con información del cliente */}
       <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-l-4 border-blue-500">
         <div className="flex justify-between items-start">
@@ -237,11 +280,15 @@ const AccountSummary = (props) => {
                         day: 'numeric'
                       })}
                     </td>
-                    <td className="py-3 px-4 text-sm font-mono text-gray-700">
-                      {mov.id_orderDetail ? 
-                        `${mov.id_orderDetail.substring(0, 8)}...` : 
-                        'N/A'
-                      }
+                    <td
+                      className="py-3 px-4 text-sm font-mono text-gray-700 cursor-pointer"
+                      onClick={(event) => handleOrderDetailClick(mov.id_orderDetail, event)}
+                      onMouseLeave={handleTooltipClose}
+                      title={mov.id_orderDetail || "Sin ID"}
+                    >
+                      {mov.id_orderDetail
+                        ? `${mov.id_orderDetail.substring(0, 8)}...`
+                        : "N/A"}
                     </td>
                     <td className="py-3 px-4 text-sm font-semibold text-right text-green-600">
                       {mov.amount ? 
@@ -426,6 +473,49 @@ const AccountSummary = (props) => {
           </div>
         </div>
       </div>
+
+      {hoveredOrderId && currentOrderDetail && (
+        <div
+          className="absolute bg-gray-800 text-white p-4 rounded shadow-lg z-50 max-w-xs text-xs"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            pointerEvents: "none",
+          }}
+        >
+          <h4 className="font-bold mb-2 border-b pb-1">
+            Detalle Pedido: {hoveredOrderId}
+          </h4>
+          {currentOrderDetail.userData ? (
+            <p className="mb-1">
+              Cliente: {currentOrderDetail.userData.first_name || ""} {" "}
+              {currentOrderDetail.userData.last_name || ""} ({
+                currentOrderDetail.n_document || "N/A"
+              })
+            </p>
+          ) : (
+            <p className="mb-1">Cliente: (No disponible)</p>
+          )}
+          <h5 className="font-semibold mt-2 mb-1">Productos:</h5>
+          {currentOrderDetail.products &&
+          Array.isArray(currentOrderDetail.products) &&
+          currentOrderDetail.products.length > 0 ? (
+            <ul className="list-disc list-inside space-y-1">
+              {currentOrderDetail.products.map((product, index) => (
+                <li key={index}>
+                  {product.description || "Sin descripción"} (Cod: {" "}
+                  {product.codigoBarra || "N/A"})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay detalles de productos.</p>
+          )}
+          {!currentOrderDetail.products && !currentOrderDetail.user_info && (
+            <p>Cargando detalles...</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

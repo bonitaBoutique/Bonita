@@ -7,6 +7,7 @@ module.exports = async (req, res) => {
     const { date, type, description, paymentMethods, amount, destinatario } = req.body;
 
     // ✅ LOGS DE FECHA (para debugging)
+    console.log('🧾 [CREATE EXPENSE] Payload recibido:', req.body);
     console.log('🕒 [CREATE EXPENSE] Fecha del cliente:', date);
     console.log('🕒 [CREATE EXPENSE] Tipo de fecha del cliente:', typeof date);
 
@@ -17,25 +18,26 @@ module.exports = async (req, res) => {
     // ✅ VALIDAR Y USAR LA FECHA DEL CLIENTE
     let expenseDate;
     if (date) {
-      // Si el cliente envía una fecha, usarla (ya validada en el frontend)
-      expenseDate = date;
-      console.log('🕒 [CREATE EXPENSE] Usando fecha del cliente:', expenseDate);
+      // Si el cliente envía una fecha, normalizarla a formato Colombia (YYYY-MM-DD)
+      expenseDate = formatDateForDB(date);
+      console.log('🕒 [CREATE EXPENSE] Usando fecha del cliente normalizada:', expenseDate);
     } else {
       // Solo si no hay fecha del cliente, usar fecha del servidor
       expenseDate = getColombiaDate();
       console.log('🕒 [CREATE EXPENSE] Usando fecha del servidor (fallback):', expenseDate);
     }
 
-    const newExpense = await Expense.create({
-      date: expenseDate, // ✅ Usar la fecha seleccionada por el usuario
+    const dataToInsert = {
+      date: expenseDate,
       type,
       description,
       paymentMethods,
       amount,
       destinatario
-    });
+    };
+    console.log('🧮 [CREATE EXPENSE] Datos preparados para insertar:', dataToInsert);
 
-    console.log('🟢 [CREATE EXPENSE] Gasto creado con fecha:', expenseDate);
+    const newExpense = await Expense.create(dataToInsert);
 
     response(res, 201, { 
       message: 'Gasto creado con éxito', 

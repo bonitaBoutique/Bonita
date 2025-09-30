@@ -42,9 +42,23 @@ const InvoicesList = () => {
   }, []);
 
   const getDianLink = (taxxaResponse) => {
-    const scufe = taxxaResponse?.jret?.scufe;
-    if (!scufe) return null;
-    return `https://catalogo-vpfe.dian.gov.co/Document/ShowDocumentToPublic/${scufe}`;
+    if (!taxxaResponse?.jret) return null;
+
+    const sqr = taxxaResponse.jret.sqr;
+    if (typeof sqr === "string") {
+      const match = sqr.match(/https?:\/\/[^\s]+/i);
+      if (match && match[0]) {
+        return match[0];
+      }
+    }
+
+    const scufe = taxxaResponse.jret.scufe;
+    if (scufe) {
+      const normalizedScufe = encodeURIComponent(scufe.trim());
+      return `https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${normalizedScufe}`;
+    }
+
+    return null;
   };
 
   const filteredInvoices = invoices.filter((inv) => {

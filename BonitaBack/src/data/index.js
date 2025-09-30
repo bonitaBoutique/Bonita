@@ -14,31 +14,31 @@ const {
 
 //-------------------------------- CONFIGURACION PARA TRABAJAR LOCALMENTE-----------------------------------
 // ❌ COMENTAR TEMPORALMENTE LA CONFIGURACIÓN LOCAL:
-// const sequelize = new Sequelize(
-//   `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
-//   {
-//     logging: false,
-//     native: false,
-//   }
-// );
+const sequelize = new Sequelize(
+  `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
+  {
+    logging: false,
+    native: false,
+  }
+);
 
 //-------------------------------------CONFIGURACION PARA EL DEPLOY---------------------------------------------------------------------
 // // ✅ USAR LA CONFIGURACIÓN DE RAILWAY:
-const sequelize = new Sequelize(DB_DEPLOY, {
-  logging: false,
-  native: false,
-  timezone: '-05:00', // Colombia UTC-5
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  },
-  define: {
-    timestamps: true,
-    // ✅ NO definir timezone aquí, deja que los modelos manejen las fechas
-  }
-});
+// const sequelize = new Sequelize(DB_DEPLOY, {
+//   logging: false,
+//   native: false,
+//   timezone: '-05:00', // Colombia UTC-5
+//   dialectOptions: {
+//     ssl: {
+//       require: true,
+//       rejectUnauthorized: false
+//     }
+//   },
+//   define: {
+//     timestamps: true,
+//     // ✅ NO definir timezone aquí, deja que los modelos manejen las fechas
+//   }
+// });
 
 // ✅ CONFIGURAR ZONA HORARIA GLOBALMENTE (OPCIONAL)
 if (process.env.NODE_ENV === 'production') {

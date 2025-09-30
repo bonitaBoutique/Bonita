@@ -20,11 +20,27 @@ import {
   formatMovementDate,
   isValidDate,
   validateDateNotFuture,
-  getDateForInput
+  getDateForInput,
+  toColombiaISO
 } from "../../utils/dateUtils";
 
 // ✅ Importar ServerTimeSync
 import ServerTimeSync from "../ServerTimeSync";
+
+const getSortableTimestamp = (dateString) => {
+  if (!dateString) return 0;
+
+  const normalized = toColombiaISO(dateString);
+  if (normalized) {
+    const parsedNormalized = Date.parse(normalized);
+    if (!Number.isNaN(parsedNormalized)) {
+      return parsedNormalized;
+    }
+  }
+
+  const parsedFallback = Date.parse(dateString);
+  return Number.isNaN(parsedFallback) ? 0 : parsedFallback;
+};
 
 const Balance = () => {
   const dispatch = useDispatch();
@@ -229,7 +245,8 @@ const getAllMovements = () => {
       description: `Venta Online - OrderDetail: ${sale.id_orderDetail}`,
       paymentMethod: 'Wompi',
       amount: sale.amount,
-      category: 'Ingreso'
+      category: 'Ingreso',
+      sortKey: getSortableTimestamp(sale.date)
     }));
     movements.push(...onlineMovements);
   }
@@ -249,7 +266,8 @@ const getAllMovements = () => {
         cashierDocument: payment.cashierDocument,
         buyerName: payment.buyerName,
         originalReceiptId: payment.originalReceiptId,
-        isMainPayment: payment.isMainPayment
+        isMainPayment: payment.isMainPayment,
+        sortKey: getSortableTimestamp(payment.date)
       }));
     movements.push(...localMovements);
   }
@@ -279,13 +297,18 @@ const getAllMovements = () => {
       amount: -Math.abs(expense.amount), // ✅ NEGATIVO para gastos
       category: 'Gasto',
       destinatario: expense.destinatario,
-      originalExpenseId: expense.id
+      originalExpenseId: expense.id,
+      sortKey: getSortableTimestamp(expense.date)
     }));
     movements.push(...expenseMovements);
   }
 
-  // ✅ ORDENAR POR FECHA (más recientes primero)
-  movements.sort((a, b) => new Date(b.date) - new Date(a.date));
+  // ✅ ORDENAR POR FECHA (más recientes primero) respetando Colombia
+  movements.sort((a, b) => {
+    const bKey = typeof b.sortKey === "number" ? b.sortKey : getSortableTimestamp(b.date);
+    const aKey = typeof a.sortKey === "number" ? a.sortKey : getSortableTimestamp(a.date);
+    return bKey - aKey;
+  });
 
   console.log("🔄 getAllMovements() - Resumen:", {
     totalMovimientos: movements.length,

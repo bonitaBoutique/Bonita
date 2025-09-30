@@ -14,9 +14,15 @@ const ExpenseList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  const expenses = useSelector((state) => state.expenses?.data || []);
+  const rawExpenses = useSelector((state) => state.expenses?.data);
   const loading = useSelector((state) => state.expenses?.loading);
   const error = useSelector((state) => state.expenses?.error);
+
+  const expenses = Array.isArray(rawExpenses)
+    ? rawExpenses
+    : Array.isArray(rawExpenses?.expenses)
+      ? rawExpenses.expenses
+      : [];
 
   useEffect(() => {
     dispatch(getFilteredExpenses({}));
@@ -46,12 +52,6 @@ const ExpenseList = () => {
   const currentExpenses = expenses.slice(indexOfFirstItem, indexOfLastItem);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  // Función para formatear la fecha
-  const formatDate = (dateString) => {
-    const options = { year: "numeric", month: "2-digit", day: "2-digit" };
-    return new Date(dateString).toLocaleDateString("en-CA", options);
-  };
 
   if (loading)
     return <div className="text-center py-8">Cargando gastos...</div>;

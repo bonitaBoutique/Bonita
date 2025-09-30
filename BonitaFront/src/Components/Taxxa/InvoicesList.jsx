@@ -55,6 +55,7 @@ const InvoicesList = () => {
     const scufe = taxxaResponse.jret.scufe;
     if (scufe) {
       const normalizedScufe = encodeURIComponent(scufe.trim());
+      console.log("Normalized SCUFE:", normalizedScufe);
       return `https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${normalizedScufe}`;
     }
 

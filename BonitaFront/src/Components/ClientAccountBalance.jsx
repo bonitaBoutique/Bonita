@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getClientAccountBalance,
   getAllClientAccounts,
+  fetchOrdersByIdOrder,
 } from "../Redux/Actions/actions";
 import Navbar2 from "./Navbar2";
 
@@ -22,6 +23,9 @@ const ClientAccountBalance = () => {
   const [searchName, setSearchName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [hoveredOrderId, setHoveredOrderId] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
 
   // Filtrar clientes por nombre y apellido
   const filteredClients = allClientAccounts.filter((client) => {
@@ -75,6 +79,44 @@ const ClientAccountBalance = () => {
     dispatch(getClientAccountBalance(nDocument));
   };
 
+  const handleOrderDetailClick = async (orderId, event) => {
+    try {
+      if (hoveredOrderId === orderId) {
+        setHoveredOrderId(null);
+        setCurrentOrderDetail(null);
+        return;
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left,
+        y: rect.bottom + window.scrollY + 5,
+      });
+
+      setHoveredOrderId(orderId);
+      setCurrentOrderDetail(null);
+
+      const result = await dispatch(fetchOrdersByIdOrder(orderId));
+
+      if (result) {
+        setCurrentOrderDetail(result);
+      } else {
+        const existingOrder = Array.isArray(orderDetails)
+          ? orderDetails.find((o) => o.id_orderDetail === orderId)
+          : null;
+        setCurrentOrderDetail(existingOrder || null);
+      }
+    } catch (error) {
+      console.error("Error al obtener detalles de la orden:", error);
+      setCurrentOrderDetail(null);
+    }
+  };
+
+  const handleTooltipClose = () => {
+    setHoveredOrderId(null);
+    setCurrentOrderDetail(null);
+  };
+
   if (loading) return <p className="text-center mt-8">Loading...</p>;
   if (error)
     return <p className="text-center mt-8 text-red-500">Error: {error}</p>;
@@ -96,7 +138,7 @@ const ClientAccountBalance = () => {
     }
   };
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-gray-100 min-h-screen relative">
       <Navbar2 />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mt-16 mb-4 text-gray-800">
@@ -272,7 +314,13 @@ const ClientAccountBalance = () => {
                     key={orderDetail.id_orderDetail}
                     className="border-b border-gray-200 hover:bg-gray-100"
                   >
-                    <td className="py-3 px-6 text-left whitespace-nowrap">
+                    <td
+                      className="py-3 px-6 text-left whitespace-nowrap cursor-pointer"
+                      onClick={(event) =>
+                        handleOrderDetailClick(orderDetail.id_orderDetail, event)
+                      }
+                      onMouseLeave={handleTooltipClose}
+                    >
                       {orderDetail.id_orderDetail}
                     </td>
                     <td className="py-3 px-6 text-left whitespace-nowrap">
@@ -310,6 +358,49 @@ const ClientAccountBalance = () => {
           </div>
         )}
       </div>
+
+      {hoveredOrderId && currentOrderDetail && (
+        <div
+          className="absolute bg-gray-800 text-white p-4 rounded shadow-lg z-50 max-w-xs text-xs"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            pointerEvents: "none",
+          }}
+        >
+          <h4 className="font-bold mb-2 border-b pb-1">
+            Detalle Pedido: {hoveredOrderId}
+          </h4>
+          {currentOrderDetail.userData ? (
+            <p className="mb-1">
+              Cliente: {currentOrderDetail.userData.first_name || ""} {" "}
+              {currentOrderDetail.userData.last_name || ""} ({
+                currentOrderDetail.n_document || "N/A"
+              })
+            </p>
+          ) : (
+            <p className="mb-1">Cliente: (No disponible)</p>
+          )}
+          <h5 className="font-semibold mt-2 mb-1">Productos:</h5>
+          {currentOrderDetail.products &&
+          Array.isArray(currentOrderDetail.products) &&
+          currentOrderDetail.products.length > 0 ? (
+            <ul className="list-disc list-inside space-y-1">
+              {currentOrderDetail.products.map((product, index) => (
+                <li key={index}>
+                  {product.description || "Sin descripción"} (Cod: {" "}
+                  {product.codigoBarra || "N/A"})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay detalles de productos.</p>
+          )}
+          {!currentOrderDetail.products && !currentOrderDetail.user_info && (
+            <p>Cargando detalles...</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

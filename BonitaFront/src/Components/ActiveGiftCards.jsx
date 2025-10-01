@@ -39,7 +39,8 @@ const ActiveGiftCards = () => {
                   console.warn(`⚠️ [ActiveGiftCards] Tarjeta ${card.n_document} no tiene email, usando balance original`);
                   return {
                     ...card,
-                    originalBalance: card.balance
+                    originalBalance: card.balance, // Guardar monto original
+                    balance: card.balance // Mantener el mismo balance como saldo disponible
                   };
                 }
                 
@@ -57,18 +58,19 @@ const ActiveGiftCards = () => {
                   'diferencia': card.balance - realBalance
                 });
                 
-                // Retornar card con saldo real
+                // Retornar card con saldo real Y monto original preservado
                 return {
                   ...card,
-                  balance: realBalance, // 🔍 REEMPLAZAR con saldo real
-                  originalBalance: card.balance // 🔍 Mantener original para referencia
+                  originalBalance: card.balance, // 🔍 SIEMPRE guardar el monto original ANTES de reemplazar
+                  balance: realBalance // 🔍 REEMPLAZAR con saldo real
                 };
               } catch (balanceError) {
                 console.error(`❌ [ActiveGiftCards] Error obteniendo saldo para ${card.email}:`, balanceError);
-                // Si falla, mantener balance original
+                // Si falla, mantener balance original pero guardar originalBalance también
                 return {
                   ...card,
-                  originalBalance: card.balance
+                  originalBalance: card.balance, // Guardar monto original
+                  balance: card.balance // Si falla la consulta, usar monto original como disponible
                 };
               }
             })

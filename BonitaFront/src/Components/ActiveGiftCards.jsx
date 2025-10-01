@@ -29,25 +29,56 @@ const ActiveGiftCards = () => {
         // Verifica si la respuesta tiene datos y la propiedad activeCards
         if (response.data && response.data.activeCards) {
           const initialCards = response.data.activeCards;
-          console.log('✅ [ActiveGiftCards] Datos recibidos del backend:', initialCards);
           
-          // 🎯 SIMPLIFICADO: El backend ya envía originalAmount y availableBalance
-          const cardsWithBalance = initialCards.filter(card => {
-            const hasBalance = (card.availableBalance || card.balance) > 0;
-            
-            if (!hasBalance) {
-              console.log(`🔍 [ActiveGiftCards] Filtrando tarjeta ${card.n_document} sin saldo:`, {
-                documento: card.n_document,
-                availableBalance: card.availableBalance,
-                balance: card.balance,
-                originalAmount: card.originalAmount
-              });
-            }
-            
-            return hasBalance;
-          });
+          // 🔍 SEGUNDO PASO: Obtener saldo real para cada tarjeta
+          const cardsWithRealBalance = await Promise.all(
+            initialCards.map(async (card) => {
+              try {
+                // 🔍 Verificar que tenemos el email
+                if (!card.email) {
+                  console.warn(`⚠️ [ActiveGiftCards] Tarjeta ${card.n_document} no tiene email, usando balance original`);
+                  return {
+                    ...card,
+                    originalBalance: card.balance
+                  };
+                }
+                
+                // 🔍 Usar el mismo endpoint que RedeemGiftCard para obtener saldo real
+                const balanceRes = await axios.get(`${BASE_URL}/giftcard/balance/${encodeURIComponent(card.email)}`);
+                const realBalance = balanceRes.data.saldo || 0;
+                
+                // 🔍 DEBUG: Comparar saldo original vs real
+                console.log(`🔍 [ActiveGiftCards] Tarjeta ${card.n_document}:`, {
+                  documento: card.n_document,
+                  nombre: `${card.first_name} ${card.last_name}`,
+                  email: card.email,
+                  'balance original (desde /active-giftcards)': card.balance,
+                  'saldo real (desde /giftcard/balance)': realBalance,
+                  'diferencia': card.balance - realBalance
+                });
+                
+                // Retornar card con saldo real
+                return {
+                  ...card,
+                  balance: realBalance, // 🔍 REEMPLAZAR con saldo real
+                  originalBalance: card.balance // 🔍 Mantener original para referencia
+                };
+              } catch (balanceError) {
+                console.error(`❌ [ActiveGiftCards] Error obteniendo saldo para ${card.email}:`, balanceError);
+                // Si falla, mantener balance original
+                return {
+                  ...card,
+                  originalBalance: card.balance
+                };
+              }
+            })
+          );
           
-          console.log('✅ [ActiveGiftCards] Tarjetas con saldo > 0:', cardsWithBalance);
+          // 🔍 Filtrar solo tarjetas con saldo > 0
+          const cardsWithBalance = cardsWithRealBalance.filter(card => card.balance > 0);
+          
+          console.log('🔍 [ActiveGiftCards] Tarjetas con saldo real > 0:', cardsWithBalance);
+          
           setActiveCards(cardsWithBalance);
         } else {
           // Si no hay datos o la estructura es inesperada, establece un array vacío
@@ -122,9 +153,9 @@ const ActiveGiftCards = () => {
                   // 🔍 DEBUG: Log del saldo final que se mostrará
                   console.log(`✅ [ActiveGiftCards] Mostrando tarjeta ${index + 1}:`, {
                     documento: card.n_document,
-                    'monto original': card.originalAmount,
-                    'saldo disponible': card.availableBalance || card.balance,
-                    'diferencia usada': (card.originalAmount || card.balance) - (card.availableBalance || card.balance)
+                    'saldo a mostrar': card.balance,
+                    'saldo original': card.originalBalance,
+                    'diferencia usada': (card.originalBalance || card.balance) - card.balance
                   });
                   
                   return (
@@ -136,15 +167,15 @@ const ActiveGiftCards = () => {
                         {card.first_name} {card.last_name}
                       </td>
                       <td className="py-3 px-6 text-right text-gray-600">
-                        ${(card.originalAmount || card.balance)?.toLocaleString('es-CO') ?? 0}
+                        ${card.originalBalance?.toLocaleString('es-CO') ?? card.balance?.toLocaleString('es-CO') ?? 0}
                       </td>
                       <td className="py-3 px-6 text-right font-medium">
-                        <span className={`${(card.availableBalance || card.balance) === (card.originalAmount || card.balance) ? 'text-green-600' : 'text-blue-600'}`}>
-                          ${(card.availableBalance || card.balance)?.toLocaleString('es-CO') ?? 0}
+                        <span className={`${card.balance === (card.originalBalance || card.balance) ? 'text-green-600' : 'text-blue-600'}`}>
+                          ${card.balance?.toLocaleString('es-CO') ?? 0}
                         </span>
-                        {card.originalAmount && (card.availableBalance || card.balance) < card.originalAmount && (
+                        {card.originalBalance && card.balance < card.originalBalance && (
                           <div className="text-xs text-orange-600 mt-1">
-                            Usado: ${(card.originalAmount - (card.availableBalance || card.balance)).toLocaleString('es-CO')}
+                            Usado: ${(card.originalBalance - card.balance).toLocaleString('es-CO')}
                           </div>
                         )}
                       </td>

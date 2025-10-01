@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
 
     console.log(`✅ GiftCards desde tabla GiftCard: ${giftCardsFromTable.length}`);
 
-    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes) - OBTENER MONTO ORIGINAL
+    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes)
     const purchasedBalances = await Receipt.findAll({
       attributes: [
         'buyer_email',
@@ -54,54 +54,22 @@ module.exports = async (req, res) => {
       allGiftCardEmails.add(card.buyer_email);
       combinedGiftCards.push({
         email: card.buyer_email,
-        availableBalance: parseFloat(card.saldo), // Saldo disponible
-        originalAmount: parseFloat(card.saldo), // Para GiftCard nueva, original = disponible
+        balance: parseFloat(card.saldo),
         source: 'GiftCard_table'
       });
     });
 
     // Agregar desde tabla Receipt (solo si no existe en GiftCard)
-    // Para estas, necesitamos obtener el saldo real vs el monto original
-    for (const receipt of purchasedBalances) {
+    purchasedBalances.forEach(receipt => {
       if (!allGiftCardEmails.has(receipt.buyer_email)) {
         allGiftCardEmails.add(receipt.buyer_email);
-        
-        // 🔍 OBTENER SALDO REAL para esta GiftCard desde tabla GiftCard
-        try {
-          const giftCardBalance = await GiftCard.findOne({ 
-            where: { buyer_email: receipt.buyer_email },
-            attributes: ['saldo'],
-            raw: true
-          });
-          
-          // Si existe en tabla GiftCard, usar ese saldo; si no, usar el monto original
-          const availableBalance = giftCardBalance ? parseFloat(giftCardBalance.saldo) : parseFloat(receipt.totalPurchased);
-          
-          console.log(`🔍 [getActiveGiftCards] ${receipt.buyer_email}:`, {
-            montoOriginal: receipt.totalPurchased,
-            saldoDisponible: availableBalance,
-            diferencia: parseFloat(receipt.totalPurchased) - availableBalance,
-            fuenteSaldo: giftCardBalance ? 'GiftCard_table' : 'Receipt_fallback'
-          });
-          
-          combinedGiftCards.push({
-            email: receipt.buyer_email,
-            availableBalance: availableBalance, // Saldo real disponible
-            originalAmount: parseFloat(receipt.totalPurchased), // Monto original de la compra
-            source: giftCardBalance ? 'Receipt_with_GiftCard_balance' : 'Receipt_table'
-          });
-        } catch (error) {
-          console.error(`❌ Error obteniendo saldo real para ${receipt.buyer_email}:`, error);
-          // Si falla, usar monto original como disponible
-          combinedGiftCards.push({
-            email: receipt.buyer_email,
-            availableBalance: parseFloat(receipt.totalPurchased),
-            originalAmount: parseFloat(receipt.totalPurchased),
-            source: 'Receipt_table_fallback'
-          });
-        }
+        combinedGiftCards.push({
+          email: receipt.buyer_email,
+          balance: parseFloat(receipt.totalPurchased),
+          source: 'Receipt_table'
+        });
       }
-    }
+    });
 
     console.log(`📊 Total emails únicos con GiftCards: ${allGiftCardEmails.size}`);
 
@@ -134,8 +102,7 @@ module.exports = async (req, res) => {
 
       console.log(`🎁 GiftCard procesada:`, {
         email: user.email,
-        availableBalance: giftCardData.availableBalance,
-        originalAmount: giftCardData.originalAmount,
+        balance: giftCardData.balance,
         source: giftCardData.source,
         usuario: `${user.first_name} ${user.last_name}`,
         documento: user.n_document
@@ -146,9 +113,7 @@ module.exports = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        balance: giftCardData.availableBalance, // ✅ Saldo disponible (compatibilidad)
-        availableBalance: giftCardData.availableBalance, // ✅ Saldo disponible
-        originalAmount: giftCardData.originalAmount // ✅ Monto original
+        balance: giftCardData.balance // ✅ Balance desde cualquier fuente
       };
     }).filter(card => card !== null);
 

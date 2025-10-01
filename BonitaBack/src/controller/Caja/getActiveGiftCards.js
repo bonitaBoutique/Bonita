@@ -61,17 +61,47 @@ module.exports = async (req, res) => {
     });
 
     // Agregar desde tabla Receipt (solo si no existe en GiftCard)
-    purchasedBalances.forEach(receipt => {
+    // Para estas, necesitamos obtener el saldo real vs el monto original
+    for (const receipt of purchasedBalances) {
       if (!allGiftCardEmails.has(receipt.buyer_email)) {
         allGiftCardEmails.add(receipt.buyer_email);
-        combinedGiftCards.push({
-          email: receipt.buyer_email,
-          availableBalance: parseFloat(receipt.totalPurchased), // Por ahora, igual al original
-          originalAmount: parseFloat(receipt.totalPurchased), // Monto original de la compra
-          source: 'Receipt_table'
-        });
+        
+        // 🔍 OBTENER SALDO REAL para esta GiftCard desde tabla GiftCard
+        try {
+          const giftCardBalance = await GiftCard.findOne({ 
+            where: { buyer_email: receipt.buyer_email },
+            attributes: ['saldo'],
+            raw: true
+          });
+          
+          // Si existe en tabla GiftCard, usar ese saldo; si no, usar el monto original
+          const availableBalance = giftCardBalance ? parseFloat(giftCardBalance.saldo) : parseFloat(receipt.totalPurchased);
+          
+          console.log(`🔍 [getActiveGiftCards] ${receipt.buyer_email}:`, {
+            montoOriginal: receipt.totalPurchased,
+            saldoDisponible: availableBalance,
+            diferencia: parseFloat(receipt.totalPurchased) - availableBalance,
+            fuenteSaldo: giftCardBalance ? 'GiftCard_table' : 'Receipt_fallback'
+          });
+          
+          combinedGiftCards.push({
+            email: receipt.buyer_email,
+            availableBalance: availableBalance, // Saldo real disponible
+            originalAmount: parseFloat(receipt.totalPurchased), // Monto original de la compra
+            source: giftCardBalance ? 'Receipt_with_GiftCard_balance' : 'Receipt_table'
+          });
+        } catch (error) {
+          console.error(`❌ Error obteniendo saldo real para ${receipt.buyer_email}:`, error);
+          // Si falla, usar monto original como disponible
+          combinedGiftCards.push({
+            email: receipt.buyer_email,
+            availableBalance: parseFloat(receipt.totalPurchased),
+            originalAmount: parseFloat(receipt.totalPurchased),
+            source: 'Receipt_table_fallback'
+          });
+        }
       }
-    });
+    }
 
     console.log(`📊 Total emails únicos con GiftCards: ${allGiftCardEmails.size}`);
 

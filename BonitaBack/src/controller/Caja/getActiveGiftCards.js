@@ -1,5 +1,5 @@
 // Importa 'conn' en lugar de 'sequelize'
-const { Receipt, User, conn } = require("../../data"); // <--- Cambiado aquí
+const { GiftCard, User, conn } = require("../../data"); // ✅ Cambiar Receipt por GiftCard
 
 // Renombra 'conn' a 'sequelize' para usarlo internamente, o usa 'conn' directamente
 const sequelize = conn; // Puedes hacer esto para minimizar cambios abajo
@@ -14,35 +14,27 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1. Obtener la suma total de GiftCards compradas por cada email
-    const purchasedBalances = await Receipt.findAll({
-      attributes: [
-        'buyer_email',
-        // Usa la instancia correcta (sequelize o conn)
-        [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalPurchased']
-      ],
+    // ✅ NUEVA LÓGICA: Consultar directamente la tabla GiftCard
+    console.log("🎁 Consultando GiftCards activas desde tabla GiftCard...");
+    
+    const activeGiftCards = await GiftCard.findAll({
       where: {
-        payMethod: "GiftCard"
+        saldo: { [sequelize.Op.gt]: 0 }, // Solo GiftCards con saldo > 0
+        estado: 'activa' // Solo GiftCards activas
       },
-      group: ['buyer_email'],
-      // Usa la instancia correcta (sequelize o conn)
-      having: sequelize.literal('SUM(total_amount) > 0'),
-      raw: true
+      attributes: ['id_giftcard', 'buyer_email', 'saldo', 'estado', 'createdAt'],
+      raw: true // Usar raw para obtener datos planos
     });
 
-    console.log("Purchased Balances per Email (SUM > 0):", purchasedBalances);
+    console.log(`✅ GiftCards activas encontradas: ${activeGiftCards.length}`);
 
-    // --- Sección Futura: Restar Canjes ---
-    // const redemptions = await GiftCardRedemption.findAll({ attributes: ['user_email', [sequelize.fn('SUM', sequelize.col('amount_redeemed')), 'totalRedeemed']], group: ['user_email'], raw: true });
-    // const redemptionMap = redemptions.reduce((acc, item) => { acc[item.user_email] = parseFloat(item.totalRedeemed); return acc; }, {});
-    // --- Fin Sección Futura ---
-
-    if (!purchasedBalances || purchasedBalances.length === 0) {
-      console.log("No active GiftCards found based on purchase sum.");
+    if (!activeGiftCards || activeGiftCards.length === 0) {
+      console.log("No active GiftCards found.");
       return res.status(200).json({ activeCards: [] });
     }
 
-    const activeEmails = purchasedBalances.map(item => item.buyer_email);
+    // ✅ OBTENER USUARIOS ASOCIADOS
+    const activeEmails = activeGiftCards.map(card => card.buyer_email);
     console.log("Active Emails:", activeEmails);
 
     const activeUsers = await User.findAll({
@@ -54,27 +46,29 @@ module.exports = async (req, res) => {
     });
     console.log("Active Users Found:", activeUsers);
 
+    // ✅ COMBINAR DATOS
     const activeCardsResult = activeUsers.map(user => {
-      const balanceInfo = purchasedBalances.find(balance => balance.buyer_email === user.email);
-      const currentBalance = balanceInfo ? parseFloat(balanceInfo.totalPurchased) : 0;
-
-      // --- Aplicar resta de canjes (futuro) ---
-      // const redeemedAmount = redemptionMap[user.email] || 0; // Asegúrate que redemptionMap esté definido
-      // const finalBalance = currentBalance - redeemedAmount;
-      // --- Fin resta de canjes ---
-
-      const finalBalance = currentBalance; // Por ahora solo compras
-
-      if (finalBalance > 0) {
-        return {
-          n_document: user.n_document,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email, // 🔍 AGREGAR EMAIL PARA QUE FRONTEND PUEDA CONSULTAR SALDO REAL
-          balance: finalBalance
-        };
+      const giftCard = activeGiftCards.find(card => card.buyer_email === user.email);
+      
+      if (!giftCard) {
+        console.warn(`⚠️ Usuario ${user.email} no tiene GiftCard activa`);
+        return null;
       }
-      return null;
+
+      console.log(`🎁 GiftCard procesada:`, {
+        email: user.email,
+        saldo: giftCard.saldo,
+        usuario: `${user.first_name} ${user.last_name}`,
+        documento: user.n_document
+      });
+
+      return {
+        n_document: user.n_document,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email, // 🔍 AGREGAR EMAIL PARA QUE FRONTEND PUEDA CONSULTAR SALDO REAL
+        balance: giftCard.saldo // Usar el saldo directo de la GiftCard
+      };
     }).filter(card => card !== null);
 
     console.log("Final Active Cards Result:", activeCardsResult);

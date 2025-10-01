@@ -1,4 +1,4 @@
-const { Receipt, OrderDetail, Product, Payment } = require("../../data");
+const { Receipt, OrderDetail, Product, Payment, GiftCard } = require("../../data");
 const { formatDateForDB, getColombiaDate } = require("../../utils/dateUtils"); // ✅ IMPORTAR getColombiaDate
 
 module.exports = async (req, res) => {
@@ -97,12 +97,21 @@ module.exports = async (req, res) => {
         cashier_document,
       });
 
+      // 🎁 CREAR REGISTRO EN TABLA GIFTCARD
+      await GiftCard.create({
+        buyer_email,
+        saldo: amount, // El saldo inicial es el monto pagado
+        id_receipt: receipt.id_receipt
+      });
+
       console.log('🟢 [CREATE RECEIPT] GiftCard creado con fecha del cliente:', {
         receiptNumber,
         clientDate: date,
         finalDate: formatDateForDB(date || serverDate),
         serverDate: serverDate,
-        timezone: 'America/Bogota'
+        timezone: 'America/Bogota',
+        giftCardAmount: amount,
+        buyerEmail: buyer_email
       });
 
       return res.status(201).json({

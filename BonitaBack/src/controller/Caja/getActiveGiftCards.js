@@ -15,21 +15,10 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log("🎁 Consultando GiftCards desde AMBAS fuentes (tabla GiftCard + Receipt)...");
+    // ✅ USAR LÓGICA RAMA 32: Obtener monto original desde Receipt con SUM(total_amount)
+    console.log("🎁 Consultando monto original de GiftCards desde Receipt...");
     
-    // ✅ MÉTODO 1: Consultar tabla GiftCard (nuevas compras)
-    const giftCardsFromTable = await GiftCard.findAll({
-      where: {
-        saldo: { [Op.gt]: 0 }, // Solo GiftCards con saldo > 0
-        estado: 'activa' // Solo GiftCards activas
-      },
-      attributes: ['id_giftcard', 'buyer_email', 'saldo', 'estado', 'createdAt'],
-      raw: true
-    });
-
-    console.log(`✅ GiftCards desde tabla GiftCard: ${giftCardsFromTable.length}`);
-
-    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes)
+    // 1. Obtener la suma total de GiftCards compradas por cada email (MONTO ORIGINAL)
     const purchasedBalances = await Receipt.findAll({
       attributes: [
         'buyer_email',
@@ -43,43 +32,14 @@ module.exports = async (req, res) => {
       raw: true
     });
 
-    console.log(`✅ GiftCards desde tabla Receipt: ${purchasedBalances.length}`);
+    console.log("✅ Monto original por email (SUM > 0):", purchasedBalances);
 
-    // ✅ COMBINAR AMBAS FUENTES
-    const allGiftCardEmails = new Set();
-    const combinedGiftCards = [];
-
-    // Agregar desde tabla GiftCard
-    giftCardsFromTable.forEach(card => {
-      allGiftCardEmails.add(card.buyer_email);
-      combinedGiftCards.push({
-        email: card.buyer_email,
-        balance: parseFloat(card.saldo),
-        source: 'GiftCard_table'
-      });
-    });
-
-    // Agregar desde tabla Receipt (solo si no existe en GiftCard)
-    purchasedBalances.forEach(receipt => {
-      if (!allGiftCardEmails.has(receipt.buyer_email)) {
-        allGiftCardEmails.add(receipt.buyer_email);
-        combinedGiftCards.push({
-          email: receipt.buyer_email,
-          balance: parseFloat(receipt.totalPurchased),
-          source: 'Receipt_table'
-        });
-      }
-    });
-
-    console.log(`📊 Total emails únicos con GiftCards: ${allGiftCardEmails.size}`);
-
-    if (combinedGiftCards.length === 0) {
-      console.log("No active GiftCards found from either source.");
+    if (!purchasedBalances || purchasedBalances.length === 0) {
+      console.log("No active GiftCards found based on purchase sum.");
       return res.status(200).json({ activeCards: [] });
     }
 
-    // ✅ OBTENER USUARIOS ASOCIADOS
-    const activeEmails = Array.from(allGiftCardEmails);
+    const activeEmails = purchasedBalances.map(item => item.buyer_email);
     console.log("Active Emails:", activeEmails);
 
     const activeUsers = await User.findAll({
@@ -91,30 +51,20 @@ module.exports = async (req, res) => {
     });
     console.log("Active Users Found:", activeUsers);
 
-    // ✅ COMBINAR DATOS FINALES
     const activeCardsResult = activeUsers.map(user => {
-      const giftCardData = combinedGiftCards.find(card => card.email === user.email);
-      
-      if (!giftCardData) {
-        console.warn(`⚠️ Usuario ${user.email} no tiene GiftCard activa`);
-        return null;
+      const balanceInfo = purchasedBalances.find(balance => balance.buyer_email === user.email);
+      const originalBalance = balanceInfo ? parseFloat(balanceInfo.totalPurchased) : 0;
+
+      if (originalBalance > 0) {
+        return {
+          n_document: user.n_document,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email, // 🎯 IMPORTANTE: Incluir email para consulta saldo disponible
+          balance: originalBalance // 🎯 ESTE ES EL MONTO ORIGINAL (200k)
+        };
       }
-
-      console.log(`🎁 GiftCard procesada:`, {
-        email: user.email,
-        balance: giftCardData.balance,
-        source: giftCardData.source,
-        usuario: `${user.first_name} ${user.last_name}`,
-        documento: user.n_document
-      });
-
-      return {
-        n_document: user.n_document,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        balance: giftCardData.balance // ✅ Balance desde cualquier fuente
-      };
+      return null;
     }).filter(card => card !== null);
 
     console.log("Final Active Cards Result:", activeCardsResult);

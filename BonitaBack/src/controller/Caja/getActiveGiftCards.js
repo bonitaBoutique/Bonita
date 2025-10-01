@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
 
     console.log(`✅ GiftCards desde tabla GiftCard: ${giftCardsFromTable.length}`);
 
-    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes)
+    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes) - OBTENER MONTO ORIGINAL
     const purchasedBalances = await Receipt.findAll({
       attributes: [
         'buyer_email',
@@ -54,7 +54,8 @@ module.exports = async (req, res) => {
       allGiftCardEmails.add(card.buyer_email);
       combinedGiftCards.push({
         email: card.buyer_email,
-        balance: parseFloat(card.saldo),
+        availableBalance: parseFloat(card.saldo), // Saldo disponible
+        originalAmount: parseFloat(card.saldo), // Para GiftCard nueva, original = disponible
         source: 'GiftCard_table'
       });
     });
@@ -65,7 +66,8 @@ module.exports = async (req, res) => {
         allGiftCardEmails.add(receipt.buyer_email);
         combinedGiftCards.push({
           email: receipt.buyer_email,
-          balance: parseFloat(receipt.totalPurchased),
+          availableBalance: parseFloat(receipt.totalPurchased), // Por ahora, igual al original
+          originalAmount: parseFloat(receipt.totalPurchased), // Monto original de la compra
           source: 'Receipt_table'
         });
       }
@@ -102,7 +104,8 @@ module.exports = async (req, res) => {
 
       console.log(`🎁 GiftCard procesada:`, {
         email: user.email,
-        balance: giftCardData.balance,
+        availableBalance: giftCardData.availableBalance,
+        originalAmount: giftCardData.originalAmount,
         source: giftCardData.source,
         usuario: `${user.first_name} ${user.last_name}`,
         documento: user.n_document
@@ -113,7 +116,9 @@ module.exports = async (req, res) => {
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        balance: giftCardData.balance // ✅ Balance desde cualquier fuente
+        balance: giftCardData.availableBalance, // ✅ Saldo disponible (compatibilidad)
+        availableBalance: giftCardData.availableBalance, // ✅ Saldo disponible
+        originalAmount: giftCardData.originalAmount // ✅ Monto original
       };
     }).filter(card => card !== null);
 

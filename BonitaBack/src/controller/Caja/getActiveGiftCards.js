@@ -1,5 +1,6 @@
 // Importa 'conn' en lugar de 'sequelize'
-const { GiftCard, User, conn } = require("../../data"); // ✅ Cambiar Receipt por GiftCard
+const { GiftCard, Receipt, User, conn } = require("../../data"); // ✅ Incluir ambas tablas temporalmente
+const { Op } = require("sequelize"); // ✅ Importar operadores de Sequelize
 
 // Renombra 'conn' a 'sequelize' para usarlo internamente, o usa 'conn' directamente
 const sequelize = conn; // Puedes hacer esto para minimizar cambios abajo
@@ -14,27 +15,71 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // ✅ NUEVA LÓGICA: Consultar directamente la tabla GiftCard
-    console.log("🎁 Consultando GiftCards activas desde tabla GiftCard...");
+    console.log("🎁 Consultando GiftCards desde AMBAS fuentes (tabla GiftCard + Receipt)...");
     
-    const activeGiftCards = await GiftCard.findAll({
+    // ✅ MÉTODO 1: Consultar tabla GiftCard (nuevas compras)
+    const giftCardsFromTable = await GiftCard.findAll({
       where: {
-        saldo: { [sequelize.Op.gt]: 0 }, // Solo GiftCards con saldo > 0
+        saldo: { [Op.gt]: 0 }, // Solo GiftCards con saldo > 0
         estado: 'activa' // Solo GiftCards activas
       },
       attributes: ['id_giftcard', 'buyer_email', 'saldo', 'estado', 'createdAt'],
-      raw: true // Usar raw para obtener datos planos
+      raw: true
     });
 
-    console.log(`✅ GiftCards activas encontradas: ${activeGiftCards.length}`);
+    console.log(`✅ GiftCards desde tabla GiftCard: ${giftCardsFromTable.length}`);
 
-    if (!activeGiftCards || activeGiftCards.length === 0) {
-      console.log("No active GiftCards found.");
+    // ✅ MÉTODO 2: Consultar tabla Receipt (compras existentes)
+    const purchasedBalances = await Receipt.findAll({
+      attributes: [
+        'buyer_email',
+        [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalPurchased']
+      ],
+      where: {
+        payMethod: "GiftCard"
+      },
+      group: ['buyer_email'],
+      having: sequelize.literal('SUM(total_amount) > 0'),
+      raw: true
+    });
+
+    console.log(`✅ GiftCards desde tabla Receipt: ${purchasedBalances.length}`);
+
+    // ✅ COMBINAR AMBAS FUENTES
+    const allGiftCardEmails = new Set();
+    const combinedGiftCards = [];
+
+    // Agregar desde tabla GiftCard
+    giftCardsFromTable.forEach(card => {
+      allGiftCardEmails.add(card.buyer_email);
+      combinedGiftCards.push({
+        email: card.buyer_email,
+        balance: parseFloat(card.saldo),
+        source: 'GiftCard_table'
+      });
+    });
+
+    // Agregar desde tabla Receipt (solo si no existe en GiftCard)
+    purchasedBalances.forEach(receipt => {
+      if (!allGiftCardEmails.has(receipt.buyer_email)) {
+        allGiftCardEmails.add(receipt.buyer_email);
+        combinedGiftCards.push({
+          email: receipt.buyer_email,
+          balance: parseFloat(receipt.totalPurchased),
+          source: 'Receipt_table'
+        });
+      }
+    });
+
+    console.log(`📊 Total emails únicos con GiftCards: ${allGiftCardEmails.size}`);
+
+    if (combinedGiftCards.length === 0) {
+      console.log("No active GiftCards found from either source.");
       return res.status(200).json({ activeCards: [] });
     }
 
     // ✅ OBTENER USUARIOS ASOCIADOS
-    const activeEmails = activeGiftCards.map(card => card.buyer_email);
+    const activeEmails = Array.from(allGiftCardEmails);
     console.log("Active Emails:", activeEmails);
 
     const activeUsers = await User.findAll({
@@ -46,18 +91,19 @@ module.exports = async (req, res) => {
     });
     console.log("Active Users Found:", activeUsers);
 
-    // ✅ COMBINAR DATOS
+    // ✅ COMBINAR DATOS FINALES
     const activeCardsResult = activeUsers.map(user => {
-      const giftCard = activeGiftCards.find(card => card.buyer_email === user.email);
+      const giftCardData = combinedGiftCards.find(card => card.email === user.email);
       
-      if (!giftCard) {
+      if (!giftCardData) {
         console.warn(`⚠️ Usuario ${user.email} no tiene GiftCard activa`);
         return null;
       }
 
       console.log(`🎁 GiftCard procesada:`, {
         email: user.email,
-        saldo: giftCard.saldo,
+        balance: giftCardData.balance,
+        source: giftCardData.source,
         usuario: `${user.first_name} ${user.last_name}`,
         documento: user.n_document
       });
@@ -66,8 +112,8 @@ module.exports = async (req, res) => {
         n_document: user.n_document,
         first_name: user.first_name,
         last_name: user.last_name,
-        email: user.email, // 🔍 AGREGAR EMAIL PARA QUE FRONTEND PUEDA CONSULTAR SALDO REAL
-        balance: giftCard.saldo // Usar el saldo directo de la GiftCard
+        email: user.email,
+        balance: giftCardData.balance // ✅ Balance desde cualquier fuente
       };
     }).filter(card => card !== null);
 

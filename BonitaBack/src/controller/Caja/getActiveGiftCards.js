@@ -70,6 +70,7 @@ module.exports = async (req, res) => {
           n_document: user.n_document,
           first_name: user.first_name,
           last_name: user.last_name,
+          email: user.email, // 🔍 AGREGAR EMAIL PARA QUE FRONTEND PUEDA CONSULTAR SALDO REAL
           balance: finalBalance
         };
       }

@@ -136,6 +136,21 @@ const PanelGeneral = () => {
                   </p>
                 </div>
               )}
+
+              {/* ✅ Pagos en Línea - SOLO ADMIN */}
+              {!isCajero && (
+                <div className="text-center space-y-2">
+                  <Link
+                    to="/pagos/online"
+                    className="bg-slate-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-slate-400 flex items-center justify-center"
+                  >
+                    💳 Pagos en Línea
+                  </Link>
+                  <p className="text-sm text-slate-600">
+                    Gestión y seguimiento de pagos online (Wompi)
+                  </p>
+                </div>
+              )}
             </>
           </div>
         </div>

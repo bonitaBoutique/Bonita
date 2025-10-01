@@ -1,6 +1,5 @@
 const SellerData = require("../data/models/SellerData");
 const { catchedAsync } = require("../utils");
-const webhook = require("./webhook");
 const {
   updateSellerData,
   getOrCreateSellerData,
@@ -80,6 +79,9 @@ module.exports = {
   updateOrderDetail: catchedAsync(require("./OrdersDetails/updateOrderDetail")),
   deleteOrderDetail: catchedAsync(require("./OrdersDetails/deleteOrderDetail")),
   webhook: catchedAsync(require("./webhook")),
+  initWompiPayment: catchedAsync(require("./Payments/initWompiPayment")),
+  wompiWebhook: catchedAsync(require("./Payments/wompiWebhook")),
+  listPaymentIntents: catchedAsync(require("./Payments/listPaymentIntents")),
   getOrCreateSellerData: catchedAsync(getOrCreateSellerData),
   getSellerDataBySdocno: catchedAsync(getSellerDataBySdocno),
   updateSellerData: catchedAsync(updateSellerData),

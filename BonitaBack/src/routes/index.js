@@ -8,7 +8,6 @@ router.use("/sb", require("./sbRouter"));
 router.use("/order", require('./orderDetailRouter'))
 router.use("/user", require("./userRouter"))
 router.use("/auth", require("./authRouter"))
-router.use("/eventos", require("./webhookRouter"))
 router.use('/seller', require("./sellerDataRouter"))
 router.use('/caja', require('./cajaRouter') )
 router.use('/expense', require('./expenseRouter') )
@@ -24,6 +23,7 @@ router.use('/giftcard', require('./giftCardRouter') )
 router.use('/creditPayment', require('./addiSistecreditoRoutes') )
 router.use("/addi-sistecredito", require("./addiSistecreditoRoutes"));
 router.use('/system', require('./systemRouter'));    
+router.use('/payments', require('./paymentRouter'));
 
 
 module.exports = router;

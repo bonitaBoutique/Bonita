@@ -19,12 +19,71 @@ const ActiveGiftCards = () => {
       setLoading(true);
       setError(null);
       try {
-        // Realiza la petición GET al endpoint del backend
+        // 🔍 PRIMER PASO: Obtener lista de usuarios con gift cards
         const response = await axios.get(`${BASE_URL}/caja/active-giftcards`);
+        
+        // 🔍 DEBUG: Log completo de la respuesta inicial
+        console.log('🔍 [ActiveGiftCards] Respuesta inicial del API:', response.data);
+        console.log('🔍 [ActiveGiftCards] activeCards array inicial:', response.data?.activeCards);
 
         // Verifica si la respuesta tiene datos y la propiedad activeCards
         if (response.data && response.data.activeCards) {
-          setActiveCards(response.data.activeCards);
+          const initialCards = response.data.activeCards;
+          
+          // 🔍 SEGUNDO PASO: Obtener saldo real para cada tarjeta
+          const cardsWithRealBalance = await Promise.all(
+            initialCards.map(async (card) => {
+              try {
+                // 🔍 Verificar que tenemos el email
+                if (!card.email) {
+                  console.warn(`⚠️ [ActiveGiftCards] Tarjeta ${card.n_document} no tiene email, usando balance original`);
+                  return {
+                    ...card,
+                    originalBalance: card.balance
+                  };
+                }
+                
+                // 🔍 Usar el mismo endpoint que RedeemGiftCard para obtener saldo real
+                const balanceRes = await axios.get(`${BASE_URL}/giftcard/balance/${encodeURIComponent(card.email)}`);
+                const realBalance = balanceRes.data.saldo || 0;
+                
+                // 🔍 DEBUG: Comparar saldo original vs real - MÁS DETALLADO
+                console.log(`🔍 [ActiveGiftCards] Tarjeta ${card.n_document}:`, {
+                  documento: card.n_document,
+                  nombre: `${card.first_name} ${card.last_name}`,
+                  email: card.email,
+                  'endpoint consultado': `${BASE_URL}/giftcard/balance/${encodeURIComponent(card.email)}`,
+                  'respuesta completa del balance': balanceRes.data,
+                  'balance original (desde /active-giftcards)': card.balance,
+                  'saldo real (desde /giftcard/balance)': realBalance,
+                  'diferencia': card.balance - realBalance,
+                  'timestamp': new Date().toISOString(),
+                  'card completa': card
+                });
+                
+                // Retornar card con saldo real
+                return {
+                  ...card,
+                  balance: realBalance, // 🔍 REEMPLAZAR con saldo real
+                  originalBalance: card.balance // 🔍 Mantener original para referencia
+                };
+              } catch (balanceError) {
+                console.error(`❌ [ActiveGiftCards] Error obteniendo saldo para ${card.email}:`, balanceError);
+                // Si falla, mantener balance original
+                return {
+                  ...card,
+                  originalBalance: card.balance
+                };
+              }
+            })
+          );
+          
+          // 🔍 Filtrar solo tarjetas con saldo > 0
+          const cardsWithBalance = cardsWithRealBalance.filter(card => card.balance > 0);
+          
+          console.log('🔍 [ActiveGiftCards] Tarjetas con saldo real > 0:', cardsWithBalance);
+          
+          setActiveCards(cardsWithBalance);
         } else {
           // Si no hay datos o la estructura es inesperada, establece un array vacío
           setActiveCards([]);
@@ -68,8 +127,16 @@ const ActiveGiftCards = () => {
       <Navbar2 />
       <div className="container mx-auto p-4 mt-16"> {/* Añadido mt-16 para espacio debajo del Navbar */}
         <h1 className="text-2xl font-bold mb-4 text-gray-800">
-          GiftCards Activas (Saldo disponible)
+          GiftCards Activas
         </h1>
+        
+        {/* 📊 INFO: Explicación de las columnas */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <p className="text-sm text-blue-800">
+            <strong>💳 Monto Original:</strong> Valor inicial de la gift card &nbsp;|
+            <strong>💰 Saldo Disponible:</strong> Dinero que aún puede usar el cliente
+          </p>
+        </div>
 
         {activeCards.length === 0 ? (
           <p className="text-gray-600">No hay GiftCards activas con saldo.</p>
@@ -80,35 +147,53 @@ const ActiveGiftCards = () => {
                 <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Documento</th>
                   <th className="py-3 px-6 text-left">Nombre Cliente</th>
-                  <th className="py-3 px-6 text-right">Saldo Disponible</th> {/* Alineado a la derecha */}
-                  <th className="py-3 px-6 text-center">Acciones</th> {/* Centrado */}
+                  <th className="py-3 px-6 text-right">Monto Original</th>
+                  <th className="py-3 px-6 text-right">Saldo Disponible</th>
+                  <th className="py-3 px-6 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-700 text-sm"> {/* Texto un poco más oscuro */}
-                {activeCards.map((card) => (
-                  <tr
-                    key={card.n_document}
-                    className="border-b border-gray-200 hover:bg-gray-50" /* Efecto hover sutil */
-                  >
-                    <td className="py-3 px-6 text-left whitespace-nowrap">
-                      {card.n_document}
-                    </td>
-                    <td className="py-3 px-6 text-left">
-                      {card.first_name} {card.last_name}
-                    </td>
-                    <td className="py-3 px-6 text-right font-medium"> {/* Saldo en negrita */}
-                      ${card.balance?.toLocaleString('es-CO') ?? 0} {/* Formato moneda Colombia */}
-                    </td>
-                    <td className="py-3 px-6 text-center">
-                      <button
-                        onClick={() => navigate(`/giftcard/redeem/${card.n_document}`)} // Navega al componente de canje
-                        className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out" // Estilo mejorado
-                      >
-                        Usar Saldo
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="text-gray-700 text-sm">
+                {activeCards.map((card, index) => {
+                  // 🔍 DEBUG: Log del saldo final que se mostrará
+                  console.log(`✅ [ActiveGiftCards] Mostrando tarjeta ${index + 1}:`, {
+                    documento: card.n_document,
+                    'saldo a mostrar': card.balance,
+                    'saldo original': card.originalBalance,
+                    'diferencia usada': (card.originalBalance || card.balance) - card.balance
+                  });
+                  
+                  return (
+                    <tr key={card.n_document} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="py-3 px-6 text-left whitespace-nowrap">
+                        {card.n_document}
+                      </td>
+                      <td className="py-3 px-6 text-left">
+                        {card.first_name} {card.last_name}
+                      </td>
+                      <td className="py-3 px-6 text-right text-gray-600">
+                        ${card.originalBalance?.toLocaleString('es-CO') ?? card.balance?.toLocaleString('es-CO') ?? 0}
+                      </td>
+                      <td className="py-3 px-6 text-right font-medium">
+                        <span className={`${card.balance === (card.originalBalance || card.balance) ? 'text-green-600' : 'text-blue-600'}`}>
+                          ${card.balance?.toLocaleString('es-CO') ?? 0}
+                        </span>
+                        {card.originalBalance && card.balance < card.originalBalance && (
+                          <div className="text-xs text-orange-600 mt-1">
+                            Usado: ${(card.originalBalance - card.balance).toLocaleString('es-CO')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-6 text-center">
+                        <button
+                          onClick={() => navigate(`/giftcard/redeem/${card.n_document}`)}
+                          className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+                        >
+                          Usar Saldo
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

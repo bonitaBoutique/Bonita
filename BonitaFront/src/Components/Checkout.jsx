@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getColombiaDate, formatDateForDisplay, isValidDate } from "../utils/dateUtils";
 import * as CryptoJS from "crypto-js"
 import {
-  createOrder,
+  initPaymentIntent,
   clearOrderState,
 } from "../Redux/Actions/actions";
 import Swal from "sweetalert2";
@@ -30,11 +30,17 @@ const Checkout = () => {
 
   // Redux state selectors
   const cart = useSelector((state) => state.cart);
-  const orderCreate = useSelector((state) => state.order);
+  const orderState = useSelector((state) => state.order);
+  const paymentIntentState = orderState?.paymentIntent || {
+    loading: false,
+    success: false,
+    data: null,
+    error: null,
+  };
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
 
-  console.log('>>> Checkout Component Render - orderCreate State:', JSON.stringify(orderCreate));
+  console.log('>>> Checkout Component Render - order state:', JSON.stringify(orderState));
 
   // ✅ Local state con fecha correcta de Colombia
   const [orderData, setOrderData] = useState({
@@ -55,63 +61,69 @@ const Checkout = () => {
     shippingCost: 0
   });
 
-  // useEffect to open Wompi widget after successful order creation
   useEffect(() => {
-    console.log('>>> Checkout useEffect (Wompi) - Start. State:', JSON.stringify(orderCreate, null, 2));
-    console.log(`>>> Checkout useEffect (Wompi) - Checking condition: success=${orderCreate.success}, hasWompiData=${!!orderCreate.order?.wompiData}`);
+    return () => {
+      dispatch(clearOrderState());
+    };
+  }, [dispatch]);
 
-    if (orderCreate.success && orderCreate.order?.wompiData) {
-      console.log('>>> Checkout useEffect (Wompi) - Condition MET. Proceeding with Wompi.');
-      const { referencia, integritySignature, amount } = orderCreate.order.wompiData;
+  // useEffect to open Wompi widget after successful payment intent initialization
+  useEffect(() => {
+    console.log('>>> Checkout useEffect (Wompi) - Start. PaymentIntent state:', JSON.stringify(paymentIntentState, null, 2));
 
-      if (!referencia || !integritySignature || typeof amount !== 'number') {
-        console.error(">>> Checkout useEffect (Wompi) - ERROR: Datos de Wompi incompletos:", orderCreate.order.wompiData);
-        Swal.fire("Error", "Faltan datos para procesar el pago. Contacta a soporte.", "error");
+    if (paymentIntentState.success && paymentIntentState.data?.wompi) {
+      const { reference, integritySignature, amountInCents, currency = 'COP' } = paymentIntentState.data.wompi;
+
+      if (!reference || !integritySignature || typeof amountInCents !== 'number') {
+        console.error('>>> Checkout useEffect (Wompi) - Datos de Wompi incompletos:', paymentIntentState.data.wompi);
+        Swal.fire('Error', 'Faltan datos para procesar el pago. Contacta a soporte.', 'error');
         return;
       }
 
-      const currency = "COP";
-      const publicKey = "pub_prod_pbz8e9I6apsTsgdJHUfp05FQ6jf3vVDB"; // PRODUCTION KEY
-      const redirectUrl = `https://bonita-seven.vercel.app/thank-you?orderRef=${referencia}`;
+      const publicKey = 'pub_prod_pbz8e9I6apsTsgdJHUfp05FQ6jf3vVDB'; // PRODUCTION KEY
+      const redirectUrl = `https://bonita-seven.vercel.app/thank-you?orderRef=${reference}`;
 
       const widgetData = {
         currency,
-        amountInCents: amount,
-        reference: String(referencia),
-        publicKey: publicKey,
-        redirectUrl: redirectUrl,
+        amountInCents,
+        reference: String(reference),
+        publicKey,
+        redirectUrl,
         signature: {
-          integrity: integritySignature
-        }
+          integrity: integritySignature,
+        },
       };
-      
+
       console.log('>>> Checkout useEffect (Wompi) - Wompi Widget Data Prepared:', widgetData);
       console.log(`>>> Checkout useEffect (Wompi) - Checking typeof WidgetCheckout: ${typeof WidgetCheckout}`);
 
       if (typeof WidgetCheckout !== 'undefined') {
-        console.log('>>> Checkout useEffect (Wompi) - WidgetCheckout defined. Creating instance...');
         try {
           const checkout = new WidgetCheckout(widgetData);
           console.log('>>> Checkout useEffect (Wompi) - Opening Wompi widget...');
           checkout.open((result) => {
-            console.log(">>> Checkout useEffect (Wompi) - Wompi Transaction Result:", result.transaction);
+            console.log('>>> Checkout useEffect (Wompi) - Wompi Transaction Result:', result.transaction);
+            if (result?.transaction?.status !== 'APPROVED') {
+              dispatch(clearOrderState());
+            }
           });
-          console.log('>>> Checkout useEffect (Wompi) - checkout.open() called.');
         } catch (widgetError) {
-          console.error(">>> Checkout useEffect (Wompi) - ERROR creating/opening Wompi widget:", widgetError);
-          Swal.fire("Error", `Error al iniciar Wompi: ${widgetError.message}`, "error");
+          console.error('>>> Checkout useEffect (Wompi) - ERROR creating/opening Wompi widget:', widgetError);
+          Swal.fire('Error', `Error al iniciar Wompi: ${widgetError.message}`, 'error');
         }
       } else {
-        console.error(">>> Checkout useEffect (Wompi) - ERROR: Wompi WidgetCheckout is not defined.");
-        Swal.fire("Error", "No se pudo cargar el componente de pago. Revisa tu conexión o intenta más tarde.", "error");
+        console.error('>>> Checkout useEffect (Wompi) - ERROR: Wompi WidgetCheckout is not defined.');
+        Swal.fire('Error', 'No se pudo cargar el componente de pago. Revisa tu conexión o intenta más tarde.', 'error');
       }
-    } else if (orderCreate.error) {
-      console.error(">>> Checkout useEffect (Wompi) - Order creation failed:", orderCreate.error);
+    } else if (paymentIntentState.error) {
+      console.error('>>> Checkout useEffect (Wompi) - Payment intent failed:', paymentIntentState.error);
+      Swal.fire('Error', paymentIntentState.error, 'error');
     } else {
-      console.log('>>> Checkout useEffect (Wompi) - Condition NOT met (Not success or no Wompi data).');
+      console.log('>>> Checkout useEffect (Wompi) - Awaiting payment intent data.');
     }
+
     console.log('>>> Checkout useEffect (Wompi) - End.');
-  }, [orderCreate.success, orderCreate.order?.id_orderDetail, orderCreate.error, dispatch]);
+  }, [paymentIntentState.success, paymentIntentState.data, paymentIntentState.error, dispatch]);
 
   // Update local order data if cart changes
   useEffect(() => {
@@ -218,17 +230,27 @@ const Checkout = () => {
     const finalOrderData = {
       ...orderData,
       n_document: userInfo.n_document,
-      date: orderData.date // Ya está validada
+      date: orderData.date, // Ya está validada
+      currency: 'COP',
+      customerEmail: userInfo.email,
+      customerName: `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.first_name || userInfo.last_name || userInfo.email,
+      metadata: {
+        cartItems: cart.items.map((item) => ({
+          id_product: item.id_product,
+          quantity: item.quantity,
+          price: item.priceSell,
+        })),
+      },
     };
 
     console.log(">>> handleSubmit - Submitting Order Data with Colombia date:", finalOrderData);
     
     try {
-      await dispatch(createOrder(finalOrderData));
-      console.log(">>> handleSubmit - createOrder action dispatched.");
+      await dispatch(initPaymentIntent(finalOrderData));
+      console.log(">>> handleSubmit - initPaymentIntent action dispatched.");
     } catch (error) {
-      console.error(">>> handleSubmit - Error dispatching createOrder:", error);
-      Swal.fire("Error", "Ocurrió un problema al intentar crear la orden.", "error");
+      console.error(">>> handleSubmit - Error dispatching initPaymentIntent:", error);
+      Swal.fire("Error", error.message || "Ocurrió un problema al intentar iniciar el pago.", "error");
     }
   };
 
@@ -254,7 +276,7 @@ const Checkout = () => {
           </div>
 
           {/* Loading indicator while creating order */}
-          {orderCreate.loading && <p className='text-center text-blue-500 font-semibold'>Procesando orden...</p>}
+          {paymentIntentState.loading && <p className='text-center text-blue-500 font-semibold'>Iniciando pago...</p>}
 
           <form onSubmit={handleSubmit}>
             {/* ✅ Date Input mejorado */}
@@ -334,14 +356,14 @@ const Checkout = () => {
             <button
               type="submit"
               className="w-full bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition duration-200"
-              disabled={orderCreate.loading || orderCreate.success || cart.items.length === 0}
+              disabled={paymentIntentState.loading || paymentIntentState.success || cart.items.length === 0}
             >
-              {orderCreate.loading ? "Procesando..." : (orderCreate.success ? "Orden Creada" : "Proceder al Pago")}
+              {paymentIntentState.loading ? "Procesando..." : (paymentIntentState.success ? "Pago Iniciado" : "Proceder al Pago")}
             </button>
 
             {/* Display Order Creation Error */}
-            {orderCreate.error && !orderCreate.loading && (
-              <div className="text-red-500 mt-2 text-center font-semibold">{orderCreate.error}</div>
+            {paymentIntentState.error && !paymentIntentState.loading && (
+              <div className="text-red-500 mt-2 text-center font-semibold">{paymentIntentState.error}</div>
             )}
           </form>
         </div>

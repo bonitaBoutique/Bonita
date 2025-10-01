@@ -51,11 +51,28 @@ const formatDateForDB = (dateString) => {
   if (!dateString) return getColombiaDate();
   
   try {
-    // ✅ USAR LUXON para conversión consistente
+    // 🔍 DEBUG: Log para rastrear conversión de fechas
+    console.log('🔍 [formatDateForDB] Input:', dateString);
+    
+    // ✅ Si ya es formato YYYY-MM-DD, devolverlo tal como está
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      console.log('🔍 [formatDateForDB] Ya es formato YYYY-MM-DD, manteniendo:', dateString);
+      return dateString;
+    }
+    
+    // ✅ USAR LUXON para conversión consistente solo si no es formato correcto
     const date = DateTime.fromISO(dateString).setZone('America/Bogota');
-    return date.isValid ? date.toISODate() : getColombiaDate();
+    const result = date.isValid ? date.toISODate() : getColombiaDate();
+    
+    console.log('🔍 [formatDateForDB] Conversión con Luxon:', {
+      input: dateString,
+      output: result,
+      isValid: date.isValid
+    });
+    
+    return result;
   } catch (error) {
-    console.error('Error converting date:', error);
+    console.error('❌ [formatDateForDB] Error converting date:', error);
     return getColombiaDate();
   }
 };

@@ -75,7 +75,7 @@ module.exports = async (req, res) => {
         buyer_email,
         buyer_phone,
         total_amount,
-        date: formatDateForDB(serverDate), // ✅ Fecha del servidor
+        date: formatDateForDB(date || serverDate), // ✅ Usar fecha del cliente, fallback al servidor
         payMethod: "GiftCard",
         amount,
         amount2: null,
@@ -92,12 +92,18 @@ module.exports = async (req, res) => {
         amount,
         payMethod: actualPaymentMethod,
         payment_state: "Pago",
-        date: formatDateForDB(serverDate), // ✅ Fecha del servidor
+        date: formatDateForDB(date || serverDate), // ✅ Usar fecha del cliente, fallback al servidor
         receipt_number: receiptNumber,
         cashier_document,
       });
 
-      console.log('🟢 [CREATE RECEIPT] GiftCard creado con fecha del servidor:', serverDate);
+      console.log('🟢 [CREATE RECEIPT] GiftCard creado con fecha del cliente:', {
+        receiptNumber,
+        clientDate: date,
+        finalDate: formatDateForDB(date || serverDate),
+        serverDate: serverDate,
+        timezone: 'America/Bogota'
+      });
 
       return res.status(201).json({
         message: "Recibo de GiftCard creado exitosamente",
@@ -158,7 +164,7 @@ module.exports = async (req, res) => {
       buyer_email,
       buyer_phone,
       total_amount: totalConDescuento,
-      date: formatDateForDB(serverDate), // ✅ Fecha del servidor
+      date: formatDateForDB(date || serverDate), // ✅ Usar fecha del cliente, fallback al servidor
       payMethod,
       amount,
       amount2: amount2 || null,
@@ -168,9 +174,10 @@ module.exports = async (req, res) => {
       discount,
     });
 
-    console.log('🟢 [CREATE RECEIPT] Recibo creado con fecha del servidor:', {
+    console.log('🟢 [CREATE RECEIPT] Recibo creado con fecha del cliente:', {
       receiptNumber,
       clientDate: date,
+      finalDate: formatDateForDB(date || serverDate),
       serverDate: serverDate,
       timezone: 'America/Bogota'
     });

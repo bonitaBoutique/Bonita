@@ -8,14 +8,11 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [errors, setErrors] = useState({});
 
-  // ✅ Establecer fecha mínima (hoy + 1 día) y máxima (hoy + 30 días)
+  // ✅ Establecer fecha mínima (hoy + 1 día) - sin límite máximo
   useEffect(() => {
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    
-    const maxDate = new Date(today);
-    maxDate.setDate(today.getDate() + 30);
     
     // Establecer fecha por defecto a 7 días desde hoy
     const defaultDate = new Date(today);
@@ -49,12 +46,10 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
     }
   };
 
-  // ✅ Validar fecha
+  // ✅ Validar fecha - solo mínima
   const handleDateChange = (e) => {
     const selectedDate = new Date(e.target.value);
     const today = new Date();
-    const maxDate = new Date(today);
-    maxDate.setDate(today.getDate() + 30);
     
     setDueDate(e.target.value);
     
@@ -62,11 +57,6 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
       setErrors(prev => ({
         ...prev,
         dueDate: 'La fecha de vencimiento debe ser posterior a hoy'
-      }));
-    } else if (selectedDate > maxDate) {
-      setErrors(prev => ({
-        ...prev,
-        dueDate: 'La fecha de vencimiento no puede ser mayor a 30 días'
       }));
     } else {
       setErrors(prev => {
@@ -156,9 +146,6 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
   const partialPaymentNum = parseFloat(partialPayment) || 0;
   const remainingAmount = totalAmount - partialPaymentNum;
   const today = new Date().toISOString().split('T')[0];
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 30);
-  const maxDateString = maxDate.toISOString().split('T')[0];
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -244,7 +231,6 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
             <input
               type="date"
               min={today}
-              max={maxDateString}
               value={dueDate}
               onChange={handleDateChange}
               className={`mt-1 block w-full p-2 border rounded-md shadow-sm ${
@@ -256,7 +242,7 @@ const ReservationPopup = ({ orderId, totalAmount, onClose, onSubmit }) => {
               <p className="text-red-500 text-xs mt-1">{errors.dueDate}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Máximo 30 días desde hoy
+              Selecciona cualquier fecha futura
             </p>
           </div>
 

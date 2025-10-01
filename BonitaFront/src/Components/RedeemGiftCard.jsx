@@ -39,7 +39,25 @@ const RedeemGiftCard = () => {
   
         // Consulta el saldo real de la GiftCard por email
         const email = clientRes.data.message.email;
+        
+        // 🔍 DEBUG: Log para comparar con ActiveGiftCards
+        console.log('🔍 [RedeemGiftCard] Consultando saldo para:', {
+          documento: n_document,
+          email: email,
+          endpoint: `${BASE_URL}/giftcard/balance/${encodeURIComponent(email)}`
+        });
+        
         const balanceRes = await axios.get(`${BASE_URL}/giftcard/balance/${encodeURIComponent(email)}`);
+        
+        // 🔍 DEBUG: Log del saldo obtenido
+        console.log('🔍 [RedeemGiftCard] Respuesta de saldo:', {
+          documento: n_document,
+          email: email,
+          'respuesta completa': balanceRes.data,
+          'saldo extraído': balanceRes.data.saldo || 0,
+          'timestamp': new Date().toISOString()
+        });
+        
         setBalance(balanceRes.data.saldo || 0);
       } catch (err) {
         Swal.fire("Error", "No se pudo cargar el cliente o el saldo.", "error");
@@ -142,6 +160,18 @@ const RedeemGiftCard = () => {
         <p className="text-xl font-bold text-green-600">
           Saldo Disponible: ${balance?.toLocaleString('es-CO') ?? 0}
         </p>
+        {/* 🔍 DEBUG: Log del valor mostrado */}
+        {(() => {
+          console.log('🔍 [RedeemGiftCard] Renderizando saldo:', {
+            documento: clientInfo.n_document,
+            email: clientInfo.email,
+            'balance state': balance,
+            'balance tipo': typeof balance,
+            'valor formateado': balance?.toLocaleString('es-CO') ?? 0,
+            'timestamp': new Date().toISOString()
+          });
+          return null;
+        })()}
       </div>
       <div className="bg-white p-4 rounded shadow mb-6">
         <h2 className="text-lg font-semibold mb-2">Seleccionar Productos</h2>

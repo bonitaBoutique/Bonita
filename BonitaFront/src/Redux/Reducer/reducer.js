@@ -22,6 +22,12 @@ import {
   ORDER_CREATE_REQUEST,
   ORDER_CREATE_SUCCESS,
   ORDER_CREATE_FAIL,
+  PAYMENT_INTENT_INIT_REQUEST,
+  PAYMENT_INTENT_INIT_SUCCESS,
+  PAYMENT_INTENT_INIT_FAIL,
+  FETCH_PAYMENT_INTENTS_REQUEST,
+  FETCH_PAYMENT_INTENTS_SUCCESS,
+  FETCH_PAYMENT_INTENTS_FAILURE,
   USER_REGISTER_REQUEST,
   USER_REGISTER_SUCCESS,
   USER_REGISTER_FAIL,
@@ -322,6 +328,25 @@ const initialState = {
     },
   },
 
+  paymentIntents: {
+    data: [],
+    loading: false,
+    error: null,
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+    },
+    filters: {
+      status: null,
+      search: "",
+      fromDate: null,
+      toDate: null,
+    },
+    lastUpdated: null,
+  },
+
   // ✅ AGREGAR estados para stock movements
   stockMovements: {
     data: [],
@@ -365,6 +390,12 @@ const initialState = {
     success: false,
     order: null,
     error: null,
+    paymentIntent: {
+      loading: false,
+      success: false,
+      data: null,
+      error: null,
+    },
   },
 
   // ✅ AGREGAR estado para latestOrder si no existe
@@ -614,25 +645,38 @@ const rootReducer = (state = initialState, action) => {
           loading: true,
           success: false,
           error: null,
+          paymentIntent: {
+            loading: false,
+            success: false,
+            data: null,
+            error: null,
+          },
         },
       };
-      case ORDER_CREATE_SUCCESS:
-  console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Received Payload:', action.payload);
+    case ORDER_CREATE_SUCCESS:
+      console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Received Payload:', action.payload);
 
-  // Aquí el payload YA ES el objeto de la orden
-  const orderDataFromPayload = action.payload;
+      // Aquí el payload YA ES el objeto de la orden
+      const orderDataFromPayload = action.payload;
 
-  const newState = {
-    ...state,
-    order: {
-      loading: false,
-      success: true,
-      order: orderDataFromPayload,
-      error: null,
-    },
-  };
-  console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Returning New State:', JSON.stringify(newState.order));
-  return newState;
+      const newState = {
+        ...state,
+        order: {
+          ...state.order,
+          loading: false,
+          success: true,
+          order: orderDataFromPayload,
+          error: null,
+          paymentIntent: {
+            loading: false,
+            success: false,
+            data: null,
+            error: null,
+          },
+        },
+      };
+      console.log('>>> Reducer: ORDER_CREATE_SUCCESS - Returning New State:', JSON.stringify(newState.order));
+      return newState;
     case ORDER_CREATE_FAIL:
       return {
         ...state,
@@ -640,6 +684,123 @@ const rootReducer = (state = initialState, action) => {
           ...state.order,
           loading: false,
           success: false,
+          error: action.payload,
+          paymentIntent: {
+            loading: false,
+            success: false,
+            data: null,
+            error: null,
+          },
+        },
+      };
+
+    case PAYMENT_INTENT_INIT_REQUEST:
+      return {
+        ...state,
+        order: {
+          ...state.order,
+          loading: false,
+          success: false,
+          order: null,
+          error: null,
+          paymentIntent: {
+            loading: true,
+            success: false,
+            data: null,
+            error: null,
+          },
+        },
+      };
+
+    case PAYMENT_INTENT_INIT_SUCCESS:
+      return {
+        ...state,
+        order: {
+          ...state.order,
+          paymentIntent: {
+            loading: false,
+            success: true,
+            data: action.payload,
+            error: null,
+          },
+        },
+      };
+
+    case PAYMENT_INTENT_INIT_FAIL:
+      return {
+        ...state,
+        order: {
+          ...state.order,
+          paymentIntent: {
+            loading: false,
+            success: false,
+            data: null,
+            error: action.payload,
+          },
+        },
+      };
+
+    case FETCH_PAYMENT_INTENTS_REQUEST:
+      return {
+        ...state,
+        paymentIntents: {
+          ...state.paymentIntents,
+          loading: true,
+          error: null,
+          filters: {
+            ...state.paymentIntents.filters,
+            ...(action.payload?.filters ?? {}),
+          },
+          pagination: {
+            ...state.paymentIntents.pagination,
+            page:
+              action.payload?.filters?.page ??
+              state.paymentIntents.pagination.page,
+            limit:
+              action.payload?.filters?.limit ??
+              state.paymentIntents.pagination.limit,
+          },
+        },
+      };
+
+    case FETCH_PAYMENT_INTENTS_SUCCESS: {
+      const pagination = action.payload?.pagination ?? {};
+
+      return {
+        ...state,
+        paymentIntents: {
+          ...state.paymentIntents,
+          loading: false,
+          data: action.payload?.paymentIntents ?? [],
+          pagination: {
+            total: pagination.total ?? pagination.count ?? 0,
+            page:
+              pagination.page ??
+              pagination.currentPage ??
+              state.paymentIntents.pagination.page,
+            limit:
+              pagination.limit ??
+              state.paymentIntents.pagination.limit,
+            totalPages:
+              pagination.totalPages ?? pagination.pages ?? 0,
+          },
+          filters: {
+            ...state.paymentIntents.filters,
+            ...(action.payload?.filters ?? {}),
+          },
+          error: null,
+          lastUpdated:
+            action.payload?.timestamp ?? state.paymentIntents.lastUpdated,
+        },
+      };
+    }
+
+    case FETCH_PAYMENT_INTENTS_FAILURE:
+      return {
+        ...state,
+        paymentIntents: {
+          ...state.paymentIntents,
+          loading: false,
           error: action.payload,
         },
       };
@@ -704,6 +865,12 @@ const rootReducer = (state = initialState, action) => {
             success: false,
             order: null,
             error: null,
+            paymentIntent: {
+              loading: false,
+              success: false,
+              data: null,
+              error: null,
+            },
           },
         };
     case FETCH_ORDERS_REQUEST:

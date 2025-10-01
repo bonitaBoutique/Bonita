@@ -149,6 +149,10 @@ export const adminRoutes = [
    { 
     path: '/pagoCredito', 
     component: lazy(() => import('../AddiSistecreditoPayments')) 
+  },
+  { 
+    path: '/pagos/online', 
+    component: lazy(() => import('../Payments/PaymentIntentsList')) 
   }
  
   
@@ -210,5 +214,6 @@ export const adminPaths = [
   '/informes',
   '/createProducts',
   '/reservas',
-  '/accountClient'
+  '/accountClient',
+  '/pagos/online'
 ];

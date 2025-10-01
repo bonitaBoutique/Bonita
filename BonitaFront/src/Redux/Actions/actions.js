@@ -24,6 +24,12 @@ import {
   ORDER_CREATE_REQUEST,
   ORDER_CREATE_SUCCESS,
   ORDER_CREATE_FAIL,
+  PAYMENT_INTENT_INIT_REQUEST,
+  PAYMENT_INTENT_INIT_SUCCESS,
+  PAYMENT_INTENT_INIT_FAIL,
+  FETCH_PAYMENT_INTENTS_REQUEST,
+  FETCH_PAYMENT_INTENTS_SUCCESS,
+  FETCH_PAYMENT_INTENTS_FAILURE,
   USER_REGISTER_REQUEST,
   USER_REGISTER_SUCCESS,
   USER_REGISTER_FAIL,
@@ -320,6 +326,88 @@ export const decrementQuantity = (productId) => ({
   type: DECREMENT_QUANTITY,
   payload: productId,
 });
+
+export const initPaymentIntent = (orderData) => async (dispatch) => {
+  dispatch({ type: PAYMENT_INTENT_INIT_REQUEST });
+
+  try {
+    const response = await axios.post(`${BASE_URL}/payments/wompi/init`, orderData);
+    const payload = response.data?.message;
+    const paymentIntent = payload?.paymentIntent;
+    const wompi = payload?.wompi;
+
+    dispatch({
+      type: PAYMENT_INTENT_INIT_SUCCESS,
+      payload: { paymentIntent, wompi },
+    });
+
+    return { paymentIntent, wompi };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || error.message;
+    dispatch({
+      type: PAYMENT_INTENT_INIT_FAIL,
+      payload: errorMessage,
+    });
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const fetchPaymentIntents = (params = {}) => async (dispatch) => {
+  const defaultParams = { page: 1, limit: 20 };
+  const combinedParams = { ...defaultParams, ...params };
+
+  const normalizedParams = {
+    ...combinedParams,
+    page: Number(combinedParams.page) || defaultParams.page,
+    limit: Number(combinedParams.limit) || defaultParams.limit,
+  };
+
+  const filteredParams = Object.fromEntries(
+    Object.entries(normalizedParams).filter(([, value]) =>
+      value !== undefined && value !== null && value !== ""
+    )
+  );
+
+  try {
+    dispatch({
+      type: FETCH_PAYMENT_INTENTS_REQUEST,
+      payload: { filters: filteredParams },
+    });
+
+    const { data } = await axios.get(`${BASE_URL}/payments/wompi`, {
+      params: filteredParams,
+    });
+
+    const paymentIntents = data?.message?.paymentIntents ?? [];
+    const pagination = data?.message?.pagination ?? {};
+    const timestamp = new Date().toISOString();
+
+    dispatch({
+      type: FETCH_PAYMENT_INTENTS_SUCCESS,
+      payload: {
+        paymentIntents,
+        pagination,
+        filters: filteredParams,
+        timestamp,
+      },
+    });
+
+    return { paymentIntents, pagination };
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message?.error ||
+      error.response?.data?.message ||
+      error.message;
+
+    dispatch({
+      type: FETCH_PAYMENT_INTENTS_FAILURE,
+      payload: errorMessage,
+    });
+
+    throw new Error(errorMessage);
+  }
+};
 
 export const createOrder = (orderData) => async (dispatch) => {
   dispatch({ type: ORDER_CREATE_REQUEST });

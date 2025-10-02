@@ -21,12 +21,24 @@ const StockMovements = () => {
 
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 50,
+    limit: 10,
     type: '',
     dateFrom: '',
     dateTo: '',
     id_product: ''
   });
+
+  // ✅ FUNCIÓN: Traducir motivos a español
+  const traducirMotivo = (reason) => {
+    if (!reason) return '-';
+    const traducciones = {
+      'SALE': 'Venta',
+      'RETURN': 'Devolución',
+      'sale': 'Venta',
+      'return': 'Devolución'
+    };
+    return traducciones[reason] || reason;
+  };
 
   // ✅ DEBUG: Console logs para ver la estructura de datos
   useEffect(() => {
@@ -126,7 +138,7 @@ const StockMovements = () => {
           'Ganancia_Por_Unidad': gananciaPorUnidad,
           'Ganancia_Total': gananciaTotal,
           'Margen_Ganancia_%': `${margenGanancia}%`,
-          'Motivo': movement.reason || '',
+          'Motivo': traducirMotivo(movement.reason),
           'Referencia': movement.reference_type 
             ? `${movement.reference_type}${movement.reference_id ? ` (${movement.reference_id})` : ''}` 
             : '',
@@ -258,7 +270,7 @@ const StockMovements = () => {
     console.log('🔄 [StockMovements] Reseteando filtros...');
     const newFilters = {
       page: 1,
-      limit: 50,
+      limit: 10,
       type: '',
       dateFrom: '',
       dateTo: '',
@@ -390,6 +402,7 @@ const StockMovements = () => {
               onChange={(e) => handleFilterChange('limit', e.target.value)}
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
+              <option value="10">10 por página</option>
               <option value="25">25 por página</option>
               <option value="50">50 por página</option>
               <option value="100">100 por página</option>
@@ -495,7 +508,15 @@ const StockMovements = () => {
                     {movement.Product?.stock || stock || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {movement.reason || '-'}
+                    <span className={`${
+                      movement.reason === 'SALE' || movement.reason === 'sale' 
+                        ? 'text-green-700 font-medium' 
+                        : movement.reason === 'RETURN' || movement.reason === 'return'
+                        ? 'text-orange-700 font-medium'
+                        : ''
+                    }`}>
+                      {traducirMotivo(movement.reason)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     {movement.reference_type

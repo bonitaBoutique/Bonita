@@ -131,8 +131,7 @@ const ActiveGiftCards = () => {
         {/* 📊 INFO: Explicación de las columnas */}
         <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
           <p className="text-sm text-blue-800">
-            <strong>💳 Monto Original:</strong> Valor inicial de la gift card &nbsp;|
-            <strong>💰 Saldo Disponible:</strong> Dinero que aún puede usar el cliente
+            <strong>� Saldo Total Disponible:</strong> Suma de todas las GiftCards activas del cliente. Puede tener múltiples tarjetas.
           </p>
         </div>
 
@@ -145,19 +144,19 @@ const ActiveGiftCards = () => {
                 <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Documento</th>
                   <th className="py-3 px-6 text-left">Nombre Cliente</th>
-                  <th className="py-3 px-6 text-right">Monto Original</th>
-                  <th className="py-3 px-6 text-right">Saldo Disponible</th>
+                  <th className="py-3 px-6 text-left">Email</th>
+                  <th className="py-3 px-6 text-right">💰 Saldo Total</th>
                   <th className="py-3 px-6 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="text-gray-700 text-sm">
                 {activeCards.map((card, index) => {
-                  // 🔍 DEBUG: Log del saldo final que se mostrará
-                  console.log(`✅ [ActiveGiftCards] Mostrando tarjeta ${index + 1}:`, {
+                  // 🔍 DEBUG: Log del saldo consolidado
+                  console.log(`✅ [ActiveGiftCards] Cliente ${index + 1}:`, {
                     documento: card.n_document,
-                    'saldo a mostrar': card.balance,
-                    'saldo original': card.originalBalance,
-                    'diferencia usada': (card.originalBalance || card.balance) - card.balance
+                    nombre: `${card.first_name} ${card.last_name}`,
+                    email: card.email,
+                    'saldo consolidado': card.balance
                   });
                   
                   return (
@@ -168,25 +167,18 @@ const ActiveGiftCards = () => {
                       <td className="py-3 px-6 text-left">
                         {card.first_name} {card.last_name}
                       </td>
-                      <td className="py-3 px-6 text-right text-gray-600">
-                        ${card.originalBalance?.toLocaleString('es-CO') ?? card.balance?.toLocaleString('es-CO') ?? 0}
+                      <td className="py-3 px-6 text-left text-sm text-gray-600">
+                        {card.email || 'Sin email'}
                       </td>
-                      <td className="py-3 px-6 text-right font-medium">
-                        <span className={`${card.balance === (card.originalBalance || card.balance) ? 'text-green-600' : 'text-blue-600'}`}>
-                          ${card.balance?.toLocaleString('es-CO') ?? 0}
-                        </span>
-                        {card.originalBalance && card.balance < card.originalBalance && (
-                          <div className="text-xs text-orange-600 mt-1">
-                            Usado: ${(card.originalBalance - card.balance).toLocaleString('es-CO')}
-                          </div>
-                        )}
+                      <td className="py-3 px-6 text-right font-bold text-green-600 text-lg">
+                        ${card.balance?.toLocaleString('es-CO') ?? 0}
                       </td>
                       <td className="py-3 px-6 text-center">
                         <button
                           onClick={() => navigate(`/giftcard/redeem/${card.n_document}`)}
-                          className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+                          className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
                         >
-                          Usar Saldo
+                          🎁 Usar Saldo
                         </button>
                       </td>
                     </tr>

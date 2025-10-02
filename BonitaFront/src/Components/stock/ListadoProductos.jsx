@@ -20,6 +20,7 @@ const ListadoProductos = () => {
   );
 
   const [filtro, setFiltro] = useState("");
+  const [filtroCodificado, setFiltroCodificado] = useState("todos"); // "todos", "si", "no"
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectAll, setSelectAll] = useState(false);
@@ -120,11 +121,52 @@ const ListadoProductos = () => {
     }
   };
 
-  const productosFiltrados = products.filter((producto) =>
-    `${producto.codigoBarra} ${producto.marca} ${producto.description}`
+  const productosFiltrados = products.filter((producto) => {
+    // Filtro por texto
+    const coincideTexto = `${producto.codigoBarra} ${producto.marca} ${producto.description}`
       .toLowerCase()
-      .includes(filtro)
-  );
+      .includes(filtro);
+    
+    // Filtro por codificado (isDian)
+    let coincideCodificado = true;
+    if (filtroCodificado === "si") {
+      coincideCodificado = producto.isDian === true;
+    } else if (filtroCodificado === "no") {
+      coincideCodificado = producto.isDian === false || producto.isDian === null || producto.isDian === undefined;
+    }
+    
+    return coincideTexto && coincideCodificado;
+  });
+
+  // 📊 CALCULAR TOTALES DE INVENTARIO
+  const calcularTotalesInventario = () => {
+    return productosFiltrados.reduce(
+      (totales, producto) => {
+        const stockActual = producto.stock || 0;
+        const precioCosto = producto.price || 0;
+        const precioVenta = producto.priceSell || 0;
+
+        return {
+          totalUnidades: totales.totalUnidades + stockActual,
+          totalValorCosto: totales.totalValorCosto + (stockActual * precioCosto),
+          totalValorVenta: totales.totalValorVenta + (stockActual * precioVenta),
+          cantidadProductos: totales.cantidadProductos + 1,
+        };
+      },
+      {
+        totalUnidades: 0,
+        totalValorCosto: 0,
+        totalValorVenta: 0,
+        cantidadProductos: 0,
+      }
+    );
+  };
+
+  const totalesInventario = calcularTotalesInventario();
+  const margenBruto = totalesInventario.totalValorVenta - totalesInventario.totalValorCosto;
+  const porcentajeMargen = totalesInventario.totalValorCosto > 0 
+    ? ((margenBruto / totalesInventario.totalValorCosto) * 100).toFixed(2)
+    : 0;
 
   const handleSelectAll = () => {
     setSelectAll(!selectAll);
@@ -141,14 +183,33 @@ const ListadoProductos = () => {
     }
   };
 
-  // Exporta a Excel usando stockInicial
+  // Exporta a Excel usando stockInicial y totales
   const handleDownloadExcel = () => {
     const selectedData = products.filter((producto) =>
       selectedProducts.includes(producto.id_product)
     );
 
+    // Calcular totales de los productos seleccionados
+    const totalesSeleccionados = selectedData.reduce(
+      (totales, producto) => {
+        const stockActual = producto.stock || 0;
+        const precioCosto = producto.price || 0;
+        const precioVenta = producto.priceSell || 0;
+
+        return {
+          totalUnidades: totales.totalUnidades + stockActual,
+          totalValorCosto: totales.totalValorCosto + (stockActual * precioCosto),
+          totalValorVenta: totales.totalValorVenta + (stockActual * precioVenta),
+        };
+      },
+      { totalUnidades: 0, totalValorCosto: 0, totalValorVenta: 0 }
+    );
+
     const dataForExcel = selectedData.map((producto) => {
       const stockInfo = calculateCurrentStock(producto);
+      const valorCosto = producto.stock * producto.price;
+      const valorVenta = producto.stock * producto.priceSell;
+      
       return {
         Código_Barra: producto.codigoBarra,
         ProductId: producto.id_product,
@@ -159,10 +220,32 @@ const ListadoProductos = () => {
         Precio_Venta: producto.priceSell,
         Stock_Inicial: stockInfo.initial,
         Stock_Actual: stockInfo.current,
+        Valor_Inventario_Costo: valorCosto,
+        Valor_Inventario_Venta: valorVenta,
         Tamaños: producto.sizes,
         Colores: producto.colors,
+        Codificado: producto.isDian ? "Sí" : "No",
         Tienda_Online: producto.tiendaOnLine ? "Sí" : "No",
       };
+    });
+
+    // Agregar fila de totales
+    dataForExcel.push({
+      Código_Barra: "TOTALES",
+      ProductId: "---",
+      Marca: "---",
+      Código_Proveedor: "---",
+      Descripción: `${selectedData.length} productos seleccionados`,
+      Costo: "---",
+      Precio_Venta: "---",
+      Stock_Inicial: "---",
+      Stock_Actual: totalesSeleccionados.totalUnidades,
+      Valor_Inventario_Costo: totalesSeleccionados.totalValorCosto,
+      Valor_Inventario_Venta: totalesSeleccionados.totalValorVenta,
+      Tamaños: "---",
+      Colores: "---",
+      Codificado: "---",
+      Tienda_Online: "---",
     });
 
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
@@ -206,6 +289,15 @@ const ListadoProductos = () => {
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow focus:ring-2 focus:ring-blue-300"
             onChange={handleFiltroChange}
           />
+          <select
+            value={filtroCodificado}
+            onChange={(e) => setFiltroCodificado(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg shadow focus:ring-2 focus:ring-blue-300"
+          >
+            <option value="todos">Todos los productos</option>
+            <option value="si">Solo codificados</option>
+            <option value="no">No codificados</option>
+          </select>
           <button
             onClick={handleDownloadExcel}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -213,6 +305,73 @@ const ListadoProductos = () => {
           >
             Descargar Excel
           </button>
+        </div>
+
+        {/* 📊 PANEL DE RESUMEN DE INVENTARIO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Total Productos */}
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Total Productos</p>
+                <p className="text-3xl font-bold mt-1">{totalesInventario.cantidadProductos}</p>
+              </div>
+              <div className="text-4xl opacity-80">📦</div>
+            </div>
+          </div>
+
+          {/* Total Unidades en Stock */}
+          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Unidades en Stock</p>
+                <p className="text-3xl font-bold mt-1">{totalesInventario.totalUnidades.toLocaleString('es-CO')}</p>
+              </div>
+              <div className="text-4xl opacity-80">📊</div>
+            </div>
+          </div>
+
+          {/* Valor Total a Costo */}
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Valor Inventario (Costo)</p>
+                <p className="text-2xl font-bold mt-1">
+                  ${totalesInventario.totalValorCosto.toLocaleString('es-CO')}
+                </p>
+              </div>
+              <div className="text-4xl opacity-80">💰</div>
+            </div>
+          </div>
+
+          {/* Valor Total a Venta */}
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90">Valor Inventario (Venta)</p>
+                <p className="text-2xl font-bold mt-1">
+                  ${totalesInventario.totalValorVenta.toLocaleString('es-CO')}
+                </p>
+              </div>
+              <div className="text-4xl opacity-80">💵</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 📈 TARJETA DE MARGEN */}
+        <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 p-4 mb-6 rounded-lg shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">Margen Bruto Potencial</p>
+              <p className="text-2xl font-bold text-teal-700">
+                ${margenBruto.toLocaleString('es-CO')} 
+                <span className="text-sm ml-2 text-gray-600">({porcentajeMargen}%)</span>
+              </p>
+            </div>
+            <div className="text-sm text-gray-600">
+              <p>Si vendes todo el inventario al precio actual</p>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-lg shadow-lg bg-white">
@@ -230,8 +389,11 @@ const ListadoProductos = () => {
                   "Precio Venta",
                   "Stock Inicial",
                   "Stock Actual",
+                  "Valor Costo",
+                  "Valor Venta",
                   "Tamaños",
                   "Colores",
+                  "Codificado",
                   "Tienda Online",
                   "Acciones",
                 ].map((header) => (
@@ -419,6 +581,28 @@ const ListadoProductos = () => {
                         </span>
                       </div>
                     </td>
+                    {/* Valor Inventario a Costo */}
+                    <td className="px-4 py-2 border border-gray-200">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-purple-600">
+                          ${(producto.stock * producto.price).toLocaleString('es-CO')}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {producto.stock} × ${producto.price.toLocaleString('es-CO')}
+                        </span>
+                      </div>
+                    </td>
+                    {/* Valor Inventario a Venta */}
+                    <td className="px-4 py-2 border border-gray-200">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-orange-600">
+                          ${(producto.stock * producto.priceSell).toLocaleString('es-CO')}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {producto.stock} × ${producto.priceSell.toLocaleString('es-CO')}
+                        </span>
+                      </div>
+                    </td>
                     {/* Tamaños */}
                     <td className="px-4 py-2 border border-gray-200">
                       {editRowId === producto.id_product ? (
@@ -443,6 +627,33 @@ const ListadoProductos = () => {
                         />
                       ) : (
                         producto.colors
+                      )}
+                    </td>
+                    {/* Codificado (isDian) */}
+                    <td className="px-4 py-2 border border-gray-200">
+                      {editRowId === producto.id_product ? (
+                        <input
+                          type="checkbox"
+                          name="isDian"
+                          checked={editForm.isDian || false}
+                          onChange={(e) =>
+                            setEditForm((prev) => ({
+                              ...prev,
+                              isDian: e.target.checked,
+                            }))
+                          }
+                          className="form-checkbox h-5 w-5"
+                        />
+                      ) : (
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            producto.isDian
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {producto.isDian ? "✓ Sí" : "✗ No"}
+                        </span>
                       )}
                     </td>
                     {/* Tienda Online */}

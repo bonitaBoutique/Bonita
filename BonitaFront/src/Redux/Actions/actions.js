@@ -1509,8 +1509,8 @@ export const createReservation = (orderId, reservationData) => async (dispatch) 
     console.log('🔵 [FRONT] Creando reserva para orden:', orderId);
     console.log('🔵 [FRONT] Datos de reserva:', reservationData);
 
-    // ✅ FORZAR URL COMPLETA CORRECTA
-    const fullUrl = `https://bonita-production-9dee.up.railway.app/order/reservations/${orderId}`;
+    // ✅ USAR BASE_URL EN LUGAR DE URL HARDCODEADA
+    const fullUrl = `${BASE_URL}/order/reservations/${orderId}`;
     console.log('🔵 [FRONT] URL completa:', fullUrl);
 
     const response = await fetch(fullUrl, {

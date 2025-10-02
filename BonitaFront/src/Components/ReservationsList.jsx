@@ -12,6 +12,7 @@ import {
 } from "../Redux/Actions/actions";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import * as XLSX from 'xlsx';
 
 import {
   getServerDate,
@@ -39,12 +40,12 @@ const ReservationList = () => {
 
   // ✅ Estados para filtros CON FECHAS DEL SERVIDOR
   const [filters, setFilters] = useState({
-    fechaInicio: '2025-07-01',
+    fechaInicio: '',
     fechaFin: '',
     usuario: '',
     documento: '',
     soloVencidas: false,
-    soloConDeuda: false
+    ocultarCompletadas: true // ✅ NUEVO: Ocultar reservas completadas por defecto
   });
 
   const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
@@ -58,26 +59,37 @@ const ReservationList = () => {
   
 
 const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+// ✅ APLICAR FILTRO DE OCULTAR COMPLETADAS
+const filteredReservations = filters.ocultarCompletadas
+  ? (reservations || []).filter(r => r.status !== 'Completada')
+  : (reservations || []);
+
 const indexOfLastReservation = currentPage * reservationsPerPage;
 const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
-const currentReservations = reservations?.slice(
+const currentReservations = filteredReservations.slice(
   indexOfFirstReservation,
   indexOfLastReservation
-) || [];
+);
 // ✅ INICIALIZAR fecha del servidor
   useEffect(() => {
     dispatch(getServerTime());
   }, [dispatch]);
 
-  // ✅ INICIALIZAR filtros con fecha del servidor
+  // ✅ INICIALIZAR filtros con fecha del servidor (inicio año - hoy)
   useEffect(() => {
     if (serverTime?.current?.date && !filters.fechaInicio) {
       const serverDate = serverTime.current.date;
-      console.log('🕒 [ReservationsList] Inicializando con fecha del servidor:', serverDate);
+      const currentYear = new Date(serverDate).getFullYear();
+      const firstDayOfYear = `${currentYear}-01-01`;
+      
+      console.log('🕒 [ReservationsList] Inicializando fechas:');
+      console.log('  - Fecha inicio (primer día del año):', firstDayOfYear);
+      console.log('  - Fecha fin (hoy):', serverDate);
       
       setFilters(prev => ({
         ...prev,
-        fechaInicio: serverDate,
+        fechaInicio: firstDayOfYear,
         fechaFin: serverDate
       }));
     }
@@ -145,7 +157,6 @@ const currentReservations = reservations?.slice(
     if (filters.usuario) filterObj.usuario = filters.usuario;
     if (filters.documento) filterObj.documento = filters.documento;
     if (filters.soloVencidas) filterObj.soloVencidas = 'true';
-    if (filters.soloConDeuda) filterObj.soloConDeuda = 'true';
 
     console.log('🔍 [ReservationsList] Buscando con filtros:', filterObj);
     dispatch(getAllReservations(filterObj));
@@ -155,14 +166,16 @@ const currentReservations = reservations?.slice(
   // ✅ Limpiar filtros CON FECHA DEL SERVIDOR
   const clearFilters = () => {
     const serverDate = getServerDate(serverTime);
+    const currentYear = new Date(serverDate).getFullYear();
+    const firstDayOfYear = `${currentYear}-01-01`;
     
     setFilters({
-      fechaInicio: serverDate,
+      fechaInicio: firstDayOfYear,
       fechaFin: serverDate,
       usuario: '',
       documento: '',
       soloVencidas: false,
-      soloConDeuda: false
+      ocultarCompletadas: true // ✅ Mantener ocultar completadas al limpiar
     });
     
     console.log('🧹 [ReservationsList] Filtros limpiados, fecha del servidor:', serverDate);
@@ -212,6 +225,91 @@ const currentReservations = reservations?.slice(
     const total = Number(totalAmount) || 0;
     const paid = Number(paidAmount) || 0;
     return Math.max(0, total - paid);
+  };
+
+  // ✅ NUEVA: Función para exportar a Excel
+  const exportToExcel = () => {
+    try {
+      // Filtrar reservas según filtros activos
+      let dataToExport = reservations || [];
+      
+      // Aplicar filtro de ocultar completadas
+      if (filters.ocultarCompletadas) {
+        dataToExport = dataToExport.filter(r => r.status !== 'Completada');
+      }
+
+      // Preparar datos para Excel
+      const excelData = dataToExport.map(reservation => {
+        const pendingDebt = calculatePendingDebt(
+          reservation.OrderDetail?.amount || 0,
+          reservation.totalPaid || 0
+        );
+
+        return {
+          'Fecha Creación': formatCreationDate(reservation.createdAt),
+          'Cliente': reservation.OrderDetail?.User 
+            ? `${reservation.OrderDetail.User.first_name || ''} ${reservation.OrderDetail.User.last_name || ''}`.trim()
+            : 'No disponible',
+          'Documento': reservation.n_document || 'N/A',
+          'Email': reservation.OrderDetail?.User?.email || 'N/A',
+          'Teléfono': reservation.OrderDetail?.User?.phone || 'N/A',
+          'Fecha Vencimiento': formatDueDate(reservation.dueDate),
+          'Estado': reservation.status || 'Pendiente',
+          'Pago Inicial': `$${(reservation.partialPayment || 0).toLocaleString('es-CO')}`,
+          'Total Pagado': `$${(reservation.totalPaid || 0).toLocaleString('es-CO')}`,
+          'Monto Total': `$${(reservation.OrderDetail?.amount || 0).toLocaleString('es-CO')}`,
+          'Deuda Pendiente': `$${pendingDebt.toLocaleString('es-CO')}`,
+          'ID Reserva': reservation.id_reservation,
+          'ID Orden': reservation.id_orderDetail
+        };
+      });
+
+      // Crear worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      
+      // Ajustar ancho de columnas
+      const colWidths = [
+        { wch: 15 }, // Fecha Creación
+        { wch: 25 }, // Cliente
+        { wch: 15 }, // Documento
+        { wch: 30 }, // Email
+        { wch: 15 }, // Teléfono
+        { wch: 15 }, // Fecha Vencimiento
+        { wch: 12 }, // Estado
+        { wch: 15 }, // Pago Inicial
+        { wch: 15 }, // Total Pagado
+        { wch: 15 }, // Monto Total
+        { wch: 15 }, // Deuda Pendiente
+        { wch: 38 }, // ID Reserva
+        { wch: 38 }  // ID Orden
+      ];
+      ws['!cols'] = colWidths;
+
+      // Crear workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Reservas');
+
+      // Generar nombre de archivo con fecha
+      const fecha = new Date().toISOString().split('T')[0];
+      const fileName = `Reservas_${fecha}.xlsx`;
+
+      // Descargar archivo
+      XLSX.writeFile(wb, fileName);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Excel generado',
+        text: `Se exportaron ${excelData.length} reservas`,
+        timer: 2000
+      });
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo generar el archivo Excel'
+      });
+    }
   };
 
   // ✅ APLICAR PAGO con fecha del servidor
@@ -610,11 +708,11 @@ const currentReservations = reservations?.slice(
             <label className="flex items-center">
               <input
                 type="checkbox"
-                checked={filters.soloConDeuda}
-                onChange={(e) => handleFilterChange('soloConDeuda', e.target.checked)}
-                className="mr-2 h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                checked={filters.ocultarCompletadas}
+                onChange={(e) => handleFilterChange('ocultarCompletadas', e.target.checked)}
+                className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
               />
-              <span className="text-sm text-gray-700">💰 Con Deuda</span>
+              <span className="text-sm text-gray-700">✅ Ocultar Completadas</span>
             </label>
           </div>
         </div>
@@ -625,21 +723,21 @@ const currentReservations = reservations?.slice(
           >
             🔍 Buscar
           </button>
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-            >
-              🗑️ Limpiar Filtros
-            </button>
-            <button
-              onClick={() => dispatch(getServerTime())}
-              className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors"
-              title="Sincronizar con servidor"
-            >
-              🕒 Sync Servidor
-            </button>
-          </div>
-          {(filters.fechaInicio || filters.fechaFin || filters.usuario || filters.documento || filters.soloVencidas || filters.soloConDeuda) && (
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+          >
+            🗑️ Limpiar Filtros
+          </button>
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            title="Exportar resultados a Excel"
+          >
+            � Exportar Excel
+          </button>
+        </div>
+          {(filters.fechaInicio || filters.fechaFin || filters.usuario || filters.documento || filters.soloVencidas || filters.ocultarCompletadas) && (
             <div className="mt-4 p-3 bg-blue-50 rounded-md">
               <p className="text-sm text-blue-800">
                 <strong>Filtros activos:</strong>
@@ -648,7 +746,7 @@ const currentReservations = reservations?.slice(
                 {filters.usuario && ` Cliente: "${filters.usuario}"`}
                 {filters.documento && ` Documento: "${filters.documento}"`}
                 {filters.soloVencidas && ` Solo Vencidas`}
-                {filters.soloConDeuda && ` Solo Con Deuda`}
+                {filters.ocultarCompletadas && ` Ocultar Completadas`}
               </p>
             </div>
           )}
@@ -945,7 +1043,7 @@ const currentReservations = reservations?.slice(
             ← Anterior
           </button>
           {Array.from({
-            length: Math.ceil(reservations.length / reservationsPerPage),
+            length: Math.ceil(filteredReservations.length / reservationsPerPage),
           }).map((_, index) => (
             <button
               key={index}
@@ -961,12 +1059,12 @@ const currentReservations = reservations?.slice(
           ))}
           <button
             onClick={() =>
-              currentPage < Math.ceil(reservations.length / reservationsPerPage) &&
+              currentPage < Math.ceil(filteredReservations.length / reservationsPerPage) &&
               paginate(currentPage + 1)
             }
-            disabled={currentPage === Math.ceil(reservations.length / reservationsPerPage)}
+            disabled={currentPage === Math.ceil(filteredReservations.length / reservationsPerPage)}
             className={`px-3 py-2 rounded ${
-              currentPage === Math.ceil(reservations.length / reservationsPerPage)
+              currentPage === Math.ceil(filteredReservations.length / reservationsPerPage)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
             }`}

@@ -89,6 +89,7 @@ module.exports = async (req, res) => {
 
       // Crear el Payment asociado
        await Payment.create({
+        id_receipt: receipt.id_receipt, // ✅ ASOCIAR Payment con Receipt
         buyer_name,
         buyer_email,
         buyer_phone,
@@ -194,46 +195,79 @@ module.exports = async (req, res) => {
       timezone: 'America/Bogota'
     });
 
-    // ✅ NUEVA LÓGICA: Descontar automáticamente de GiftCard si es el método de pago
+    // ✅ NUEVA LÓGICA: Descontar automáticamente de GiftCard(s) si es el método de pago
     let giftCardUpdated = null;
     if ((payMethod === "GiftCard" || payMethod2 === "GiftCard") && giftCardEmail) {
       try {
-        console.log('🎁 [GIFT CARD PAYMENT] Descontando del saldo...');
+        console.log('🎁 [GIFT CARD PAYMENT] Descontando del saldo consolidado...');
         
-        // Buscar la GiftCard del usuario
-        const giftCard = await GiftCard.findOne({ 
-          where: { buyer_email: giftCardEmail, estado: 'activa' } 
+        // Buscar TODAS las GiftCards activas del usuario, ordenadas por antigüedad
+        const giftCards = await GiftCard.findAll({ 
+          where: { buyer_email: giftCardEmail, estado: 'activa' },
+          order: [['createdAt', 'ASC']] // Usar las más antiguas primero
         });
 
-        if (!giftCard) {
-          throw new Error('GiftCard no encontrada o inactiva');
+        if (!giftCards || giftCards.length === 0) {
+          throw new Error('No hay GiftCards activas para este email');
         }
 
         // ✅ DETERMINAR: Monto a descontar según si es método primario o secundario
         const amountToDeduct = payMethod === "GiftCard" ? amount : amount2;
         
-        if (giftCard.saldo < amountToDeduct) {
-          throw new Error(`Saldo insuficiente. Disponible: ${giftCard.saldo}, Requerido: ${amountToDeduct}`);
+        // Calcular saldo total disponible
+        const saldoTotal = giftCards.reduce((total, gc) => total + (gc.saldo || 0), 0);
+        
+        if (saldoTotal < amountToDeduct) {
+          throw new Error(`Saldo insuficiente. Disponible: ${saldoTotal}, Requerido: ${amountToDeduct}`);
         }
 
-        // Descontar el monto del saldo
-        giftCard.saldo -= amountToDeduct;
+        // Descontar el monto desde las GiftCards (empezando por las más antiguas)
+        let montoRestante = amountToDeduct;
+        const giftCardsAfectadas = [];
         
-        // Si el saldo llega a 0, marcar como usada
-        if (giftCard.saldo <= 0) {
-          giftCard.estado = 'usada';
+        for (const giftCard of giftCards) {
+          if (montoRestante <= 0) break;
+          
+          const saldoAnterior = giftCard.saldo;
+          
+          if (giftCard.saldo >= montoRestante) {
+            // Esta GiftCard tiene suficiente saldo
+            giftCard.saldo -= montoRestante;
+            montoRestante = 0;
+          } else {
+            // Usar todo el saldo de esta GiftCard y continuar con la siguiente
+            montoRestante -= giftCard.saldo;
+            giftCard.saldo = 0;
+          }
+          
+          // Si el saldo quedó en 0, marcar como usada
+          if (giftCard.saldo === 0) {
+            giftCard.estado = 'usada';
+          }
+          
+          await giftCard.save();
+          
+          giftCardsAfectadas.push({
+            id_giftcard: giftCard.id_giftcard,
+            saldoAnterior,
+            saldoNuevo: giftCard.saldo,
+            descontado: saldoAnterior - giftCard.saldo,
+            estado: giftCard.estado
+          });
         }
+
+        // Calcular nuevo saldo total
+        const nuevoSaldoTotal = giftCards.reduce((total, gc) => total + (gc.saldo || 0), 0);
         
-        await giftCard.save();
         giftCardUpdated = {
-          id: giftCard.id_giftcard,
-          saldoAnterior: giftCard.saldo + amountToDeduct,
-          saldoActual: giftCard.saldo,
-          estado: giftCard.estado,
-          montoDescontado: amountToDeduct
+          email: giftCardEmail,
+          montoDescontado: amountToDeduct,
+          saldoAnterior: saldoTotal,
+          saldoActual: nuevoSaldoTotal,
+          giftCardsAfectadas
         };
 
-        console.log('✅ [GIFT CARD PAYMENT] Saldo descontado exitosamente:', giftCardUpdated);
+        console.log('✅ [GIFT CARD PAYMENT] Descuento consolidado exitoso:', giftCardUpdated);
       } catch (giftCardError) {
         console.error('❌ [GIFT CARD PAYMENT] Error:', giftCardError.message);
         // No fallar el recibo por error de GiftCard, pero loggearlo

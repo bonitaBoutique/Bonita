@@ -41,14 +41,15 @@ module.exports = async (req, res) => {
     // Update total paid amount
     reservation.totalPaid += amount;
 
-    // Check if total payments equal the order amount
+    // ✅ Check if total payments equal the order amount and update RESERVATION status
     if (reservation.totalPaid >= reservation.OrderDetail.amount) {
-      reservation.OrderDetail.status = "completada";
+      reservation.status = "Completada"; // ✅ CORREGIDO: actualizar el estado de la Reservation
+      console.log(`✅ Reserva completada: ${id_reservation} - Total pagado: $${reservation.totalPaid}`);
     }
 
     // Save changes
     await reservation.save();
-    await reservation.OrderDetail.save();
+    // No es necesario guardar OrderDetail ya que no se modificó
 
     // ✅ INCLUIR la información del usuario en la respuesta
     const responseData = {

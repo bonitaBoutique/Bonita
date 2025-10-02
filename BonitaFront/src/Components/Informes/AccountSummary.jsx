@@ -259,53 +259,81 @@ const AccountSummary = (props) => {
         </div>
       </div>
 
-      {/* ✅ NUEVA SECCIÓN: GiftCards */}
+      {/* ✅ SECCIÓN: GiftCards Consolidadas */}
       {giftCards && giftCards.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4 flex items-center">
-            🎁 GiftCards del Cliente
-            <span className="ml-2 text-sm font-normal text-gray-600">
-              ({giftCards.length} tarjetas)
-            </span>
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {giftCards.map((giftCard) => (
-              <div key={giftCard.id_giftcard} className="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-lg border-l-4 border-purple-500 shadow-md">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-semibold text-purple-800">GiftCard #{giftCard.id_giftcard}</h4>
-                    <p className="text-2xl font-bold text-purple-900">
-                      {giftCard.saldo.toLocaleString("es-CO", {
-                        style: "currency",
-                        currency: "COP",
-                      })}
-                    </p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    giftCard.estado === 'activa'
-                      ? 'bg-green-100 text-green-800'
-                      : giftCard.estado === 'usada'
-                      ? 'bg-gray-100 text-gray-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {giftCard.estado}
-                  </span>
-                </div>
-                
-                <div className="text-sm text-gray-700 space-y-1">
-                  <p><strong>Origen:</strong> {giftCard.payment_method || 'No especificado'}</p>
-                  {giftCard.reference_type === 'RETURN_CREDIT' && (
-                    <p><strong>Recibo:</strong> #{giftCard.reference_id}</p>
-                  )}
-                  <p><strong>Creada:</strong> {new Date(giftCard.createdAt).toLocaleDateString('es-CO')}</p>
-                  {giftCard.description && (
-                    <p><strong>Descripción:</strong> {giftCard.description}</p>
-                  )}
-                </div>
+          {/* Saldo Total Consolidado */}
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-6 rounded-lg border-l-4 border-purple-500 shadow-lg mb-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-2xl font-bold text-purple-800 mb-2 flex items-center">
+                  🎁 Saldo Total GiftCards
+                </h3>
+                <p className="text-4xl font-bold text-purple-900">
+                  {saldoTotalGiftCards.toLocaleString("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                  })}
+                </p>
+                <p className="text-sm text-gray-700 mt-2">
+                  {giftCardsActivas} {giftCardsActivas === 1 ? 'tarjeta activa' : 'tarjetas activas'} de {totalGiftCards} total
+                </p>
               </div>
-            ))}
+              <div className="text-right">
+                <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold text-sm mb-2">
+                  💳 Disponible
+                </div>
+                <p className="text-xs text-gray-600">
+                  Úsalo en cualquier compra
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* Detalles de cada GiftCard (colapsable) */}
+          <details className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <summary className="cursor-pointer font-semibold text-gray-700 hover:text-purple-600 transition-colors">
+              📋 Ver detalles de cada GiftCard ({totalGiftCards})
+            </summary>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {giftCards.map((giftCard) => (
+                <div key={giftCard.id_giftcard} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-semibold text-gray-700">GiftCard #{giftCard.id_giftcard}</h4>
+                      <p className="text-xl font-bold text-purple-800">
+                        {giftCard.saldo.toLocaleString("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                        })}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      giftCard.estado === 'activa'
+                        ? 'bg-green-100 text-green-800'
+                        : giftCard.estado === 'usada'
+                        ? 'bg-gray-100 text-gray-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {giftCard.estado}
+                    </span>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p><strong>Origen:</strong> {giftCard.payment_method || 'No especificado'}</p>
+                    {giftCard.reference_type === 'RETURN_CREDIT' && (
+                      <p><strong>Recibo:</strong> #{giftCard.reference_id}</p>
+                    )}
+                    <p><strong>Creada:</strong> {new Date(giftCard.createdAt).toLocaleDateString('es-CO')}</p>
+                    {giftCard.description && (
+                      <p><strong>Descripción:</strong> {giftCard.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       )}
 

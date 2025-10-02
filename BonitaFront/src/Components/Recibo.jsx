@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import axios from "axios"; // ✅ IMPORTAR axios para GiftCard validation
 import {
   fetchOrdersByIdOrder,
   fetchLatestReceipt,
@@ -25,6 +26,7 @@ import {
   validateDateNotFuture,
 } from "../utils/dateUtils";
 import ServerTimeSync from "./ServerTimeSync";
+import { BASE_URL } from "../Config"; // ✅ IMPORTAR BASE_URL para GiftCard API
 
 const Recibo = () => {
   const { idOrder } = useParams();
@@ -63,6 +65,12 @@ const Recibo = () => {
   const [showSecondPayment, setShowSecondPayment] = useState(false);
   const [paymentMethod2, setPaymentMethod2] = useState("");
   const [amount1, setAmount1] = useState("");
+  
+  // ✅ ESTADOS PARA GIFTCARD
+  const [giftCardEmail, setGiftCardEmail] = useState("");
+  const [giftCardBalance, setGiftCardBalance] = useState(0);
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
+  const [giftCardValidated, setGiftCardValidated] = useState(false);
   const [amount2, setAmount2] = useState("");
   const [loadingCashier, setLoadingCashier] = useState(true);
   const [discount, setDiscount] = useState(0);
@@ -185,6 +193,45 @@ const Recibo = () => {
     }
   }, [userInfo, dispatch]);
 
+  // ✅ FUNCIÓN PARA VALIDAR GIFTCARD
+  const validateGiftCard = async (email) => {
+    if (!email) return;
+    
+    setGiftCardLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/giftcard/balance/${encodeURIComponent(email)}`);
+      const balance = response.data?.saldo || 0;
+      
+      setGiftCardBalance(balance);
+      setGiftCardValidated(true);
+      
+      if (balance <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sin saldo disponible',
+          text: 'Esta GiftCard no tiene saldo disponible o no existe.'
+        });
+        return false;
+      }
+      
+      console.log('✅ GiftCard validada:', { email, balance });
+      return true;
+    } catch (error) {
+      console.error('❌ Error validando GiftCard:', error);
+      setGiftCardBalance(0);
+      setGiftCardValidated(false);
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo validar la GiftCard. Verifica el email.'
+      });
+      return false;
+    } finally {
+      setGiftCardLoading(false);
+    }
+  };
+
   // ✅ MANEJO DE MÉTODOS DE PAGO
   const handlePaymentMethodChange = async (e) => {
     const value = e.target.value;
@@ -193,6 +240,11 @@ const Recibo = () => {
     setPaymentMethod2("");
     setAmount1("");
     setAmount2("");
+    
+    // ✅ LIMPIAR ESTADOS DE GIFTCARD
+    setGiftCardEmail("");
+    setGiftCardBalance(0);
+    setGiftCardValidated(false);
 
     if (value === "Crédito") {
       try {
@@ -216,6 +268,12 @@ const Recibo = () => {
           text: 'No se pudo actualizar la orden a Reserva a Crédito'
         });
         setPaymentMethod("Efectivo");
+      }
+    } else if (value === "GiftCard") {
+      // ✅ AUTOCOMPLETAR EMAIL SI ESTÁ DISPONIBLE
+      if (buyerEmail) {
+        setGiftCardEmail(buyerEmail);
+        await validateGiftCard(buyerEmail);
       }
     }
   };
@@ -322,6 +380,27 @@ const Recibo = () => {
       }
     }
 
+    // ✅ Validación para GiftCard
+    if (paymentMethod === "GiftCard" && !showSecondPayment) {
+      if (!giftCardValidated) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Debes validar la GiftCard antes de procesar el pago.",
+        });
+        return;
+      }
+
+      if (giftCardBalance < totalWithDiscount) {
+        Swal.fire({
+          icon: "error",
+          title: "Saldo insuficiente",
+          text: `La GiftCard solo tiene $${giftCardBalance.toLocaleString('es-CO')} disponibles. Agrega un segundo método de pago.`,
+        });
+        return;
+      }
+    }
+
     if (isNaN(finalAmount1) || finalAmount1 <= 0) {
       Swal.fire({
         icon: "error",
@@ -356,6 +435,9 @@ const Recibo = () => {
       amount2: finalAmount2,
       discount: discount,
       observations: observations,
+      // ✅ AGREGAR: Datos de GiftCard para descuento automático
+      giftCardEmail: paymentMethod === "GiftCard" ? giftCardEmail : null,
+      giftCardBalance: paymentMethod === "GiftCard" ? giftCardBalance : null,
     };
 
     try {
@@ -605,9 +687,9 @@ const Recibo = () => {
     doc.text(
       `Atendido por: ${
         userInfo 
-          ? `${userInfo.first_name} ${userInfo.last_name}`
+          ? `${userInfo?.first_name} ${userInfo?.last_name}`
           : cashierInfo
-          ? `${cashierInfo.first_name} ${cashierInfo.last_name}`
+          ? `${cashierInfo?.first_name} ${cashierInfo?.last_name}`
           : "N/A"
       }`,
       20,
@@ -866,6 +948,7 @@ const Recibo = () => {
                 </option>
                 <option value="Efectivo">Efectivo</option>
                 <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+                <option value="GiftCard">GiftCard</option>
                 <option value="Crédito">Reserva Crédito</option>
                 <option value="Addi">Addi</option>
                 <option value="Nequi">Nequi</option>
@@ -991,13 +1074,103 @@ const Recibo = () => {
                       ✅ Pago exacto
                     </div>
                   )}
-                  {change < 0 && (
+                  {change < -0.01 && (
                     <div className="text-xs text-red-600 mt-1">
-                      ❌ Dinero insuficiente
+                      ❌ Monto insuficiente
                     </div>
                   )}
                 </div>
               </>
+            )}
+
+            {/* ✅ NUEVA SECCIÓN: GiftCard */}
+            {paymentMethod === "GiftCard" && !showSecondPayment && (
+              <div className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
+                <h4 className="text-sm font-medium text-purple-800 mb-3">🎁 Pago con GiftCard</h4>
+                
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email del cliente (GiftCard)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={giftCardEmail}
+                      onChange={(e) => setGiftCardEmail(e.target.value)}
+                      placeholder="email@cliente.com"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => validateGiftCard(giftCardEmail)}
+                      disabled={!giftCardEmail || giftCardLoading}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {giftCardLoading ? "..." : "Validar"}
+                    </button>
+                  </div>
+                  <p className="text-xs text-purple-600 mt-1">
+                    💡 Se autocompletó con el email del comprador
+                  </p>
+                </div>
+
+                {giftCardValidated && (
+                  <div className="mb-3 p-3 bg-white rounded border">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Saldo disponible:</span>
+                      <span className={`text-lg font-bold ${
+                        giftCardBalance >= totalWithDiscount ? 'text-green-600' : 'text-orange-600'
+                      }`}>
+                        ${giftCardBalance.toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm">Total a pagar:</span>
+                      <span className="text-lg font-semibold text-gray-800">
+                        ${totalWithDiscount.toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                    {giftCardBalance >= totalWithDiscount ? (
+                      <div className="mt-2 p-2 bg-green-100 rounded">
+                        <p className="text-sm text-green-800">
+                          ✅ Saldo suficiente para esta compra
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Saldo restante después del pago: ${(giftCardBalance - totalWithDiscount).toLocaleString('es-CO')}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-2 p-2 bg-orange-100 rounded">
+                        <p className="text-sm text-orange-800">
+                          ⚠️ Saldo insuficiente
+                        </p>
+                        <p className="text-xs text-orange-600 mt-1">
+                          Faltan: ${(totalWithDiscount - giftCardBalance).toLocaleString('es-CO')}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSecondPayment(true);
+                            setAmount1(giftCardBalance);
+                            setAmount2(totalWithDiscount - giftCardBalance);
+                          }}
+                          className="mt-2 text-xs bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700"
+                        >
+                          + Agregar segundo método de pago
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!giftCardValidated && (
+                  <div className="p-3 bg-gray-100 rounded text-center">
+                    <p className="text-sm text-gray-600">
+                      Ingresa el email y valida la GiftCard para continuar
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="mb-4">

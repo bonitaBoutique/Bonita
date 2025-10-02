@@ -8,6 +8,7 @@ const returnProducts= require("./returnProducts")
 const getProductStock = require("./getProductStock")
 const getReceiptForReturn = require("./getReceiptForReturn");
 const getReturnHistory = require("./getReturnHistory");
+const { getReturns, getReturnById, getReturnStats } = require("./getReturns");
 
 module.exports={
     createProduct,
@@ -19,6 +20,9 @@ module.exports={
     getStock,
     returnProducts,
     getReceiptForReturn,
-    getReturnHistory
+    getReturnHistory,
+    getReturns,
+    getReturnById,
+    getReturnStats
     
 }

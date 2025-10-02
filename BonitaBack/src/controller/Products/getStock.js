@@ -2,6 +2,32 @@ const { Product, StockMovement } = require("../../data");
 const { Op } = require("sequelize");
 const response = require("../../utils/response");
 
+// ✅ FUNCIÓN CORREGIDA: Manejar fechas de Colombia correctamente
+const parseDateForColombia = (dateString, isEndDate = false) => {
+  if (!dateString) return null;
+  
+  console.log(`🕒 [parseDateForColombia] Input: ${dateString}, isEndDate: ${isEndDate}`);
+  
+  // Si es formato YYYY-MM-DD, interpretar como fecha local de Colombia
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (isEndDate) {
+      // Para dateTo: 23:59:59.999 del día seleccionado
+      // Como las fechas en BD ya están en Colombia, crear fecha local
+      const endDate = new Date(`${dateString}T23:59:59.999`);
+      console.log(`📅 [dateTo] ${dateString} → ${endDate.toISOString()}`);
+      return endDate;
+    } else {
+      // Para dateFrom: 00:00:00 del día seleccionado  
+      // Como las fechas en BD ya están en Colombia, crear fecha local
+      const startDate = new Date(`${dateString}T00:00:00.000`);
+      console.log(`📅 [dateFrom] ${dateString} → ${startDate.toISOString()}`);
+      return startDate;
+    }
+  }
+  
+  return new Date(dateString);
+};
+
 module.exports = async (req, res) => {
   try {
     const { page = 1, limit = 50, type, dateFrom, dateTo, id_product } = req.query;
@@ -15,10 +41,21 @@ module.exports = async (req, res) => {
       whereClause.type = type;
     }
     
+    // ✅ FILTRO POR FECHAS CON ZONA HORARIA DE COLOMBIA
     if (dateFrom || dateTo) {
       whereClause.date = {};
-      if (dateFrom) whereClause.date[Op.gte] = new Date(dateFrom);
-      if (dateTo) whereClause.date[Op.lte] = new Date(dateTo);
+      
+      if (dateFrom) {
+        const fromDate = parseDateForColombia(dateFrom, false);
+        whereClause.date[Op.gte] = fromDate;
+        console.log("📅 [dateFrom] Filtro desde:", dateFrom, "→ UTC:", fromDate);
+      }
+      
+      if (dateTo) {
+        const toDate = parseDateForColombia(dateTo, true);
+        whereClause.date[Op.lte] = toDate;
+        console.log("📅 [dateTo] Filtro hasta:", dateTo, "→ UTC:", toDate);
+      }
     }
 
     // ✅ FILTRO POR PRODUCTO

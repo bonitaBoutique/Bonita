@@ -1,4 +1,4 @@
-const { Receipt, OrderDetail, Product, conn: sequelize } = require("../../data");
+const { Receipt, OrderDetail, Product, GiftCard, StockMovement, Return, User, conn: sequelize } = require("../../data"); // ✅ Agregar Return y User
 const response = require("../../utils/response");
 const { formatDateForDB, getColombiaDate } = require("../../utils/dateUtils"); // ✅ Importar utilidades de fecha
 
@@ -53,6 +53,23 @@ module.exports = async (req, res) => {
         error: "Datos requeridos faltantes"
       });
     }
+
+    // ✅ VALIDAR QUE EL CAJERO EXISTE EN LA BASE DE DATOS
+    const cashierUser = await User.findOne({
+      where: { n_document: cashier_document },
+      attributes: ['n_document', 'first_name', 'last_name', 'role']
+    });
+
+    if (!cashierUser) {
+      await transaction.rollback();
+      return response(res, 400, "error", {
+        success: false,
+        error: `El documento del cajero '${cashier_document}' no existe en el sistema`,
+        code: 'INVALID_CASHIER_DOCUMENT'
+      });
+    }
+
+    console.log("👤 Cajero validado:", cashierUser.first_name, cashierUser.last_name);
 
     console.log("🔍 Buscando recibo original:", original_receipt_id);
 
@@ -183,8 +200,22 @@ module.exports = async (req, res) => {
         returning: true, // ✅ Obtener el resultado actualizado
         plain: true
       });
+
+      // 📝 REGISTRAR MOVIMIENTO DE STOCK - DEVOLUCIÓN
+      await StockMovement.create({
+        id_product,
+        type: 'IN',
+        quantity,
+        reason: 'RETURN',
+        reference_id: String(original_receipt_id), // ✅ Convertir a string
+        reference_type: 'RETURN',
+        unit_price,
+        notes: `Devolución de producto del recibo ${original_receipt_id}`,
+        date: getColombiaDate()
+      }, { transaction });
       
       console.log(`✅ Stock devuelto para producto ${id_product}: +${quantity} unidades. Nuevo stock: ${product.stock + quantity}`);
+      console.log(`📝 Movimiento de stock registrado: RETURN IN +${quantity}`);
     }
 
     // ✅ PROCESAR PRODUCTOS NUEVOS (si los hay)
@@ -226,8 +257,22 @@ module.exports = async (req, res) => {
         where: { id_product },
         transaction
       });
+
+      // 📝 REGISTRAR MOVIMIENTO DE STOCK - VENTA
+      await StockMovement.create({
+        id_product,
+        type: 'OUT',
+        quantity,
+        reason: 'SALE',
+        reference_id: String(original_receipt_id), // ✅ Convertir a string
+        reference_type: 'RETURN',
+        unit_price,
+        notes: `Venta como parte del intercambio en devolución del recibo ${original_receipt_id}`,
+        date: getColombiaDate()
+      }, { transaction });
       
       console.log(`✅ Stock reducido para producto nuevo ${id_product}: -${quantity} unidades`);
+      console.log(`📝 Movimiento de stock registrado: SALE OUT -${quantity}`);
     }
 
     // ✅ CALCULAR DIFERENCIA
@@ -239,27 +284,112 @@ module.exports = async (req, res) => {
       difference
     });
 
+    // 🔍 DEBUG ESPECÍFICO PARA LA CONDICIÓN
+    console.log("🔍 DEBUG - Evaluando condiciones:");
+    console.log("  difference > 0:", difference > 0);
+    console.log("  difference < 0:", difference < 0); 
+    console.log("  difference === 0:", difference === 0);
+    console.log("  typeof difference:", typeof difference);
+    console.log("🔍 DEBUG - Valor raw de difference:", difference);
+    console.log("🔍 DEBUG - Comparación directa: ", difference, " > 0 = ", (difference > 0));
+
     let actionRequired = null;
+    let newReceiptId = null;
+    let newGiftCardId = null;
+
+    console.log("🔍 DEBUG - ANTES del primer IF");
 
     if (difference > 0) {
+      console.log("🔍 DEBUG - ENTRANDO AL IF (difference > 0)");
+      // Cliente debe pagar diferencia - CREAR RECIBO
+      console.log('💰 Cliente debe pagar diferencia:', difference);
+      
+      const receiptData = {
+        cashier_document: cashier_document, // ✅ Usuario que procesa la devolución (del request)
+        buyer_name: originalReceipt.buyer_name || 'Cliente', // ✅ Nombre del comprador original
+        buyer_email: originalReceipt.buyer_email || 'no-email@bonita.com', // ✅ Email del comprador original
+        buyer_phone: originalReceipt.buyer_phone || null,
+        total_amount: difference, // ✅ Importe total
+        amount: difference, // ✅ Importe del primer método de pago
+        payMethod: 'Efectivo', // ✅ Método de pago
+        date: getColombiaDate(),
+        description: `Diferencia por devolución de productos (Recibo original: ${original_receipt_id})`
+      };
+
+      const newReceipt = await Receipt.create(receiptData, { transaction });
+      newReceiptId = newReceipt.id_receipt; // ✅ CORREGIDO: usar id_receipt en lugar de id
+      console.log('✅ Recibo de diferencia creado:', newReceiptId);
+
       actionRequired = {
         type: 'additional_payment',
         amount: difference,
-        message: `Cliente debe pagar diferencia de $${difference.toLocaleString("es-CO")}`
+        message: `Cliente debe pagar diferencia de $${difference.toLocaleString("es-CO")}`,
+        receiptId: newReceiptId
       };
+
     } else if (difference < 0) {
+      console.log("🔍 DEBUG - ENTRANDO AL ELSE IF (difference < 0)");
+      // Cliente recibe crédito - CREAR GIFT CARD
+      const creditAmount = Math.abs(difference);
+      console.log('🎁 Cliente recibe crédito:', creditAmount);
+      
+      const giftCardData = {
+        buyer_email: originalReceipt.buyer_email || 'no-email@bonita.com',
+        buyer_name: originalReceipt.buyer_name || 'Cliente',
+        buyer_phone: originalReceipt.buyer_phone || null,
+        saldo: creditAmount,
+        estado: 'activa',
+        payment_method: 'Devolución', // ✅ AGREGAR: Método de pago para identificar origen
+        description: `Crédito por devolución del recibo ${original_receipt_id}`,
+        reference_id: String(original_receipt_id), // ✅ AGREGAR: Referencia al recibo original
+        reference_type: 'RETURN_CREDIT' // ✅ AGREGAR: Tipo de referencia
+      };
+
+      const newGiftCard = await GiftCard.create(giftCardData, { transaction });
+      newGiftCardId = newGiftCard.id_giftcard; // ✅ CORREGIDO: usar id_giftcard
+      console.log('✅ Gift Card de crédito creada:', newGiftCardId);
+
       actionRequired = {
         type: 'credit_issued',
         amount: Math.abs(difference),
-        message: `Crédito emitido por $${Math.abs(difference).toLocaleString("es-CO")}`
+        message: `Crédito emitido por $${Math.abs(difference).toLocaleString("es-CO")}`,
+        giftCardId: newGiftCardId
       };
+
     } else {
+      console.log("🔍 DEBUG - ENTRANDO AL ELSE (difference === 0)");
       actionRequired = {
         type: 'no_action',
         amount: 0,
         message: 'Intercambio sin diferencia de precio'
       };
     }
+
+    console.log("🔍 DEBUG - DESPUÉS de todos los IFs");
+    console.log("🔍 DEBUG - actionRequired final:", actionRequired);
+
+    // ✅ CREAR REGISTRO DE DEVOLUCIÓN EN LA BASE DE DATOS
+    console.log("💾 Creando registro de devolución...");
+    
+    // Generar ID único para la devolución
+    const returnId = `RET-${original_receipt_id}-${Date.now()}`;
+    
+    const returnRecord = await Return.create({
+      id_return: returnId,
+      original_receipt_id: original_receipt_id,
+      return_date: getColombiaDate(),
+      cashier_document: cashier_document,
+      reason: reason || "Devolución estándar",
+      status: "Procesada",
+      total_returned: totalReturned,
+      total_new_purchase: totalNewPurchase,
+      difference_amount: difference,
+      new_receipt_id: newReceiptId, // ID del recibo creado para la diferencia (si aplica)
+      returned_products: JSON.stringify(returned_products), // Guardar como JSON
+      new_products: JSON.stringify(new_products) // Guardar como JSON
+    }, { transaction });
+
+    console.log("✅ Registro de devolución creado:", returnRecord.id_return);
 
     // ✅ CONFIRMAR TRANSACCIÓN
     await transaction.commit();
@@ -269,6 +399,7 @@ module.exports = async (req, res) => {
       success: true,
       message: "Devolución procesada exitosamente",
       data: {
+        returnId: returnRecord.id_return, // ✅ Agregar ID de devolución
         originalReceiptId: original_receipt_id,
         returnedProducts: returned_products,
         newProducts: new_products,
@@ -278,6 +409,10 @@ module.exports = async (req, res) => {
           difference
         },
         actionRequired,
+        createdDocuments: {
+          receiptId: newReceiptId,
+          giftCardId: newGiftCardId
+        },
         stockUpdated: true,
         processedAt: formatDateForDB(serverDate),
         serverInfo: {
@@ -296,6 +431,18 @@ module.exports = async (req, res) => {
         console.log("🔄 Rollback ejecutado exitosamente");
       } catch (rollbackError) {
         console.error("💥 Error en rollback:", rollbackError);
+      }
+    }
+    
+    // ✅ Manejo específico de errores de llave foránea
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      if (error.constraint === 'Returns_cashier_document_fkey') {
+        return response(res, 400, "error", {
+          success: false,
+          error: "El documento del cajero no existe en el sistema",
+          details: `El documento '${error.value || 'desconocido'}' no está registrado como usuario válido`,
+          code: 'INVALID_CASHIER_DOCUMENT'
+        });
       }
     }
     

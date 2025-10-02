@@ -15,6 +15,9 @@ router.get("/stock-movements", controller.getStock); // Para listar TODOS los mo
 router.get("/receipt-for-return/:receipt_id", controller.getReceiptForReturn); // Buscar recibo para devolución
 router.post("/process-return", controller.returnProducts); // Procesar devolución
 router.get("/returns-history", controller.getReturnHistory); // Historial de devoluciones
+router.get("/returns", controller.getReturns); // Obtener todas las devoluciones
+router.get("/returns/stats", controller.getReturnStats); // Estadísticas de devoluciones
+router.get("/returns/:id", controller.getReturnById); // Obtener devolución específica
 
 // ✅ RUTAS CON PARÁMETROS AL FINAL
 router.get('/:id_product', controller.getProductId);

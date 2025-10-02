@@ -154,6 +154,9 @@ SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   FETCH_RETURN_HISTORY_REQUEST,
   FETCH_RETURN_HISTORY_SUCCESS,
   FETCH_RETURN_HISTORY_FAILURE,
+  FETCH_RETURNS_REQUEST,
+  FETCH_RETURNS_SUCCESS,
+  FETCH_RETURNS_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
   FETCH_STOCK_MOVEMENTS_REQUEST,
@@ -1745,7 +1748,8 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
         type: GET_CLIENT_ACCOUNT_BALANCE_SUCCESS,
         payload: {
           user: res.data.message.user,
-          orderDetails: res.data.message.orderDetails
+          orderDetails: res.data.message.orderDetails,
+          giftCards: res.data.message.giftCards || [] // ✅ AGREGAR: GiftCards
         },
       });
     } catch (error) {
@@ -2207,6 +2211,66 @@ export const fetchReturnHistory = (filters = {}) => async (dispatch) => {
   }
 };
 
+// ✅ 4. OBTENER TODAS LAS DEVOLUCIONES (para listado completo)
+export const fetchReturns = (filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_RETURNS_REQUEST });
+
+    // Construir query params para filtros
+    const queryParams = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] && filters[key] !== 'all' && filters[key] !== '') {
+        queryParams.append(key, filters[key]);
+      }
+    });
+
+    const url = `${BASE_URL}/product/returns${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    console.log("📋 Obteniendo todas las devoluciones:", url);
+
+    const { data } = await axios.get(url);
+    console.log("📊 Respuesta completa del servidor:", data);
+
+    // La estructura de respuesta es: data.data.data.returns
+    const responseData = data.data;
+    console.log("📊 Data extraída:", responseData);
+
+    if (responseData.success) {
+      dispatch({ 
+        type: FETCH_RETURNS_SUCCESS, 
+        payload: {
+          returns: responseData.data?.returns || [],
+          pagination: responseData.data?.pagination || {},
+          stats: responseData.data?.stats || {}
+        }
+      });
+      console.log("✅ Devoluciones cargadas exitosamente");
+      return responseData.data;
+    } else {
+      const errorMessage = responseData.message || 'Error al obtener devoluciones';
+      console.error("❌ Error en respuesta:", errorMessage);
+      
+      dispatch({
+        type: FETCH_RETURNS_FAILURE,
+        payload: errorMessage
+      });
+      
+      return { error: errorMessage };
+    }
+
+  } catch (error) {
+    console.error("❌ Error en fetchReturns:", error);
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Error de conexión';
+    
+    dispatch({
+      type: FETCH_RETURNS_FAILURE,
+      payload: errorMessage
+    });
+
+    console.error("❌ Error final:", errorMessage);
+    return { error: errorMessage };
+  }
+};
+
 // ✅ 4. LIMPIAR ESTADO DE DEVOLUCIONES
 export const clearReturnState = () => ({
   type: CLEAR_RETURN_STATE
@@ -2318,7 +2382,39 @@ export const createStockMovement = (movementData) => {
         type: CREATE_STOCK_MOVEMENT_FAILURE,
         payload: errorMessage
       });
+
+      throw error;
+    }
+  };
+};
+
+// ✅ NEW ACTION: Fetch ALL stock movements for export (without pagination)
+export const fetchAllStockMovementsForExport = (filters = {}) => {
+  return async (dispatch) => {
+    try {
+      const queryParams = new URLSearchParams();
       
+      // ✅ IMPORTANTE: No enviar page ni limit para obtener TODOS los registros
+      if (filters.type) queryParams.append('type', filters.type);
+      if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
+      if (filters.id_product) queryParams.append('id_product', filters.id_product);
+      
+      // ✅ NUEVO: Parámetro especial para indicar que es exportación
+      queryParams.append('export', 'true');
+      queryParams.append('limit', '999999'); // Limit muy alto para obtener todo
+
+      const url = `${BASE_URL}/product/stock-movements?${queryParams.toString()}`;
+      console.log('📊 [Export] Solicitando TODOS los movimientos para exportación:', url);
+      
+      const response = await axios.get(url);
+      
+      const { data: movements } = response.data.message;
+      console.log('📊 [Export] Movimientos obtenidos para exportación:', movements?.length || 0);
+      
+      return movements || [];
+    } catch (error) {
+      console.error('❌ [Export] Error obteniendo movimientos para exportación:', error);
       throw error;
     }
   };

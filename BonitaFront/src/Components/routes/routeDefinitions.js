@@ -126,7 +126,7 @@ export const adminRoutes = [
   },
   { 
     path: '/returns/history', 
-    component: lazy(() => import('../Product/CreateProduct')) 
+    component: lazy(() => import('../Returns/ReturnsList')) 
   },
   { 
     path: '/panelGastos', 

@@ -1,4 +1,4 @@
-const { User, OrderDetail, Receipt, Reservation } = require('../../data');
+const { User, OrderDetail, Receipt, Reservation, GiftCard } = require('../../data'); // ✅ AGREGAR: GiftCard
 const response = require('../../utils/response');
 
 exports.getClientAccountBalance = async (req, res) => {
@@ -11,6 +11,7 @@ exports.getClientAccountBalance = async (req, res) => {
       return response(res, 404, "Usuario no encontrado");
     }
 
+    // ✅ OBTENER: OrderDetails del usuario
     const orderDetails = await OrderDetail.findAll({
       where: { n_document: user.n_document },
       include: [
@@ -25,7 +26,30 @@ exports.getClientAccountBalance = async (req, res) => {
       ],
     });
 
-    response(res, 200, { user, orderDetails });
+    // ✅ AGREGAR: GiftCards del usuario (por email)
+    const giftCards = await GiftCard.findAll({
+      where: { buyer_email: user.email },
+      attributes: [
+        'id_giftcard', 
+        'saldo', 
+        'estado', 
+        'payment_method',
+        'description',
+        'reference_id',
+        'reference_type',
+        'createdAt',
+        'updatedAt'
+      ],
+      order: [['createdAt', 'DESC']] // ✅ ORDENAR: Más recientes primero
+    });
+
+    console.log(`📧 GiftCards encontradas para ${user.email}:`, giftCards.length);
+
+    response(res, 200, { 
+      user, 
+      orderDetails,
+      giftCards // ✅ AGREGAR: GiftCards en la respuesta
+    });
   } catch (error) {
     console.error(error);
     response(res, 500, "Error al obtener el saldo del cliente");

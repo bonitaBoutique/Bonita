@@ -1,61 +1,256 @@
+// ================================
+// 🇨🇴 UTILIDADES DE FECHA PARA COLOMBIA
+// ================================
+// Zona horaria: America/Bogota (UTC-5)
+// Estas funciones garantizan manejo consistente de fechas en toda la aplicación
+
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+// Inicializar plugins de dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+
+// Configuración global para Colombia
+const COLOMBIA_TIMEZONE = 'America/Bogota';
+
+// ================================
+// 🕒 FUNCIONES BÁSICAS DE FECHA
+// ================================
+
+/**
+ * Obtener fecha actual de Colombia (solo fecha)
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
 export const getColombiaDate = () => {
-  const now = new Date();
-  // Obtener fecha en zona horaria de Colombia (UTC-5)
-  const colombiaDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-  return colombiaDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  return dayjs().tz(COLOMBIA_TIMEZONE).format('YYYY-MM-DD');
 };
 
-// ✅ NUEVA: Obtener fecha del servidor desde el estado Redux
+/**
+ * Obtener fecha y hora actual de Colombia
+ * @returns {string} Fecha y hora en formato ISO con zona horaria
+ */
+export const getColombiaDateTime = () => {
+  return dayjs().tz(COLOMBIA_TIMEZONE).toISOString();
+};
+
+/**
+ * Obtener timestamp actual de Colombia
+ * @returns {Date} Objeto Date con hora de Colombia
+ */
+export const getColombiaDateObject = () => {
+  return dayjs().tz(COLOMBIA_TIMEZONE).toDate();
+};
+
+// ================================
+// 📅 FORMATEO PARA DISPLAY
+// ================================
+
+/**
+ * Formatear fecha para mostrar en la interfaz
+ * @param {string|Date} dateInput - Fecha a formatear
+ * @param {boolean} includeTime - Si incluir hora o solo fecha
+ * @returns {string} Fecha formateada para mostrar
+ */
+export const formatDateForDisplay = (dateInput, includeTime = false) => {
+  if (!dateInput) return '-';
+  
+  try {
+    let date;
+    
+    // Si es una fecha ISO con Z (UTC)
+    if (typeof dateInput === 'string' && dateInput.includes('Z')) {
+      date = dayjs.utc(dateInput).tz(COLOMBIA_TIMEZONE);
+    }
+    // Si es una fecha ISO con zona horaria
+    else if (typeof dateInput === 'string' && (dateInput.includes('+') || dateInput.includes('T'))) {
+      date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+    }
+    // Si es solo fecha (YYYY-MM-DD)
+    else if (typeof dateInput === 'string' && dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Interpretar como fecha local de Colombia, no UTC
+      date = dayjs.tz(dateInput, 'YYYY-MM-DD', COLOMBIA_TIMEZONE);
+    }
+    // Cualquier otro formato
+    else {
+      date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+    }
+
+    if (includeTime) {
+      return date.format('DD/MM/YYYY, HH:mm');
+    } else {
+      return date.format('DD/MM/YYYY');
+    }
+  } catch (error) {
+    console.error('❌ Error al formatear fecha:', dateInput, error);
+    return '-';
+  }
+};
+
+/**
+ * Formatear fecha específicamente para movimientos de stock
+ * @param {string|Date} dateInput - Fecha a formatear
+ * @returns {string} Fecha formateada para movimientos
+ */
+export const formatMovementDate = (dateInput) => {
+  return formatDateForDisplay(dateInput, true);
+};
+
+/**
+ * Formatear fecha para inputs HTML (type="date")
+ * @param {string|Date} dateInput - Fecha a formatear
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
+export const formatDateForInput = (dateInput) => {
+  if (!dateInput) return '';
+  
+  try {
+    let date;
+    
+    if (typeof dateInput === 'string' && dateInput.includes('Z')) {
+      date = dayjs.utc(dateInput).tz(COLOMBIA_TIMEZONE);
+    } else if (typeof dateInput === 'string' && dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateInput; // Ya está en formato correcto
+    } else {
+      date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+    }
+    
+    return date.format('YYYY-MM-DD');
+  } catch (error) {
+    console.error('❌ Error al formatear fecha para input:', dateInput, error);
+    return '';
+  }
+};
+
+// ================================
+// 🔧 FUNCIONES DE CONVERSIÓN
+// ================================
+
+/**
+ * Convertir fecha a formato para backend
+ * @param {string|Date} dateInput - Fecha a convertir
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
+export const formatDateForBackend = (dateInput) => {
+  if (!dateInput) return null;
+  
+  try {
+    // Si ya está en formato YYYY-MM-DD, devolverla tal como está
+    if (typeof dateInput === 'string' && dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateInput;
+    }
+    
+    const date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+    return date.format('YYYY-MM-DD');
+  } catch (error) {
+    console.error('❌ Error al formatear fecha para backend:', dateInput, error);
+    return null;
+  }
+};
+
+/**
+ * Convertir fecha a ISO con zona horaria de Colombia
+ * @param {string|Date} dateInput - Fecha a convertir
+ * @returns {string} Fecha en formato ISO con zona horaria
+ */
+export const toColombiaISO = (dateInput) => {
+  if (!dateInput) return null;
+  
+  try {
+    const date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+    return date.toISOString();
+  } catch (error) {
+    console.error('❌ Error al convertir a ISO Colombia:', dateInput, error);
+    return null;
+  }
+};
+
+// ================================
+// ✅ FUNCIONES DE VALIDACIÓN
+// ================================
+
+/**
+ * Validar si una fecha es válida
+ * @param {string|Date} dateInput - Fecha a validar
+ * @returns {boolean} True si es válida
+ */
+export const isValidDate = (dateInput) => {
+  if (!dateInput) return false;
+  return dayjs(dateInput).isValid();
+};
+
+/**
+ * Validar si una fecha está en el futuro
+ * @param {string|Date} dateInput - Fecha a validar
+ * @returns {boolean} True si está en el futuro
+ */
+export const isDateInFuture = (dateInput) => {
+  if (!dateInput) return false;
+  const inputDate = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
+  const today = dayjs().tz(COLOMBIA_TIMEZONE).startOf('day');
+  return inputDate.isAfter(today);
+};
+
+/**
+ * Validar rango de fechas
+ * @param {string} startDate - Fecha de inicio
+ * @param {string} endDate - Fecha de fin
+ * @returns {object} Resultado de validación
+ */
+export const validateDateRange = (startDate, endDate) => {
+  if (!startDate || !endDate) {
+    return { valid: false, message: 'Ambas fechas son requeridas' };
+  }
+  
+  if (!isValidDate(startDate) || !isValidDate(endDate)) {
+    return { valid: false, message: 'Las fechas no son válidas' };
+  }
+  
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  
+  if (start.isAfter(end)) {
+    return { valid: false, message: 'La fecha de inicio no puede ser posterior a la fecha de fin' };
+  }
+  
+  return { valid: true, message: null };
+};
+
+// ================================
+// 🆕 FUNCIONES DE COMPATIBILIDAD TEMPORAL
+// ================================
+
+/**
+ * Obtener fecha del servidor desde el estado Redux (compatibilidad temporal)
+ * @param {object} serverTime - Estado del servidor desde Redux
+ * @returns {string} Fecha del servidor o fecha actual de Colombia
+ */
 export const getServerDate = (serverTime) => {
   if (serverTime?.current?.date) {
     return serverTime.current.date;
   }
-  // Fallback a fecha de Colombia si no hay servidor
   return getColombiaDate();
 };
 
-// ✅ NUEVA: Formatear fecha para input date (YYYY-MM-DD)
+/**
+ * Formatear fecha para input (compatibilidad temporal)
+ * @param {object} serverTime - Estado del servidor desde Redux
+ * @returns {string} Fecha formateada para input
+ */
 export const getDateForInput = (serverTime) => {
   return getServerDate(serverTime);
 };
 
-// ✅ Formatear fecha para enviar al backend
-export const formatDateForBackend = (dateString) => {
-  if (!dateString) return null;
-  
-  // Asegurar que la fecha se interprete en zona horaria de Colombia
-  // Formato: YYYY-MM-DD -> YYYY-MM-DD (sin conversión de zona horaria)
-  return dateString; // Ya está en formato correcto YYYY-MM-DD
-};
-
-// Formatear fecha para mostrar en español
-export const formatDateForDisplay = (dateString) => {
-  if (!dateString) return '';
-  
-  const date = new Date(dateString + 'T00:00:00');
-  return date.toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-// Validar que la fecha sea válida
-export const isValidDate = (dateString) => {
-  if (!dateString) return false;
-  const date = new Date(dateString);
-  return !isNaN(date.getTime());
-};
-
-// Comparar fechas (útil para validaciones)
-export const isDateInFuture = (dateString) => {
-  if (!dateString) return false;
-  const inputDate = new Date(dateString + 'T00:00:00');
-  const today = new Date(getColombiaDate() + 'T00:00:00');
-  return inputDate > today;
-};
-
-// ✅ NUEVA: Validar que la fecha no sea futura según el servidor
+/**
+ * Validar que la fecha no sea futura según el servidor (compatibilidad temporal)
+ * @param {string} dateString - Fecha a validar
+ * @param {object} serverTime - Estado del servidor
+ * @param {string} fieldName - Nombre del campo para el mensaje
+ * @returns {object} Resultado de validación
+ */
 export const validateDateNotFuture = (dateString, serverTime, fieldName = 'Fecha') => {
   if (!dateString) {
     return {
@@ -72,10 +267,10 @@ export const validateDateNotFuture = (dateString, serverTime, fieldName = 'Fecha
   }
 
   const serverDate = getServerDate(serverTime);
-  const inputDate = new Date(dateString);
-  const maxDate = new Date(serverDate);
+  const inputDate = dayjs(dateString);
+  const maxDate = dayjs(serverDate);
 
-  if (inputDate > maxDate) {
+  if (inputDate.isAfter(maxDate)) {
     return {
       valid: false,
       message: `${fieldName} no puede ser futura según la fecha del servidor (${formatDateForDisplay(serverDate)})`
@@ -86,91 +281,4 @@ export const validateDateNotFuture = (dateString, serverTime, fieldName = 'Fecha
     valid: true,
     message: null
   };
-};
-
-// ✅ Función CORREGIDA para formatear fechas de movimientos
-export const formatMovementDate = (dateString) => {
-  if (!dateString) return "-";
-  
-  try {
-    console.log("🕒 Fecha raw recibida:", dateString);
-    
-    // ✅ CASO 1: Solo fecha (YYYY-MM-DD) - NO convertir zona horaria
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      console.log("📅 Detectada fecha simple (solo fecha):", dateString);
-      
-      // ✅ Interpretar como fecha local de Colombia, no UTC
-      const [year, month, day] = dateString.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0);
-      
-      const formatted = date.toLocaleDateString('es-CO', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }) + ' 00:00';
-      
-      console.log("✅ Fecha formateada como local:", formatted);
-      return formatted;
-    }
-    
-    // ✅ CASO 2: Fecha con hora completa (ISO string o similar)
-    if (dateString.includes('T') || dateString.includes(' ')) {
-      console.log("📅 Detectada fecha con hora:", dateString);
-      
-      const dayjs = require('dayjs');
-      const utc = require('dayjs/plugin/utc');
-      const timezone = require('dayjs/plugin/timezone');
-      
-      dayjs.extend(utc);
-      dayjs.extend(timezone);
-      
-      // ✅ Verificar si tiene zona horaria explícita
-      const hasTimezone = dateString.includes('Z') || dateString.includes('+') || dateString.includes('-05:00');
-      
-      let formatted;
-      
-      if (hasTimezone) {
-        // ✅ Tiene zona horaria, convertir a Colombia
-        formatted = dayjs(dateString).tz("America/Bogota").format("DD/MM/YYYY HH:mm");
-        console.log("✅ Convertida de UTC a Colombia:", formatted);
-      } else {
-        // ✅ No tiene zona horaria, asumir que ya es hora local de Colombia
-        formatted = dayjs(dateString).format("DD/MM/YYYY HH:mm");
-        console.log("✅ Interpretada como hora local:", formatted);
-      }
-      
-      return formatted;
-    }
-    
-    // ✅ CASO 3: Formato desconocido, usar como está
-    console.log("❓ Formato desconocido, usando tal como está");
-    return dateString;
-    
-  } catch (error) {
-    console.error("❌ Error al formatear fecha:", dateString, error);
-    return dateString;
-  }
-};
-
-// ✅ Obtener fecha y hora actual de Colombia para timestamps
-export const getColombiaDateTime = () => {
-  const now = new Date();
-  return new Date(now.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-};
-
-// ✅ Convertir fecha a formato ISO manteniendo zona horaria de Colombia
-export const toColombiaISO = (dateString) => {
-  if (!dateString) return null;
-  
-  // Si ya tiene zona horaria, mantenerla
-  if (dateString.includes('T') && (dateString.includes('Z') || dateString.includes('+'))) {
-    return dateString;
-  }
-  
-  // Si es solo fecha (YYYY-MM-DD), agregar hora de Colombia
-  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    return dateString + 'T00:00:00-05:00'; // Colombia UTC-5
-  }
-  
-  return dateString;
 };

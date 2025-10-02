@@ -8,12 +8,15 @@ import {
   fetchAllReceipts,
   fetchProducts,
 } from "../../Redux/Actions/actions";
+import { getColombiaDateTime, formatDateForDisplay } from "../../utils/dateUtils";
+import { BASE_URL } from "../../Config";
 import Swal from "sweetalert2";
+import jsPDF from "jspdf";
 import Navbar2 from "../Navbar2";
 
-// ✅ MEJORA 1: Utilidad para fecha de Colombia
+// ✅ MEJORA 1: Función optimizada usando utilidades globales
 const getColombiaDate = () => {
-  return new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" });
+  return getColombiaDateTime().toLocaleString("es-CO", { timeZone: "America/Bogota" });
 };
 
 // ✅ MEJORA 2: Reducer para manejo de estado complejo
@@ -299,17 +302,25 @@ const ReturnManagement = () => {
   const products = useSelector((state) => state.products || []);
   const productsLoading = useSelector((state) => state.loading);
   const { receipts, receiptsLoading, receiptsError, receiptsPagination } = useSelector((state) => state);
+  const { user } = useSelector((state) => state.auth || {});
 
   // ✅ ESTADOS PRINCIPALES
   const [step, setStep] = useState(1);
   const [originalReceipt, setOriginalReceipt] = useState(null);
   const [receiptId, setReceiptId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [cashierDocument, setCashierDocument] = useState("");
+  const [cashierDocument, setCashierDocument] = useState(user?.n_document || "");
+  const [cashierDocumentValidation, setCashierDocumentValidation] = useState({
+    isValid: false,
+    message: "",
+    isValidating: false
+  });
   const [returnResult, setReturnResult] = useState(null);
   const [availableProducts, setAvailableProducts] = useState([]);
   const [newProductCodes, setNewProductCodes] = useState("");
   const [showNewProductsSection, setShowNewProductsSection] = useState(false);
+  const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
   // ✅ MEJORA 7: Usar useReducer para estado complejo
   const [returnData, dispatchReturnData] = useReducer(returnDataReducer, {
@@ -318,6 +329,103 @@ const ReturnManagement = () => {
     reason: "",
     customer_payment_method: "Credito en tienda"
   });
+
+  // ✅ Manejar cambio del documento del cajero con validación
+  const handleCashierDocumentChange = async (value) => {
+    setCashierDocument(value);
+    
+    if (value.trim() === "") {
+      setCashierDocumentValidation({
+        isValid: false,
+        message: "",
+        isValidating: false
+      });
+      return;
+    }
+
+    // Mostrar estado de validación
+    setCashierDocumentValidation({
+      isValid: false,
+      message: "Validando documento...",
+      isValidating: true
+    });
+
+    // Debounce: esperar 500ms antes de validar
+    clearTimeout(window.cashierDocumentTimeout);
+    window.cashierDocumentTimeout = setTimeout(async () => {
+      const validation = await validateCashierDocument(value);
+      setCashierDocumentValidation({
+        ...validation,
+        isValidating: false
+      });
+    }, 500);
+  };
+
+  // ✅ Función para validar documento del cajero
+  const validateCashierDocument = async (document) => {
+    if (!document || document.trim() === "") {
+      return { isValid: false, message: "El documento del cajero es requerido" };
+    }
+
+    const cleanDocument = document.trim();
+
+    // Validar formato: solo números y longitud mínima
+    if (!/^\d{7,15}$/.test(cleanDocument)) {
+      return { 
+        isValid: false, 
+        message: "El documento debe contener solo números y tener entre 7 y 15 dígitos" 
+      };
+    }
+
+    // Verificar que el usuario existe en el backend
+    try {
+      const response = await fetch(`${BASE_URL}/user/validate/${cleanDocument}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        return { 
+          isValid: true, 
+          message: `✅ Usuario válido: ${data.user.first_name} ${data.user.last_name}`,
+          user: data.user 
+        };
+      } else {
+        return { 
+          isValid: false, 
+          message: "Este documento no está registrado en el sistema" 
+        };
+      }
+    } catch (error) {
+      console.warn("No se pudo validar el documento en tiempo real:", error);
+      return { 
+        isValid: true, 
+        message: "Documento aceptado (validación offline)" 
+      };
+    }
+  };
+
+  // ✅ Actualizar documento del cajero cuando cambie el usuario autenticado
+  useEffect(() => {
+    if (user?.n_document && user.n_document !== cashierDocument) {
+      setCashierDocument(user.n_document);
+      console.log("👤 Documento del cajero actualizado automáticamente:", user.n_document);
+      
+      // Validar automáticamente el documento del usuario autenticado
+      setCashierDocumentValidation({
+        isValid: true,
+        message: `✅ Usuario autenticado: ${user.first_name} ${user.last_name}`,
+        isValidating: false
+      });
+    }
+  }, [user?.n_document]);
+
+  // ✅ Limpiar timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (window.cashierDocumentTimeout) {
+        clearTimeout(window.cashierDocumentTimeout);
+      }
+    };
+  }, []);
 
   // ✅ MEJORA 8: Cálculos memoizados con useMemo
   const totals = useMemo(() => {
@@ -348,6 +456,165 @@ const ReturnManagement = () => {
 
     return calculatedTotals;
   }, [returnData.returned_products, returnData.new_products]);
+
+  // ✅ FUNCIÓN PARA GENERAR PDF DEL RECIBO DE DIFERENCIA
+  const generateDifferenceReceiptPDF = useCallback((receiptData, difference, actionRequired) => {
+    console.log("📄 Generando PDF de recibo de diferencia...");
+    console.log("📄 Datos del recibo:", receiptData);
+    console.log("📄 Diferencia:", difference);
+    console.log("📄 ActionRequired:", actionRequired);
+
+    const doc = new jsPDF({
+      unit: "pt",
+      format: [226.77, 839.28], // Formato de recibo
+    });
+
+    // Configurar fuente
+    doc.setFontSize(18);
+    doc.text("Bonita Boutique", doc.internal.pageSize.width / 2, 30, {
+      align: "center",
+    });
+
+    doc.setFontSize(10);
+    let currentY = 50;
+
+    // Información de la empresa
+    doc.text("Bonita Boutique S.A.S NIT:", doc.internal.pageSize.width / 2, currentY, {
+      align: "center"
+    });
+    currentY += 20;
+
+    doc.text("901832769-3", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    doc.text("Cel: 3118318191", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 30;
+
+    // Número de recibo
+    doc.text(`RECIBO # ${actionRequired.receiptId || 'N/A'}`, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // Fecha
+    const today = getColombiaDateTime();
+    const dateStr = formatDateForDisplay(today);
+    doc.text(`Fecha: ${dateStr}`, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    doc.setFontSize(12);
+    doc.text("DIFERENCIA POR DEVOLUCIÓN", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // Información del cliente (basado en recibo original)
+    doc.setFontSize(10);
+    doc.text(`Cliente: ${originalReceipt?.buyer_name || 'N/A'}`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`Email: ${originalReceipt?.buyer_email || 'N/A'}`, 20, currentY);
+    currentY += 20;
+
+    doc.text(`Teléfono: ${originalReceipt?.buyer_phone || 'N/A'}`, 20, currentY);
+    currentY += 20;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // Detalles de la transacción
+    doc.setFontSize(11);
+    doc.text("DETALLES DE LA DEVOLUCIÓN:", 20, currentY);
+    currentY += 20;
+
+    doc.text(`Recibo original: #${originalReceipt?.id_receipt || 'N/A'}`, 20, currentY);
+    currentY += 15;
+
+    doc.text(`Total devuelto: $${totals.totalReturned.toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 15;
+
+    if (returnData.new_products.length > 0) {
+      doc.text(`Total productos nuevos: $${totals.totalNewPurchase.toLocaleString("es-CO")}`, 20, currentY);
+      currentY += 15;
+    }
+
+    doc.text(`Diferencia a pagar: $${difference.toLocaleString("es-CO")}`, 20, currentY);
+    currentY += 15;
+
+    doc.text(`Método de pago: Efectivo`, 20, currentY);
+    currentY += 20;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // Productos devueltos
+    if (returnData.returned_products.length > 0) {
+      doc.setFontSize(9);
+      doc.text("PRODUCTOS DEVUELTOS:", 20, currentY);
+      currentY += 15;
+
+      returnData.returned_products.forEach((product, index) => {
+        const productLine = `${index + 1}. ${product.id_product} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
+        const lines = doc.splitTextToSize(productLine, 170);
+        doc.text(lines, 20, currentY);
+        currentY += 12 * lines.length;
+      });
+      currentY += 10;
+    }
+
+    // Productos nuevos
+    if (returnData.new_products.length > 0) {
+      doc.setFontSize(9);
+      doc.text("PRODUCTOS NUEVOS:", 20, currentY);
+      currentY += 15;
+
+      returnData.new_products.forEach((product, index) => {
+        const productLine = `${index + 1}. ${product.id_product} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
+        const lines = doc.splitTextToSize(productLine, 170);
+        doc.text(lines, 20, currentY);
+        currentY += 12 * lines.length;
+      });
+      currentY += 10;
+    }
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // Información del cajero
+    doc.setFontSize(10);
+    doc.text(`Atendido por: ${cashierDocument}`, 20, currentY);
+    currentY += 15;
+
+    doc.text(`Transacción: Diferencia por devolución`, 20, currentY);
+    currentY += 30;
+
+    doc.setFontSize(12);
+    doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+
+    // Abrir el PDF en una nueva ventana
+    doc.output("dataurlnewwindow");
+    
+    console.log("✅ PDF de recibo de diferencia generado exitosamente");
+  }, [originalReceipt, totals, returnData, cashierDocument]);
 
   // ✅ LOG DEL ESTADO ACTUAL AL RENDERIZAR
   console.log("📊 ESTADO ACTUAL:", {
@@ -446,15 +713,26 @@ const searchReceipt = useCallback(async () => {
       if (result && result.success && result.receipt) {
         console.log("✅ Recibo encontrado en API:", result.receipt.id_receipt);
         
+        // ✅ VALIDAR PRODUCTOS DISPONIBLES
+        console.log("� Productos disponibles para devolución:", result.receipt.products?.length || 0);
+        
         // ✅ VALIDAR ESTRUCTURA DE DATOS
         const apiReceipt = result.receipt;
         
         if (!apiReceipt.products || apiReceipt.products.length === 0) {
-          console.log("⚠️ Recibo sin productos");
+          console.log("⚠️ Recibo sin productos disponibles para devolución");
+          
+          // ✅ MENSAJE MEJORADO: Distinguir entre sin productos y ya procesado
+          const hasReturnHistory = apiReceipt.returnHistory && apiReceipt.returnHistory.length > 0;
+          const title = hasReturnHistory ? "📋 Recibo ya procesado" : "⚠️ Recibo sin productos";
+          const message = hasReturnHistory 
+            ? `Este recibo ya ha sido procesado para devoluciones (${apiReceipt.returnHistory.length} devolución(es) registrada(s)). Todos los productos han sido devueltos.`
+            : "Este recibo no tiene productos asociados para devolver";
+          
           showSwal({
-            title: "⚠️ Recibo sin productos",
-            text: "Este recibo no tiene productos asociados para devolver",
-            icon: "warning",
+            title,
+            text: message,
+            icon: hasReturnHistory ? "info" : "warning",
             confirmButtonText: "Entendido"
           });
           return;
@@ -527,7 +805,12 @@ const searchReceipt = useCallback(async () => {
               <p><strong>Recibo:</strong> ${apiReceipt.id_receipt}</p>
               <p><strong>Cliente:</strong> ${apiReceipt.buyer_name || "No especificado"}</p>
               <p><strong>Total:</strong> $${apiReceipt.totalAmount?.toLocaleString("es-CO")}</p>
-              <p><strong>Productos:</strong> ${apiReceipt.products.length}</p>
+              <p><strong>Productos disponibles:</strong> ${apiReceipt.products.length}</p>
+              ${apiReceipt.returnHistory && apiReceipt.returnHistory.length > 0 
+                ? `<p><strong>⚠️ Devoluciones previas:</strong> ${apiReceipt.returnHistory.length}</p>
+                   <small>Solo se muestran productos aún disponibles para devolución</small>`
+                : ''
+              }
             </div>
           `,
           icon: "success",
@@ -864,8 +1147,8 @@ const searchReceipt = useCallback(async () => {
     });
   }, []);
 
-  const handleCreateGiftCard = useCallback((amount, reason) => {
-    console.log("🎁 INICIO handleCreateGiftCard", { amount, reason });
+  const handleCreateGiftCard = useCallback((amount, reason, autoCreated = false, giftCardId = null) => {
+    console.log("🎁 INICIO handleCreateGiftCard", { amount, reason, autoCreated, giftCardId });
 
     if (!originalReceipt) {
       showSwal({
@@ -885,6 +1168,33 @@ const searchReceipt = useCallback(async () => {
       return;
     }
 
+    // ✅ Si la GiftCard ya fue creada automáticamente, ir directo
+    if (autoCreated && giftCardId) {
+      console.log("🎁 GiftCard ya creada automáticamente, navegando directamente...");
+      
+      const navigationData = {
+        clientName: originalReceipt.buyer_name || "",
+        clientEmail: originalReceipt.buyer_email || "",
+        clientPhone: originalReceipt.buyer_phone || "",
+        totalAmount: amount,
+        reason: reason,
+        originalReceiptId: originalReceipt.id_receipt,
+        returnProducts: returnData.returned_products,
+        giftCardId: giftCardId,
+        autoGenerated: true
+      };
+
+      navigate("/accountClient", {
+        state: { 
+          returnData: navigationData,
+          giftCardCreated: true,
+          mode: 'view'
+        },
+      });
+      return;
+    }
+
+    // ✅ Flujo manual (cuando no se crea automáticamente)
     showSwal({
       title: "🎁 Crear GiftCard para Cliente",
       html: `
@@ -908,6 +1218,7 @@ const searchReceipt = useCallback(async () => {
         const navigationData = {
           clientName: originalReceipt.buyer_name || "",
           clientEmail: originalReceipt.buyer_email || "",
+          clientPhone: originalReceipt.buyer_phone || "",
           totalAmount: amount,
           reason: reason,
           originalReceiptId: originalReceipt.id_receipt,
@@ -915,7 +1226,11 @@ const searchReceipt = useCallback(async () => {
         };
 
         navigate("/accountClient", {
-          state: { returnData: navigationData },
+          state: { 
+            returnData: navigationData,
+            giftCardCreated: false,
+            mode: 'create'
+          },
         });
       }
     });
@@ -987,17 +1302,65 @@ const searchReceipt = useCallback(async () => {
       console.log("🔄 Procesaremos en backend y después manejaremos GiftCard si es necesario");
     }
 
-    console.log("🔄 Continuando con el procesamiento normal de devolución...");
+    // ✅ NUEVO: Si hay diferencia positiva (cliente debe pagar), mostrar modal de método de pago
+    if (totals.difference > 0) {
+      console.log("� Diferencia positiva detectada, mostrando modal de método de pago");
+      setShowPaymentMethodModal(true);
+      return;
+    }
+
+    // ✅ Si no hay diferencia positiva, proceder normalmente
+    await processReturnNormally();
+  }, [returnData, totals, originalReceipt, cashierDocument, handleCreditoEnTienda, showSwal]);
+
+  // ✅ NUEVA FUNCIÓN: Procesar la devolución después de seleccionar método de pago
+  const processReturnNormally = useCallback(async (paymentMethodForDifference = "") => {
+    console.log("�🔄 Continuando con el procesamiento normal de devolución...");
+    console.log("💳 Método de pago para diferencia:", paymentMethodForDifference);
     setLoading(true);
+
+    // ✅ Validar que el documento del cajero está validado
+    if (!cashierDocument || cashierDocument.trim() === "") {
+      setLoading(false);
+      showSwal({
+        icon: "error",
+        title: "Error",
+        text: "Debes ingresar tu documento de cajero para procesar la devolución",
+      });
+      return;
+    }
+
+    // ✅ Verificar que el documento esté validado correctamente
+    if (!cashierDocumentValidation.isValid) {
+      setLoading(false);
+      showSwal({
+        icon: "error",
+        title: "Error de Validación",
+        text: cashierDocumentValidation.message || "El documento del cajero no es válido. Verifica que esté registrado en el sistema.",
+      });
+      return;
+    }
+
+    // ✅ Validar si aún se está validando
+    if (cashierDocumentValidation.isValidating) {
+      setLoading(false);
+      showSwal({
+        icon: "info",
+        title: "Validando",
+        text: "Por favor espera mientras se valida el documento del cajero...",
+      });
+      return;
+    }
 
     try {
       const requestData = {
         original_receipt_id: originalReceipt.id_receipt,
         returned_products: returnData.returned_products,
         new_products: returnData.new_products,
-        cashier_document: cashierDocument,
+        cashier_document: cashierDocument.trim(), // ✅ Asegurar que no hay espacios
         reason: returnData.reason,
         customer_payment_method: returnData.customer_payment_method,
+        difference_payment_method: paymentMethodForDifference, // ✅ NUEVO: Método de pago para la diferencia
         processed_date: getColombiaDate(), // ✅ Usar fecha de Colombia
         totals: {
           totalReturned: totals.totalReturned,
@@ -1079,17 +1442,41 @@ const searchReceipt = useCallback(async () => {
 
       // ✅ MANEJAR ACCIONES POST-PROCESAMIENTO SEGÚN LA DIFERENCIA
       if (totals.difference > 0) {
+        // ✅ Obtener información del recibo creado
+        const receiptInfo = result.data?.createdDocuments;
+        const actionRequired = result.data?.actionRequired;
+
+        console.log("📄 ReceiptInfo recibido del backend:", receiptInfo);
+        console.log("📄 ActionRequired recibido del backend:", actionRequired);
+
+        // ✅ Generar PDF automáticamente si hay receiptId
+        if (actionRequired?.receiptId) {
+          console.log("📄 Generando PDF automáticamente para recibo:", actionRequired.receiptId);
+          setTimeout(() => {
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+          }, 1000); // Delay para asegurar que el SweetAlert se muestre primero
+        }
+
         showSwal({
           title: "✅ Devolución Procesada",
           html: `
             <div class="text-left">
               <p>✅ Stock actualizado correctamente</p>
               <p>💳 Cliente debe pagar diferencia: $${totals.difference.toLocaleString("es-CO")}</p>
-              <p>📄 Generar recibo por la diferencia</p>
+              <p>📄 Recibo creado: #${actionRequired?.receiptId || 'N/A'}</p>
+              <p>🖨️ PDF generándose automáticamente...</p>
             </div>
           `,
           icon: "success",
-          timer: 3000,
+          showConfirmButton: true,
+          confirmButtonText: "🖨️ Reimprimir PDF",
+          showCancelButton: true,
+          cancelButtonText: "Cerrar",
+        }).then((result) => {
+          if (result.isConfirmed && actionRequired?.receiptId) {
+            // Permitir reimprimir el PDF
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+          }
         });
       } else if (totals.difference === 0) {
         showSwal({
@@ -1101,24 +1488,52 @@ const searchReceipt = useCallback(async () => {
       } else if (totals.difference < 0) {
         // ✅ CREAR GIFTCARD DESPUÉS DEL PROCESAMIENTO EXITOSO
         console.log("🎁 Procesamiento exitoso - ahora crear GiftCard por saldo a favor");
+        
+        // ✅ Obtener información de la GiftCard del backend
+        const giftCardInfo = result.data?.createdDocuments;
+        const actionRequired = result.data?.actionRequired;
+        
+        console.log("🎁 GiftCardInfo recibido del backend:", giftCardInfo);
+        console.log("🎁 ActionRequired recibido del backend:", actionRequired);
+
         showSwal({
           title: "✅ Devolución Procesada",
           html: `
             <div class="text-left">
               <p>✅ Stock actualizado correctamente</p>
               <p>🎁 Saldo a favor: $${Math.abs(totals.difference).toLocaleString("es-CO")}</p>
-              <p>Se creará GiftCard automáticamente</p>
+              <p>💳 GiftCard creada: #${actionRequired?.giftCardId || 'N/A'}</p>
+              <p>🎫 Redirigiendo al formulario de GiftCard...</p>
             </div>
           `,
           icon: "success",
-          timer: 3000,
+          timer: 2000,
+          showConfirmButton: false
         }).then(() => {
-          // Crear GiftCard después de mostrar el éxito
-          console.log("🎁 Redirigiendo a crear GiftCard...");
-          handleCreateGiftCard(
-            Math.abs(totals.difference),
-            `Saldo a favor por cambio - Recibo #${originalReceipt.id_receipt}`
-          );
+          // ✅ NAVEGAR AUTOMÁTICAMENTE AL COMPONENTE DE GIFTCARD
+          console.log("🎁 Navegando automáticamente a crear GiftCard...");
+          
+          const navigationData = {
+            clientName: originalReceipt.buyer_name || "",
+            clientEmail: originalReceipt.buyer_email || "",
+            clientPhone: originalReceipt.buyer_phone || "",
+            totalAmount: Math.abs(totals.difference),
+            reason: `Saldo a favor por cambio - Recibo #${originalReceipt.id_receipt}`,
+            originalReceiptId: originalReceipt.id_receipt,
+            returnProducts: returnData.returned_products,
+            newProducts: returnData.new_products,
+            giftCardId: actionRequired?.giftCardId, // ✅ ID de la GiftCard ya creada
+            autoGenerated: true, // ✅ Indicar que fue creada automáticamente
+            returnId: result.data?.returnId // ✅ ID de la devolución
+          };
+
+          navigate("/accountClient", {
+            state: { 
+              returnData: navigationData,
+              giftCardCreated: true, // ✅ Indicar que la GiftCard ya fue creada
+              mode: 'view' // ✅ Modo visualización/imprimir en lugar de crear
+            },
+          });
         });
       }
       } else {
@@ -1137,14 +1552,24 @@ const searchReceipt = useCallback(async () => {
       console.error("💥 ERROR mensaje:", error.message);
       console.error("💥 ERROR respuesta:", error.response?.data);
       console.error("💥 ERROR status:", error.response?.status);
+      
+      // ✅ Manejo específico para errores de documento de cajero
+      const errorData = error.response?.data;
+      let errorMessage = "Error al procesar la devolución";
+      
+      if (errorData?.code === 'INVALID_CASHIER_DOCUMENT') {
+        errorMessage = `❌ ${errorData.error}\n\n💡 Verifica que tu documento esté correctamente registrado en el sistema.`;
+      } else {
+        errorMessage = errorData?.error || error.message || errorMessage;
+      }
+      
       showSwal({
         icon: "error",
         title: "Error",
-        text: error.response?.data?.error || error.message || "Error al procesar la devolución",
+        text: errorMessage,
       });
     } finally {
-      console.log("🏁 FINALIZANDO handleProcessReturnWithDifference");
-      console.log("🏁 Cambiando loading a false");
+      console.log("🏁 FINALIZANDO processReturnNormally");
       setLoading(false);
     }
   }, [
@@ -1152,11 +1577,31 @@ const searchReceipt = useCallback(async () => {
     totals,
     originalReceipt,
     cashierDocument,
-    handleCreditoEnTienda,
-    handleCreateGiftCard,
+    cashierDocumentValidation,
     dispatch,
-    showSwal
+    generateDifferenceReceiptPDF,
+    handleCreateGiftCard,
+    showSwal,
+    getColombiaDate,
+    fetchProducts,
+    processReturn
   ]);
+
+  // ✅ NUEVA FUNCIÓN: Confirmar método de pago y procesar
+  const handleConfirmPaymentMethod = useCallback(async () => {
+    if (!selectedPaymentMethod) {
+      showSwal({
+        icon: "error",
+        title: "Error",
+        text: "Selecciona un método de pago para continuar",
+      });
+      return;
+    }
+
+    console.log("💳 Método de pago seleccionado:", selectedPaymentMethod);
+    setShowPaymentMethodModal(false);
+    await processReturnNormally(selectedPaymentMethod);
+  }, [selectedPaymentMethod, processReturnNormally, showSwal]);
 
   // ✅ MEJORA 10: CalculationSummary memoizado y mejorado
   const CalculationSummary = useMemo(() => {
@@ -1341,13 +1786,56 @@ const searchReceipt = useCallback(async () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     👤 Tu Documento de Cajero
                   </label>
-                  <input
-                    type="text"
-                    value={cashierDocument}
-                    onChange={(e) => setCashierDocument(e.target.value)}
-                    placeholder="Ej: 12345678"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={cashierDocument}
+                      onChange={(e) => handleCashierDocumentChange(e.target.value)}
+                      placeholder="Ej: 12345678"
+                      readOnly={!!user?.n_document}
+                      className={`w-full border rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 ${
+                        user?.n_document 
+                          ? 'bg-gray-100 cursor-not-allowed border-gray-300' 
+                          : cashierDocumentValidation.isValidating
+                            ? 'border-blue-300 focus:ring-blue-500'
+                            : cashierDocumentValidation.isValid
+                              ? 'border-green-300 focus:ring-green-500 bg-green-50'
+                              : cashierDocument && !cashierDocumentValidation.isValid && !cashierDocumentValidation.isValidating
+                                ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                                : 'border-gray-300 focus:ring-blue-500'
+                      }`}
+                    />
+                    
+                    {/* Indicador de estado de validación */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      {cashierDocumentValidation.isValidating ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                      ) : cashierDocumentValidation.isValid ? (
+                        <span className="text-green-500">✓</span>
+                      ) : cashierDocument && !cashierDocumentValidation.isValid ? (
+                        <span className="text-red-500">✗</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  
+                  {/* Mensaje de validación */}
+                  {cashierDocumentValidation.message && (
+                    <p className={`text-sm mt-1 ${
+                      cashierDocumentValidation.isValid 
+                        ? 'text-green-600' 
+                        : cashierDocumentValidation.isValidating
+                          ? 'text-blue-600'
+                          : 'text-red-600'
+                    }`}>
+                      {cashierDocumentValidation.message}
+                    </p>
+                  )}
+                  
+                  {user?.n_document && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      🔒 Campo bloqueado - usando usuario autenticado
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1390,7 +1878,7 @@ const searchReceipt = useCallback(async () => {
                     <span className="font-medium">Cliente:</span> {originalReceipt.buyer_name || "No especificado"}
                   </div>
                   <div>
-                    <span className="font-medium">Fecha:</span> {new Date(originalReceipt.date).toLocaleDateString("es-CO")}
+                    <span className="font-medium">Fecha:</span> {formatDateForDisplay(originalReceipt.date)}
                   </div>
                   <div>
                     <span className="font-medium">Total:</span> ${originalReceipt.totalAmount?.toLocaleString("es-CO")}
@@ -1601,6 +2089,62 @@ const searchReceipt = useCallback(async () => {
 
           {/* ✅ STEP 4: RESULTADO */}
           {step === 4 && ResultStep}
+
+          {/* ✅ MODAL DE SELECCIÓN DE MÉTODO DE PAGO */}
+          {showPaymentMethodModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">
+                  💳 Seleccionar Método de Pago
+                </h3>
+                
+                <p className="text-gray-600 mb-4">
+                  El cliente debe pagar una diferencia de{" "}
+                  <span className="font-bold text-green-600">
+                    ${totals.difference.toLocaleString("es-CO")}
+                  </span>
+                </p>
+                
+                <div className="space-y-3 mb-6">
+                  {["Efectivo", "Tarjeta de Crédito", "Tarjeta de Débito", "Transferencia", "Nequi", "Daviplata"].map((method) => (
+                    <label
+                      key={method}
+                      className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method}
+                        checked={selectedPaymentMethod === method}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                        className="text-blue-600"
+                      />
+                      <span className="text-gray-900">{method}</span>
+                    </label>
+                  ))}
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowPaymentMethodModal(false);
+                      setSelectedPaymentMethod("");
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmPaymentMethod}
+                    disabled={!selectedPaymentMethod}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ✅ LOADING OVERLAY */}
           {loading && (

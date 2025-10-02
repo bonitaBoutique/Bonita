@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
@@ -18,6 +18,14 @@ const GiftCard = () => {
   const { n_document } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Obtener datos de la navegación desde devolución
+  const returnData = location.state?.returnData;
+  const giftCardCreated = location.state?.giftCardCreated || false;
+  const mode = location.state?.mode || 'create'; // 'create' o 'view'
+
+  console.log("🎁 GiftCard - Datos recibidos:", { returnData, giftCardCreated, mode });
 
   // Estados locales del formulario
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -28,6 +36,7 @@ const GiftCard = () => {
   // ✅ Estado de fecha inicializado con fecha de Colombia
   const [date, setDate] = useState(() => getColombiaDate());
   const [actualPaymentMethod, setActualPaymentMethod] = useState("Efectivo");
+  const [isFromReturn, setIsFromReturn] = useState(false);
 
   // Selectors de Redux
   const { receiptNumber } = useSelector((state) => state);
@@ -42,6 +51,50 @@ const GiftCard = () => {
     loading: clientLoading,
     error: clientError,
   } = useSelector((state) => state.userTaxxa || { userInfo: null, loading: false, error: null });
+
+  // ✅ Efecto para manejar datos de devolución
+  useEffect(() => {
+    if (returnData) {
+      console.log("🎁 Configurando GiftCard con datos de devolución:", returnData);
+      setIsFromReturn(true);
+      
+      // Precargar datos del cliente
+      if (returnData.clientName) setBuyerName(returnData.clientName);
+      if (returnData.clientEmail) setBuyerEmail(returnData.clientEmail);
+      if (returnData.clientPhone) setBuyerPhone(returnData.clientPhone);
+      if (returnData.totalAmount) setAmount(returnData.totalAmount.toString());
+      
+      // Si la GiftCard ya fue creada, mostrar mensaje informativo
+      if (giftCardCreated && mode === 'view') {
+        console.log("🎁 GiftCard ya creada, mostrando modo visualización");
+        setIsSubmitted(true);
+        
+        Swal.fire({
+          title: "🎁 GiftCard Creada Automáticamente",
+          html: `
+            <div class="text-left">
+              <p><strong>Cliente:</strong> ${returnData.clientName}</p>
+              <p><strong>Email:</strong> ${returnData.clientEmail}</p>
+              <p><strong>Monto:</strong> $${returnData.totalAmount.toLocaleString("es-CO")}</p>
+              <p><strong>GiftCard ID:</strong> #${returnData.giftCardId || 'N/A'}</p>
+              <p><strong>Motivo:</strong> ${returnData.reason}</p>
+              <br>
+              <p>✅ La GiftCard fue creada automáticamente durante la devolución.</p>
+              <p>📄 Puedes generar el PDF desde el botón correspondiente.</p>
+            </div>
+          `,
+          icon: "success",
+          confirmButtonText: "🖨️ Generar PDF",
+          showCancelButton: true,
+          cancelButtonText: "Cerrar"
+        }).then((result) => {
+          if (result.isConfirmed) {
+            generatePDF();
+          }
+        });
+      }
+    }
+  }, [returnData, giftCardCreated, mode]);
 
   // Efecto para cargar cliente y establecer fecha de Colombia
   useEffect(() => {
@@ -323,8 +376,41 @@ const GiftCard = () => {
 
       <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-md mt-16">
         <h2 className="text-2xl font-semibold text-center mb-4">
-          Generar Recibo GiftCard
+          {isFromReturn && giftCardCreated 
+            ? "🎁 GiftCard de Devolución" 
+            : "Generar Recibo GiftCard"
+          }
         </h2>
+
+        {/* ✅ Indicador de GiftCard automática */}
+        {isFromReturn && (
+          <div className={`p-3 rounded-lg mb-4 ${
+            giftCardCreated 
+              ? "bg-green-50 border border-green-200" 
+              : "bg-yellow-50 border border-yellow-200"
+          }`}>
+            <p className={`text-sm ${
+              giftCardCreated 
+                ? "text-green-800" 
+                : "text-yellow-800"
+            }`}>
+              {giftCardCreated 
+                ? "✅ Esta GiftCard fue creada automáticamente durante una devolución. Los datos están precargados."
+                : "ℹ️ Esta GiftCard se está creando desde una devolución. Los datos del cliente están precargados."
+              }
+            </p>
+            {returnData?.originalReceiptId && (
+              <p className={`text-xs mt-1 ${
+                giftCardCreated 
+                  ? "text-green-600" 
+                  : "text-yellow-600"
+              }`}>
+                Recibo original: #{returnData.originalReceiptId}
+                {returnData?.giftCardId && ` | GiftCard ID: #${returnData.giftCardId}`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Información de fecha actual */}
         <div className="bg-blue-50 p-3 rounded-lg mb-4">

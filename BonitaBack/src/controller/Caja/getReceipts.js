@@ -1,4 +1,29 @@
 const { Receipt, OrderDetail, Product } = require("../../data");
+const { Op } = require("sequelize");
+
+// ✅ NUEVA: Función para manejar fechas de Colombia (igual que en StockMovements y Balance)
+const parseDateForColombia = (dateString, isEndDate = false) => {
+  if (!dateString) return null;
+  
+  console.log(`🕒 [getReceipts] Input: ${dateString}, isEndDate: ${isEndDate}`);
+  
+  // Si es formato YYYY-MM-DD, interpretar como fecha local de Colombia
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (isEndDate) {
+      // Para dateTo: 23:59:59.999 del día seleccionado
+      const endDate = new Date(`${dateString}T23:59:59.999`);
+      console.log(`📅 [getReceipts dateTo] ${dateString} → ${endDate.toISOString()}`);
+      return endDate;
+    } else {
+      // Para dateFrom: 00:00:00 del día seleccionado  
+      const startDate = new Date(`${dateString}T00:00:00.000`);
+      console.log(`📅 [getReceipts dateFrom] ${dateString} → ${startDate.toISOString()}`);
+      return startDate;
+    }
+  }
+  
+  return new Date(dateString);
+};
 
 module.exports = async (req, res) => {
   try {
@@ -48,23 +73,24 @@ module.exports = async (req, res) => {
       ],
     };
 
-    // ✅ FILTROS OPCIONALES
+    // ✅ FILTROS OPCIONALES CON ZONA HORARIA DE COLOMBIA
     if (cashier_document) {
       queryOptions.where.cashier_document = cashier_document;
     }
 
-    if (date_from) {
-      queryOptions.where.date = {
-        ...queryOptions.where.date,
-        [Op.gte]: date_from
-      };
-    }
+    // ✅ FILTROS DE FECHA CORREGIDOS
+    if (date_from || date_to) {
+      queryOptions.where.date = {};
+      
+      if (date_from) {
+        queryOptions.where.date[Op.gte] = parseDateForColombia(date_from, false);
+        console.log("📅 [getReceipts] Fecha desde:", date_from);
+      }
 
-    if (date_to) {
-      queryOptions.where.date = {
-        ...queryOptions.where.date,
-        [Op.lte]: date_to
-      };
+      if (date_to) {
+        queryOptions.where.date[Op.lte] = parseDateForColombia(date_to, true);
+        console.log("📅 [getReceipts] Fecha hasta:", date_to);
+      }
     }
 
     // ✅ DECIDIR SI USAR PAGINACIÓN O TRAER TODOS

@@ -12,7 +12,7 @@ import TruncatedText from "./TruncatedText";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// ✅ Importar utilidades ACTUALIZADAS
+// ✅ Importar utilidades SIMPLIFICADAS  
 import {
   getServerDate,
   formatDateForDisplay,
@@ -20,26 +20,19 @@ import {
   formatMovementDate,
   isValidDate,
   validateDateNotFuture,
-  getDateForInput,
-  toColombiaISO
+  getDateForInput
 } from "../../utils/dateUtils";
 
 // ✅ Importar ServerTimeSync
 import ServerTimeSync from "../ServerTimeSync";
 
+// ✅ FUNCIÓN SIMPLIFICADA: Convertir fecha a timestamp
 const getSortableTimestamp = (dateString) => {
-  if (!dateString) return 0;
-
-  const normalized = toColombiaISO(dateString);
-  if (normalized) {
-    const parsedNormalized = Date.parse(normalized);
-    if (!Number.isNaN(parsedNormalized)) {
-      return parsedNormalized;
-    }
+  try {
+    return new Date(dateString).getTime() || 0;
+  } catch (error) {
+    return 0;
   }
-
-  const parsedFallback = Date.parse(dateString);
-  return Number.isNaN(parsedFallback) ? 0 : parsedFallback;
 };
 
 const Balance = () => {
@@ -53,12 +46,10 @@ const Balance = () => {
   const isCajero = userInfo?.role === 'Cajero';
 
 useEffect(() => {
-    console.log('🔍 [Balance] UserInfo cambió:', {
-      userInfo,
-      role: userInfo?.role,
-      isLoggedIn: !!userInfo,
-      isCajero: userInfo?.role === 'Cajero'
-    });
+    // Debug solo en desarrollo
+    if (process.env.NODE_ENV === 'development' && userInfo) {
+      console.log('👤 Usuario:', userInfo.role, isCajero ? '(Cajero)' : '(Admin)');
+    }
   }, [userInfo]);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,22 +73,14 @@ useEffect(() => {
     serverTime // ✅ NUEVO: Agregar serverTime
   } = useSelector((state) => state);
 
-  console.log("📊 Datos completos del Redux (con serverTime):", {
-    backendBalance,
-    backendTotalIncome,
-    totalOnlineSales,
-    backendTotalLocalSales,
-    totalExpenses,
-    income,
-    expenses,
-    cashierTotals,
-    paymentMethodBreakdown,
-    loading,
-    error,
-    debug,
-    dateRange,
-    serverTime // ✅ NUEVO LOG
-  });
+  // ✅ DEBUG: Solo en desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    console.log("📊 Balance cargado:", {
+      gastos: expenses?.data?.length || 0,
+      ingresos: (income?.online?.length || 0) + (income?.local?.length || 0),
+      balance: backendBalance
+    });
+  }
 
   // ✅ USAR FECHA DEL SERVIDOR en lugar de fecha local
   const [filters, setFilters] = useState({
@@ -113,7 +96,6 @@ useEffect(() => {
   useEffect(() => {
     if (serverTime?.current?.date && !filters.startDate) {
       const serverDate = serverTime.current.date;
-      console.log('🕒 [Balance] Inicializando con fecha del servidor:', serverDate);
       
       setFilters(prev => ({
         ...prev,
@@ -151,16 +133,7 @@ useEffect(() => {
     dispatch(fetchBalance(formattedFilters));
   };
 
-  // ✅ Effect para debug de estructura de datos
-  useEffect(() => {
-    if (income.local && income.local.length > 0) {
-      console.log("🔍 DEBUG: Estructura de ventas locales:", income.local.slice(0, 2));
-    }
-    
-    if (paymentMethodBreakdown && Object.keys(paymentMethodBreakdown).length > 0) {
-      console.log("🔍 DEBUG: Payment Method Breakdown:", paymentMethodBreakdown);
-    }
-  }, [income.local, paymentMethodBreakdown]);
+
 
   // ✅ Effect para cargar datos cuando cambian los filtros (solo después de tener fecha del servidor)
   useEffect(() => {
@@ -169,6 +142,14 @@ useEffect(() => {
       sendFiltersToBackend(filters);
     }
   }, [filters.startDate, filters.endDate]); // Solo reacciona a cambios de fecha
+
+  // ✅ NUEVO: Effect para re-renderizar cuando cambien filtros locales
+  useEffect(() => {
+    // Debug solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Filtros actualizados');
+    }
+  }, [filters]);
 
   // ✅ FUNCIÓN MEJORADA: Validar cambios de fecha usando servidor
   const handleDateFilterChange = (field, value) => {
@@ -229,183 +210,132 @@ useEffect(() => {
     setFilters(newFilters);
   };
 
-  // ✅ Function to combine and filter all movements
- // ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
-// ✅ FUNCIÓN CORREGIDA: getAllMovements para incluir gastos
-// ✅ CORRECCIÓN: Asegurar que expenses.data sea siempre un array
-const getAllMovements = () => {
-  let movements = [];
+  // ✅ FUNCIÓN SIMPLIFICADA: getAllMovements con filtrado
+  const getAllMovements = () => {
+    let movements = [];
 
-  // ✅ AGREGAR INGRESOS ONLINE
-  if (income?.online) {
-    const onlineMovements = income.online.map(sale => ({
-      id: `online-${sale.id_orderDetail}`,
-      date: sale.date,
-      type: 'Venta Online',
-      description: `Venta Online - OrderDetail: ${sale.id_orderDetail}`,
-      paymentMethod: 'Wompi',
-      amount: sale.amount,
-      category: 'Ingreso',
-      sortKey: getSortableTimestamp(sale.date)
-    }));
-    movements.push(...onlineMovements);
-  }
+    // 📱 INGRESOS ONLINE
+    if (income?.online) {
+      const onlineMovements = income.online.map(sale => ({
+        id: `online-${sale.id_orderDetail}`,
+        date: sale.date,
+        type: 'Venta Online',
+        description: `Orden ${sale.id_orderDetail}`,
+        paymentMethod: 'Wompi',
+        amount: sale.amount,
+        category: 'Ingreso',
+        pointOfSale: 'Online',
+        cashierDocument: null
+      }));
+      movements.push(...onlineMovements);
+    }
 
-  // ✅ AGREGAR INGRESOS LOCALES (excluyendo Addi/Sistecredito para el balance)
-  if (income?.local) {
-    const localMovements = income.local
-      .filter(payment => !['Addi', 'Sistecredito', 'Crédito'].includes(payment.paymentMethod))
-      .map(payment => ({
-        id: payment.id,
+    // 🏪 INGRESOS LOCALES
+    if (income?.local) {
+      const localMovements = income.local.map(payment => ({
+        id: payment.id || `local-${payment.date}-${payment.amount}`,
         date: payment.date,
-        type: payment.type || 'Venta Local',
-        description: payment.description || `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
+        type: 'Venta Local',
+        description: `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
         paymentMethod: payment.paymentMethod,
         amount: payment.amount,
         category: 'Ingreso',
+        pointOfSale: 'Local',
         cashierDocument: payment.cashierDocument,
-        buyerName: payment.buyerName,
-        originalReceiptId: payment.originalReceiptId,
-        isMainPayment: payment.isMainPayment,
-        sortKey: getSortableTimestamp(payment.date)
+        buyerName: payment.buyerName
       }));
-    movements.push(...localMovements);
-  }
-
-  // ✅ CORRECCIÓN: Manejar estructura inconsistente de expenses
-  let expensesData = [];
-  
-  // Verificar si expenses.data es un array o un objeto con data anidada
-  if (Array.isArray(expenses?.data)) {
-    expensesData = expenses.data;
-  } else if (Array.isArray(expenses?.data?.data)) {
-    expensesData = expenses.data.data;
-  } else if (expenses?.data && typeof expenses.data === 'object') {
-    // Si expenses.data es un objeto pero no tiene data anidada, intentar extraer un array
-    expensesData = [];
-    console.warn("⚠️ expenses.data no es un array válido:", expenses.data);
-  }
-
-  // ✅ AGREGAR GASTOS DEL BACKEND
-  if (expensesData.length > 0) {
-    const expenseMovements = expensesData.map(expense => ({
-      id: `expense-${expense.id}`,
-      date: expense.date,
-      type: expense.type || 'Gasto',
-      description: expense.description || 'Sin descripción',
-      paymentMethod: expense.paymentMethods || 'No especificado',
-      amount: -Math.abs(expense.amount), // ✅ NEGATIVO para gastos
-      category: 'Gasto',
-      destinatario: expense.destinatario,
-      originalExpenseId: expense.id,
-      sortKey: getSortableTimestamp(expense.date)
-    }));
-    movements.push(...expenseMovements);
-  }
-
-  // ✅ ORDENAR POR FECHA (más recientes primero) respetando Colombia
-  movements.sort((a, b) => {
-    const bKey = typeof b.sortKey === "number" ? b.sortKey : getSortableTimestamp(b.date);
-    const aKey = typeof a.sortKey === "number" ? a.sortKey : getSortableTimestamp(a.date);
-    return bKey - aKey;
-  });
-
-  console.log("🔄 getAllMovements() - Resumen:", {
-    totalMovimientos: movements.length,
-    ingresos: movements.filter(m => m.amount >= 0).length,
-    gastos: movements.filter(m => m.amount < 0).length,
-    gastosDelBackend: expensesData.length,
-    expensesStructure: {
-      isArray: Array.isArray(expenses?.data),
-      hasNestedData: Array.isArray(expenses?.data?.data),
-      type: typeof expenses?.data
+      movements.push(...localMovements);
     }
-  });
 
-  return movements;
-};
-
-  // ✅ Function to handle Excel export
-  // ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
-// ✅ FUNCIÓN MEJORADA: Exportar Excel con gastos incluidos
-// ✅ FUNCIÓN CORREGIDA: handleExportExcel completa
-// ✅ CORRECCIÓN COMPLETA: handleExportExcel
-const handleExportExcel = () => {
-  console.log("🔍 DEBUGGING EXCEL EXPORT - INICIO");
-  
-  // ✅ LOG DEL ESTADO COMPLETO ANTES DE PROCESAR
-  console.log("📊 Estado completo del balance:", { income, expenses, paymentMethodBreakdown });
-  console.log("📊 Estructura de expenses:", expenses);
-  
-  // ✅ DETECTAR ESTRUCTURA DE EXPENSES
-  let expensesData = [];
-  if (Array.isArray(expenses?.data)) {
-    expensesData = expenses.data;
-  } else if (Array.isArray(expenses?.data?.data)) {
-    expensesData = expenses.data.data;
-  }
-  
-  console.log("📊 Datos de gastos procesados:", expensesData);
-  console.log("📊 Longitud de gastos:", expensesData.length);
-  
-  const movementsToExport = getAllMovements();
-  
-  console.log("📋 Movimientos exportados:", movementsToExport);
-  console.log("📋 Total movimientos:", movementsToExport.length);
-
-  // ✅ SEPARAR MOVIMIENTOS POR TIPO
-  const ingresos = movementsToExport.filter(m => m.amount >= 0);
-  const gastos = movementsToExport.filter(m => m.amount < 0); // ✅ COMPLETAR LÍNEA 287
-  
-  console.log("💰 Ingresos encontrados:", ingresos.length);
-  console.log("💸 Gastos encontrados:", gastos.length);
-  console.log("💸 Detalle de gastos:", gastos);
-  
-  // ✅ LOG ESPECÍFICO DE GASTOS DEL BACKEND
-  if (expensesData.length > 0) {
-    console.log("🔍 GASTOS DIRECTOS DEL BACKEND:");
-    console.log("Total gastos del backend:", expensesData.length);
-    expensesData.forEach((expense, index) => {
-      console.log(`Gasto ${index + 1}:`, {
-        id: expense.id,
-        type: expense.type,
-        amount: expense.amount,
+    // 💸 GASTOS
+    const expensesData = Array.isArray(expenses?.data) ? expenses.data : [];
+    
+    if (expensesData.length > 0) {
+      const expenseMovements = expensesData.map(expense => ({
+        id: `expense-${expense.id}`,
         date: expense.date,
-        description: expense.description,
-        paymentMethod: expense.paymentMethods,
+        type: expense.type || 'Gasto',
+        description: expense.description || 'Sin descripción',
+        paymentMethod: expense.paymentMethods || 'Efectivo',
+        amount: -Math.abs(expense.amount),
+        category: 'Gasto',
+        pointOfSale: 'Local',
+        expenseType: expense.type,
         destinatario: expense.destinatario
-      });
-    });
-  } else {
-    console.warn("⚠️ No se encontraron gastos en expenses.data");
-  }
+      }));
+      movements.push(...expenseMovements);
+    }
 
-  // ✅ CREAR GASTOS PARA EXCEL
-  let gastosParaExcel = [];
+    // 🔍 APLICAR FILTROS LOCALES
+    let filteredMovements = movements;
+
+    // Filtro por método de pago
+    if (filters.paymentMethod) {
+      filteredMovements = filteredMovements.filter(m => 
+        m.paymentMethod === filters.paymentMethod
+      );
+    }
+
+    // Filtro por punto de venta
+    if (filters.pointOfSale) {
+      filteredMovements = filteredMovements.filter(m => 
+        m.pointOfSale === filters.pointOfSale
+      );
+    }
+
+    // Filtro por tipo de gasto
+    if (filters.expenseType) {
+      filteredMovements = filteredMovements.filter(m => 
+        m.category === 'Gasto' && m.expenseType === filters.expenseType
+      );
+    }
+
+    // Filtro por cajero
+    if (filters.cashier) {
+      filteredMovements = filteredMovements.filter(m => 
+        m.cashierDocument === filters.cashier
+      );
+    }
+
+    // ⏰ ORDENAR POR FECHA (más recientes primero)
+    filteredMovements.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+
+
+    return filteredMovements;
+  };
+
+  // ✅ FUNCIÓN SIMPLIFICADA: Exportar Excel con gastos incluidos
+  const handleExportExcel = () => {
+    const movementsToExport = getAllMovements();
+    const ingresos = movementsToExport.filter(m => m.amount >= 0);
+    const gastos = movementsToExport.filter(m => m.amount < 0);
+    
+    // ✅ OBTENER DATOS DE GASTOS DEL BACKEND
+    const expensesData = Array.isArray(expenses?.data) ? expenses.data : [];
   
-  if (gastos.length === 0 && expensesData.length > 0) {
-    console.log("🔧 Usando gastos directamente del backend");
-    gastosParaExcel = expensesData.map(expense => ({
-      date: expense.date,
-      type: expense.type || 'Gasto',
-      description: expense.description || 'Sin descripción',
-      paymentMethod: expense.paymentMethods || 'No especificado',
-      amount: Math.abs(expense.amount),
-      destinatario: expense.destinatario || 'No especificado'
-    }));
-  } else {
-    console.log("🔧 Usando gastos de movimientos filtrados");
-    gastosParaExcel = gastos.map(g => ({
-      date: g.date,
-      type: g.type,
-      description: g.description || 'Sin descripción',
-      paymentMethod: g.paymentMethod || 'No especificado',
-      amount: Math.abs(g.amount),
-      destinatario: g.destinatario || 'No especificado'
-    }));
-  }
-  
-  console.log("📊 Gastos para Excel final:", gastosParaExcel);
+    // ✅ CREAR GASTOS PARA EXCEL
+    let gastosParaExcel = [];
+    
+    if (gastos.length === 0 && expensesData.length > 0) {
+      gastosParaExcel = expensesData.map(expense => ({
+        date: expense.date,
+        type: expense.type || 'Gasto',
+        description: expense.description || 'Sin descripción',
+        paymentMethod: expense.paymentMethods || 'No especificado',
+        amount: Math.abs(expense.amount),
+        destinatario: expense.destinatario || 'No especificado'
+      }));
+    } else {
+      gastosParaExcel = gastos.map(g => ({
+        date: g.date,
+        type: g.type,
+        description: g.description || 'Sin descripción',
+        paymentMethod: g.paymentMethod || 'No especificado',
+        amount: Math.abs(g.amount),
+        destinatario: g.destinatario || 'No especificado'
+      }));
+    }
 
   // ✅ CREAR HOJA DE RESUMEN
   const resumenData = [
@@ -534,22 +464,7 @@ const handleExportExcel = () => {
   const displayTotalIncome = backendTotalIncome;
   const displayBalance = backendBalance;
 
-  // ✅ AGREGAR: Log de debug para verificar datos
-  console.log("🔍 DEBUG: Valores de métodos de pago:", {
-    ingresosEfectivo,
-    ingresosTarjeta,
-    ingresosNequi,
-    ingresosBancolombia,
-    ingresosCredito,
-    ingresosGiftCard,
-    ingresosOtro,
-    totalOnlineSales,
-    ingresosAddi,
-    ingresosSistecredito,
-    ingresosPagosIniciales,
-    ingresosPagosParciales,
-    paymentMethodBreakdown
-  });
+
 
   // ✅ Cajeros dinámicos
   const cashiers = [
@@ -609,7 +524,7 @@ const handleExportExcel = () => {
     <ServerTimeSync showDebug={false}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24 mb-24">
         <h1 className="text-3xl font-bold mb-6 text-center">
-          💰 Balance Financiero (Sincronizado)
+          💰 Balance Financiero
           {isCajero && (
             <span className="block text-sm text-orange-600 mt-2">
               👤 Vista de Cajero - Solo fecha actual
@@ -626,47 +541,18 @@ const handleExportExcel = () => {
           </div>
         )}
 
-        {/* ✅ NUEVO: Información de debug si está disponible */}
-        {debug && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-gray-400">
-            <details className="text-sm">
-              <summary className="cursor-pointer text-gray-700 font-medium">
-                🔍 Información de Debug (Click para expandir)
-              </summary>
-              <div className="mt-2 text-xs text-gray-600">
-                <p><strong>Consultas ejecutadas:</strong></p>
-                <ul className="ml-4 list-disc">
-                  <li>Ventas online: {debug.queriesExecuted?.onlineSales || 0}</li>
-                  <li>Ventas locales: {debug.queriesExecuted?.localSales || 0}</li>
-                  <li>Ventas locales formateadas: {debug.queriesExecuted?.formattedLocalSales || 0}</li>
-                  <li>Pagos parciales: {debug.queriesExecuted?.partialPayments || 0}</li>
-                  <li>Pagos iniciales: {debug.queriesExecuted?.initialReservationPayments || 0}</li>
-                  <li>Gastos: {debug.queriesExecuted?.expenses || 0}</li>
-                </ul>
-                <p className="mt-2"><strong>Pagos combinados detectados:</strong> {debug.combinedPaymentsCount || 0}</p>
-              </div>
-            </details>
-          </div>
-        )}
 
-        {/* ✅ INFORMACIÓN DE FECHA ACTUAL DEL SERVIDOR */}
+
+        {/* 📅 Información de fecha */}
         <div className="mb-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
           <p className="text-sm text-blue-800">
-            <strong>📅 Fecha actual del servidor (Colombia):</strong>{" "}
-            {formatDateForDisplay(getServerDate(serverTime))}
+            <strong>📅 Fecha actual:</strong> {formatDateForDisplay(getServerDate(serverTime))}
+            {dateRange && (
+              <span className="ml-4">
+                | 🔄 Filtros: {formatDateForDisplay(filters.startDate)} - {formatDateForDisplay(filters.endDate)}
+              </span>
+            )}
           </p>
-          <p className="text-xs text-blue-600 mt-1">
-            🕒 Zona horaria: America/Bogota (UTC-5)
-          </p>
-          <p className="text-xs text-blue-600">
-            📊 Rango de filtros: {formatDateForDisplay(filters.startDate)} -{" "}
-            {formatDateForDisplay(filters.endDate)}
-          </p>
-          {dateRange && (
-            <p className="text-xs text-blue-600">
-              🔄 Último rango procesado: {dateRange.startDate} - {dateRange.endDate}
-            </p>
-          )}
         </div>
 
         {/* ✅ SECCIÓN DE FILTROS ACTUALIZADA */}
@@ -805,41 +691,19 @@ const handleExportExcel = () => {
               </select>
             </div>
           </div>
-
-          <div className="mt-4 flex gap-2 flex-wrap">
-            <button
-              onClick={resetFilters}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200 flex items-center"
-            >
-              🔄 Resetear a Hoy (Servidor)
-            </button>
-            <button
-              onClick={() => sendFiltersToBackend(filters)}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 flex items-center"
-            >
-              🔍 Recargar Datos
-            </button>
-            <button
-              onClick={() => dispatch(getServerTime())}
-              className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 transition duration-200 flex items-center"
-              title="Sincronizar con servidor"
-            >
-              🕒 Sync Servidor
-            </button>
-          </div>
         </div>
 
         {/* ✅ CONTINÚA CON EL RESTO DEL COMPONENTE... */}
         {/* Tarjetas de ingresos por método de pago */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-3 flex items-center">
-            💰 Ingresos por Método de Pago (Desde Backend)
+            💰 Ingresos por Método de Pago
           </h2>
           
-          {/* ✅ Mensaje informativo sobre Addi y Sistecredito */}
+          {/* ℹ️ Información sobre créditos */}
           <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400 mb-4">
             <p className="text-sm text-blue-800">
-              <strong>💡 Nota:</strong> Addi y Sistecredito se muestran aquí para información, pero no aparecen en el listado de movimientos porque son ventas a crédito que no ingresan dinero el mismo día.
+              <strong>� Créditos:</strong> Addi y Sistecredito se muestran para referencia, pero no aparecen en movimientos porque son ventas a crédito.
             </p>
           </div>
 
@@ -992,16 +856,11 @@ const handleExportExcel = () => {
             ))}
           </div>
 
-          {/* ✅ Información explicativa actualizada */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
-              <p className="text-sm text-blue-800">
-                <strong>💡 Datos del Backend:</strong> Los valores se calculan en el servidor e incluyen separación automática de pagos combinados.
-              </p>
-            </div>
+          {/* ℹ️ Información explicativa */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-orange-50 p-3 rounded border-l-4 border-orange-400">
               <p className="text-sm text-orange-800">
-                <strong>📋 Ventas a Crédito:</strong> Addi y Sistecredito no aparecen en el listado porque el dinero no ingresa el mismo día.
+                <strong>� Créditos:</strong> Addi y Sistecredito no aparecen en movimientos (ventas a crédito).
               </p>
             </div>
             <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
@@ -1282,14 +1141,10 @@ const handleExportExcel = () => {
           </button>
         </div>
 
-        {/* ✅ Footer actualizado */}
+        {/* ℹ️ Información */}
         <div className="mt-6 text-center text-xs text-gray-500 bg-gray-50 p-3 rounded">
           <p>* Los ingresos totales y balance excluyen Addi y Sistecredito</p>
-          <p>💻 Los cálculos se procesan en el backend con separación automática de pagos combinados</p>
-          <p>
-            📅 Todos los horarios están sincronizados con la zona horaria de Colombia
-            (America/Bogota) usando fecha del servidor
-          </p>
+          <p>� Zona horaria: America/Bogota (Colombia)</p>
         </div>
       </div>
     </ServerTimeSync>

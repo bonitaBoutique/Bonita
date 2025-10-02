@@ -9,6 +9,9 @@ const { getProductStock, createProduct, getStock,  returnProducts,
     getReceiptForReturn,
     getReturnHistory } = require("./Products");
 
+// ✅ IMPORTAR CONTROLADORES DE DEVOLUCIONES
+const { getReturns, getReturnById, getReturnStats } = require("./Products/getReturns");
+
     const { 
   getServerTime, 
   getDateRange, 
@@ -136,6 +139,9 @@ module.exports = {
   returnProducts: catchedAsync(require("./Products/returnProducts")),
   getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),
   getReturnHistory: catchedAsync(require("./Products/getReturnHistory")),
+  getReturns: catchedAsync(getReturns),
+  getReturnById: catchedAsync(getReturnById),
+  getReturnStats: catchedAsync(getReturnStats),
   
    getServerTime: catchedAsync(getServerTime),
   getDateRange: catchedAsync(getDateRange),

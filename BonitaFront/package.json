@@ -21,7 +21,7 @@
     "@tippyjs/react": "^4.2.6",
     "axios": "^1.7.2",
     "crypto-js": "^4.2.0",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.18",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.3.31",
     "jspdf": "^2.5.2",

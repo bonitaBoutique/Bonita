@@ -2,6 +2,30 @@ const { Expense } = require('../../data');
 const { Op } = require('sequelize');
 const { formatDateForDB, getColombiaDate } = require('../../utils/dateUtils'); // ✅ IMPORTAR utilidades de fecha
 
+// ✅ NUEVA: Función para manejar fechas de Colombia (igual que en StockMovements y Balance)
+const parseDateForColombia = (dateString, isEndDate = false) => {
+  if (!dateString) return null;
+  
+  console.log(`🕒 [filterExpenses] Input: ${dateString}, isEndDate: ${isEndDate}`);
+  
+  // Si es formato YYYY-MM-DD, interpretar como fecha local de Colombia
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (isEndDate) {
+      // Para dateTo: 23:59:59.999 del día seleccionado
+      const endDate = new Date(`${dateString}T23:59:59.999`);
+      console.log(`📅 [filterExpenses dateTo] ${dateString} → ${endDate.toISOString()}`);
+      return endDate;
+    } else {
+      // Para dateFrom: 00:00:00 del día seleccionado  
+      const startDate = new Date(`${dateString}T00:00:00.000`);
+      console.log(`📅 [filterExpenses dateFrom] ${dateString} → ${startDate.toISOString()}`);
+      return startDate;
+    }
+  }
+  
+  return new Date(dateString);
+};
+
 const filterExpenses = async (req, res) => {
   try {
     // ✅ OBTENER FECHA DEL SERVIDOR (igual que en createExpense)
@@ -15,25 +39,23 @@ const filterExpenses = async (req, res) => {
 
     const where = {};
 
-    // ✅ LÓGICA DE FECHAS CORREGIDA
+    // ✅ LÓGICA DE FECHAS CORREGIDA CON ZONA HORARIA DE COLOMBIA
     if (startDate || endDate) {
       where.date = {};
       
       if (startDate) {
-        // ✅ Usar formatDateForDB para consistencia con createExpense
-        where.date[Op.gte] = formatDateForDB(startDate);
-        console.log('🟢 [FILTER EXPENSES] StartDate formateada:', formatDateForDB(startDate));
+        where.date[Op.gte] = parseDateForColombia(startDate, false);
+        console.log('🟢 [FILTER EXPENSES] StartDate Colombia:', startDate);
       }
       
       if (endDate) {
-        // ✅ Usar formatDateForDB para consistencia con createExpense
-        where.date[Op.lte] = formatDateForDB(endDate);
-        console.log('🟢 [FILTER EXPENSES] EndDate formateada:', formatDateForDB(endDate));
+        where.date[Op.lte] = parseDateForColombia(endDate, true);
+        console.log('🟢 [FILTER EXPENSES] EndDate Colombia:', endDate);
       }
     }
     // ✅ CAMBIO: Si no hay filtros de fecha, NO agregar filtro de fecha (mostrar todos)
     // Esto permite ver todos los gastos sin importar la fecha
-    console.log('🟡 [FILTER EXPENSES] Sin filtros de fecha específicos - mostrando todos los gastos');
+    console.log('🟡 [FILTER EXPENSES] Filtros aplicados - dateFrom:', startDate, 'dateTo:', endDate);
 
     if (minAmount || maxAmount) {
       where.amount = {};

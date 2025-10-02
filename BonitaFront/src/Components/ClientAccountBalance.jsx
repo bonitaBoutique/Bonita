@@ -13,7 +13,7 @@ import Navbar2 from "./Navbar2";
 const ClientAccountBalance = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user, orderDetails, loading, error } = useSelector(
+  const { user, orderDetails, giftCards, loading, error } = useSelector(
     (state) => state.clientAccountBalance
   );
   const allClientAccounts = useSelector(
@@ -170,7 +170,7 @@ const ClientAccountBalance = () => {
                 <th className="py-3 px-6 text-left">Nombre</th>
                 <th className="py-3 px-6 text-left">Email</th>
                 <th className="py-3 px-6 text-left">Teléfono</th>
-                <th className="py-3 px-6 text-left">Ver saldo</th>
+                
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
@@ -188,14 +188,7 @@ const ClientAccountBalance = () => {
                   <td className="py-3 px-6 text-left">{client.email}</td>
                   <td className="py-3 px-6 text-left">{client.phone}</td>
                   <td className="py-3 px-6 text-left flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleFetchAccountBalance(client.n_document)
-                      }
-                      className="bg-pink-500 hover:bg-pink-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
-                    >
-                      Ver saldo
-                    </button>
+                  
                     <button
                       onClick={() =>
                         navigate(`/recibo/giftcard/${client.n_document}`)

@@ -97,73 +97,7 @@ const PanelProductos = () => {
           </div>
 
           {/* ✅ Cards secundarias ampliadas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            {/* Estadísticas rápidas */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                📈 Estadísticas Rápidas
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Productos:</span>
-                  <span className="font-bold text-purple-600">250</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Stock Bajo:</span>
-                  <span className="font-bold text-red-600">12</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Productos Activos:</span>
-                  <span className="font-bold text-green-600">238</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ✅ Nueva card: Devoluciones Recientes */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                🔄 Devoluciones Recientes
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Hoy:</span>
-                  <span className="font-bold text-red-600">3</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Esta semana:</span>
-                  <span className="font-bold text-orange-600">12</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Este mes:</span>
-                  <span className="font-bold text-blue-600">45</span>
-                </div>
-              </div>
-              <Link 
-                to="/returns/history" 
-                className="mt-3 block w-full bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg transition-colors duration-200 text-sm text-center"
-              >
-                📋 Ver Historial
-              </Link>
-            </div>
-
-            {/* Acciones rápidas */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                ⚡ Acciones Rápidas
-              </h3>
-              <div className="space-y-3">
-                <button className="w-full bg-orange-100 hover:bg-orange-200 text-orange-700 py-2 px-4 rounded-lg transition-colors duration-200 text-sm">
-                  🔍 Buscar Producto
-                </button>
-                <button className="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-700 py-2 px-4 rounded-lg transition-colors duration-200 text-sm">
-                  📋 Generar Reporte
-                </button>
-                <button className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-4 rounded-lg transition-colors duration-200 text-sm">
-                  📤 Exportar Excel
-                </button>
-              </div>
-            </div>
-          </div>
+          
 
           {/* ✅ Nueva sección: Acceso rápido a devoluciones */}
           <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl shadow-lg p-6 border border-red-200">

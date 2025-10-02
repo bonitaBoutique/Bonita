@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchStockMovements } from '../../Redux/Actions/actions';
+import { fetchStockMovements, fetchAllStockMovementsForExport } from '../../Redux/Actions/actions';
 import TruncatedText from '../Informes/TruncatedText';
 import * as XLSX from 'xlsx';
+import { formatMovementDate } from '../../utils/dateUtils';
 
 const StockMovements = () => {
   const dispatch = useDispatch();
@@ -58,82 +59,93 @@ const StockMovements = () => {
     }
   }, [movements, pagination, loading, error, product, codigoBarra, stock, stock_initial, stats]);
 
-  // ✅ NUEVA FUNCIÓN: Exportar a Excel con cálculo de ganancias (con más debug)
-  const handleExportToExcel = () => {
-    console.log('📊 [Excel Export] Iniciando exportación...');
-    console.log('📊 [Excel Export] Movements data:', movements);
+  // ✅ NUEVA FUNCIÓN: Exportar a Excel con TODOS los registros (sin paginación)
+  const handleExportToExcel = async () => {
+    console.log('📊 [Excel Export] Iniciando exportación completa...');
+    
+    try {
+      // ✅ NUEVO: Obtener TODOS los movimientos para exportación (sin paginación)
+      const allMovementsData = await dispatch(fetchAllStockMovementsForExport({
+        type: filters.type,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        id_product: filters.id_product
+        // ✅ NO enviar page ni limit para obtener TODOS
+      }));
 
-    if (!movements || movements.length === 0) {
-      alert('No hay datos para exportar');
-      return;
-    }
+      console.log('📊 [Excel Export] Datos completos obtenidos:', allMovementsData?.length || 0);
 
-    // Preparar datos para Excel con cálculo de ganancias
-    const excelData = movements.map((movement, index) => {
-      // ✅ DEBUG: Log detallado de cada movimiento
-      console.log(`📊 [Excel Export] Procesando movimiento ${index + 1}:`, {
-        id: movement.id_movement,
-        unit_price: movement.unit_price,
-        'Product?.price': movement.Product?.price,
-        'Product?.priceSell': movement.Product?.priceSell,
-        'Product': movement.Product
+      if (!allMovementsData || allMovementsData.length === 0) {
+        alert('No hay datos para exportar con los filtros seleccionados');
+        return;
+      }
+
+      // ✅ USAR: allMovementsData en lugar de movements (página actual)
+      const excelData = allMovementsData.map((movement, index) => {
+        // ✅ DEBUG: Log detallado de cada movimiento
+        console.log(`📊 [Excel Export] Procesando movimiento ${index + 1}:`, {
+          id: movement.id_movement,
+          unit_price: movement.unit_price,
+          'Product?.price': movement.Product?.price,
+          'Product?.priceSell': movement.Product?.priceSell,
+          'Product': movement.Product
+        });
+
+        // Obtener precios del producto
+        const precioCompra = movement.unit_price || movement.Product?.price || 0;
+        const precioVenta = movement.Product?.priceSell || 0;
+        
+        // ✅ DEBUG: Log de precios calculados
+        console.log(`📊 [Excel Export] Movimiento ${index + 1} - Precios calculados:`, {
+          precioCompra,
+          precioVenta,
+          'movement.unit_price': movement.unit_price,
+          'movement.Product?.price': movement.Product?.price,
+          'movement.Product?.priceSell': movement.Product?.priceSell
+        });
+        
+        // Calcular ganancia por unidad y total
+        const gananciaPorUnidad = precioVenta - precioCompra;
+        const gananciaTotal = gananciaPorUnidad * movement.quantity;
+        
+        // Calcular margen de ganancia (%)
+        const margenGanancia = precioCompra > 0 ? ((gananciaPorUnidad / precioCompra) * 100).toFixed(2) : 0;
+
+        return {
+          '#': index + 1,
+          'Fecha': formatDate(movement.date),
+          'ID_Producto': movement.id_product,
+          'Producto': movement.Product?.description || product || movement.id_product,
+          'Marca': movement.Product?.marca || '',
+          'Código_Barra': movement.Product?.codigoBarra || codigoBarra || '',
+          'Tipo_Movimiento': movement.type === 'IN' ? 'Entrada' : 'Salida',
+          'Cantidad': movement.quantity,
+          'Stock_Actual': movement.Product?.stock || stock || 0,
+          'Precio_Compra': precioCompra,
+          'Precio_Venta': precioVenta,
+          'Ganancia_Por_Unidad': gananciaPorUnidad,
+          'Ganancia_Total': gananciaTotal,
+          'Margen_Ganancia_%': `${margenGanancia}%`,
+          'Motivo': movement.reason || '',
+          'Referencia': movement.reference_type 
+            ? `${movement.reference_type}${movement.reference_id ? ` (${movement.reference_id})` : ''}` 
+            : '',
+          'Notas': movement.notes || ''
+        };
       });
 
-      // Obtener precios del producto
-      const precioCompra = movement.unit_price || movement.Product?.price || 0;
-      const precioVenta = movement.Product?.priceSell || 0;
-      
-      // ✅ DEBUG: Log de precios calculados
-      console.log(`📊 [Excel Export] Movimiento ${index + 1} - Precios calculados:`, {
-        precioCompra,
-        precioVenta,
-        'movement.unit_price': movement.unit_price,
-        'movement.Product?.price': movement.Product?.price,
-        'movement.Product?.priceSell': movement.Product?.priceSell
-      });
-      
-      // Calcular ganancia por unidad y total
-      const gananciaPorUnidad = precioVenta - precioCompra;
-      const gananciaTotal = gananciaPorUnidad * movement.quantity;
-      
-      // Calcular margen de ganancia (%)
-      const margenGanancia = precioCompra > 0 ? ((gananciaPorUnidad / precioCompra) * 100).toFixed(2) : 0;
+      console.log('📊 [Excel Export] Datos procesados para Excel:', excelData.slice(0, 2)); // Solo los primeros 2 para no saturar
 
-      return {
-        '#': index + 1,
-        'Fecha': formatDate(movement.date),
-        'ID_Producto': movement.id_product,
-        'Producto': movement.Product?.description || product || movement.id_product,
-        'Marca': movement.Product?.marca || '',
-        'Código_Barra': movement.Product?.codigoBarra || codigoBarra || '',
-        'Tipo_Movimiento': movement.type === 'IN' ? 'Entrada' : 'Salida',
-        'Cantidad': movement.quantity,
-        'Stock_Actual': movement.Product?.stock || stock || 0,
-        'Precio_Compra': precioCompra,
-        'Precio_Venta': precioVenta,
-        'Ganancia_Por_Unidad': gananciaPorUnidad,
-        'Ganancia_Total': gananciaTotal,
-        'Margen_Ganancia_%': `${margenGanancia}%`,
-        'Motivo': movement.reason || '',
-        'Referencia': movement.reference_type 
-          ? `${movement.reference_type}${movement.reference_id ? ` (${movement.reference_id})` : ''}` 
-          : '',
-        'Notas': movement.notes || ''
+      // ✅ CALCULAR TOTALES con TODOS los datos
+      const totales = {
+        totalEntradas: allMovementsData.filter(m => m.type === 'IN').reduce((sum, m) => sum + m.quantity, 0),
+        totalSalidas: allMovementsData.filter(m => m.type === 'OUT').reduce((sum, m) => sum + m.quantity, 0),
+        gananciaTotal: excelData.reduce((sum, item) => sum + (item.Ganancia_Total || 0), 0),
+        valorInventarioCompra: excelData.reduce((sum, item) => sum + (item.Precio_Compra * item.Cantidad), 0),
+        valorInventarioVenta: excelData.reduce((sum, item) => sum + (item.Precio_Venta * item.Cantidad), 0)
       };
-    });
 
-    console.log('📊 [Excel Export] Datos procesados para Excel:', excelData.slice(0, 2)); // Solo los primeros 2 para no saturar
-
-    // Calcular totales
-    const totales = {
-      totalEntradas: movements.filter(m => m.type === 'IN').reduce((sum, m) => sum + m.quantity, 0),
-      totalSalidas: movements.filter(m => m.type === 'OUT').reduce((sum, m) => sum + m.quantity, 0),
-      gananciaTotal: excelData.reduce((sum, item) => sum + (item.Ganancia_Total || 0), 0),
-      valorInventarioCompra: excelData.reduce((sum, item) => sum + (item.Precio_Compra * item.Cantidad), 0),
-      valorInventarioVenta: excelData.reduce((sum, item) => sum + (item.Precio_Venta * item.Cantidad), 0)
-    };
-
-    console.log('📊 [Excel Export] Totales calculados:', totales);
+      console.log('📊 [Excel Export] Totales calculados con TODOS los datos:', totales);
 
     // Agregar fila de totales
     excelData.push({
@@ -208,13 +220,17 @@ const StockMovements = () => {
     // Descargar archivo
     XLSX.writeFile(workbook, `${nombreArchivo}.xlsx`);
     
-    // Mostrar resumen
+    // ✅ NUEVO: Mostrar resumen con TODOS los registros
     alert(`📊 Excel exportado exitosamente!\n\n` +
-          `📄 Registros: ${movements.length}\n` +
+          `📄 Registros COMPLETOS: ${allMovementsData.length}\n` +
           `📈 Entradas: ${totales.totalEntradas}\n` +
           `📉 Salidas: ${totales.totalSalidas}\n` +
           `💰 Ganancia Total: $${totales.gananciaTotal.toLocaleString('es-CO')}\n` +
           `📁 Archivo: ${nombreArchivo}.xlsx`);
+    } catch (error) {
+      console.error('❌ [Excel Export] Error en exportación:', error);
+      alert('Error al exportar Excel: ' + error.message);
+    }
   };
 
   useEffect(() => {
@@ -253,13 +269,8 @@ const StockMovements = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    // ✅ Usando la función global mejorada para fechas de Colombia
+    return formatMovementDate(date);
   };
 
   // ✅ DEBUG: Log cuando cambia el loading state
@@ -399,13 +410,19 @@ const StockMovements = () => {
           >
             {loading ? '🔄 Cargando...' : '🔍 Buscar'}
           </button>
-          {/* ✅ BOTÓN: Exportar a Excel */}
+          {/* ✅ BOTÓN: Exportar a Excel - TODOS los registros */}
           <button
             onClick={handleExportToExcel}
-            disabled={!movements || movements.length === 0 || loading}
+            disabled={loading}
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            title="Exporta TODOS los registros según filtros aplicados (sin límite de paginación)"
           >
-            📊 Exportar Excel ({movements?.length || 0} registros)
+            📊 Exportar TODOS los Registros
+            {stats?.movementsCount && (
+              <span className="text-xs bg-green-700 px-2 py-1 rounded">
+                ~{stats.movementsCount} total
+              </span>
+            )}
           </button>
         </div>
       </div>

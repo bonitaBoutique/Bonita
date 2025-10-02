@@ -11,7 +11,7 @@ const AccountSummary = (props) => {
   const dispatch = useDispatch();
   
   // ✅ CAMBIAR: Usar clientAccountBalance en lugar de accountSummary
-  const { user, orderDetails, loading, error } = useSelector((state) => state.clientAccountBalance);
+  const { user, orderDetails, giftCards, loading, error } = useSelector((state) => state.clientAccountBalance); // ✅ AGREGAR: giftCards
 
   // Estado para paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,6 +126,11 @@ const AccountSummary = (props) => {
     )
   ).length;
 
+  // ✅ AGREGAR: Estadísticas de GiftCards
+  const totalGiftCards = giftCards ? giftCards.length : 0;
+  const saldoTotalGiftCards = giftCards ? giftCards.reduce((sum, gc) => sum + (gc.saldo || 0), 0) : 0;
+  const giftCardsActivas = giftCards ? giftCards.filter(gc => gc.estado === 'activa').length : 0;
+
   const handleOrderDetailClick = async (orderId, event) => {
     try {
       if (!orderId) return;
@@ -192,6 +197,15 @@ const AccountSummary = (props) => {
                 })}</p>
                 <p><strong>Pendientes:</strong> {ordenesPendientes}</p>
                 <p><strong>Completadas:</strong> {ordenesCompletadas}</p>
+                {totalGiftCards > 0 && (
+                  <>
+                    <p><strong>GiftCards:</strong> {totalGiftCards} ({giftCardsActivas} activas)</p>
+                    <p><strong>Saldo total GiftCards:</strong> {saldoTotalGiftCards.toLocaleString("es-CO", {
+                      style: "currency",
+                      currency: "COP",
+                    })}</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -205,7 +219,7 @@ const AccountSummary = (props) => {
       </div>
 
       {/* ✅ Tarjetas de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-blue-100 p-4 rounded-lg text-center border-l-4 border-blue-500">
           <div className="text-2xl mb-2">📋</div>
           <h3 className="font-semibold text-blue-800">Total Órdenes</h3>
@@ -231,7 +245,69 @@ const AccountSummary = (props) => {
           <h3 className="font-semibold text-purple-800">Completadas</h3>
           <p className="text-2xl font-bold text-purple-900">{ordenesCompletadas}</p>
         </div>
+        {/* ✅ NUEVA TARJETA: GiftCards */}
+        <div className="bg-pink-100 p-4 rounded-lg text-center border-l-4 border-pink-500">
+          <div className="text-2xl mb-2">🎁</div>
+          <h3 className="font-semibold text-pink-800">GiftCards</h3>
+          <p className="text-xl font-bold text-pink-900">{totalGiftCards}</p>
+          <p className="text-sm text-pink-700">
+            {saldoTotalGiftCards.toLocaleString("es-CO", {
+              style: "currency",
+              currency: "COP",
+            })}
+          </p>
+        </div>
       </div>
+
+      {/* ✅ NUEVA SECCIÓN: GiftCards */}
+      {giftCards && giftCards.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4 flex items-center">
+            🎁 GiftCards del Cliente
+            <span className="ml-2 text-sm font-normal text-gray-600">
+              ({giftCards.length} tarjetas)
+            </span>
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {giftCards.map((giftCard) => (
+              <div key={giftCard.id_giftcard} className="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-lg border-l-4 border-purple-500 shadow-md">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h4 className="font-semibold text-purple-800">GiftCard #{giftCard.id_giftcard}</h4>
+                    <p className="text-2xl font-bold text-purple-900">
+                      {giftCard.saldo.toLocaleString("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                      })}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    giftCard.estado === 'activa'
+                      ? 'bg-green-100 text-green-800'
+                      : giftCard.estado === 'usada'
+                      ? 'bg-gray-100 text-gray-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {giftCard.estado}
+                  </span>
+                </div>
+                
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p><strong>Origen:</strong> {giftCard.payment_method || 'No especificado'}</p>
+                  {giftCard.reference_type === 'RETURN_CREDIT' && (
+                    <p><strong>Recibo:</strong> #{giftCard.reference_id}</p>
+                  )}
+                  <p><strong>Creada:</strong> {new Date(giftCard.createdAt).toLocaleDateString('es-CO')}</p>
+                  {giftCard.description && (
+                    <p><strong>Descripción:</strong> {giftCard.description}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ✅ Tabla de órdenes mejorada */}
       <div className="mb-8">

@@ -1,6 +1,30 @@
-const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment } = require("../../data");
 const { Op } = require("sequelize");
 const { getColombiaDate } = require("../../utils/dateUtils");
+
+// ✅ NUEVA: Función para manejar fechas de Colombia (igual que en StockMovements)
+const parseDateForColombia = (dateString, isEndDate = false) => {
+  if (!dateString) return null;
+  
+  console.log(`🕒 [getBalance] Input: ${dateString}, isEndDate: ${isEndDate}`);
+  
+  // Si es formato YYYY-MM-DD, interpretar como fecha local de Colombia
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (isEndDate) {
+      // Para dateTo: 23:59:59.999 del día seleccionado
+      const endDate = new Date(`${dateString}T23:59:59.999`);
+      console.log(`📅 [getBalance dateTo] ${dateString} → ${endDate.toISOString()}`);
+      return endDate;
+    } else {
+      // Para dateFrom: 00:00:00 del día seleccionado  
+      const startDate = new Date(`${dateString}T00:00:00.000`);
+      console.log(`📅 [getBalance dateFrom] ${dateString} → ${startDate.toISOString()}`);
+      return startDate;
+    }
+  }
+  
+  return new Date(dateString);
+};
 
 const getBalance = async (req, res) => {
   try {
@@ -10,33 +34,29 @@ const getBalance = async (req, res) => {
 
     let dateFilter = {};
 
-    // ✅ MANEJO DE FECHAS PARA RECEIPTS
+    // ✅ MANEJO DE FECHAS PARA RECEIPTS CORREGIDO
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       console.log("📅 Sin fechas especificadas, usando día actual:", today);
       
-      const nextDay = new Date(today);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayString = nextDay.toISOString().split('T')[0];
+      const startOfDay = parseDateForColombia(today, false);
+      const endOfDay = parseDateForColombia(today, true);
       
       dateFilter.date = {
-        [Op.gte]: today,
-        [Op.lt]: nextDayString
+        [Op.gte]: startOfDay,
+        [Op.lte]: endOfDay
       };
     } else {
       dateFilter.date = {};
       
       if (startDate) {
-        dateFilter.date[Op.gte] = startDate;
+        dateFilter.date[Op.gte] = parseDateForColombia(startDate, false);
         console.log("📅 Fecha inicio:", startDate);
       }
       
       if (endDate) {
-        const nextDay = new Date(endDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayString = nextDay.toISOString().split('T')[0];
-        dateFilter.date[Op.lt] = nextDayString;
-        console.log("📅 Fecha fin (hasta):", nextDayString);
+        dateFilter.date[Op.lte] = parseDateForColombia(endDate, true);
+        console.log("📅 Fecha fin:", endDate);
       }
     }
 
@@ -46,9 +66,8 @@ const getBalance = async (req, res) => {
       const today = getColombiaDate();
       console.log("📅 Usando día actual para reservas:", today);
       
-      // ✅ CREAR RANGO COMPLETO DEL DÍA
-      const startOfDay = `${today}T00:00:00.000Z`;
-      const endOfDay = `${today}T23:59:59.999Z`;
+      const startOfDay = parseDateForColombia(today, false);
+      const endOfDay = parseDateForColombia(today, true);
       
       reservationDateFilter.createdAt = {
         [Op.gte]: startOfDay,
@@ -58,15 +77,13 @@ const getBalance = async (req, res) => {
       reservationDateFilter.createdAt = {};
       
       if (startDate) {
-        const startOfDay = `${startDate}T00:00:00.000Z`;
-        reservationDateFilter.createdAt[Op.gte] = startOfDay;
-        console.log("📅 Fecha inicio reservas:", startOfDay);
+        reservationDateFilter.createdAt[Op.gte] = parseDateForColombia(startDate, false);
+        console.log("📅 Fecha inicio reservas:", startDate);
       }
       
       if (endDate) {
-        const endOfDay = `${endDate}T23:59:59.999Z`;
-        reservationDateFilter.createdAt[Op.lte] = endOfDay;
-        console.log("📅 Fecha fin reservas:", endOfDay);
+        reservationDateFilter.createdAt[Op.lte] = parseDateForColombia(endDate, true);
+        console.log("📅 Fecha fin reservas:", endDate);
       }
     }
 
@@ -142,7 +159,7 @@ const getBalance = async (req, res) => {
     const localSales = await Receipt.findAll({
       where: {
         ...localSalesFilter,
-        // ✅ EXCLUIR recibos con método de pago "Crédito"
+        // ✅ EXCLUIR recibos con método de pago "Crédito" SOLAMENTE
         payMethod: {
           [Op.not]: 'Crédito'
         },
@@ -164,14 +181,20 @@ const getBalance = async (req, res) => {
       ],
       include: [
         {
-      model: OrderDetail,
-      attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
-      required: false,
-      where: {
-        state_order: { [Op.not]: 'Reserva a Crédito' } // <-- EXCLUIR RESERVAS A CRÉDITO
-      }
-    }
-  ],
+          model: OrderDetail,
+          attributes: ['id_orderDetail', 'n_document', 'amount', 'pointOfSale', 'state_order'],
+          required: false,
+          where: {
+            state_order: { [Op.not]: 'Reserva a Crédito' } // <-- EXCLUIR RESERVAS A CRÉDITO
+          }
+        },
+        {
+          // ✅ INCLUIR Payment para distinguir GiftCards compradas vs devolución
+          model: Payment,
+          attributes: ['id_payment', 'payMethod', 'amount'],
+          required: false // No obligatorio, para incluir receipts sin payment
+        }
+      ],
       order: [['date', 'DESC']]
     });
 
@@ -376,6 +399,12 @@ const getBalance = async (req, res) => {
     localSales.forEach(sale => {
       const saleData = sale.toJSON();
       
+      // ✅ VERIFICAR SI ES GIFTCARD DE DEVOLUCIÓN (sin Payment asociado)
+      if (saleData.payMethod === 'GiftCard' && (!saleData.Payments || saleData.Payments.length === 0)) {
+        console.log(`🎁 GiftCard de devolución detectada - EXCLUIR del balance: ${sale.id_receipt}`);
+        return; // Saltar este receipt (no agregarlo al balance)
+      }
+      
       // ✅ PAGO PRINCIPAL (siempre existe)
       const mainPayment = {
         id: `${sale.id_receipt}-main`,
@@ -392,7 +421,11 @@ const getBalance = async (req, res) => {
         isMainPayment: true,
         totalReceiptAmount: parseFloat(saleData.total_amount || 0),
         hasSecondaryPayment: !!(saleData.payMethod2 && saleData.amount2),
-        id_orderDetail: saleData.OrderDetail?.id_orderDetail || null
+        id_orderDetail: saleData.OrderDetail?.id_orderDetail || null,
+        // ✅ Para GiftCards compradas, usar el método real del Payment
+        actualPaymentMethod: saleData.Payments && saleData.Payments.length > 0 
+          ? saleData.Payments[0].payMethod 
+          : saleData.payMethod
       };
 
       formattedLocalSales.push(mainPayment);
@@ -504,7 +537,11 @@ const getBalance = async (req, res) => {
     // ✅ Función para calcular ingresos por método
     const calculateIncomeByMethod = (method) => {
       return allLocalPayments
-        .filter(payment => payment.paymentMethod === method)
+        .filter(payment => {
+          // Para GiftCards, usar el método real del Payment si existe
+          const paymentMethod = payment.actualPaymentMethod || payment.paymentMethod;
+          return paymentMethod === method;
+        })
         .reduce((acc, payment) => acc + (payment.amount || 0), 0);
     };
 
@@ -527,9 +564,12 @@ const getBalance = async (req, res) => {
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
     const totalLocalSales = formattedLocalSales.reduce((sum, sale) => sum + sale.amount, 0);
     
-    // ✅ Para el balance, excluir Addi y Sistecredito
+    // ✅ Para el balance, excluir Addi y Sistecredito (GiftCard ya está filtrado arriba)
     const totalLocalSalesForBalance = allLocalPayments
-      .filter(payment => !['Addi', 'Sistecredito'].includes(payment.paymentMethod))
+      .filter(payment => {
+        const paymentMethod = payment.actualPaymentMethod || payment.paymentMethod;
+        return !['Addi', 'Sistecredito'].includes(paymentMethod);
+      })
       .reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
     const totalIncome = totalOnlineSales + totalLocalSalesForBalance;
@@ -585,7 +625,7 @@ const getBalance = async (req, res) => {
         addi: parseFloat(ingresosAddi.toFixed(2)),
         sistecredito: parseFloat(ingresosSistecredito.toFixed(2)),
         credito: parseFloat(ingresosCredito.toFixed(2)),
-        giftCard: parseFloat(ingresosGiftCard.toFixed(2)),
+        giftCard: parseFloat(ingresosGiftCard.toFixed(2)), // ✅ Ahora solo incluye GiftCards COMPRADAS
         otro: parseFloat(ingresosOtro.toFixed(2)),
         wompi: parseFloat(totalOnlineSales.toFixed(2)),
         pagosParciales: parseFloat(ingresosPagosParciales.toFixed(2)),

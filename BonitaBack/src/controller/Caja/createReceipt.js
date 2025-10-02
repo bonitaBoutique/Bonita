@@ -19,6 +19,9 @@ module.exports = async (req, res) => {
     cashier_document,
     actualPaymentMethod,
     discount = 0,
+    // ✅ NUEVOS CAMPOS: Para pago con GiftCard
+    giftCardEmail,
+    giftCardBalance,
   } = req.body;
 
   // ✅ LOGS DE FECHA
@@ -191,10 +194,57 @@ module.exports = async (req, res) => {
       timezone: 'America/Bogota'
     });
 
+    // ✅ NUEVA LÓGICA: Descontar automáticamente de GiftCard si es el método de pago
+    let giftCardUpdated = null;
+    if ((payMethod === "GiftCard" || payMethod2 === "GiftCard") && giftCardEmail) {
+      try {
+        console.log('🎁 [GIFT CARD PAYMENT] Descontando del saldo...');
+        
+        // Buscar la GiftCard del usuario
+        const giftCard = await GiftCard.findOne({ 
+          where: { buyer_email: giftCardEmail, estado: 'activa' } 
+        });
+
+        if (!giftCard) {
+          throw new Error('GiftCard no encontrada o inactiva');
+        }
+
+        // ✅ DETERMINAR: Monto a descontar según si es método primario o secundario
+        const amountToDeduct = payMethod === "GiftCard" ? amount : amount2;
+        
+        if (giftCard.saldo < amountToDeduct) {
+          throw new Error(`Saldo insuficiente. Disponible: ${giftCard.saldo}, Requerido: ${amountToDeduct}`);
+        }
+
+        // Descontar el monto del saldo
+        giftCard.saldo -= amountToDeduct;
+        
+        // Si el saldo llega a 0, marcar como usada
+        if (giftCard.saldo <= 0) {
+          giftCard.estado = 'usada';
+        }
+        
+        await giftCard.save();
+        giftCardUpdated = {
+          id: giftCard.id_giftcard,
+          saldoAnterior: giftCard.saldo + amountToDeduct,
+          saldoActual: giftCard.saldo,
+          estado: giftCard.estado,
+          montoDescontado: amountToDeduct
+        };
+
+        console.log('✅ [GIFT CARD PAYMENT] Saldo descontado exitosamente:', giftCardUpdated);
+      } catch (giftCardError) {
+        console.error('❌ [GIFT CARD PAYMENT] Error:', giftCardError.message);
+        // No fallar el recibo por error de GiftCard, pero loggearlo
+      }
+    }
+
     return res.status(201).json({
       message: "Recibo creado exitosamente",
       receipt,
       products: order.products || [],
+      giftCardUpdate: giftCardUpdated, // ✅ INCLUIR: información de GiftCard actualizada
       serverInfo: {
         clientDate: date,
         serverDate: serverDate,

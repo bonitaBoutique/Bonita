@@ -153,6 +153,9 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_RETURN_HISTORY_REQUEST,
   FETCH_RETURN_HISTORY_SUCCESS,
   FETCH_RETURN_HISTORY_FAILURE,
+  FETCH_RETURNS_REQUEST,
+  FETCH_RETURNS_SUCCESS,
+  FETCH_RETURNS_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
   GET_SERVER_TIME_REQUEST,
@@ -197,6 +200,7 @@ const initialState = {
   clientAccountBalance: {
     user: null,
     orderDetails: [],
+    giftCards: [], // ✅ AGREGAR: Estado inicial para GiftCards
     loading: false,
     error: null,
   },
@@ -324,6 +328,13 @@ const initialState = {
       data: [],
       pagination: null,
       stats: [],
+      error: null,
+    },
+    list: {
+      loading: false,
+      data: [],
+      pagination: null,
+      stats: null,
       error: null,
     },
   },
@@ -1576,7 +1587,10 @@ case FETCH_RECEIPTS_FAILURE:
         },
         expenses: {
           ...state.expenses,
-          data: action.payload.expenses || []
+          data: action.payload.expenses?.data || [],
+          loading: action.payload.expenses?.loading || false,
+          success: action.payload.expenses?.success || true,
+          error: action.payload.expenses?.error || null
         },
         // ✅ NUEVO: Campos adicionales del backend
         cashierTotals: action.payload.cashierTotals || {},
@@ -1758,6 +1772,7 @@ case UPDATE_RESERVATION_FAILURE:
                   ...state.clientAccountBalance,
                   user: action.payload.user,
                   orderDetails: action.payload.orderDetails,
+                  giftCards: action.payload.giftCards || [], // ✅ AGREGAR: GiftCards
                   loading: false,
                   error: null,
                 },
@@ -2054,6 +2069,48 @@ case CREATE_SENDING_FAILURE:
           ...state.returns,
           history: {
             ...state.returns.history,
+            loading: false,
+            error: action.payload,
+          },
+        },
+      };
+
+    // 📋 LISTADO COMPLETO DE DEVOLUCIONES
+    case FETCH_RETURNS_REQUEST:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          list: {
+            ...state.returns.list,
+            loading: true,
+            error: null,
+          },
+        },
+      };
+
+    case FETCH_RETURNS_SUCCESS:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          list: {
+            loading: false,
+            data: action.payload.returns,
+            pagination: action.payload.pagination,
+            stats: action.payload.stats,
+            error: null,
+          },
+        },
+      };
+
+    case FETCH_RETURNS_FAILURE:
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          list: {
+            ...state.returns.list,
             loading: false,
             error: action.payload,
           },

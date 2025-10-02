@@ -34,7 +34,7 @@ module.exports = (sequelize) => {
        
       },
       reference_id: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING,
         allowNull: true,
        
       },

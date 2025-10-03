@@ -18,7 +18,7 @@ const PaymentIntentsList = () => {
 
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 20,
+    limit: 5, // ✅ Cambio de 20 a 5 resultados por página
     status: '',
     search: '',
     fromDate: '',
@@ -63,7 +63,7 @@ const PaymentIntentsList = () => {
     console.log('🔄 [PaymentIntents] Reseteando filtros...');
     const newFilters = {
       page: 1,
-      limit: 20,
+      limit: 5, // ✅ Cambio de 20 a 5 resultados por página
       status: '',
       search: '',
       fromDate: '',
@@ -282,7 +282,7 @@ const PaymentIntentsList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 mt-10">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
@@ -428,6 +428,7 @@ const PaymentIntentsList = () => {
                 onChange={(e) => handleFilterChange('limit', e.target.value)}
                 className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
+                <option value="5">5 por página</option>
                 <option value="10">10 por página</option>
                 <option value="20">20 por página</option>
                 <option value="50">50 por página</option>

@@ -26,6 +26,11 @@ const ClientAccountBalance = () => {
   const [hoveredOrderId, setHoveredOrderId] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [currentOrderDetail, setCurrentOrderDetail] = useState(null);
+  
+  // ✅ Estados para edición de clientes
+  const [editingClientId, setEditingClientId] = useState(null);
+  const [editedData, setEditedData] = useState({});
+  const [savingClient, setSavingClient] = useState(false);
 
   // Filtrar clientes por nombre y apellido
   const filteredClients = allClientAccounts.filter((client) => {
@@ -141,6 +146,59 @@ const ClientAccountBalance = () => {
       }));
     }
   };
+
+  // ✅ NUEVA FUNCIÓN: Iniciar edición de cliente
+  const handleStartEdit = (client) => {
+    setEditingClientId(client.n_document);
+    setEditedData({
+      first_name: client.first_name,
+      last_name: client.last_name,
+      email: client.email,
+      phone: client.phone,
+    });
+  };
+
+  // ✅ NUEVA FUNCIÓN: Cancelar edición
+  const handleCancelEdit = () => {
+    setEditingClientId(null);
+    setEditedData({});
+  };
+
+  // ✅ NUEVA FUNCIÓN: Actualizar campo editado
+  const handleFieldChange = (field, value) => {
+    setEditedData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // ✅ NUEVA FUNCIÓN: Guardar cambios del cliente
+  const handleSaveEdit = async (n_document) => {
+    try {
+      setSavingClient(true);
+      
+      const response = await axios.put(
+        `${BASE_URL}/users/${n_document}`,
+        editedData
+      );
+
+      if (response.status === 200) {
+        // Recargar la lista de clientes
+        await dispatch(getAllClientAccounts());
+        
+        // Limpiar estado de edición
+        setEditingClientId(null);
+        setEditedData({});
+        
+        alert('✅ Cliente actualizado exitosamente');
+      }
+    } catch (error) {
+      console.error('❌ Error al actualizar cliente:', error);
+      alert('Error al actualizar el cliente: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSavingClient(false);
+    }
+  };
   return (
     <div className="bg-gray-100 min-h-screen relative">
       <Navbar2 />
@@ -168,51 +226,136 @@ const ClientAccountBalance = () => {
               <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Documento</th>
                 <th className="py-3 px-6 text-left">Nombre</th>
+                <th className="py-3 px-6 text-left">Apellido</th>
                 <th className="py-3 px-6 text-left">Email</th>
                 <th className="py-3 px-6 text-left">Teléfono</th>
-                
+                <th className="py-3 px-6 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody className="text-gray-600 text-sm font-light">
-              {currentClients.map((client) => (
-                <tr
-                  key={client.n_document}
-                  className="border-b border-gray-200 hover:bg-gray-100"
-                >
-                  <td className="py-3 px-6 text-left whitespace-nowrap">
-                    {client.n_document}
-                  </td>
-                  <td className="py-3 px-6 text-left">
-                    {client.first_name} {client.last_name}
-                  </td>
-                  <td className="py-3 px-6 text-left">{client.email}</td>
-                  <td className="py-3 px-6 text-left">{client.phone}</td>
-                  <td className="py-3 px-6 text-left flex gap-2">
-                  
-                    <button
-                      onClick={() =>
-                        navigate(`/recibo/giftcard/${client.n_document}`)
-                      }
-                      className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
-                    >
-                      GiftCard
-                    </button>
-                    <button
-                      onClick={() =>
-                        navigate(`/resumenDeCuenta/${client.n_document}`)
-                      }
-                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
-                    >
-                      Resumen de cuenta
-                    </button>
-                    {giftCardClients[client.n_document] && (
-                      <span className="text-green-600 font-bold ml-2">
-                        GiftCard activa
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {currentClients.map((client) => {
+                const isEditing = editingClientId === client.n_document;
+                
+                return (
+                  <tr
+                    key={client.n_document}
+                    className={`border-b border-gray-200 ${
+                      isEditing ? 'bg-blue-50' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <td className="py-3 px-6 text-left whitespace-nowrap font-medium">
+                      {client.n_document}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedData.first_name}
+                          onChange={(e) => handleFieldChange('first_name', e.target.value)}
+                          className="border rounded px-2 py-1 w-full focus:ring-2 focus:ring-blue-500"
+                          placeholder="Nombre"
+                        />
+                      ) : (
+                        client.first_name
+                      )}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedData.last_name}
+                          onChange={(e) => handleFieldChange('last_name', e.target.value)}
+                          className="border rounded px-2 py-1 w-full focus:ring-2 focus:ring-blue-500"
+                          placeholder="Apellido"
+                        />
+                      ) : (
+                        client.last_name
+                      )}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          value={editedData.email}
+                          onChange={(e) => handleFieldChange('email', e.target.value)}
+                          className="border rounded px-2 py-1 w-full focus:ring-2 focus:ring-blue-500"
+                          placeholder="email@ejemplo.com"
+                        />
+                      ) : (
+                        client.email
+                      )}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          value={editedData.phone}
+                          onChange={(e) => handleFieldChange('phone', e.target.value)}
+                          className="border rounded px-2 py-1 w-full focus:ring-2 focus:ring-blue-500"
+                          placeholder="3001234567"
+                        />
+                      ) : (
+                        client.phone
+                      )}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      <div className="flex gap-2 flex-wrap">
+                        {isEditing ? (
+                          // ✅ Botones de Guardar y Cancelar en modo edición
+                          <>
+                            <button
+                              onClick={() => handleSaveEdit(client.n_document)}
+                              disabled={savingClient}
+                              className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {savingClient ? '⏳' : '💾'} Guardar
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={savingClient}
+                              className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+                            >
+                              ❌ Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          // ✅ Botones normales cuando NO está en edición
+                          <>
+                            <button
+                              onClick={() => handleStartEdit(client)}
+                              className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+                              title="Editar datos del cliente"
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
+                              onClick={() =>
+                                navigate(`/recibo/giftcard/${client.n_document}`)
+                              }
+                              className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+                            >
+                              🎁 GiftCard
+                            </button>
+                            <button
+                              onClick={() =>
+                                navigate(`/resumenDeCuenta/${client.n_document}`)
+                              }
+                              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline"
+                            >
+                              📊 Resumen
+                            </button>
+                            {giftCardClients[client.n_document] && (
+                              <span className="text-green-600 font-bold text-xs self-center">
+                                ✓ GiftCard activa
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -82,30 +82,63 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
 };
 
   return (
-    <>
-      <label>
-        Nombre/Razón Social:
-        <input type="text" name="scostumername" value={jbuyer.scostumername} onChange={handleChange} />
-      </label>
-      <label>
-        Tipo de Organización:
-        <select name="wlegalorganizationtype" value={jbuyer.wlegalorganizationtype} onChange={handleChange}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Nombre/Razón Social:
+        </label>
+        <input 
+          type="text" 
+          name="scostumername" 
+          value={jbuyer.scostumername} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          placeholder="Ingrese nombre o razón social"
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Tipo de Organización:
+        </label>
+        <select 
+          name="wlegalorganizationtype" 
+          value={jbuyer.wlegalorganizationtype} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+        >
           <option value="person">Persona Natural</option>
           <option value="company">Persona Jurídica</option>
         </select>
-      </label>
-      <label>
-        Responsabilidad Fiscal:
-        <select name="sfiscalresponsibilities" value={jbuyer.sfiscalresponsibilities} onChange={handleChange}>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Responsabilidad Fiscal:
+        </label>
+        <select 
+          name="sfiscalresponsibilities" 
+          value={jbuyer.sfiscalresponsibilities} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+        >
           <option value="R-99-PN">No aplica – Otros *</option>
           <option value="O1">IVA</option>
           <option value="O4">INC</option>
           <option value="ZA">IVA e INC</option>
         </select>
-      </label>
-      <label>
-        Tipo de Documento:
-        <select name="wdoctype" value={jbuyer.jpartylegalentity.wdoctype} onChange={handleChange}>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Tipo de Documento:
+        </label>
+        <select 
+          name="wdoctype" 
+          value={jbuyer.jpartylegalentity.wdoctype} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+        >
           <option value="">Selecciona un tipo de documento</option>
           <option value="RC">Registro civil</option>
           <option value="TI">Tarjeta de identidad</option>
@@ -120,24 +153,64 @@ const BuyerForm = ({ jbuyer, setBuyer }) => {
           <option value="FI">NIT de otro país</option>
           <option value="NUIP">NUIP</option>
         </select>
-      </label>
-      <label>
-        Número de Documento:
-        <input type="text" name="sdocno" value={jbuyer.jpartylegalentity.sdocno} onChange={handleChange} />
-      </label>
-      <label>
-        Persona de Contacto:
-        <input type="text" name="scontactperson" value={jbuyer.jcontact.scontactperson} onChange={handleChange} />
-      </label>
-      <label>
-        Correo Electrónico:
-        <input type="email" name="selectronicmail" value={jbuyer.jcontact.selectronicmail} onChange={handleChange} />
-      </label>
-      <label>
-        Teléfono:
-        <input type="text" name="stelephone" value={jbuyer.jcontact.stelephone} onChange={handleChange} />
-      </label>
-    </>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Número de Documento:
+        </label>
+        <input 
+          type="text" 
+          name="sdocno" 
+          value={jbuyer.jpartylegalentity.sdocno} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          placeholder="Ingrese número de documento"
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Persona de Contacto:
+        </label>
+        <input 
+          type="text" 
+          name="scontactperson" 
+          value={jbuyer.jcontact.scontactperson} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          placeholder="Nombre de la persona de contacto"
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Correo Electrónico:
+        </label>
+        <input 
+          type="email" 
+          name="selectronicmail" 
+          value={jbuyer.jcontact.selectronicmail} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          placeholder="correo@ejemplo.com"
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-sm font-semibold text-gray-700 mb-1">
+          Teléfono:
+        </label>
+        <input 
+          type="text" 
+          name="stelephone" 
+          value={jbuyer.jcontact.stelephone} 
+          onChange={handleChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          placeholder="3001234567"
+        />
+      </div>
+    </div>
   );
 };
 BuyerForm.propTypes = {

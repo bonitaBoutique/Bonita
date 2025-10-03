@@ -28,6 +28,12 @@ const StockMovements = () => {
     id_product: ''
   });
 
+  // ✅ Estado para controlar si es el primer render
+  const [isInitialMount, setIsInitialMount] = useState(true);
+
+  // ✅ OPTIMIZACIÓN: Debounce para el filtro de ID producto
+  const [searchTimeout, setSearchTimeout] = useState(null);
+
   // ✅ FUNCIÓN: Traducir motivos a español
   const traducirMotivo = (reason) => {
     if (!reason) return '-';
@@ -245,18 +251,43 @@ const StockMovements = () => {
     }
   };
 
+  // ✅ CARGAR DATOS: Solo en el montaje inicial
   useEffect(() => {
-    console.log('🚀 [StockMovements] Componente montado, cargando datos iniciales...');
-    dispatch(fetchStockMovements(filters));
-    // eslint-disable-next-line
-  }, []);
+    if (isInitialMount) {
+      console.log('🚀 [StockMovements] Componente montado, cargando datos iniciales...');
+      dispatch(fetchStockMovements(filters));
+      setIsInitialMount(false);
+    }
+  }, [isInitialMount, dispatch, filters]);
 
   const handleFilterChange = (field, value) => {
     console.log(`🔄 [StockMovements] Cambiando filtro ${field} a:`, value);
-    const newFilters = { ...filters, [field]: value, page: 1 };
+    
+    // ✅ NORMALIZACIÓN: Convertir id_product a mayúsculas para búsqueda consistente
+    const normalizedValue = field === 'id_product' ? value.toUpperCase() : value;
+    
+    const newFilters = { ...filters, [field]: normalizedValue, page: 1 };
     setFilters(newFilters);
-    console.log('🔄 [StockMovements] Nuevos filtros:', newFilters);
-    dispatch(fetchStockMovements(newFilters));
+    
+    // ✅ OPTIMIZACIÓN: Para ID producto, esperar 500ms antes de buscar (debounce)
+    if (field === 'id_product') {
+      // Limpiar timeout anterior si existe
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      
+      // Crear nuevo timeout
+      const timeout = setTimeout(() => {
+        console.log('🔄 [StockMovements] Ejecutando búsqueda con debounce para:', normalizedValue);
+        dispatch(fetchStockMovements(newFilters));
+      }, 500); // Esperar 500ms después de que el usuario deje de escribir
+      
+      setSearchTimeout(timeout);
+    } else {
+      // Para otros filtros, ejecutar inmediatamente
+      console.log('🔄 [StockMovements] Nuevos filtros:', newFilters);
+      dispatch(fetchStockMovements(newFilters));
+    }
   };
 
   const handlePageChange = (newPage) => {
@@ -289,6 +320,15 @@ const StockMovements = () => {
   useEffect(() => {
     console.log('⏳ [StockMovements] Loading state cambió:', loading);
   }, [loading]);
+
+  // ✅ LIMPIEZA: Limpiar timeout al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
 
   if (loading && movements.length === 0) {
     return (
@@ -389,9 +429,10 @@ const StockMovements = () => {
               type="text"
               value={filters.id_product}
               onChange={(e) => handleFilterChange('id_product', e.target.value)}
-              placeholder="Ej: B001"
+              placeholder="Ej: B001 o b001 (se convierte a mayúsculas)"
               className="border rounded p-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">💡 Puedes escribir en minúsculas, se convertirá automáticamente</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

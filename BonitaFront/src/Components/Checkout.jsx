@@ -227,13 +227,19 @@ const Checkout = () => {
     }
 
     // ✅ Datos finales con fecha correcta de Colombia
+    // ✅ MEJORADO: Intentar obtener email y nombre de userInfo o del state de usuario
+    const userEmail = userInfo?.email || '';
+    const firstName = userInfo?.first_name || '';
+    const lastName = userInfo?.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim() || firstName || lastName || userEmail || 'Cliente';
+
     const finalOrderData = {
       ...orderData,
       n_document: userInfo.n_document,
       date: orderData.date, // Ya está validada
       currency: 'COP',
-      customerEmail: userInfo.email,
-      customerName: `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim() || userInfo.first_name || userInfo.last_name || userInfo.email,
+      customerEmail: userEmail || undefined, // ✅ Enviar undefined si está vacío para que el backend lo maneje
+      customerName: fullName || undefined, // ✅ Enviar undefined si está vacío para que el backend lo maneje
       metadata: {
         cartItems: cart.items.map((item) => ({
           id_product: item.id_product,
@@ -243,6 +249,10 @@ const Checkout = () => {
       },
     };
 
+    // ✅ DEBUG: Verificar datos del usuario antes de enviar
+    console.log("🔍 [Checkout] UserInfo completo:", userInfo);
+    console.log("🔍 [Checkout] Email extraído:", userEmail);
+    console.log("🔍 [Checkout] Nombre completo:", fullName);
     console.log(">>> handleSubmit - Submitting Order Data with Colombia date:", finalOrderData);
     
     try {

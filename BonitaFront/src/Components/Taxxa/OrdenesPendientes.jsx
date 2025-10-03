@@ -6,9 +6,12 @@ import {
   deleteOrderDetail,
 } from "../../Redux/Actions/actions";
 import Swal from "sweetalert2";
+import BillingFormModal from "./BillingFormModal";
 
 const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [showBillingModal, setShowBillingModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const dispatch = useDispatch();
   
   // ✅ CORREGIR: Selector con verificación segura
@@ -54,6 +57,18 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
     if (onSelectOrder) {
       onSelectOrder(orderId);
     }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Abrir modal de facturación
+  const handleOpenBillingModal = (order) => {
+    console.log('📋 [OrdenesPendientes] Abriendo modal de facturación para orden:', order);
+    setSelectedOrder(order);
+    setShowBillingModal(true);
+  };
+
+  const handleCloseBillingModal = () => {
+    setShowBillingModal(false);
+    setSelectedOrder(null);
   };
 
   const handleMouseEnter = async (id_orderDetail, event) => {
@@ -203,10 +218,22 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
   const renderActions = (order) => {
     return (
       <div className="flex space-x-2">
+        {/* ✅ BOTÓN PRINCIPAL: Facturar (para órdenes facturables pendientes) */}
+        {filterType === "facturablesPendientes" && (
+          <button
+            onClick={() => handleOpenBillingModal(order)}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-1 transition-colors"
+            title="Abrir formulario de facturación"
+          >
+            📝 Facturar
+          </button>
+        )}
+        
+        {/* Botones antiguos (solo si está en modo billingForm o invoice) */}
         {mode === "billingForm" && (
           <button
             onClick={() => handleSelectOrder(order.n_document)}
-            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
           >
             Doc
           </button>
@@ -219,6 +246,7 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
             Orden
           </button>
         )}
+        
         <button
           onClick={() => handleDeleteOrder(order.id_orderDetail)}
           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
@@ -266,6 +294,9 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
                 <th scope="col" className="px-6 py-3">
                   Monto
                 </th>
+                <th scope="col" className="px-6 py-3 bg-blue-100">
+                  Importe Facturado
+                </th>
                 <th scope="col" className="px-6 py-3">
                   Documento Cliente
                 </th>
@@ -311,6 +342,22 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
                       <td className="px-6 py-4">{order.quantity || 0}</td>
                       <td className="px-6 py-4">
                         ${order.amount?.toLocaleString("es-CO") || 0}
+                      </td>
+                      <td className="px-6 py-4 bg-blue-50 font-semibold">
+                        {order.receipt_info?.total_amount ? (
+                          <>
+                            <span className="text-blue-700">
+                              ${order.receipt_info.total_amount.toLocaleString("es-CO")}
+                            </span>
+                            {order.amount !== order.receipt_info.total_amount && (
+                              <span className="block text-xs text-orange-600">
+                                (Desc: ${(order.amount - order.receipt_info.total_amount).toLocaleString("es-CO")})
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">Sin recibo</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">{order.n_document || 'N/A'}</td>
                       <td className="px-6 py-4">{order.pointOfSale || 'N/A'}</td>
@@ -377,9 +424,16 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
           )}
           {!currentOrderDetail.products && !currentOrderDetail.user_info && (
             <p>Cargando detalles...</p>
-          )}
+          )}  
         </div>
       )}
+
+      {/* ✅ MODAL DE FACTURACIÓN */}
+      <BillingFormModal
+        isOpen={showBillingModal}
+        onClose={handleCloseBillingModal}
+        orderData={selectedOrder}
+      />
     </div>
   );
 };

@@ -110,6 +110,15 @@ const Invoice = () => {
 
   useEffect(() => {
     if (order && order.amount) {
+      // ✅ PRIORIZAR: Usar total_amount del recibo si existe (con descuento aplicado), sino usar amount de la orden
+      const amountToUse = order.receipt_info?.total_amount || order.amount;
+      console.log('💰 [Invoice] Usando monto:', {
+        orderAmount: order.amount,
+        receiptAmount: order.receipt_info?.total_amount,
+        amountToUse,
+        hasDiscount: order.amount !== amountToUse
+      });
+
       let totalAmountWithoutTax = 0;
       let totalTaxAmount = 0;
       let totalAmount = 0;

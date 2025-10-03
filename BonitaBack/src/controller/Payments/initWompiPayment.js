@@ -1,5 +1,6 @@
 const response = require("../../utils/response");
 const { createPaymentIntent } = require("../../services/payments/paymentIntentService");
+const { User } = require("../../data"); // ✅ AGREGAR: Importar modelo User
 
 module.exports = async (req, res) => {
   try {
@@ -25,6 +26,29 @@ module.exports = async (req, res) => {
       return response(res, 400, { error: "Datos incompletos para iniciar el pago" });
     }
 
+    // ✅ NUEVO: Si no vienen email o nombre, buscarlos en la base de datos
+    let finalCustomerEmail = customerEmail;
+    let finalCustomerName = customerName;
+
+    if ((!customerEmail || !customerName) && n_document) {
+      console.log(`🔍 [PAYMENT INTENT] Email o nombre faltante, buscando usuario con documento: ${n_document}`);
+      
+      try {
+        const user = await User.findOne({ where: { n_document } });
+        
+        if (user) {
+          finalCustomerEmail = customerEmail || user.email;
+          finalCustomerName = customerName || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+          console.log(`✅ [PAYMENT INTENT] Datos del usuario encontrados: ${finalCustomerName} (${finalCustomerEmail})`);
+        } else {
+          console.warn(`⚠️ [PAYMENT INTENT] Usuario no encontrado para documento: ${n_document}`);
+        }
+      } catch (userError) {
+        console.error(`❌ [PAYMENT INTENT] Error al buscar usuario:`, userError);
+        // Continuar sin los datos del usuario
+      }
+    }
+
     const { paymentIntent, wompiData } = await createPaymentIntent({
       amount,
       discount,
@@ -32,8 +56,8 @@ module.exports = async (req, res) => {
       currency,
       products,
       n_document,
-      customerEmail,
-      customerName,
+      customerEmail: finalCustomerEmail, // ✅ Usar email encontrado o el enviado
+      customerName: finalCustomerName,   // ✅ Usar nombre encontrado o el enviado
       address,
       deliveryAddress,
       state_order,

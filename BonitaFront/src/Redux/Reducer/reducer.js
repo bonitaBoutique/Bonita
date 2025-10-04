@@ -160,7 +160,53 @@ DELETE_ORDER_DETAIL_REQUEST,
   RESET_RECEIPT_SEARCH,
   GET_SERVER_TIME_REQUEST,
   GET_SERVER_TIME_SUCCESS,
-  GET_SERVER_TIME_FAILURE
+  GET_SERVER_TIME_FAILURE,
+  // Supplier Management
+  FETCH_SUPPLIERS_REQUEST,
+  FETCH_SUPPLIERS_SUCCESS,
+  FETCH_SUPPLIERS_FAILURE,
+  FETCH_SUPPLIER_BY_ID_REQUEST,
+  FETCH_SUPPLIER_BY_ID_SUCCESS,
+  FETCH_SUPPLIER_BY_ID_FAILURE,
+  CREATE_SUPPLIER_REQUEST,
+  CREATE_SUPPLIER_SUCCESS,
+  CREATE_SUPPLIER_FAILURE,
+  UPDATE_SUPPLIER_REQUEST,
+  UPDATE_SUPPLIER_SUCCESS,
+  UPDATE_SUPPLIER_FAILURE,
+  DELETE_SUPPLIER_REQUEST,
+  DELETE_SUPPLIER_SUCCESS,
+  DELETE_SUPPLIER_FAILURE,
+  // Purchase Invoices
+  FETCH_PURCHASE_INVOICES_REQUEST,
+  FETCH_PURCHASE_INVOICES_SUCCESS,
+  FETCH_PURCHASE_INVOICES_FAILURE,
+  FETCH_PURCHASE_INVOICE_BY_ID_REQUEST,
+  FETCH_PURCHASE_INVOICE_BY_ID_SUCCESS,
+  FETCH_PURCHASE_INVOICE_BY_ID_FAILURE,
+  CREATE_PURCHASE_INVOICE_REQUEST,
+  CREATE_PURCHASE_INVOICE_SUCCESS,
+  CREATE_PURCHASE_INVOICE_FAILURE,
+  UPDATE_PURCHASE_INVOICE_REQUEST,
+  UPDATE_PURCHASE_INVOICE_SUCCESS,
+  UPDATE_PURCHASE_INVOICE_FAILURE,
+  DELETE_PURCHASE_INVOICE_REQUEST,
+  DELETE_PURCHASE_INVOICE_SUCCESS,
+  DELETE_PURCHASE_INVOICE_FAILURE,
+  // Supplier Payments
+  FETCH_SUPPLIER_PAYMENTS_REQUEST,
+  FETCH_SUPPLIER_PAYMENTS_SUCCESS,
+  FETCH_SUPPLIER_PAYMENTS_FAILURE,
+  FETCH_PENDING_PAYMENTS_REQUEST,
+  FETCH_PENDING_PAYMENTS_SUCCESS,
+  FETCH_PENDING_PAYMENTS_FAILURE,
+  CREATE_SUPPLIER_PAYMENT_REQUEST,
+  CREATE_SUPPLIER_PAYMENT_SUCCESS,
+  CREATE_SUPPLIER_PAYMENT_FAILURE,
+  DELETE_SUPPLIER_PAYMENT_REQUEST,
+  DELETE_SUPPLIER_PAYMENT_SUCCESS,
+  DELETE_SUPPLIER_PAYMENT_FAILURE,
+  CLEAR_SUPPLIER_STATE
 
 } from "../Actions/actions-type";
 
@@ -439,6 +485,50 @@ const initialState = {
   cashierTotals: {},
   debug: null,
   dateRange: null,
+
+  // ============ SUPPLIER MANAGEMENT (Gestión de Proveedores) ============
+  suppliers: {
+    data: [],
+    loading: false,
+    error: null,
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0
+    },
+    currentSupplier: null,
+    summary: null
+  },
+
+  purchaseInvoices: {
+    data: [],
+    loading: false,
+    error: null,
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0
+    },
+    summary: null,
+    currentInvoice: null
+  },
+
+  supplierPayments: {
+    data: [],
+    loading: false,
+    error: null,
+    pagination: {
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0
+    },
+    pendingPayments: [],
+    pendingLoading: false,
+    summary: null
+  },
 }; 
 
  
@@ -2237,6 +2327,487 @@ case FETCH_STOCK_MOVEMENTS_FAILURE:
       error: action.payload,
     },
   };
+
+    // ============================================================================
+    // SUPPLIER MANAGEMENT REDUCERS (Gestión de Proveedores)
+    // ============================================================================
+
+    // Fetch Suppliers
+    case FETCH_SUPPLIERS_REQUEST:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: true,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIERS_SUCCESS:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          data: action.payload.suppliers || [],
+          pagination: action.payload.pagination || state.suppliers.pagination,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIERS_FAILURE:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Fetch Supplier By ID
+    case FETCH_SUPPLIER_BY_ID_REQUEST:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: true,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIER_BY_ID_SUCCESS:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          currentSupplier: action.payload.supplier,
+          summary: action.payload.summary,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIER_BY_ID_FAILURE:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Create Supplier
+    case CREATE_SUPPLIER_REQUEST:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: true,
+          error: null
+        }
+      };
+
+    case CREATE_SUPPLIER_SUCCESS:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          data: [action.payload, ...state.suppliers.data],
+          error: null
+        }
+      };
+
+    case CREATE_SUPPLIER_FAILURE:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Update Supplier
+    case UPDATE_SUPPLIER_REQUEST:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: true,
+          error: null
+        }
+      };
+
+    case UPDATE_SUPPLIER_SUCCESS:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          data: state.suppliers.data.map(sup =>
+            sup.id === action.payload.id ? action.payload : sup
+          ),
+          currentSupplier: action.payload,
+          error: null
+        }
+      };
+
+    case UPDATE_SUPPLIER_FAILURE:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Delete Supplier
+    case DELETE_SUPPLIER_REQUEST:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: true,
+          error: null
+        }
+      };
+
+    case DELETE_SUPPLIER_SUCCESS:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          data: state.suppliers.data.filter(sup => sup.id !== action.payload),
+          error: null
+        }
+      };
+
+    case DELETE_SUPPLIER_FAILURE:
+      return {
+        ...state,
+        suppliers: {
+          ...state.suppliers,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // ============================================================================
+    // PURCHASE INVOICE REDUCERS (Facturas de Compra)
+    // ============================================================================
+
+    // Fetch Purchase Invoices
+    case FETCH_PURCHASE_INVOICES_REQUEST:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: true,
+          error: null
+        }
+      };
+
+    case FETCH_PURCHASE_INVOICES_SUCCESS:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          data: action.payload.invoices || [],
+          pagination: action.payload.pagination || state.purchaseInvoices.pagination,
+          summary: action.payload.summary,
+          error: null
+        }
+      };
+
+    case FETCH_PURCHASE_INVOICES_FAILURE:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Fetch Purchase Invoice By ID
+    case FETCH_PURCHASE_INVOICE_BY_ID_REQUEST:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: true,
+          error: null
+        }
+      };
+
+    case FETCH_PURCHASE_INVOICE_BY_ID_SUCCESS:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          currentInvoice: action.payload,
+          error: null
+        }
+      };
+
+    case FETCH_PURCHASE_INVOICE_BY_ID_FAILURE:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Create Purchase Invoice
+    case CREATE_PURCHASE_INVOICE_REQUEST:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: true,
+          error: null
+        }
+      };
+
+    case CREATE_PURCHASE_INVOICE_SUCCESS:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          data: [action.payload, ...state.purchaseInvoices.data],
+          error: null
+        }
+      };
+
+    case CREATE_PURCHASE_INVOICE_FAILURE:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Update Purchase Invoice
+    case UPDATE_PURCHASE_INVOICE_REQUEST:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: true,
+          error: null
+        }
+      };
+
+    case UPDATE_PURCHASE_INVOICE_SUCCESS:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          data: state.purchaseInvoices.data.map(inv =>
+            inv.id === action.payload.id ? action.payload : inv
+          ),
+          currentInvoice: action.payload,
+          error: null
+        }
+      };
+
+    case UPDATE_PURCHASE_INVOICE_FAILURE:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Delete Purchase Invoice
+    case DELETE_PURCHASE_INVOICE_REQUEST:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: true,
+          error: null
+        }
+      };
+
+    case DELETE_PURCHASE_INVOICE_SUCCESS:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          data: state.purchaseInvoices.data.filter(inv => inv.id !== action.payload),
+          error: null
+        }
+      };
+
+    case DELETE_PURCHASE_INVOICE_FAILURE:
+      return {
+        ...state,
+        purchaseInvoices: {
+          ...state.purchaseInvoices,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // ============================================================================
+    // SUPPLIER PAYMENT REDUCERS (Pagos a Proveedores)
+    // ============================================================================
+
+    // Fetch Supplier Payments
+    case FETCH_SUPPLIER_PAYMENTS_REQUEST:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: true,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIER_PAYMENTS_SUCCESS:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          data: action.payload.payments || [],
+          pagination: action.payload.pagination || state.supplierPayments.pagination,
+          summary: action.payload.summary,
+          error: null
+        }
+      };
+
+    case FETCH_SUPPLIER_PAYMENTS_FAILURE:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Fetch Pending Payments
+    case FETCH_PENDING_PAYMENTS_REQUEST:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          pendingLoading: true,
+          error: null
+        }
+      };
+
+    case FETCH_PENDING_PAYMENTS_SUCCESS:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          pendingLoading: false,
+          pendingPayments: action.payload.pendingInvoices || [],
+          error: null
+        }
+      };
+
+    case FETCH_PENDING_PAYMENTS_FAILURE:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          pendingLoading: false,
+          error: action.payload
+        }
+      };
+
+    // Create Supplier Payment
+    case CREATE_SUPPLIER_PAYMENT_REQUEST:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: true,
+          error: null
+        }
+      };
+
+    case CREATE_SUPPLIER_PAYMENT_SUCCESS:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          data: [action.payload, ...state.supplierPayments.data],
+          error: null
+        }
+      };
+
+    case CREATE_SUPPLIER_PAYMENT_FAILURE:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Delete Supplier Payment
+    case DELETE_SUPPLIER_PAYMENT_REQUEST:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: true,
+          error: null
+        }
+      };
+
+    case DELETE_SUPPLIER_PAYMENT_SUCCESS:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          data: state.supplierPayments.data.filter(pay => pay.id !== action.payload),
+          error: null
+        }
+      };
+
+    case DELETE_SUPPLIER_PAYMENT_FAILURE:
+      return {
+        ...state,
+        supplierPayments: {
+          ...state.supplierPayments,
+          loading: false,
+          error: action.payload
+        }
+      };
+
+    // Clear Supplier State
+    case CLEAR_SUPPLIER_STATE:
+      return {
+        ...state,
+        suppliers: initialState.suppliers,
+        purchaseInvoices: initialState.purchaseInvoices,
+        supplierPayments: initialState.supplierPayments
+      };
           
     default:
       return state;

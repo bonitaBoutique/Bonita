@@ -201,6 +201,44 @@ User.hasMany(Return, {
   as: 'processedReturns'
 });
 
+// ✅ NUEVAS RELACIONES: Supplier --> SupplierInvoice
+const { Supplier, SupplierInvoice, SupplierPayment } = sequelize.models;
+
+if (Supplier && SupplierInvoice && SupplierPayment) {
+  // Supplier --> SupplierInvoice (Un proveedor tiene muchas facturas)
+  Supplier.hasMany(SupplierInvoice, { 
+    foreignKey: 'id_supplier',
+    as: 'invoices',
+    onDelete: 'CASCADE'
+  });
+  SupplierInvoice.belongsTo(Supplier, { 
+    foreignKey: 'id_supplier',
+    as: 'supplier'
+  });
+
+  // Supplier --> SupplierPayment (Un proveedor tiene muchos pagos)
+  Supplier.hasMany(SupplierPayment, { 
+    foreignKey: 'id_supplier',
+    as: 'payments',
+    onDelete: 'CASCADE'
+  });
+  SupplierPayment.belongsTo(Supplier, { 
+    foreignKey: 'id_supplier',
+    as: 'supplier'
+  });
+
+  // SupplierInvoice --> SupplierPayment (Una factura tiene muchos pagos)
+  SupplierInvoice.hasMany(SupplierPayment, { 
+    foreignKey: 'id_invoice',
+    as: 'payments',
+    onDelete: 'CASCADE'
+  });
+  SupplierPayment.belongsTo(SupplierInvoice, { 
+    foreignKey: 'id_invoice',
+    as: 'invoice'
+  });
+}
+
 module.exports = {
   ...sequelize.models,
   conn: sequelize,

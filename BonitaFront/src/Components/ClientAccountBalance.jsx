@@ -177,9 +177,26 @@ const ClientAccountBalance = () => {
     try {
       setSavingClient(true);
       
+      // Obtener token de autenticación del localStorage
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const token = userInfo.token;
+
+      if (!token) {
+        alert('❌ No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+        setSavingClient(false);
+        return;
+      }
+
+      // ✅ Cambio de ruta: /user/:n_document (singular)
       const response = await axios.put(
-        `${BASE_URL}/users/${n_document}`,
-        editedData
+        `${BASE_URL}/user/${n_document}`,
+        editedData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
       if (response.status === 200) {
@@ -194,7 +211,14 @@ const ClientAccountBalance = () => {
       }
     } catch (error) {
       console.error('❌ Error al actualizar cliente:', error);
-      alert('Error al actualizar el cliente: ' + (error.response?.data?.message || error.message));
+      
+      if (error.response?.status === 401) {
+        alert('❌ No autorizado. Por favor, inicia sesión nuevamente.');
+      } else if (error.response?.status === 404) {
+        alert('❌ Usuario no encontrado.');
+      } else {
+        alert('Error al actualizar el cliente: ' + (error.response?.data?.error || error.message));
+      }
     } finally {
       setSavingClient(false);
     }

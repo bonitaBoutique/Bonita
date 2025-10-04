@@ -151,6 +151,21 @@ const PanelGeneral = () => {
                   </p>
                 </div>
               )}
+
+              {/* ✅ Proveedores - SOLO ADMIN
+              {!isCajero && (
+                <div className="text-center space-y-2">
+                  <Link
+                    to="/panelProveedores"
+                    className="bg-pink-300 text-slate-700 font-nunito font-normal text-2xl px-4 py-8 rounded-lg hover:bg-pink-200 flex items-center justify-center"
+                  >
+                    � Proveedores
+                  </Link>
+                  <p className="text-sm text-slate-600">
+                    Gestión de proveedores, facturas de compra y pagos
+                  </p>
+                </div>
+              )} */}
             </>
           </div>
         </div>

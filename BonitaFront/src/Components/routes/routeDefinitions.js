@@ -153,6 +153,47 @@ export const adminRoutes = [
   { 
     path: '/pagos/online', 
     component: lazy(() => import('../Payments/PaymentIntentsList')) 
+  },
+  // ============= SUPPLIER MANAGEMENT (Gestión de Proveedores) =============
+  { 
+    path: '/panelProveedores', 
+    component: lazy(() => import('../Suppliers/PanelProveedores')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/new', 
+    component: lazy(() => import('../Suppliers/SupplierForm')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/invoices/create', 
+    component: lazy(() => import('../Suppliers/PurchaseInvoiceForm')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/payments/create', 
+    component: lazy(() => import('../Suppliers/PaymentForm')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/edit/:id', 
+    component: lazy(() => import('../Suppliers/SupplierForm')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/:supplierId/invoices/new', 
+    component: lazy(() => import('../Suppliers/PurchaseInvoiceForm')),
+    exact: true
+  },
+  { 
+    path: '/suppliers/:id', 
+    component: lazy(() => import('../Suppliers/SupplierDetail')),
+    exact: true
+  },
+  { 
+    path: '/suppliers', 
+    component: lazy(() => import('../Suppliers/SuppliersList')),
+    exact: true
   }
  
   
@@ -206,6 +247,7 @@ export const adminPaths = [
   '/panel/seller',
   '/panel/ordenesPendientes',
   '/panelProductos',
+  '/panelProveedores',
   '/updateProduct',
   '/panel/createProducts',
   '/invoice',
@@ -215,5 +257,6 @@ export const adminPaths = [
   '/createProducts',
   '/reservas',
   '/accountClient',
-  '/pagos/online'
+  '/pagos/online',
+  '/suppliers'
 ];

@@ -167,7 +167,53 @@ SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   CREATE_STOCK_MOVEMENT_FAILURE,
   GET_SERVER_TIME_REQUEST,
   GET_SERVER_TIME_SUCCESS,
-  GET_SERVER_TIME_FAILURE
+  GET_SERVER_TIME_FAILURE,
+  // Supplier Management
+  FETCH_SUPPLIERS_REQUEST,
+  FETCH_SUPPLIERS_SUCCESS,
+  FETCH_SUPPLIERS_FAILURE,
+  FETCH_SUPPLIER_BY_ID_REQUEST,
+  FETCH_SUPPLIER_BY_ID_SUCCESS,
+  FETCH_SUPPLIER_BY_ID_FAILURE,
+  CREATE_SUPPLIER_REQUEST,
+  CREATE_SUPPLIER_SUCCESS,
+  CREATE_SUPPLIER_FAILURE,
+  UPDATE_SUPPLIER_REQUEST,
+  UPDATE_SUPPLIER_SUCCESS,
+  UPDATE_SUPPLIER_FAILURE,
+  DELETE_SUPPLIER_REQUEST,
+  DELETE_SUPPLIER_SUCCESS,
+  DELETE_SUPPLIER_FAILURE,
+  // Purchase Invoices
+  FETCH_PURCHASE_INVOICES_REQUEST,
+  FETCH_PURCHASE_INVOICES_SUCCESS,
+  FETCH_PURCHASE_INVOICES_FAILURE,
+  FETCH_PURCHASE_INVOICE_BY_ID_REQUEST,
+  FETCH_PURCHASE_INVOICE_BY_ID_SUCCESS,
+  FETCH_PURCHASE_INVOICE_BY_ID_FAILURE,
+  CREATE_PURCHASE_INVOICE_REQUEST,
+  CREATE_PURCHASE_INVOICE_SUCCESS,
+  CREATE_PURCHASE_INVOICE_FAILURE,
+  UPDATE_PURCHASE_INVOICE_REQUEST,
+  UPDATE_PURCHASE_INVOICE_SUCCESS,
+  UPDATE_PURCHASE_INVOICE_FAILURE,
+  DELETE_PURCHASE_INVOICE_REQUEST,
+  DELETE_PURCHASE_INVOICE_SUCCESS,
+  DELETE_PURCHASE_INVOICE_FAILURE,
+  // Supplier Payments
+  FETCH_SUPPLIER_PAYMENTS_REQUEST,
+  FETCH_SUPPLIER_PAYMENTS_SUCCESS,
+  FETCH_SUPPLIER_PAYMENTS_FAILURE,
+  FETCH_PENDING_PAYMENTS_REQUEST,
+  FETCH_PENDING_PAYMENTS_SUCCESS,
+  FETCH_PENDING_PAYMENTS_FAILURE,
+  CREATE_SUPPLIER_PAYMENT_REQUEST,
+  CREATE_SUPPLIER_PAYMENT_SUCCESS,
+  CREATE_SUPPLIER_PAYMENT_FAILURE,
+  DELETE_SUPPLIER_PAYMENT_REQUEST,
+  DELETE_SUPPLIER_PAYMENT_SUCCESS,
+  DELETE_SUPPLIER_PAYMENT_FAILURE,
+  CLEAR_SUPPLIER_STATE
   
 } from "./actions-type";
 
@@ -2419,3 +2465,537 @@ export const fetchAllStockMovementsForExport = (filters = {}) => {
     }
   };
 };
+
+// ============================================================================
+// SUPPLIER MANAGEMENT ACTIONS (Gestión de Proveedores)
+// ============================================================================
+
+// Fetch all suppliers with pagination, search, and filters
+export const fetchSuppliers = (filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_SUPPLIERS_REQUEST });
+
+    const queryParams = new URLSearchParams();
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    if (filters.search) queryParams.append('search', filters.search);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.category) queryParams.append('category', filters.category);
+
+    const url = `${BASE_URL}/supplier?${queryParams.toString()}`;
+    console.log('🏢 [SUPPLIER] Fetching suppliers:', url);
+
+    const { data } = await axios.get(url);
+
+    dispatch({
+      type: FETCH_SUPPLIERS_SUCCESS,
+      payload: data.message
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [SUPPLIER] Error fetching suppliers:', error);
+    dispatch({
+      type: FETCH_SUPPLIERS_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Fetch supplier by ID
+export const fetchSupplierById = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_SUPPLIER_BY_ID_REQUEST });
+
+    console.log('🏢 [SUPPLIER] Fetching supplier by ID:', id);
+
+    const { data } = await axios.get(`${BASE_URL}/supplier/${id}`);
+
+    dispatch({
+      type: FETCH_SUPPLIER_BY_ID_SUCCESS,
+      payload: data.message
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [SUPPLIER] Error fetching supplier:', error);
+    dispatch({
+      type: FETCH_SUPPLIER_BY_ID_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Create new supplier
+export const createSupplier = (supplierData) => async (dispatch) => {
+  try {
+    dispatch({ type: CREATE_SUPPLIER_REQUEST });
+
+    console.log('🏢 [SUPPLIER] Creating supplier:', supplierData);
+
+    const { data } = await axios.post(`${BASE_URL}/supplier/create`, supplierData);
+
+    dispatch({
+      type: CREATE_SUPPLIER_SUCCESS,
+      payload: data.message.supplier
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Proveedor creado exitosamente',
+      timer: 2000
+    });
+
+    return data.message.supplier;
+  } catch (error) {
+    console.error('❌ [SUPPLIER] Error creating supplier:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: CREATE_SUPPLIER_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Update supplier
+export const updateSupplier = (id, supplierData) => async (dispatch) => {
+  try {
+    dispatch({ type: UPDATE_SUPPLIER_REQUEST });
+
+    console.log('🏢 [SUPPLIER] Updating supplier:', id, supplierData);
+
+    const { data } = await axios.put(`${BASE_URL}/supplier/${id}`, supplierData);
+
+    dispatch({
+      type: UPDATE_SUPPLIER_SUCCESS,
+      payload: data.message.supplier
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Proveedor actualizado exitosamente',
+      timer: 2000
+    });
+
+    return data.message.supplier;
+  } catch (error) {
+    console.error('❌ [SUPPLIER] Error updating supplier:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: UPDATE_SUPPLIER_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Delete supplier
+export const deleteSupplier = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: DELETE_SUPPLIER_REQUEST });
+
+    console.log('🏢 [SUPPLIER] Deleting supplier:', id);
+
+    const { data } = await axios.delete(`${BASE_URL}/supplier/${id}`);
+
+    dispatch({
+      type: DELETE_SUPPLIER_SUCCESS,
+      payload: id
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Proveedor eliminado exitosamente',
+      timer: 2000
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [SUPPLIER] Error deleting supplier:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: DELETE_SUPPLIER_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// ============================================================================
+// PURCHASE INVOICE ACTIONS (Facturas de Compra)
+// ============================================================================
+
+// Fetch purchase invoices with filters
+export const fetchPurchaseInvoices = (filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_PURCHASE_INVOICES_REQUEST });
+
+    const queryParams = new URLSearchParams();
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    if (filters.id_supplier) queryParams.append('id_supplier', filters.id_supplier);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.from_date) queryParams.append('from_date', filters.from_date);
+    if (filters.to_date) queryParams.append('to_date', filters.to_date);
+
+    const url = `${BASE_URL}/supplier/purchase-invoices?${queryParams.toString()}`;
+    console.log('📄 [INVOICE] Fetching purchase invoices:', url);
+
+    const { data } = await axios.get(url);
+
+    dispatch({
+      type: FETCH_PURCHASE_INVOICES_SUCCESS,
+      payload: data.message
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [INVOICE] Error fetching invoices:', error);
+    dispatch({
+      type: FETCH_PURCHASE_INVOICES_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Fetch purchase invoice by ID
+export const fetchPurchaseInvoiceById = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_PURCHASE_INVOICE_BY_ID_REQUEST });
+
+    console.log('📄 [INVOICE] Fetching invoice by ID:', id);
+
+    const { data } = await axios.get(`${BASE_URL}/supplier/purchase-invoices/${id}`);
+
+    dispatch({
+      type: FETCH_PURCHASE_INVOICE_BY_ID_SUCCESS,
+      payload: data.message.invoice
+    });
+
+    return data.message.invoice;
+  } catch (error) {
+    console.error('❌ [INVOICE] Error fetching invoice:', error);
+    dispatch({
+      type: FETCH_PURCHASE_INVOICE_BY_ID_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Create purchase invoice
+export const createPurchaseInvoice = (invoiceData) => async (dispatch) => {
+  try {
+    dispatch({ type: CREATE_PURCHASE_INVOICE_REQUEST });
+
+    console.log('📄 [INVOICE] Creating purchase invoice:', invoiceData);
+
+    const { data } = await axios.post(`${BASE_URL}/supplier/purchase-invoices/create`, invoiceData);
+
+    dispatch({
+      type: CREATE_PURCHASE_INVOICE_SUCCESS,
+      payload: data.message.invoice
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Factura creada exitosamente',
+      timer: 2000
+    });
+
+    return data.message.invoice;
+  } catch (error) {
+    console.error('❌ [INVOICE] Error creating invoice:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: CREATE_PURCHASE_INVOICE_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Update purchase invoice
+export const updatePurchaseInvoice = (id, invoiceData) => async (dispatch) => {
+  try {
+    dispatch({ type: UPDATE_PURCHASE_INVOICE_REQUEST });
+
+    console.log('📄 [INVOICE] Updating invoice:', id, invoiceData);
+
+    const { data } = await axios.put(`${BASE_URL}/supplier/purchase-invoices/${id}`, invoiceData);
+
+    dispatch({
+      type: UPDATE_PURCHASE_INVOICE_SUCCESS,
+      payload: data.message.invoice
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Factura actualizada exitosamente',
+      timer: 2000
+    });
+
+    return data.message.invoice;
+  } catch (error) {
+    console.error('❌ [INVOICE] Error updating invoice:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: UPDATE_PURCHASE_INVOICE_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Delete purchase invoice
+export const deletePurchaseInvoice = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: DELETE_PURCHASE_INVOICE_REQUEST });
+
+    console.log('📄 [INVOICE] Deleting invoice:', id);
+
+    const { data } = await axios.delete(`${BASE_URL}/supplier/purchase-invoices/${id}`);
+
+    dispatch({
+      type: DELETE_PURCHASE_INVOICE_SUCCESS,
+      payload: id
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Factura eliminada exitosamente',
+      timer: 2000
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [INVOICE] Error deleting invoice:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: DELETE_PURCHASE_INVOICE_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// ============================================================================
+// SUPPLIER PAYMENT ACTIONS (Pagos a Proveedores)
+// ============================================================================
+
+// Fetch supplier payments with filters
+export const fetchSupplierPayments = (filters = {}) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_SUPPLIER_PAYMENTS_REQUEST });
+
+    const queryParams = new URLSearchParams();
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    if (filters.id_supplier) queryParams.append('id_supplier', filters.id_supplier);
+    if (filters.id_invoice) queryParams.append('id_invoice', filters.id_invoice);
+    if (filters.payment_method) queryParams.append('payment_method', filters.payment_method);
+    if (filters.from_date) queryParams.append('from_date', filters.from_date);
+    if (filters.to_date) queryParams.append('to_date', filters.to_date);
+
+    const url = `${BASE_URL}/supplier/supplier-payments?${queryParams.toString()}`;
+    console.log('💰 [PAYMENT] Fetching supplier payments:', url);
+
+    const { data } = await axios.get(url);
+
+    dispatch({
+      type: FETCH_SUPPLIER_PAYMENTS_SUCCESS,
+      payload: data.message
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [PAYMENT] Error fetching payments:', error);
+    dispatch({
+      type: FETCH_SUPPLIER_PAYMENTS_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Fetch pending payments
+export const fetchPendingPayments = (id_supplier) => async (dispatch) => {
+  try {
+    dispatch({ type: FETCH_PENDING_PAYMENTS_REQUEST });
+
+    const url = id_supplier 
+      ? `${BASE_URL}/supplier/supplier-payments/pending?id_supplier=${id_supplier}`
+      : `${BASE_URL}/supplier/supplier-payments/pending`;
+    
+    console.log('💰 [PAYMENT] Fetching pending payments:', url);
+
+    const { data } = await axios.get(url);
+
+    dispatch({
+      type: FETCH_PENDING_PAYMENTS_SUCCESS,
+      payload: data.message
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [PAYMENT] Error fetching pending payments:', error);
+    dispatch({
+      type: FETCH_PENDING_PAYMENTS_FAILURE,
+      payload: error.response?.data?.error || error.message
+    });
+    throw error;
+  }
+};
+
+// Create supplier payment
+export const createSupplierPayment = (paymentData) => async (dispatch) => {
+  try {
+    dispatch({ type: CREATE_SUPPLIER_PAYMENT_REQUEST });
+
+    console.log('💰 [PAYMENT] Creating supplier payment:', paymentData);
+
+    const { data } = await axios.post(`${BASE_URL}/supplier/supplier-payments/create`, paymentData);
+
+    dispatch({
+      type: CREATE_SUPPLIER_PAYMENT_SUCCESS,
+      payload: data.message.payment
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: `Pago registrado. Estado de factura: ${data.message.invoiceStatus}`,
+      timer: 2000
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [PAYMENT] Error creating payment:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: CREATE_SUPPLIER_PAYMENT_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Delete supplier payment
+export const deleteSupplierPayment = (id) => async (dispatch) => {
+  try {
+    dispatch({ type: DELETE_SUPPLIER_PAYMENT_REQUEST });
+
+    console.log('💰 [PAYMENT] Deleting payment:', id);
+
+    const { data } = await axios.delete(`${BASE_URL}/supplier/supplier-payments/${id}`);
+
+    dispatch({
+      type: DELETE_SUPPLIER_PAYMENT_SUCCESS,
+      payload: id
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Éxito!',
+      text: 'Pago eliminado exitosamente',
+      timer: 2000
+    });
+
+    return data.message;
+  } catch (error) {
+    console.error('❌ [PAYMENT] Error deleting payment:', error);
+    
+    const errorMessage = error.response?.data?.error || error.message;
+    
+    dispatch({
+      type: DELETE_SUPPLIER_PAYMENT_FAILURE,
+      payload: errorMessage
+    });
+
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: errorMessage
+    });
+
+    throw error;
+  }
+};
+
+// Clear supplier state
+export const clearSupplierState = () => ({
+  type: CLEAR_SUPPLIER_STATE
+});

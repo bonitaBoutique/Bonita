@@ -24,6 +24,7 @@ router.use('/creditPayment', require('./addiSistecreditoRoutes') )
 router.use("/addi-sistecredito", require("./addiSistecreditoRoutes"));
 router.use('/system', require('./systemRouter'));    
 router.use('/payments', require('./paymentRouter'));
+router.use('/supplier', require('./supplierRouter'));
 
 
 module.exports = router;

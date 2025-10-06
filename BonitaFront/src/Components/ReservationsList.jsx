@@ -69,8 +69,6 @@ const calculatePendingDebt = (totalAmount, paidAmount) => {
 
 // ✅ APLICAR FILTROS: Ocultar completadas O con saldo 0 (CON useMemo)
 const filteredReservations = useMemo(() => {
-  console.log('🔍 [ReservationsList] Aplicando filtro. Total reservas:', reservations?.length, 'Ocultar completadas:', filters.ocultarCompletadas);
-  
   return (reservations || []).filter(r => {
     // Si el filtro está activo, ocultar completadas y saldo 0
     if (filters.ocultarCompletadas) {
@@ -79,23 +77,12 @@ const filteredReservations = useMemo(() => {
         ? r.pendingDebt 
         : calculatePendingDebt(r.OrderDetail?.amount || 0, r.totalPaid || 0);
       
-      // 🐛 DEBUG: Ver valores reales
-      console.log('🔍 Reservation:', {
-        id: r.id_reservation?.substring(0, 8),
-        status: r.status,
-        pendingDebt: r.pendingDebt,
-        saldoCalculado: saldo,
-        pasa_filtro: r.status !== 'Completada' && saldo > 0
-      });
-      
       return r.status !== 'Completada' && saldo > 0;
     }
     // Si el filtro está desactivado, mostrar todas
     return true;
   });
 }, [reservations, filters.ocultarCompletadas]); // ✅ Recalcular cuando cambien reservations o el filtro
-
-console.log('🔍 [ReservationsList] Reservas filtradas:', filteredReservations?.length, 'de', reservations?.length);
 
 const indexOfLastReservation = currentPage * reservationsPerPage;
 const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;

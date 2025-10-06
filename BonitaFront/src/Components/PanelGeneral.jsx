@@ -152,7 +152,7 @@ const PanelGeneral = () => {
                 </div>
               )}
 
-              {/* ✅ Proveedores - SOLO ADMIN
+              ✅ Proveedores - SOLO ADMIN
               {!isCajero && (
                 <div className="text-center space-y-2">
                   <Link
@@ -165,7 +165,7 @@ const PanelGeneral = () => {
                     Gestión de proveedores, facturas de compra y pagos
                   </p>
                 </div>
-              )} */}
+              )}
             </>
           </div>
         </div>

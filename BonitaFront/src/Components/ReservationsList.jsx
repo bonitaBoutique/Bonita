@@ -55,17 +55,16 @@ const ReservationList = () => {
   const [reservationsPerPage] = useState(7);
   const { userInfo } = useSelector((state) => state.userLogin);
 
+  // ✅ Calcular deuda pendiente - DENTRO del componente
+  const calculatePendingDebt = (totalAmount, paidAmount) => {
+    const total = Number(totalAmount) || 0;
+    const paid = Number(paidAmount) || 0;
+    return Math.max(0, total - paid);
+  };
 
   
 
 const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-// ✅ Calcular deuda pendiente (MOVER ARRIBA para que esté disponible)
-const calculatePendingDebt = (totalAmount, paidAmount) => {
-  const total = Number(totalAmount) || 0;
-  const paid = Number(paidAmount) || 0;
-  return Math.max(0, total - paid);
-};
 
 // ✅ APLICAR FILTROS: Ocultar completadas O con saldo 0 (CON useMemo)
 const filteredReservations = useMemo(() => {

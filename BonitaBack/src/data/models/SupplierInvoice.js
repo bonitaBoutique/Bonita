@@ -89,7 +89,6 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("pending", "partial", "paid", "overdue", "cancelled"),
         defaultValue: "pending",
         allowNull: false,
-        comment: "Estado del pago de la factura",
       },
       notes: {
         type: DataTypes.TEXT,

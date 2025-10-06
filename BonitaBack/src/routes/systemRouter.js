@@ -2,7 +2,8 @@ const express = require('express');
 const { 
   getServerTime, 
   getDateRange,
-  getSystemInfo 
+  getSystemInfo,
+  updateCompletedReservations
 } = require('../controller'); // ✅ CAMBIAR: Importar desde el index de controllers
 
 const router = express.Router();
@@ -15,5 +16,8 @@ router.get('/date-range', getDateRange);
 
 // ✅ Ruta para información general del sistema
 router.get('/info', getSystemInfo);
+
+// ✅ Ruta para actualizar reservas con saldo 0 a Completada
+router.post('/update-completed-reservations', updateCompletedReservations);
 
 module.exports = router;

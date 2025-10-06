@@ -5,6 +5,75 @@ const {
   getColombiaDateTime 
 } = require('../utils/dateUtils');
 
+const { Reservation, OrderDetail } = require('../data');
+
+// ✅ Actualizar reservas con saldo 0 a estado "Completada"
+const updateCompletedReservations = async (req, res) => {
+  try {
+    console.log('🔄 [SYSTEM] Iniciando actualización de reservas completadas...');
+
+    // Obtener todas las reservas con saldo 0 y estado != Completada
+    const reservations = await Reservation.findAll({
+      where: {
+        status: ['Pendiente', 'Cancelada'], // Excluimos las ya completadas
+      },
+      include: [{
+        model: OrderDetail,
+        attributes: ['amount'],
+        required: true,
+      }],
+    });
+
+    console.log(`📊 [SYSTEM] Total de reservas encontradas: ${reservations.length}`);
+
+    // Filtrar las que tienen saldo 0
+    const toUpdate = reservations.filter(r => {
+      const saldo = r.OrderDetail.amount - r.totalPaid;
+      return saldo <= 0;
+    });
+
+    console.log(`📋 [SYSTEM] Reservas con saldo 0 a actualizar: ${toUpdate.length}`);
+
+    if (toUpdate.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No hay reservas para actualizar',
+        updated: 0,
+      });
+    }
+
+    // Actualizar cada una
+    const updatePromises = toUpdate.map(reservation => {
+      console.log(`✅ [SYSTEM] Actualizando reserva ${reservation.id_reservation}`);
+      return reservation.update({ status: 'Completada' });
+    });
+
+    await Promise.all(updatePromises);
+
+    console.log(`✅ [SYSTEM] ${toUpdate.length} reservas actualizadas correctamente`);
+
+    return res.status(200).json({
+      success: true,
+      message: `${toUpdate.length} reservas actualizadas a estado Completada`,
+      updated: toUpdate.length,
+      reservations: toUpdate.map(r => ({
+        id: r.id_reservation,
+        n_document: r.n_document,
+        totalPaid: r.totalPaid,
+        orderAmount: r.OrderDetail.amount,
+      })),
+    });
+
+  } catch (error) {
+    console.error('❌ [SYSTEM] Error actualizando reservas:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error al actualizar reservas',
+      details: error.message,
+    });
+  }
+};
+
 // ✅ Obtener fecha/hora actual del servidor (Colombia)
 const getServerTime = async (req, res) => {
   try {
@@ -95,5 +164,6 @@ const getSystemInfo = async (req, res) => {
 module.exports = {
   getServerTime,
   getDateRange,
-  getSystemInfo
+  getSystemInfo,
+  updateCompletedReservations
 };

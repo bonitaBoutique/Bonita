@@ -15,7 +15,8 @@ const { getReturns, getReturnById, getReturnStats } = require("./Products/getRet
     const { 
   getServerTime, 
   getDateRange, 
-  getSystemInfo 
+  getSystemInfo,
+  updateCompletedReservations
 } = require("./systemController");
 
 const {
@@ -146,4 +147,5 @@ module.exports = {
    getServerTime: catchedAsync(getServerTime),
   getDateRange: catchedAsync(getDateRange),
   getSystemInfo: catchedAsync(getSystemInfo),
+  updateCompletedReservations: catchedAsync(updateCompletedReservations),
 };

@@ -64,7 +64,8 @@ const paginate = (pageNumber) => setCurrentPage(pageNumber);
 const filteredReservations = (reservations || []).filter(r => {
   // Si el filtro está activo, ocultar completadas y saldo 0
   if (filters.ocultarCompletadas) {
-    return r.status !== 'Completada' && r.saldo > 0;
+    const saldo = calculatePendingDebt(r.OrderDetail?.amount || 0, r.totalPaid || 0);
+    return r.status !== 'Completada' && saldo > 0;
   }
   // Si el filtro está desactivado, mostrar todas
   return true;

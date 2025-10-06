@@ -69,18 +69,16 @@ const filteredReservations = (reservations || []).filter(r => {
       ? r.pendingDebt 
       : calculatePendingDebt(r.OrderDetail?.amount || 0, r.totalPaid || 0);
     
-    // 🐛 DEBUG: Ver valores reales
-    if (r.status === 'Completada') {
-      console.log('🔍 Reservation Completada:', {
-        id: r.id_reservation,
-        status: r.status,
-        pendingDebt: r.pendingDebt,
-        totalPaid: r.totalPaid,
-        orderAmount: r.OrderDetail?.amount,
-        saldoCalculado: saldo,
-        seFiltra: r.status !== 'Completada' && saldo > 0
-      });
-    }
+    // 🐛 DEBUG: Ver valores reales de TODAS las reservaciones
+    console.log('🔍 Reservation:', {
+      id: r.id_reservation,
+      status: r.status,
+      pendingDebt: r.pendingDebt,
+      totalPaid: r.totalPaid,
+      orderAmount: r.OrderDetail?.amount,
+      saldoCalculado: saldo,
+      pasa_filtro: r.status !== 'Completada' && saldo > 0
+    });
     
     return r.status !== 'Completada' && saldo > 0;
   }

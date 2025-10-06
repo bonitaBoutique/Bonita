@@ -60,10 +60,15 @@ const ReservationList = () => {
 
 const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-// ✅ APLICAR FILTRO DE OCULTAR COMPLETADAS Y SALDO CERO
-const filteredReservations = filters.ocultarCompletadas
-  ? (reservations || []).filter(r => r.status !== 'Completada' && r.saldo > 0)
-  : (reservations || []);
+// ✅ APLICAR FILTROS: Ocultar completadas O con saldo 0
+const filteredReservations = (reservations || []).filter(r => {
+  // Si el filtro está activo, ocultar completadas y saldo 0
+  if (filters.ocultarCompletadas) {
+    return r.status !== 'Completada' && r.saldo > 0;
+  }
+  // Si el filtro está desactivado, mostrar todas
+  return true;
+});
 
 const indexOfLastReservation = currentPage * reservationsPerPage;
 const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;

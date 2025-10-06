@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getAllReservations,
@@ -60,31 +60,42 @@ const ReservationList = () => {
 
 const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-// ✅ APLICAR FILTROS: Ocultar completadas O con saldo 0
-const filteredReservations = (reservations || []).filter(r => {
-  // Si el filtro está activo, ocultar completadas y saldo 0
-  if (filters.ocultarCompletadas) {
-    // Usar pendingDebt que viene del backend, o calcularlo si no existe
-    const saldo = r.pendingDebt !== undefined 
-      ? r.pendingDebt 
-      : calculatePendingDebt(r.OrderDetail?.amount || 0, r.totalPaid || 0);
-    
-    // 🐛 DEBUG: Ver valores reales de TODAS las reservaciones
-    console.log('🔍 Reservation:', {
-      id: r.id_reservation,
-      status: r.status,
-      pendingDebt: r.pendingDebt,
-      totalPaid: r.totalPaid,
-      orderAmount: r.OrderDetail?.amount,
-      saldoCalculado: saldo,
-      pasa_filtro: r.status !== 'Completada' && saldo > 0
-    });
-    
-    return r.status !== 'Completada' && saldo > 0;
-  }
-  // Si el filtro está desactivado, mostrar todas
-  return true;
-});
+// ✅ Calcular deuda pendiente (MOVER ARRIBA para que esté disponible)
+const calculatePendingDebt = (totalAmount, paidAmount) => {
+  const total = Number(totalAmount) || 0;
+  const paid = Number(paidAmount) || 0;
+  return Math.max(0, total - paid);
+};
+
+// ✅ APLICAR FILTROS: Ocultar completadas O con saldo 0 (CON useMemo)
+const filteredReservations = useMemo(() => {
+  console.log('🔍 [ReservationsList] Aplicando filtro. Total reservas:', reservations?.length, 'Ocultar completadas:', filters.ocultarCompletadas);
+  
+  return (reservations || []).filter(r => {
+    // Si el filtro está activo, ocultar completadas y saldo 0
+    if (filters.ocultarCompletadas) {
+      // Usar pendingDebt que viene del backend, o calcularlo si no existe
+      const saldo = r.pendingDebt !== undefined 
+        ? r.pendingDebt 
+        : calculatePendingDebt(r.OrderDetail?.amount || 0, r.totalPaid || 0);
+      
+      // 🐛 DEBUG: Ver valores reales
+      console.log('🔍 Reservation:', {
+        id: r.id_reservation?.substring(0, 8),
+        status: r.status,
+        pendingDebt: r.pendingDebt,
+        saldoCalculado: saldo,
+        pasa_filtro: r.status !== 'Completada' && saldo > 0
+      });
+      
+      return r.status !== 'Completada' && saldo > 0;
+    }
+    // Si el filtro está desactivado, mostrar todas
+    return true;
+  });
+}, [reservations, filters.ocultarCompletadas]); // ✅ Recalcular cuando cambien reservations o el filtro
+
+console.log('🔍 [ReservationsList] Reservas filtradas:', filteredReservations?.length, 'de', reservations?.length);
 
 const indexOfLastReservation = currentPage * reservationsPerPage;
 const indexOfFirstReservation = indexOfLastReservation - reservationsPerPage;
@@ -239,13 +250,6 @@ const currentReservations = filteredReservations.slice(
     const dueDateObj = new Date(dueDate);
     
     return dueDateObj < todayDate;
-  };
-
-  // ✅ Calcular deuda pendiente (sin cambios)
-  const calculatePendingDebt = (totalAmount, paidAmount) => {
-    const total = Number(totalAmount) || 0;
-    const paid = Number(paidAmount) || 0;
-    return Math.max(0, total - paid);
   };
 
   // ✅ NUEVA: Función para exportar a Excel

@@ -65,8 +65,14 @@ module.exports = async (req, res) => {
     return res.status(400).json({ message: "El segundo método de pago no es válido" });
   }
 
-  // Lógica para GiftCard (saldo a favor)
-  if (payMethod === "GiftCard") {
+  // Lógica para GiftCard (saldo a favor) - SOLO cuando NO hay orden (es compra de GiftCard)
+  console.log('🔍 [DEBUG] Evaluando condición GiftCard:', { 
+    payMethod, 
+    id_orderDetail, 
+    shouldCreateNew: payMethod === "GiftCard" && !id_orderDetail 
+  });
+  
+  if (payMethod === "GiftCard" && !id_orderDetail) {
     try {
       const lastReceipt = await Receipt.findOne({
         order: [["id_receipt", "DESC"]],
@@ -101,14 +107,14 @@ module.exports = async (req, res) => {
         cashier_document,
       });
 
-      // 🎁 CREAR REGISTRO EN TABLA GIFTCARD
+      // 🎁 CREAR REGISTRO EN TABLA GIFTCARD (COMPRA - SUMA SALDO)
       await GiftCard.create({
         buyer_email,
         saldo: amount, // El saldo inicial es el monto pagado
         id_receipt: receipt.id_receipt
       });
 
-      console.log('🟢 [CREATE RECEIPT] GiftCard creado con fecha del cliente:', {
+      console.log('🟢 [CREATE RECEIPT] GiftCard COMPRADA - creado con fecha del cliente:', {
         receiptNumber,
         clientDate: date,
         finalDate: formatDateForDB(date || serverDate),

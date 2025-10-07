@@ -81,8 +81,8 @@ module.exports = async (req, res) => {
         date: formatDateForDB(date || serverDate), // ✅ Usar fecha del cliente, fallback al servidor
         payMethod: "GiftCard",
         amount,
-        amount2: null,
-        payMethod2: null,
+        amount2: amount2 || null,
+        payMethod2: payMethod2 || null,
         receipt_number: receiptNumber,
         cashier_document,
       });
@@ -271,6 +271,25 @@ module.exports = async (req, res) => {
       } catch (giftCardError) {
         console.error('❌ [GIFT CARD PAYMENT] Error:', giftCardError.message);
         // No fallar el recibo por error de GiftCard, pero loggearlo
+      }
+
+      // ✅ NUEVO: Si hay un método de pago secundario, crear el Payment correspondiente
+      if (payMethod2 && amount2 && amount2 > 0) {
+        try {
+          console.log(`💳 [SECONDARY PAYMENT] Creando Payment para método secundario: ${payMethod2}, monto: ${amount2}`);
+          
+          await Payment.create({
+            id_receipt: receipt.id_receipt,
+            amount: amount2,
+            payMethod: payMethod2,
+            payment_state: "Pago",
+            date: formatDateForDB(date || serverDate),
+          });
+          
+          console.log('✅ [SECONDARY PAYMENT] Payment secundario creado exitosamente');
+        } catch (secondPaymentError) {
+          console.error('❌ [SECONDARY PAYMENT] Error al crear Payment secundario:', secondPaymentError.message);
+        }
       }
     }
 

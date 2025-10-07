@@ -404,8 +404,62 @@ const getBalance = async (req, res) => {
         console.log(`🎁 GiftCard de devolución detectada - EXCLUIR del balance: ${sale.id_receipt}`);
         return; // Saltar este receipt (no agregarlo al balance)
       }
+
+      // ✅ NUEVO: VERIFICAR SI ES USO DE GIFTCARD (cuando se redime para pagar)
+      // Si payMethod o payMethod2 es GiftCard Y hay Payments asociados, significa que se USÓ una GiftCard existente
+      // En este caso, solo queremos mostrar el otro método de pago (el que no es GiftCard)
+      const isGiftCardUsage = (saleData.payMethod === 'GiftCard' || saleData.payMethod2 === 'GiftCard') 
+                              && saleData.Payments 
+                              && saleData.Payments.length > 0;
       
-      // ✅ PAGO PRINCIPAL (siempre existe)
+      if (isGiftCardUsage) {
+        console.log(`🎁 Uso de GiftCard detectado - SOLO mostrar método secundario: ${sale.id_receipt}`);
+        
+        // Si payMethod principal es GiftCard, solo agregar el secundario (si existe)
+        if (saleData.payMethod === 'GiftCard' && saleData.payMethod2 && saleData.amount2 && saleData.amount2 > 0) {
+          const secondaryPayment = {
+            id: `${sale.id_receipt}-secondary`,
+            originalReceiptId: sale.id_receipt,
+            date: sale.date,
+            amount: parseFloat(saleData.amount2 || 0),
+            pointOfSale: 'Local',
+            paymentMethod: saleData.payMethod2,
+            cashierDocument: saleData.cashier_document || 'Sin asignar',
+            buyerName: saleData.buyer_name || 'Cliente general',
+            buyerEmail: saleData.buyer_email || '',
+            buyerPhone: saleData.buyer_phone || '',
+            type: 'Venta Local (Pago con GiftCard)',
+            isMainPayment: false,
+            totalReceiptAmount: parseFloat(saleData.total_amount || 0),
+            id_orderDetail: saleData.OrderDetail?.id_orderDetail || null
+          };
+          formattedLocalSales.push(secondaryPayment);
+        }
+        // Si payMethod2 es GiftCard, solo agregar el principal
+        else if (saleData.payMethod2 === 'GiftCard' && saleData.amount && saleData.amount > 0) {
+          const mainPayment = {
+            id: `${sale.id_receipt}-main`,
+            originalReceiptId: sale.id_receipt,
+            date: sale.date,
+            amount: parseFloat(saleData.amount || 0),
+            pointOfSale: 'Local',
+            paymentMethod: saleData.payMethod,
+            cashierDocument: saleData.cashier_document || 'Sin asignar',
+            buyerName: saleData.buyer_name || 'Cliente general',
+            buyerEmail: saleData.buyer_email || '',
+            buyerPhone: saleData.buyer_phone || '',
+            type: 'Venta Local (Pago con GiftCard)',
+            isMainPayment: true,
+            totalReceiptAmount: parseFloat(saleData.total_amount || 0),
+            id_orderDetail: saleData.OrderDetail?.id_orderDetail || null
+          };
+          formattedLocalSales.push(mainPayment);
+        }
+        
+        return; // Ya procesamos este receipt, continuar con el siguiente
+      }
+      
+      // ✅ PAGO PRINCIPAL (siempre existe para ventas normales sin GiftCard)
       const mainPayment = {
         id: `${sale.id_receipt}-main`,
         originalReceiptId: sale.id_receipt,

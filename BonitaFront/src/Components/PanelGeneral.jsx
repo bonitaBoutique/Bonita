@@ -152,7 +152,7 @@ const PanelGeneral = () => {
                 </div>
               )}
 
-              ✅ Proveedores - SOLO ADMIN
+              {/* ✅ Proveedores - SOLO ADMIN */}
               {!isCajero && (
                 <div className="text-center space-y-2">
                   <Link

@@ -458,11 +458,12 @@ const ReturnManagement = () => {
   }, [returnData.returned_products, returnData.new_products]);
 
   // ✅ FUNCIÓN PARA GENERAR PDF DEL RECIBO DE DIFERENCIA
-  const generateDifferenceReceiptPDF = useCallback((receiptData, difference, actionRequired) => {
+  const generateDifferenceReceiptPDF = useCallback((receiptData, difference, actionRequired, paymentMethod = "Efectivo") => {
     console.log("📄 Generando PDF de recibo de diferencia...");
     console.log("📄 Datos del recibo:", receiptData);
     console.log("📄 Diferencia:", difference);
     console.log("📄 ActionRequired:", actionRequired);
+    console.log("📄 Método de pago:", paymentMethod);
 
     const doc = new jsPDF({
       unit: "pt",
@@ -554,7 +555,7 @@ const ReturnManagement = () => {
     doc.text(`Diferencia a pagar: $${difference.toLocaleString("es-CO")}`, 20, currentY);
     currentY += 15;
 
-    doc.text(`Método de pago: Efectivo`, 20, currentY);
+    doc.text(`Método de pago: ${paymentMethod}`, 20, currentY);
     currentY += 20;
 
     doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
@@ -1445,15 +1446,17 @@ const searchReceipt = useCallback(async () => {
         // ✅ Obtener información del recibo creado
         const receiptInfo = result.data?.createdDocuments;
         const actionRequired = result.data?.actionRequired;
+        const paymentMethodUsed = result.data?.paymentMethodUsed || "Efectivo"; // ✅ Obtener método de pago del backend
 
         console.log("📄 ReceiptInfo recibido del backend:", receiptInfo);
         console.log("📄 ActionRequired recibido del backend:", actionRequired);
+        console.log("💳 PaymentMethodUsed recibido del backend:", paymentMethodUsed);
 
         // ✅ Generar PDF automáticamente si hay receiptId
         if (actionRequired?.receiptId) {
           console.log("📄 Generando PDF automáticamente para recibo:", actionRequired.receiptId);
           setTimeout(() => {
-            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired, paymentMethodUsed);
           }, 1000); // Delay para asegurar que el SweetAlert se muestre primero
         }
 
@@ -1475,7 +1478,7 @@ const searchReceipt = useCallback(async () => {
         }).then((result) => {
           if (result.isConfirmed && actionRequired?.receiptId) {
             // Permitir reimprimir el PDF
-            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired, paymentMethodUsed);
           }
         });
       } else if (totals.difference === 0) {

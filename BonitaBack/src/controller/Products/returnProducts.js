@@ -36,14 +36,43 @@ module.exports = async (req, res) => {
     console.log("🔄 Iniciando procesamiento de devolución");
     console.log("📥 Datos recibidos:", JSON.stringify(req.body, null, 2));
 
+    // ✅ FUNCIÓN PARA MAPEAR VALORES DEL FRONTEND A VALORES DEL ENUM
+    const mapPaymentMethodToEnum = (method) => {
+      const methodMap = {
+        "Tarjeta de Débito": "Tarjeta",
+        "Tarjeta de Crédito": "Tarjeta",
+        "Transferencia": "Bancolombia",
+        "Daviplata": "Otro",
+        "Efectivo": "Efectivo",
+        "Nequi": "Nequi",
+        "Sistecredito": "Sistecredito",
+        "Addi": "Addi",
+        "Crédito": "Crédito",
+        "Bancolombia": "Bancolombia",
+        "Otro": "Otro",
+        "GiftCard": "GiftCard"
+      };
+      
+      return methodMap[method] || "Efectivo"; // Default a "Efectivo" si no encuentra match
+    };
+
     const {
       original_receipt_id,
       cashier_document,
       returned_products = [],
       new_products = [],
       customer_payment_method = "Credito en tienda",
+      difference_payment_method = "Efectivo", // ✅ Método de pago para la diferencia
       reason = "Devolución"
     } = req.body;
+
+    // ✅ MAPEAR EL MÉTODO DE PAGO A UN VALOR VÁLIDO DEL ENUM
+    const mappedPaymentMethod = mapPaymentMethodToEnum(difference_payment_method);
+
+    console.log("🔍 VALORES EXTRAÍDOS DEL REQUEST:");
+    console.log("  - difference_payment_method (original):", difference_payment_method);
+    console.log("  - difference_payment_method (mapeado):", mappedPaymentMethod);
+    console.log("  - customer_payment_method:", customer_payment_method);
 
     // ✅ VALIDACIONES BÁSICAS
     if (!original_receipt_id || !cashier_document || !returned_products.length) {
@@ -303,6 +332,7 @@ module.exports = async (req, res) => {
       console.log("🔍 DEBUG - ENTRANDO AL IF (difference > 0)");
       // Cliente debe pagar diferencia - CREAR RECIBO
       console.log('💰 Cliente debe pagar diferencia:', difference);
+      console.log('💳 Método de pago para diferencia (mapeado):', mappedPaymentMethod);
       
       const receiptData = {
         cashier_document: cashier_document, // ✅ Usuario que procesa la devolución (del request)
@@ -311,7 +341,7 @@ module.exports = async (req, res) => {
         buyer_phone: originalReceipt.buyer_phone || null,
         total_amount: difference, // ✅ Importe total
         amount: difference, // ✅ Importe del primer método de pago
-        payMethod: 'Efectivo', // ✅ Método de pago
+        payMethod: mappedPaymentMethod, // ✅ Método de pago MAPEADO al ENUM
         date: getColombiaDate(),
         description: `Diferencia por devolución de productos (Recibo original: ${original_receipt_id})`
       };
@@ -413,6 +443,7 @@ module.exports = async (req, res) => {
           receiptId: newReceiptId,
           giftCardId: newGiftCardId
         },
+        paymentMethodUsed: difference_payment_method, // ✅ AGREGAR: Método de pago utilizado
         stockUpdated: true,
         processedAt: formatDateForDB(serverDate),
         serverInfo: {

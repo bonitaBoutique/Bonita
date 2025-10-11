@@ -16,6 +16,7 @@ const Invoice = () => {
   const sellerId = "901832769";
   const location = useLocation();
   const buyer = location.state?.buyer || {};
+  const orderFromLocation = location.state?.order || null; // ✅ Capturar orden desde location.state
   const dispatch = useDispatch();
   const order = useSelector((state) => state.orderById.order);
   const orderLoading = useSelector((state) => state.orderById.loading);
@@ -25,6 +26,7 @@ const Invoice = () => {
   const sellerError = useSelector((state) => state.sellerData.error);
 
   const [orderId, setOrderId] = useState("");
+  const [orderPreloaded, setOrderPreloaded] = useState(false); // ✅ Flag para saber si la orden ya fue precargada
   const {
     loading: invoiceLoading,
     success,
@@ -69,6 +71,27 @@ const Invoice = () => {
       dispatch(fetchSellerData(sellerId));
     }
   }, [dispatch, sellerId, sellerData]);
+
+  // ✅ NUEVO: Actualizar jbuyer cuando cambia desde location.state
+  useEffect(() => {
+    if (buyer && Object.keys(buyer).length > 0) {
+      console.log('👤 [Invoice] Actualizando buyer desde navegación:', buyer);
+      setJDocumentData((prev) => ({
+        ...prev,
+        jbuyer: buyer
+      }));
+    }
+  }, [buyer]);
+
+  // ✅ NUEVO: Cargar orden automáticamente si viene desde el modal de facturación
+  useEffect(() => {
+    if (orderFromLocation && orderFromLocation.id_orderDetail && !orderPreloaded) {
+      console.log('📦 [Invoice] Orden precargada desde navegación:', orderFromLocation);
+      setOrderId(orderFromLocation.id_orderDetail);
+      dispatch(fetchOrdersByIdOrder(orderFromLocation.id_orderDetail));
+      setOrderPreloaded(true); // Marcar como cargada
+    }
+  }, [orderFromLocation, dispatch, orderPreloaded]);
 
   const handleSelectOrder = (selectedOrderId) => {
     setOrderId(selectedOrderId); // Actualizar el estado con el ID de la orden seleccionada
@@ -204,6 +227,94 @@ const Invoice = () => {
       }
       ref[keys[keys.length - 1]] = value;
       return obj;
+    });
+  };
+
+  // ✅ NUEVA FUNCIÓN: Manejar cambio manual del monto y recalcular todo
+  const handleAmountChange = (e) => {
+    const newTotalWithTax = parseFloat(e.target.value) || 0;
+    
+    console.log('💰 [Invoice] Recalculando valores con nuevo monto:', newTotalWithTax);
+    
+    // Calcular valores base (asumiendo IVA del 19%)
+    const totalWithoutTax = newTotalWithTax / 1.19;
+    const totalTax = newTotalWithTax - totalWithoutTax;
+    
+    // Si hay productos, redistribuir el monto entre ellos proporcionalmente
+    let updatedItems = [...jDocumentData.jdocumentitems];
+    
+    if (updatedItems.length > 0 && order && order.products) {
+      // Calcular la proporción de cada producto
+      const currentTotal = jDocumentData.ntaxinclusiveamount || 1; // Evitar división por 0
+      const scaleFactor = newTotalWithTax / currentTotal;
+      
+      let accumulatedWithoutTax = 0;
+      let accumulatedTax = 0;
+      
+      updatedItems = updatedItems.map((item, index) => {
+        const isLastItem = index === updatedItems.length - 1;
+        
+        if (isLastItem) {
+          // Para el último item, usar el residuo para evitar errores de redondeo
+          const itemTotalWithoutTax = totalWithoutTax - accumulatedWithoutTax;
+          const itemTax = totalTax - accumulatedTax;
+          
+          return {
+            ...item,
+            nusertotal: parseFloat(itemTotalWithoutTax.toFixed(2)),
+            nunitprice: parseFloat((itemTotalWithoutTax / item.nquantity).toFixed(2)),
+            jtax: {
+              jiva: {
+                ...item.jtax.jiva,
+                namount: parseFloat(itemTax.toFixed(2)),
+                nbaseamount: parseFloat(itemTotalWithoutTax.toFixed(2))
+              }
+            }
+          };
+        } else {
+          // Para los demás items, escalar proporcionalmente
+          const itemTotalWithoutTax = (item.nusertotal || 0) * scaleFactor;
+          const itemTax = (item.jtax?.jiva?.namount || 0) * scaleFactor;
+          
+          accumulatedWithoutTax += itemTotalWithoutTax;
+          accumulatedTax += itemTax;
+          
+          return {
+            ...item,
+            nusertotal: parseFloat(itemTotalWithoutTax.toFixed(2)),
+            nunitprice: parseFloat((itemTotalWithoutTax / item.nquantity).toFixed(2)),
+            jtax: {
+              jiva: {
+                ...item.jtax.jiva,
+                namount: parseFloat(itemTax.toFixed(2)),
+                nbaseamount: parseFloat(itemTotalWithoutTax.toFixed(2))
+              }
+            }
+          };
+        }
+      });
+    }
+    
+    // Actualizar todos los valores calculados
+    setJDocumentData((prev) => ({
+      ...prev,
+      nlineextensionamount: parseFloat(totalWithoutTax.toFixed(2)),
+      ntaxexclusiveamount: parseFloat(totalWithoutTax.toFixed(2)),
+      ntaxinclusiveamount: parseFloat(newTotalWithTax.toFixed(2)),
+      npayableamount: parseFloat(newTotalWithTax.toFixed(2)),
+      jextrainfo: {
+        ...prev.jextrainfo,
+        ntotalinvoicepayment: parseFloat(newTotalWithTax.toFixed(2)),
+        stotalinvoicewords: numeroALetrasConDecimales(newTotalWithTax)
+      },
+      jdocumentitems: updatedItems
+    }));
+    
+    console.log('✅ [Invoice] Valores recalculados:', {
+      totalWithoutTax: parseFloat(totalWithoutTax.toFixed(2)),
+      totalTax: parseFloat(totalTax.toFixed(2)),
+      totalWithTax: parseFloat(newTotalWithTax.toFixed(2)),
+      itemsUpdated: updatedItems.length
     });
   };
 
@@ -391,26 +502,60 @@ const Invoice = () => {
         </div>
       )}
 
-      <OrdenesPendientes filterType="facturablesPendientes" mode="invoice"  onSelectOrder={handleSelectOrder} />
-      <div className="mb-4">
-        <label className="block mb-2">Buscar Orden por ID:</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            className="border p-2 w-full"
-          />
-          <button
-            onClick={handleFetchOrder}
-            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-          >
-            Buscar
-          </button>
+      {/* ✅ Solo mostrar el selector de órdenes si NO hay una orden precargada */}
+      {!orderPreloaded && (
+        <>
+          <OrdenesPendientes filterType="facturablesPendientes" mode="invoice"  onSelectOrder={handleSelectOrder} />
+          <div className="mb-4">
+            <label className="block mb-2">Buscar Orden por ID:</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
+                className="border p-2 w-full"
+              />
+              <button
+                onClick={handleFetchOrder}
+                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              >
+                Buscar
+              </button>
+            </div>
+            {orderLoading && <p>Cargando...</p>}
+            {orderError && <p className="text-red-500">{orderError}</p>}
+          </div>
+        </>
+      )}
+
+      {/* ✅ Mostrar información de la orden cuando esté cargada */}
+      {orderPreloaded && order && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                📦 Orden Seleccionada: #{order.id_orderDetail}
+              </h3>
+              <div className="text-sm text-gray-700">
+                <p><strong>Cliente:</strong> {order.buyer_name || 'N/A'}</p>
+                <p><strong>Monto:</strong> ${order.amount?.toLocaleString('es-CO')}</p>
+                <p><strong>Productos:</strong> {order.products?.length || 0}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setOrderPreloaded(false);
+                setOrderId("");
+              }}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+              title="Seleccionar otra orden"
+            >
+              🔄 Cambiar Orden
+            </button>
+          </div>
         </div>
-        {orderLoading && <p>Cargando...</p>}
-        {orderError && <p className="text-red-500">{orderError}</p>}
-      </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
         className="p-4 bg-gray-100 rounded-md shadow-md mt-4"
@@ -482,12 +627,28 @@ const Invoice = () => {
           <div>
             <label className="block mb-2">Monto de la Orden:</label>
             <input
+              type="number"
+              step="0.01"
+              value={jDocumentData.ntaxinclusiveamount} // ✅ Usar el monto TOTAL con impuestos
+              onChange={handleAmountChange} // ✅ Usar la nueva función de recálculo
+              className="border p-2 w-full bg-yellow-50 font-semibold"
+              placeholder="Ingrese el monto total con IVA"
+              title="Al cambiar este valor se recalcularán automáticamente todos los importes"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Este monto incluye IVA (19%). Los valores se recalcularán automáticamente.
+            </p>
+          </div>
+          <div>
+            <label className="block mb-2">
+              Total Valor Bruto antes de tributos:
+            </label>
+            <input
               type="text"
-              value={jDocumentData.nlineextensionamount} // Cambia invoiceData a jDocumentData
-              onChange={
-                (e) => handleChange(e, "nlineextensionamount") // Cambia jDocument.nlineextensionamount a nlineextensionamount
-              }
-              className="border p-2 w-full"
+              value={jDocumentData.nlineextensionamount} // ✅ Este es calculado automáticamente
+              readOnly
+              className="border p-2 w-full bg-gray-100 text-gray-600"
+              title="Calculado automáticamente (Monto sin IVA)"
             />
           </div>
           <div>
@@ -496,38 +657,30 @@ const Invoice = () => {
             </label>
             <input
               type="text"
-              value={jDocumentData.ntaxexclusiveamount} // Cambia invoiceData a jDocumentData
-              onChange={(e) => handleChange(e, "ntaxexclusiveamount")} // Cambia jDocument.ntaxexclusiveamount a ntaxexclusiveamount
-              className="border p-2 w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">
-              Total Valor Bruto antes de tributos:
-            </label>
-            <input
-              type="text"
-              value={jDocumentData.ntaxinclusiveamount} // Cambia invoiceData a jDocumentData
-              onChange={(e) => handleChange(e, "ntaxinclusiveamount")} // Cambia jDocument.ntaxinclusiveamount a ntaxinclusiveamount
-              className="border p-2 w-full"
+              value={jDocumentData.ntaxexclusiveamount} // ✅ Este es calculado automáticamente
+              readOnly
+              className="border p-2 w-full bg-gray-100 text-gray-600"
+              title="Calculado automáticamente (Monto sin IVA)"
             />
           </div>
           <div>
             <label className="block mb-2">Monto Total:</label>
             <input
               type="text"
-              value={jDocumentData.npayableamount} // Cambia invoiceData a jDocumentData
-              onChange={(e) => handleChange(e, "npayableamount")} // Cambia jDocument.npayableamount a npayableamount
-              className="border p-2 w-full"
+              value={jDocumentData.npayableamount} // ✅ Este es calculado automáticamente
+              readOnly
+              className="border p-2 w-full bg-gray-100 text-gray-600"
+              title="Calculado automáticamente (Monto a pagar)"
             />
           </div>
           <div>
             <label className="block mb-2">Monto en Letras:</label>
             <input
               type="text"
-              value={jDocumentData.jextrainfo.stotalinvoicewords} // Cambia invoiceData a jDocumentData
-              onChange={(e) => handleChange(e, "jextrainfo.stotalinvoicewords")} // Cambia jDocument.jextrainfo.stotalinvoicewords a jextrainfo.stotalinvoicewords
-              className="border p-2 w-full"
+              value={jDocumentData.jextrainfo.stotalinvoicewords} // ✅ Este es calculado automáticamente
+              readOnly
+              className="border p-2 w-full bg-gray-100 text-gray-600"
+              title="Calculado automáticamente"
             />
           </div>
           <div>

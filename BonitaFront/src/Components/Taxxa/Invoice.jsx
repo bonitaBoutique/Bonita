@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../../Config";
 import {
@@ -15,6 +15,7 @@ import OrdenesPendientes from "./OrdenesPendientes";
 const Invoice = () => {
   const sellerId = "901832769";
   const location = useLocation();
+  const navigate = useNavigate(); // ✅ Para navegar de vuelta
   const buyer = location.state?.buyer || {};
   const orderFromLocation = location.state?.order || null; // ✅ Capturar orden desde location.state
   const dispatch = useDispatch();
@@ -451,7 +452,19 @@ const Invoice = () => {
 
       const response = await dispatch(sendInvoice(invoiceDataToSend));
       console.log("✅ Factura enviada con éxito:", response);
-      resetForm(); // Llama a la función para restablecer el formulario
+      
+      // ✅ Mostrar mensaje de éxito
+      alert("✅ Factura enviada exitosamente");
+      
+      // ✅ Resetear formulario
+      resetForm();
+      
+      // ✅ Resetear estado de orden precargada
+      setOrderPreloaded(false);
+      
+      // ✅ Navegar de vuelta al listado de órdenes pendientes
+      navigate("/panel/facturacion");
+      
     } catch (err) {
       console.error("❌ Error:", err);
       setErrorMessage(err.message);
@@ -542,16 +555,25 @@ const Invoice = () => {
                 <p><strong>Productos:</strong> {order.products?.length || 0}</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setOrderPreloaded(false);
-                setOrderId("");
-              }}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-              title="Seleccionar otra orden"
-            >
-              🔄 Cambiar Orden
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate("/panel/facturacion")}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                title="Volver al listado de órdenes pendientes"
+              >
+                ← Volver
+              </button>
+              <button
+                onClick={() => {
+                  setOrderPreloaded(false);
+                  setOrderId("");
+                }}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                title="Seleccionar otra orden"
+              >
+                🔄 Cambiar Orden
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -560,6 +582,23 @@ const Invoice = () => {
         onSubmit={handleSubmit}
         className="p-4 bg-gray-100 rounded-md shadow-md mt-4"
       >
+        {/* ✅ Header del formulario con botón volver */}
+        <div className="mb-6 pb-4 border-b border-gray-300 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">
+            📄 Formulario de Factura
+          </h2>
+          <button
+            type="button"
+            onClick={() => navigate("/panel/facturacion")}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver al Listado
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
             <label className="block mb-2">Prefijo del documento:</label>
@@ -693,21 +732,37 @@ const Invoice = () => {
             />
           </div>
         </div>
-        <button
-          type="submit"
-          className={`p-2 mt-4 rounded ${
-            isLoading || !sellerData
-              ? "bg-gray-400"
-              : "bg-blue-500 hover:bg-blue-600"
-          } text-white`}
-          disabled={isLoading || !sellerData}
-        >
-          {isLoading
-            ? "Enviando factura..."
-            : !sellerData
-            ? "Cargando datos del vendedor..."
-            : "Enviar factura"}
-        </button>
+        
+        {/* ✅ Botones de acción */}
+        <div className="mt-6 pt-4 border-t border-gray-300 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("¿Estás seguro de que deseas cancelar? Se perderán los cambios no guardados.")) {
+                resetForm();
+                navigate("/panel/facturacion");
+              }
+            }}
+            className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-medium transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className={`px-6 py-2 rounded font-medium transition-colors ${
+              isLoading || !sellerData
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600"
+            } text-white`}
+            disabled={isLoading || !sellerData}
+          >
+            {isLoading
+              ? "Enviando factura..."
+              : !sellerData
+              ? "Cargando datos del vendedor..."
+              : "✅ Enviar Factura"}
+          </button>
+        </div>
       </form>
       {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
       {success && (

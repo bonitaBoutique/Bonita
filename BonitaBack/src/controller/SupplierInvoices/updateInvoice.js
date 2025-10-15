@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
       tax_amount,
       currency,
       description,
-      receipt_url,
-      receipt_public_id,
+      invoice_url,
+      invoice_public_id,
       status
     } = req.body;
 
@@ -24,13 +24,13 @@ module.exports = async (req, res) => {
       return response(res, 404, { error: "Factura no encontrada" });
     }
 
-    // Si se está cambiando el comprobante, eliminar el anterior de Cloudinary
-    if (receipt_public_id && invoice.receipt_public_id && receipt_public_id !== invoice.receipt_public_id) {
+    // Si se está cambiando la factura, eliminar la anterior de Cloudinary
+    if (invoice_public_id && invoice.invoice_public_id && invoice_public_id !== invoice.invoice_public_id) {
       try {
-        await cloudinary.uploader.destroy(invoice.receipt_public_id);
-        console.log(`🗑️ [UPDATE INVOICE] Comprobante anterior eliminado de Cloudinary: ${invoice.receipt_public_id}`);
+        await cloudinary.uploader.destroy(invoice.invoice_public_id);
+        console.log(`🗑️ [UPDATE INVOICE] Factura anterior eliminada de Cloudinary: ${invoice.invoice_public_id}`);
       } catch (cloudinaryError) {
-        console.error("⚠️ [UPDATE INVOICE] Error eliminando comprobante de Cloudinary:", cloudinaryError);
+        console.error("⚠️ [UPDATE INVOICE] Error eliminando factura de Cloudinary:", cloudinaryError);
       }
     }
 
@@ -43,8 +43,8 @@ module.exports = async (req, res) => {
       tax_amount,
       currency: currency || invoice.currency,
       description,
-      receipt_url,
-      receipt_public_id,
+      invoice_url,
+      invoice_public_id,
       status
     };
 

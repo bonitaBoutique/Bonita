@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
 
     response(res, 200, {
       supplier: {
-        id: supplier.id,
+        id_supplier: supplier.id_supplier,
         business_name: supplier.business_name,
         document_number: supplier.document_number,
         contact_name: supplier.contact_name,
@@ -97,6 +97,15 @@ module.exports = async (req, res) => {
         totalAmount,
         totalPaid,
         totalPending,
+        totalDebt: totalPending, // ✅ Alias para el frontend
+        invoiceStats: {
+          total: totalInvoices,
+          pending: invoicesByStatus.pending.length,
+          partial: invoicesByStatus.partial.length,
+          paid: invoicesByStatus.paid.length,
+          overdue: invoicesByStatus.overdue.length,
+          cancelled: invoicesByStatus.cancelled.length
+        },
         invoiceCount: {
           pending: invoicesByStatus.pending.length,
           partial: invoicesByStatus.partial.length,
@@ -107,7 +116,7 @@ module.exports = async (req, res) => {
         debtByStatus
       },
       overdueInvoices: overdueInvoices.map(inv => ({
-        id: inv.id,
+        id_invoice: inv.id_invoice,
         invoice_number: inv.invoice_number,
         invoice_date: inv.invoice_date,
         due_date: inv.due_date,
@@ -118,7 +127,7 @@ module.exports = async (req, res) => {
         daysOverdue: Math.floor((new Date() - new Date(inv.due_date)) / (1000 * 60 * 60 * 24))
       })),
       upcomingDue: upcomingDue.map(inv => ({
-        id: inv.id,
+        id_invoice: inv.id_invoice,
         invoice_number: inv.invoice_number,
         invoice_date: inv.invoice_date,
         due_date: inv.due_date,
@@ -129,7 +138,7 @@ module.exports = async (req, res) => {
         daysUntilDue: Math.floor((new Date(inv.due_date) - new Date()) / (1000 * 60 * 60 * 24))
       })),
       recentPayments: recentPayments.map(pay => ({
-        id: pay.id,
+        id_payment: pay.id_payment,
         payment_date: pay.payment_date,
         amount: pay.amount,
         payment_method: pay.payment_method,

@@ -8,6 +8,7 @@ import {
 } from "../../Redux/Actions/actions";
 import { FiSave, FiX, FiArrowLeft } from "react-icons/fi";
 import Loading from "../Loading";
+import Navbar2 from "../Navbar2";
 
 const SupplierForm = () => {
   const dispatch = useDispatch();
@@ -29,9 +30,6 @@ const SupplierForm = () => {
     country: "Colombia",
     category: "",
     payment_terms: "",
-    bank_name: "",
-    bank_account: "",
-    notes: "",
     status: "active",
   });
 
@@ -58,9 +56,6 @@ const SupplierForm = () => {
         country: currentSupplier.country || "Colombia",
         category: currentSupplier.category || "",
         payment_terms: currentSupplier.payment_terms || "",
-        bank_name: currentSupplier.bank_name || "",
-        bank_account: currentSupplier.bank_account || "",
-        notes: currentSupplier.notes || "",
         status: currentSupplier.status || "active",
       });
     }
@@ -118,8 +113,10 @@ const SupplierForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <>
+      <Navbar2/>
+      <div className="min-h-screen bg-gray-50 p-6 mt-20">
+        <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -320,10 +317,10 @@ const SupplierForm = () => {
           {/* Información Comercial */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Información Comercial y Bancaria
+              Información Comercial
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Términos de Pago
                 </label>
@@ -334,46 +331,6 @@ const SupplierForm = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Ej: 30 días, Contado, etc."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Banco
-                </label>
-                <input
-                  type="text"
-                  name="bank_name"
-                  value={formData.bank_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nombre del banco"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Número de Cuenta
-                </label>
-                <input
-                  type="text"
-                  name="bank_account"
-                  value={formData.bank_account}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Número de cuenta bancaria"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notas</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Notas adicionales sobre el proveedor..."
                 />
               </div>
             </div>
@@ -401,6 +358,7 @@ const SupplierForm = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

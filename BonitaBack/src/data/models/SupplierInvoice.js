@@ -63,21 +63,27 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(3),
         allowNull: false,
         defaultValue: "COP",
+        comment: "Moneda (siempre COP)",
+      },
+      payment_method: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        comment: "Medio de pago (Efectivo, Transferencia, Nequi, Crédito)",
       },
       description: {
         type: DataTypes.TEXT,
         allowNull: true,
         comment: "Descripción de la compra",
       },
-      receipt_url: {
+      invoice_url: {
         type: DataTypes.STRING,
         allowNull: true,
-        comment: "URL de Cloudinary del comprobante/factura",
+        comment: "URL de Cloudinary de la factura del proveedor (imagen o PDF)",
       },
-      receipt_public_id: {
+      invoice_public_id: {
         type: DataTypes.STRING,
         allowNull: true,
-        comment: "Public ID de Cloudinary para eliminar",
+        comment: "Public ID de Cloudinary para eliminar la factura",
       },
       tax_amount: {
         type: DataTypes.DECIMAL(15, 2),

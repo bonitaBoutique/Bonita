@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
         {
           model: Supplier,
           as: 'supplier',
-          attributes: ['id', 'business_name', 'document_number']
+          attributes: ['id_supplier', 'business_name', 'document_number']
         }
       ],
       order: [

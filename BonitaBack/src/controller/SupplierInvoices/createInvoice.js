@@ -12,14 +12,18 @@ module.exports = async (req, res) => {
       total_amount,
       tax_amount = 0,
       currency = 'COP',
+      payment_method,
       description,
-      receipt_url,
-      receipt_public_id,
+      invoice_url,
+      invoice_public_id,
       status = 'pending'
     } = req.body;
 
+    console.log('📥 [CREATE INVOICE] Request body:', req.body);
+
     // Validaciones
     if (!id_supplier || !invoice_number || !invoice_date || !total_amount) {
+      console.log('❌ [CREATE INVOICE] Validación fallida - Campos requeridos faltantes');
       return response(res, 400, { 
         error: "Proveedor, número de factura, fecha y monto total son requeridos" 
       });
@@ -28,6 +32,7 @@ module.exports = async (req, res) => {
     // Verificar que el proveedor existe
     const supplier = await Supplier.findByPk(id_supplier);
     if (!supplier) {
+      console.log(`❌ [CREATE INVOICE] Proveedor no encontrado: ${id_supplier}`);
       return response(res, 404, { error: "Proveedor no encontrado" });
     }
 
@@ -40,6 +45,7 @@ module.exports = async (req, res) => {
     });
 
     if (existingInvoice) {
+      console.log(`❌ [CREATE INVOICE] Factura duplicada: ${invoice_number}`);
       return response(res, 400, { 
         error: `Ya existe una factura con el número ${invoice_number} para este proveedor` 
       });
@@ -49,19 +55,20 @@ module.exports = async (req, res) => {
       id_supplier,
       invoice_number,
       invoice_date,
-      due_date,
+      due_date: due_date && due_date.trim() !== '' ? due_date : null,
       total_amount,
       paid_amount: 0,
       tax_amount,
       currency,
+      payment_method,
       description,
-      receipt_url,
-      receipt_public_id,
+      invoice_url,
+      invoice_public_id,
       status
     });
 
     // Incluir datos del proveedor en la respuesta
-    const invoiceWithSupplier = await SupplierInvoice.findByPk(newInvoice.id, {
+    const invoiceWithSupplier = await SupplierInvoice.findByPk(newInvoice.id_invoice, {
       include: [
         {
           model: Supplier,

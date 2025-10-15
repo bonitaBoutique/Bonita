@@ -8,6 +8,7 @@ import {
 import Swal from "sweetalert2";
 import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter, FiFileText } from "react-icons/fi";
 import Loading from "../Loading";
+import Navbar2 from "../Navbar2";
 
 const SuppliersList = () => {
   const dispatch = useDispatch();
@@ -98,8 +99,10 @@ const SuppliersList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <Navbar2/>
+      <div className="min-h-screen bg-gray-50 p-6 mt-20">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -253,7 +256,7 @@ const SuppliersList = () => {
                   </tr>
                 ) : (
                   suppliers.map((supplier) => (
-                    <tr key={supplier.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={supplier.id_supplier} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <div className="text-sm font-medium text-gray-900">
@@ -300,21 +303,21 @@ const SuppliersList = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => navigate(`/suppliers/${supplier.id}`)}
+                            onClick={() => navigate(`/suppliers/${supplier.id_supplier}`)}
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                             title="Ver detalles"
                           >
                             <FiEye className="text-lg" />
                           </button>
                           <button
-                            onClick={() => navigate(`/suppliers/edit/${supplier.id}`)}
+                            onClick={() => navigate(`/suppliers/edit/${supplier.id_supplier}`)}
                             className="text-yellow-600 hover:text-yellow-900 transition-colors"
                             title="Editar"
                           >
                             <FiEdit2 className="text-lg" />
                           </button>
                           <button
-                            onClick={() => handleDelete(supplier.id, supplier.business_name)}
+                            onClick={() => handleDelete(supplier.id_supplier, supplier.business_name)}
                             className="text-red-600 hover:text-red-900 transition-colors"
                             title="Eliminar"
                           >
@@ -399,6 +402,7 @@ const SuppliersList = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

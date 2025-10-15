@@ -50,12 +50,12 @@ module.exports = async (req, res) => {
         {
           model: Supplier,
           as: 'supplier',
-          attributes: ['id', 'business_name', 'document_number']
+          attributes: ['id_supplier', 'business_name', 'document_number']
         },
         {
           model: SupplierInvoice,
           as: 'invoice',
-          attributes: ['id', 'invoice_number', 'total_amount', 'paid_amount', 'status']
+          attributes: ['id_invoice', 'invoice_number', 'total_amount', 'paid_amount', 'status']
         }
       ],
       order: [['payment_date', 'DESC']],

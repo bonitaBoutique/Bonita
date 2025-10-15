@@ -35,13 +35,16 @@ module.exports = async (req, res) => {
 
     // Calcular deuda total
     const totalDebt = supplier.invoices?.reduce((sum, invoice) => {
-      const balance = invoice.total_amount - (invoice.paid_amount || 0);
+      const totalAmount = parseFloat(invoice.total_amount) || 0;
+      const paidAmount = parseFloat(invoice.paid_amount) || 0;
+      const balance = totalAmount - paidAmount;
       return sum + (balance > 0 ? balance : 0);
     }, 0) || 0;
 
     // Calcular total pagado
     const totalPaid = supplier.invoices?.reduce((sum, invoice) => {
-      return sum + (invoice.paid_amount || 0);
+      const paidAmount = parseFloat(invoice.paid_amount) || 0;
+      return sum + paidAmount;
     }, 0) || 0;
 
     // Contar facturas por estado
@@ -55,6 +58,7 @@ module.exports = async (req, res) => {
     };
 
     console.log(`✅ [GET SUPPLIER BY ID] Proveedor obtenido: ${supplier.business_name} (ID: ${id})`);
+    console.log(`📊 [GET SUPPLIER BY ID] Summary - Deuda: ${totalDebt}, Pagado: ${totalPaid}, Facturas: ${invoiceStats.total}`);
 
     response(res, 200, {
       supplier,

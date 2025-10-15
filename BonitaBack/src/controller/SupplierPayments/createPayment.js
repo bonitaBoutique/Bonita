@@ -69,17 +69,17 @@ module.exports = async (req, res) => {
     const updatedInvoice = await SupplierInvoice.findByPk(id_invoice);
 
     // Incluir datos relacionados en la respuesta
-    const paymentWithDetails = await SupplierPayment.findByPk(newPayment.id, {
+    const paymentWithDetails = await SupplierPayment.findByPk(newPayment.id_payment, {
       include: [
         {
           model: SupplierInvoice,
           as: 'invoice',
-          attributes: ['id', 'invoice_number', 'total_amount', 'paid_amount', 'status']
+          attributes: ['id_invoice', 'invoice_number', 'total_amount', 'paid_amount', 'status']
         },
         {
           model: Supplier,
           as: 'supplier',
-          attributes: ['id', 'business_name', 'document_number']
+          attributes: ['id_supplier', 'business_name', 'document_number']
         }
       ]
     });

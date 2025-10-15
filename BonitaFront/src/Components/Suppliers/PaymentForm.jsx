@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 import { FiArrowLeft, FiDollarSign, FiUpload } from "react-icons/fi";
 import Navbar2 from "../Navbar2";
 import Loading from "../Loading";
+import { openCloudinaryWidget } from "../../cloudinaryConfig";
 
 const CLOUDINARY_CLOUD_NAME = "dikg5d5ih";
 const CLOUDINARY_UPLOAD_PRESET = "ecommerce-products";
@@ -39,8 +40,6 @@ const PaymentForm = () => {
   });
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [file, setFile] = useState(null);
 
   useEffect(() => {
     if (suppliers.length === 0) {
@@ -63,6 +62,14 @@ const PaymentForm = () => {
     if (formData.id_invoice && invoices.length > 0) {
       const invoice = invoices.find(inv => inv.id_invoice === formData.id_invoice);
       setSelectedInvoice(invoice);
+      
+      // ✅ Pre-llenar método de pago si la factura tiene uno
+      if (invoice?.payment_method) {
+        setFormData(prev => ({
+          ...prev,
+          payment_method: invoice.payment_method
+        }));
+      }
     }
   }, [formData.id_invoice, invoices]);
 
@@ -71,41 +78,24 @@ const PaymentForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  const handleFileUpload = async () => {
-    if (!file) return;
-
-    setUploadingFile(true);
-    const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-    data.append("folder", "supplier_payments");
-
-    try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: data,
-        }
-      );
-
-      const result = await response.json();
-      setFormData({
-        ...formData,
-        receipt_url: result.secure_url,
-        receipt_public_id: result.public_id,
-      });
-      Swal.fire("Éxito", "Comprobante cargado correctamente", "success");
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      Swal.fire("Error", "No se pudo cargar el comprobante", "error");
-    } finally {
-      setUploadingFile(false);
-    }
+  const handleFileUpload = () => {
+    // Usar el widget de Cloudinary (igual que en facturas)
+    openCloudinaryWidget(
+      (uploadedImageUrl, publicId) => {
+        console.log('📤 [CLOUDINARY] Comprobante subido:', { uploadedImageUrl, publicId });
+        setFormData({
+          ...formData,
+          receipt_url: uploadedImageUrl,
+          receipt_public_id: publicId,
+        });
+        Swal.fire("Éxito", "Comprobante cargado correctamente", "success");
+      },
+      {
+        folder: 'supplier_payments',
+        multiple: false, // Solo una imagen
+        formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'], // Solo imágenes
+      }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -130,6 +120,17 @@ const PaymentForm = () => {
 
     try {
       await dispatch(createSupplierPayment(formData));
+      
+      // ✅ Recargar facturas para actualizar estados
+      if (formData.id_supplier) {
+        await dispatch(fetchPurchaseInvoices({ 
+          supplierId: formData.id_supplier,
+          status: 'pending,partial',
+          page: 1, 
+          limit: 100 
+        }));
+      }
+      
       Swal.fire("Éxito", "Pago registrado correctamente", "success");
       navigate(`/suppliers/${formData.id_supplier}`);
     } catch (error) {
@@ -272,10 +273,10 @@ const PaymentForm = () => {
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="Transferencia">Transferencia</option>
                   <option value="Efectivo">Efectivo</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Crédito">Crédito</option>
                 </select>
               </div>
 
@@ -314,28 +315,49 @@ const PaymentForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Comprobante de Pago (Opcional)
                 </label>
-                <div className="flex gap-3">
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    accept="image/*,.pdf"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleFileUpload}
-                    disabled={!file || uploadingFile}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    <FiUpload />
-                    {uploadingFile ? "Subiendo..." : "Subir"}
-                  </button>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  {formData.receipt_url ? (
+                    <div>
+                      <p className="text-sm text-green-600 mb-2">✓ Comprobante cargado</p>
+                      <img 
+                        src={formData.receipt_url} 
+                        alt="Comprobante" 
+                        className="max-h-40 mx-auto rounded mb-2"
+                      />
+                      <a
+                        href={formData.receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Ver comprobante
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, receipt_url: "", receipt_public_id: "" })
+                        }
+                        className="ml-4 text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <FiUpload className="mx-auto text-gray-400 text-3xl mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">
+                        Sube una imagen del comprobante de pago (JPG, PNG)
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleFileUpload}
+                        className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+                      >
+                        Subir Comprobante
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {formData.receipt_url && (
-                  <p className="text-sm text-green-600 mt-2">
-                    ✓ Comprobante cargado correctamente
-                  </p>
-                )}
               </div>
             </div>
 

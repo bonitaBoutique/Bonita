@@ -47,7 +47,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(50),
         allowNull: false,
         defaultValue: "Transferencia",
-        comment: "Método de pago (Transferencia, Efectivo, Cheque, etc.)",
+        
       },
       reference_number: {
         type: DataTypes.STRING(100),

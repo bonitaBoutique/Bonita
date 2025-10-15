@@ -8,6 +8,8 @@ import {
 } from "../../Redux/Actions/actions";
 import { FiSave, FiX, FiArrowLeft, FiUpload } from "react-icons/fi";
 import Loading from "../Loading";
+import { openCloudinaryWidget } from "../../cloudinaryConfig";
+import Navbar2 from "../Navbar2";
 
 const CLOUDINARY_CLOUD_NAME = "dikg5d5ih";
 const CLOUDINARY_UPLOAD_PRESET = "ecommerce-products";
@@ -29,14 +31,13 @@ const PurchaseInvoiceForm = () => {
     due_date: "",
     total_amount: "",
     tax_amount: "",
-    currency: "COP",
+    payment_method: "Efectivo",
     description: "",
-    receipt_url: "",
-    receipt_public_id: "",
+    invoice_url: "",
+    invoice_public_id: "",
   });
 
   const [errors, setErrors] = useState({});
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!supplierId) {
@@ -64,41 +65,23 @@ const PurchaseInvoiceForm = () => {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
-      formDataUpload.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-      formDataUpload.append("folder", "supplier_invoices");
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,
-        {
-          method: "POST",
-          body: formDataUpload,
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.secure_url) {
+  const handleFileUpload = () => {
+    // Usar el widget de Cloudinary (igual que en productos)
+    openCloudinaryWidget(
+      (uploadedImageUrl, publicId) => {
+        console.log('📤 [CLOUDINARY] Imagen subida:', { uploadedImageUrl, publicId });
         setFormData({
           ...formData,
-          receipt_url: data.secure_url,
-          receipt_public_id: data.public_id,
+          invoice_url: uploadedImageUrl,
+          invoice_public_id: publicId,
         });
-        alert("✅ Archivo subido exitosamente");
+      },
+      {
+        folder: 'supplier_invoices',
+        multiple: false, // Solo una imagen
+        formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'], // Solo imágenes
       }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("Error al subir el archivo. Por favor intenta de nuevo.");
-    } finally {
-      setUploading(false);
-    }
+    );
   };
 
   const validateForm = () => {
@@ -160,8 +143,10 @@ const PurchaseInvoiceForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto">
+    <>
+      <Navbar2/>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -205,7 +190,7 @@ const PurchaseInvoiceForm = () => {
                 >
                   <option value="">-- Selecciona un proveedor --</option>
                   {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
+                    <option key={supplier.id_supplier} value={supplier.id_supplier}>
                       {supplier.business_name} - {supplier.document_number}
                     </option>
                   ))}
@@ -275,17 +260,18 @@ const PurchaseInvoiceForm = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Moneda
+                  Medio de Pago <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="currency"
-                  value={formData.currency}
+                  name="payment_method"
+                  value={formData.payment_method}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="COP">COP - Peso Colombiano</option>
-                  <option value="USD">USD - Dólar</option>
-                  <option value="EUR">EUR - Euro</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Crédito">Crédito</option>
                 </select>
               </div>
 
@@ -343,24 +329,29 @@ const PurchaseInvoiceForm = () => {
           {/* File Upload */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Comprobante (Opcional)
+              Factura del Proveedor (Opcional)
             </h2>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              {formData.receipt_url ? (
+              {formData.invoice_url ? (
                 <div>
-                  <p className="text-sm text-green-600 mb-2">✓ Archivo subido</p>
+                  <p className="text-sm text-green-600 mb-2">✓ Imagen subida</p>
+                  <img 
+                    src={formData.invoice_url} 
+                    alt="Vista previa" 
+                    className="max-h-40 mx-auto rounded mb-2"
+                  />
                   <a
-                    href={formData.receipt_url}
+                    href={formData.invoice_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    Ver comprobante
+                    Ver factura
                   </a>
                   <button
                     type="button"
                     onClick={() =>
-                      setFormData({ ...formData, receipt_url: "", receipt_public_id: "" })
+                      setFormData({ ...formData, invoice_url: "", invoice_public_id: "" })
                     }
                     className="ml-4 text-red-600 hover:text-red-800 text-sm"
                   >
@@ -371,22 +362,15 @@ const PurchaseInvoiceForm = () => {
                 <div>
                   <FiUpload className="mx-auto text-gray-400 text-3xl mb-2" />
                   <p className="text-sm text-gray-600 mb-2">
-                    Sube una imagen o PDF de la factura
+                    Sube una imagen de la factura (JPG, PNG)
                   </p>
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    accept="image/*,.pdf"
-                    className="hidden"
-                    id="receipt-upload"
-                    disabled={uploading}
-                  />
-                  <label
-                    htmlFor="receipt-upload"
-                    className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer transition-colors"
+                  <button
+                    type="button"
+                    onClick={handleFileUpload}
+                    className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
                   >
-                    {uploading ? "Subiendo..." : "Seleccionar archivo"}
-                  </label>
+                    Subir Imagen
+                  </button>
                 </div>
               )}
             </div>
@@ -404,7 +388,7 @@ const PurchaseInvoiceForm = () => {
             </button>
             <button
               type="submit"
-              disabled={invoiceLoading || uploading}
+              disabled={invoiceLoading}
               className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               <FiSave />
@@ -414,6 +398,7 @@ const PurchaseInvoiceForm = () => {
         </form>
       </div>
     </div>
+    </>
   );
 };
 

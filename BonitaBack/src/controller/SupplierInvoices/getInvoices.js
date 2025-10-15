@@ -22,9 +22,15 @@ module.exports = async (req, res) => {
       where.id_supplier = id_supplier;
     }
 
-    // Filtro por estado
+    // Filtro por estado (puede ser un string con valores separados por coma)
     if (status) {
-      where.status = status;
+      // Si contiene comas, dividir en array y usar IN
+      if (status.includes(',')) {
+        const statusArray = status.split(',').map(s => s.trim());
+        where.status = { [Op.in]: statusArray };
+      } else {
+        where.status = status;
+      }
     }
 
     // Filtro por rango de fechas
@@ -44,12 +50,12 @@ module.exports = async (req, res) => {
         {
           model: Supplier,
           as: 'supplier',
-          attributes: ['id', 'business_name', 'document_number']
+          attributes: ['id_supplier', 'business_name', 'document_number']
         },
         {
           model: SupplierPayment,
           as: 'payments',
-          attributes: ['id', 'payment_date', 'amount', 'payment_method']
+          attributes: ['id_payment', 'payment_date', 'amount', 'payment_method']
         }
       ],
       order: [['invoice_date', 'DESC']],

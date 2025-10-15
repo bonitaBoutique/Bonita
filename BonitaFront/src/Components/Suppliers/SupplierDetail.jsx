@@ -18,8 +18,11 @@ import {
   FiAlertCircle,
   FiCalendar,
   FiTrendingUp,
+  FiImage,
+  FiExternalLink,
 } from "react-icons/fi";
 import Loading from "../Loading";
+import Navbar2 from "../Navbar2";
 
 const SupplierDetail = () => {
   const dispatch = useDispatch();
@@ -31,6 +34,25 @@ const SupplierDetail = () => {
   const { data: payments } = useSelector((state) => state.supplierPayments);
 
   const [activeTab, setActiveTab] = useState("summary");
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+
+  const openDocument = (url, title) => {
+    console.log('🔍 [DOCUMENT] Abriendo documento:', { url, title });
+    // Si es PDF, abrir directamente en nueva pestaña
+    if (url.toLowerCase().endsWith('.pdf')) {
+      window.open(url, '_blank');
+    } else {
+      // Si es imagen, mostrar en modal
+      setSelectedDocument({ url, title });
+      setShowDocumentModal(true);
+    }
+  };
+
+  const closeDocumentModal = () => {
+    setSelectedDocument(null);
+    setShowDocumentModal(false);
+  };
 
   useEffect(() => {
     // Solo hacer las llamadas si id es válido
@@ -55,6 +77,14 @@ const SupplierDetail = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Calcular el total real de pagos desde el array de payments
+  const calculateTotalPaid = () => {
+    if (!payments || payments.length === 0) return 0;
+    return payments.reduce((total, payment) => {
+      return total + (parseFloat(payment.amount) || 0);
+    }, 0);
   };
 
   const getStatusBadge = (status) => {
@@ -84,12 +114,14 @@ const SupplierDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <Navbar2/>
+      <div className="min-h-screen bg-gray-50 p-6 mt-20">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => navigate("/suppliers")}
+            onClick={() => navigate("/panelProveedores")}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <FiArrowLeft />
@@ -156,7 +188,10 @@ const SupplierDetail = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Pagado</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(summary?.totalPaid || 0)}
+                  {formatCurrency(calculateTotalPaid())}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {payments.length} pago{payments.length !== 1 ? 's' : ''} registrado{payments.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
@@ -356,22 +391,6 @@ const SupplierDetail = () => {
                           </span>
                         </div>
                       )}
-                      {currentSupplier.bank_name && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Banco</span>
-                          <span className="text-sm font-medium text-gray-900">
-                            {currentSupplier.bank_name}
-                          </span>
-                        </div>
-                      )}
-                      {currentSupplier.bank_account && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Cuenta</span>
-                          <span className="text-sm font-medium text-gray-900">
-                            {currentSupplier.bank_account}
-                          </span>
-                        </div>
-                      )}
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Estado</span>
                         <span
@@ -385,13 +404,6 @@ const SupplierDetail = () => {
                         </span>
                       </div>
                     </div>
-
-                    {currentSupplier.notes && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Notas</p>
-                        <p className="text-sm text-gray-600">{currentSupplier.notes}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -436,18 +448,21 @@ const SupplierDetail = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           Estado
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Factura
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {invoices.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                          <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                             No hay facturas registradas
                           </td>
                         </tr>
                       ) : (
                         invoices.map((invoice) => (
-                          <tr key={invoice.id} className="hover:bg-gray-50">
+                          <tr key={invoice.id_invoice} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {invoice.invoice_number}
                             </td>
@@ -468,6 +483,20 @@ const SupplierDetail = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {getStatusBadge(invoice.status)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {invoice.invoice_url ? (
+                                <button
+                                  onClick={() => openDocument(invoice.invoice_url, `Factura ${invoice.invoice_number}`)}
+                                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                  title="Ver factura"
+                                >
+                                  <FiImage className="text-lg" />
+                                  <FiExternalLink className="text-xs" />
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-sm">Sin factura</span>
+                              )}
                             </td>
                           </tr>
                         ))
@@ -503,18 +532,21 @@ const SupplierDetail = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           Referencia
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Comprobante
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {payments.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                          <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                             No hay pagos registrados
                           </td>
                         </tr>
                       ) : (
                         payments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-gray-50">
+                          <tr key={payment.id_payment} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {formatDate(payment.payment_date)}
                             </td>
@@ -530,6 +562,20 @@ const SupplierDetail = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {payment.reference_number || "-"}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {payment.receipt_url ? (
+                                <button
+                                  onClick={() => openDocument(payment.receipt_url, `Comprobante de Pago ${payment.reference_number || payment.id_payment}`)}
+                                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                  title="Ver comprobante"
+                                >
+                                  <FiImage className="text-lg" />
+                                  <FiExternalLink className="text-xs" />
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-sm">Sin comprobante</span>
+                              )}
+                            </td>
                           </tr>
                         ))
                       )}
@@ -540,8 +586,60 @@ const SupplierDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Modal para mostrar documentos (PDF/imágenes) */}
+        {showDocumentModal && selectedDocument && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={closeDocumentModal}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header del Modal */}
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedDocument.title}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={selectedDocument.url}
+                    download
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Descargar
+                  </a>
+                  <button
+                    onClick={closeDocumentModal}
+                    className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenido del Modal */}
+              <div className="flex-1 overflow-auto p-4 bg-gray-50">
+                {/* Visor de Imágenes */}
+                <div className="flex items-center justify-center h-full min-h-[400px]">
+                  <img
+                    src={selectedDocument.url}
+                    alt={selectedDocument.title}
+                    className="max-w-full max-h-full object-contain rounded shadow-lg"
+                    onError={(e) => {
+                      console.error('Error cargando imagen:', selectedDocument.url);
+                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FcnJvciBjYXJnYW5kbyBpbWFnZW48L3RleHQ+PC9zdmc+';
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
+    </>
   );
 };
 

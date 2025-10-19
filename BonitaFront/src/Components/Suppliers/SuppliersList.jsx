@@ -6,7 +6,7 @@ import {
   deleteSupplier,
 } from "../../Redux/Actions/actions";
 import Swal from "sweetalert2";
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter, FiFileText } from "react-icons/fi";
+import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter, FiFileText, FiDollarSign, FiAlertCircle, FiTrendingUp } from "react-icons/fi";
 import Loading from "../Loading";
 import Navbar2 from "../Navbar2";
 
@@ -98,6 +98,12 @@ const SuppliersList = () => {
     return <Loading />;
   }
 
+  // Calcular resumen general
+  const totalDebt = suppliers.reduce((sum, s) => sum + (s.totalDebt || 0), 0);
+  const totalSuppliers = suppliers.length;
+  const suppliersWithDebt = suppliers.filter(s => (s.totalDebt || 0) > 0).length;
+  const totalInvoices = suppliers.reduce((sum, s) => sum + (s.invoiceCount || 0), 0);
+
   return (
     <>
       <Navbar2/>
@@ -118,7 +124,7 @@ const SuppliersList = () => {
                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <FiFileText className="text-xl" />
-                Nueva Factura de Compra
+                Nueva Factura
               </button>
               <button
                 onClick={() => navigate("/suppliers/new")}
@@ -127,6 +133,53 @@ const SuppliersList = () => {
                 <FiPlus className="text-xl" />
                 Nuevo Proveedor
               </button>
+            </div>
+          </div>
+
+          {/* Resumen General */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                  <FiTrendingUp className="text-2xl" />
+                </div>
+              </div>
+              <p className="text-sm opacity-90 mb-1">Total Proveedores</p>
+              <p className="text-3xl font-bold">{totalSuppliers}</p>
+              <p className="text-xs opacity-75 mt-1">Activos en el sistema</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                  <FiDollarSign className="text-2xl" />
+                </div>
+              </div>
+              <p className="text-sm opacity-90 mb-1">Deuda Total</p>
+              <p className="text-3xl font-bold">{formatCurrency(totalDebt)}</p>
+              <p className="text-xs opacity-75 mt-1">{suppliersWithDebt} proveedores con deuda</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                  <FiFileText className="text-2xl" />
+                </div>
+              </div>
+              <p className="text-sm opacity-90 mb-1">Total Facturas</p>
+              <p className="text-3xl font-bold">{totalInvoices}</p>
+              <p className="text-xs opacity-75 mt-1">Facturas registradas</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                  <FiAlertCircle className="text-2xl" />
+                </div>
+              </div>
+              <p className="text-sm opacity-90 mb-1">Requieren Atención</p>
+              <p className="text-3xl font-bold">{suppliersWithDebt}</p>
+              <p className="text-xs opacity-75 mt-1">Con saldo pendiente</p>
             </div>
           </div>
         </div>
@@ -255,18 +308,34 @@ const SuppliersList = () => {
                     </td>
                   </tr>
                 ) : (
-                  suppliers.map((supplier) => (
-                    <tr key={supplier.id_supplier} className="hover:bg-gray-50 transition-colors">
+                  suppliers.map((supplier) => {
+                    const hasDebt = (supplier.totalDebt || 0) > 0;
+                    const hasHighDebt = (supplier.totalDebt || 0) > 1000000; // Mayor a 1M
+                    
+                    return (
+                    <tr 
+                      key={supplier.id_supplier} 
+                      className={`hover:bg-gray-50 transition-colors ${
+                        hasHighDebt ? 'bg-red-50' : hasDebt ? 'bg-yellow-50' : ''
+                      }`}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <div className="text-sm font-medium text-gray-900">
-                            {supplier.business_name}
-                          </div>
-                          {supplier.contact_name && (
-                            <div className="text-sm text-gray-500">
-                              {supplier.contact_name}
+                        <div className="flex items-center gap-3">
+                          {hasHighDebt && (
+                            <div className="flex-shrink-0">
+                              <FiAlertCircle className="text-red-500 text-lg" title="Deuda alta" />
                             </div>
                           )}
+                          <div className="flex flex-col">
+                            <div className="text-sm font-medium text-gray-900">
+                              {supplier.business_name}
+                            </div>
+                            {supplier.contact_name && (
+                              <div className="text-sm text-gray-500">
+                                {supplier.contact_name}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -284,12 +353,23 @@ const SuppliersList = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div
-                          className={`text-sm font-semibold ${
-                            supplier.totalDebt > 0 ? "text-red-600" : "text-green-600"
-                          }`}
-                        >
-                          {formatCurrency(supplier.totalDebt || 0)}
+                        <div className="flex flex-col">
+                          <div
+                            className={`text-sm font-semibold ${
+                              supplier.totalDebt > 0 ? "text-red-600" : "text-green-600"
+                            }`}
+                          >
+                            {formatCurrency(supplier.totalDebt || 0)}
+                          </div>
+                          {hasDebt && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block w-fit ${
+                              hasHighDebt 
+                                ? 'bg-red-100 text-red-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {hasHighDebt ? 'Deuda alta' : 'Pendiente'}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -304,21 +384,21 @@ const SuppliersList = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => navigate(`/suppliers/${supplier.id_supplier}`)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            className="text-blue-600 hover:text-blue-900 transition-colors p-1.5 rounded hover:bg-blue-50"
                             title="Ver detalles"
                           >
                             <FiEye className="text-lg" />
                           </button>
                           <button
                             onClick={() => navigate(`/suppliers/edit/${supplier.id_supplier}`)}
-                            className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                            className="text-yellow-600 hover:text-yellow-900 transition-colors p-1.5 rounded hover:bg-yellow-50"
                             title="Editar"
                           >
                             <FiEdit2 className="text-lg" />
                           </button>
                           <button
                             onClick={() => handleDelete(supplier.id_supplier, supplier.business_name)}
-                            className="text-red-600 hover:text-red-900 transition-colors"
+                            className="text-red-600 hover:text-red-900 transition-colors p-1.5 rounded hover:bg-red-50"
                             title="Eliminar"
                           >
                             <FiTrash2 className="text-lg" />
@@ -326,7 +406,8 @@ const SuppliersList = () => {
                         </div>
                       </td>
                     </tr>
-                  ))
+                  );
+                  })
                 )}
               </tbody>
             </table>

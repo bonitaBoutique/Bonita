@@ -23,6 +23,7 @@ import {
 } from "react-icons/fi";
 import Loading from "../Loading";
 import Navbar2 from "../Navbar2";
+import QuickPaymentModal from "./QuickPaymentModal";
 
 const SupplierDetail = () => {
   const dispatch = useDispatch();
@@ -36,6 +37,8 @@ const SupplierDetail = () => {
   const [activeTab, setActiveTab] = useState("summary");
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const openDocument = (url, title) => {
     console.log('🔍 [DOCUMENT] Abriendo documento:', { url, title });
@@ -52,6 +55,25 @@ const SupplierDetail = () => {
   const closeDocumentModal = () => {
     setSelectedDocument(null);
     setShowDocumentModal(false);
+  };
+
+  const openPaymentModal = (invoice) => {
+    setSelectedInvoice(invoice);
+    setShowPaymentModal(true);
+  };
+
+  const closePaymentModal = () => {
+    setSelectedInvoice(null);
+    setShowPaymentModal(false);
+  };
+
+  const handlePaymentSuccess = () => {
+    // Recargar datos del proveedor, facturas y pagos
+    if (id && id !== 'undefined' && id !== 'null') {
+      dispatch(fetchSupplierById(id));
+      dispatch(fetchPurchaseInvoices({ id_supplier: id, limit: 50 }));
+      dispatch(fetchSupplierPayments({ id_supplier: id, limit: 50 }));
+    }
   };
 
   useEffect(() => {
@@ -147,68 +169,102 @@ const SupplierDetail = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Rediseñadas más prominentes */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <FiDollarSign className="text-red-600 text-xl" />
+              <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                <FiDollarSign className="text-2xl" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Deuda Total</p>
-                <p className="text-2xl font-bold text-red-600">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Deuda Total</p>
+                <p className="text-3xl font-bold">
                   {formatCurrency(summary?.totalDebt || 0)}
                 </p>
               </div>
             </div>
+            <div className="mt-4 pt-4 border-t border-white border-opacity-20">
+              <button
+                onClick={() => navigate(`/suppliers/payments/create?supplierId=${id}`)}
+                className="w-full flex items-center justify-center gap-2 bg-white text-red-600 px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors font-medium text-sm"
+              >
+                <FiDollarSign />
+                Registrar Pago
+              </button>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FiFileText className="text-blue-600 text-xl" />
+              <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                <FiFileText className="text-2xl" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Facturas</p>
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Facturas</p>
+                <p className="text-3xl font-bold">
                   {summary?.invoiceStats?.total || 0}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs opacity-75 mt-1">
                   {summary?.invoiceStats?.pending || 0} pendientes
                 </p>
               </div>
             </div>
+            <div className="mt-4 pt-4 border-t border-white border-opacity-20">
+              <button
+                onClick={() => navigate(`/suppliers/${id}/invoices/new`)}
+                className="w-full flex items-center justify-center gap-2 bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors font-medium text-sm"
+              >
+                <FiFileText />
+                Nueva Factura
+              </button>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <FiCreditCard className="text-green-600 text-xl" />
+              <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                <FiCreditCard className="text-2xl" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Pagado</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Total Pagado</p>
+                <p className="text-3xl font-bold">
                   {formatCurrency(calculateTotalPaid())}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {payments.length} pago{payments.length !== 1 ? 's' : ''} registrado{payments.length !== 1 ? 's' : ''}
+                <p className="text-xs opacity-75 mt-1">
+                  {payments.length} pago{payments.length !== 1 ? 's' : ''}
                 </p>
               </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-white border-opacity-20 text-xs opacity-90">
+              Último pago: {payments.length > 0 ? formatDate(payments[0].payment_date) : 'N/A'}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <FiAlertCircle className="text-yellow-600 text-xl" />
+              <div className="p-3 bg-white bg-opacity-20 rounded-lg">
+                <FiAlertCircle className="text-2xl" />
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Vencidas</p>
-                <p className="text-2xl font-bold text-yellow-600">
+              <div className="flex-1">
+                <p className="text-sm opacity-90">Vencidas</p>
+                <p className="text-3xl font-bold">
                   {summary?.invoiceStats?.overdue || 0}
+                </p>
+                <p className="text-xs opacity-75 mt-1">
+                  Requieren atención
                 </p>
               </div>
             </div>
+            {(summary?.invoiceStats?.overdue || 0) > 0 && (
+              <div className="mt-4 pt-4 border-t border-white border-opacity-20">
+                <button
+                  onClick={() => setActiveTab("invoices")}
+                  className="w-full flex items-center justify-center gap-2 bg-white text-yellow-600 px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors font-medium text-sm"
+                >
+                  Ver Facturas
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -451,17 +507,25 @@ const SupplierDetail = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           Factura
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Acciones
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {invoices.length === 0 ? (
                         <tr>
-                          <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                          <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                             No hay facturas registradas
                           </td>
                         </tr>
                       ) : (
-                        invoices.map((invoice) => (
+                        invoices.map((invoice) => {
+                          const balance = invoice.total_amount - (invoice.paid_amount || 0);
+                          const isPaid = invoice.status === 'paid';
+                          const isCancelled = invoice.status === 'cancelled';
+                          
+                          return (
                           <tr key={invoice.id_invoice} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {invoice.invoice_number}
@@ -478,8 +542,8 @@ const SupplierDetail = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                               {formatCurrency(invoice.paid_amount)}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                              {formatCurrency(invoice.total_amount - (invoice.paid_amount || 0))}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                              {formatCurrency(balance)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {getStatusBadge(invoice.status)}
@@ -498,8 +562,23 @@ const SupplierDetail = () => {
                                 <span className="text-gray-400 text-sm">Sin factura</span>
                               )}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {!isPaid && !isCancelled ? (
+                                <button
+                                  onClick={() => openPaymentModal(invoice)}
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                                  title="Registrar pago"
+                                >
+                                  <FiDollarSign className="text-base" />
+                                  Pagar
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-sm">-</span>
+                              )}
+                            </td>
                           </tr>
-                        ))
+                        );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -637,6 +716,15 @@ const SupplierDetail = () => {
             </div>
           </div>
         )}
+
+        {/* Modal de Pago Rápido */}
+        <QuickPaymentModal
+          isOpen={showPaymentModal}
+          onClose={closePaymentModal}
+          invoice={selectedInvoice}
+          supplier={currentSupplier}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
       </div>
     </div>
     </>

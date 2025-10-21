@@ -708,9 +708,103 @@ const Recibo = () => {
 
     doc.setFontSize(8);
     doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
-    currentY += 30;
+    currentY += 20;
 
-    doc.setFontSize(12);
+    // ✅ SECCIÓN: DETALLE DE IMPUESTOS
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 15;
+
+    doc.setFontSize(7);
+    doc.text("DETALLE DE LOS IMPUESTOS", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 12;
+
+    // Calcular IVA (19% del total)
+    const baseImponible = totalWithDiscount / 1.19;
+    const ivaAmount = totalWithDiscount - baseImponible;
+
+    doc.setFontSize(6);
+    doc.text("Tarifa    Compra    Base/Imp    IMP", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 10;
+
+    doc.text(
+      `IVA 19%   $${totalWithDiscount.toLocaleString("es-CO")}   $${Math.round(baseImponible).toLocaleString("es-CO")}   $${Math.round(ivaAmount).toLocaleString("es-CO")}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 12;
+
+    doc.text(
+      `FORMA DE PAGO: ${isReservation ? "Reserva a Crédito" : paymentMethod}`,
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 15;
+
+    doc.setFontSize(5);
+    doc.text(
+      "Bienes Exentos - Decreto 417 del 17 de Marzo de 2020",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 15;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 12;
+
+    // ✅ SERVICIO AL CLIENTE
+    doc.setFontSize(6);
+    doc.text("Servicio al cliente", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 10;
+
+    doc.text("311 8318191", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 8;
+
+    doc.text("bonitaboutiquecumaral@gmail.com", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 15;
+
+    // ✅ POLÍTICA DE PROTECCIÓN DE DATOS
+    doc.setFontSize(5);
+    const politicaLines = doc.splitTextToSize(
+      "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales.",
+      200
+    );
+    doc.text(politicaLines, doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 8 * politicaLines.length;
+
+    doc.text("Consulta política de protección de datos en:", doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 8;
+
+    doc.setFontSize(5);
+    doc.text(
+      "www.bonitaboutiquecumaral.com/politicadedatos",
+      doc.internal.pageSize.width / 2,
+      currentY,
+      { align: "center" }
+    );
+    currentY += 15;
+
+    doc.setFontSize(10);
     doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });

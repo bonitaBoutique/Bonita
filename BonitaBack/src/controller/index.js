@@ -60,6 +60,16 @@ const { postInvoice, getAllInvoices } = require("./invoiceControllers.js");
 const { getInvoiceByStatus } = require("./invoiceControllers.js");
 const { getLastInvoiceNumber } = require("./invoiceControllers.js");
 
+// ✅ IMPORTAR CONTROLADORES DE PROMOCIONES
+const { 
+  getActivePromotion, 
+  getAllPromotions, 
+  createPromotion, 
+  updatePromotion, 
+  togglePromotion, 
+  deletePromotion 
+} = require("./Promotions/promotionController");
+
 module.exports = {
   createProduct: catchedAsync(require("./Products/createProduct")),
   getStock: catchedAsync(require("./Products/getStock")),
@@ -144,8 +154,16 @@ module.exports = {
   getReturnById: catchedAsync(getReturnById),
   getReturnStats: catchedAsync(getReturnStats),
   
-   getServerTime: catchedAsync(getServerTime),
+  getServerTime: catchedAsync(getServerTime),
   getDateRange: catchedAsync(getDateRange),
   getSystemInfo: catchedAsync(getSystemInfo),
   updateCompletedReservations: catchedAsync(updateCompletedReservations),
+
+  // ✅ CONTROLADORES DE PROMOCIONES
+  getActivePromotion: catchedAsync(getActivePromotion),
+  getAllPromotions: catchedAsync(getAllPromotions),
+  createPromotion: catchedAsync(createPromotion),
+  updatePromotion: catchedAsync(updatePromotion),
+  togglePromotion: catchedAsync(togglePromotion),
+  deletePromotion: catchedAsync(deletePromotion),
 };

@@ -17,7 +17,7 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // CORS Configuration - Permitir todos los orígenes (como estaba antes)
 app.use(cors({
   origin: true, // Permite cualquier origen
-  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200

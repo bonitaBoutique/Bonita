@@ -465,7 +465,8 @@ const ProductCard = ({ product, group, activePromotion, onProductClick }) => {
   let discountedPrice = originalPrice;
   let discountPercentage = 0;
   
-  if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+  // Si llega activePromotion, es porque ya está activa y válida
+  if (activePromotion && activePromotion.discount_percentage) {
     discountPercentage = activePromotion.discount_percentage;
     discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100));
   }

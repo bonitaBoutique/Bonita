@@ -4,9 +4,9 @@
  * Autor: Sistema de Promociones
  */
 
-const { DataTypes, Op } = require("sequelize");
+const { Op } = require("sequelize");
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const Promotion = sequelize.define(
     "Promotion",
     {

@@ -488,7 +488,7 @@ const Caja = () => {
     
     // ✅ Aplicar descuento de promoción automáticamente
     let promotionDiscount = 0;
-    if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+    if (activePromotion && activePromotion.discount_percentage) {
       promotionDiscount = activePromotion.discount_percentage;
       totalPrice = totalPrice * (1 - promotionDiscount / 100);
     }

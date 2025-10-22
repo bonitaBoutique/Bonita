@@ -591,7 +591,7 @@ const ReturnManagement = () => {
       currentY += 15;
 
       returnData.returned_products.forEach((product, index) => {
-        const productLine = `${index + 1}. ${product.id_product} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
+        const productLine = `${index + 1}. ${product.description} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
         const lines = doc.splitTextToSize(productLine, 170);
         doc.text(lines, 20, currentY);
         currentY += 12 * lines.length;
@@ -606,7 +606,7 @@ const ReturnManagement = () => {
       currentY += 15;
 
       returnData.new_products.forEach((product, index) => {
-        const productLine = `${index + 1}. ${product.id_product} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
+        const productLine = `${index + 1}. ${product.description} - Qty: ${product.quantity} - $${product.unit_price.toLocaleString("es-CO")}`;
         const lines = doc.splitTextToSize(productLine, 170);
         doc.text(lines, 20, currentY);
         currentY += 12 * lines.length;

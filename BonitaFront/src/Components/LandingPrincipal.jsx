@@ -444,13 +444,17 @@ const LandingPrincipal = () => {
 const ProductCard = ({ product, group, activePromotion, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [hasLoggedPromo, setHasLoggedPromo] = useState(false);
 
-  // ✅ Debug: Verificar si llega la promoción (solo una vez por montaje)
+  // ✅ Debug: Verificar si llega la promoción (solo una vez)
   useEffect(() => {
-    if (product.id_product === 'B001') { // Solo para el primer producto
+    if (!hasLoggedPromo && activePromotion) {
+      console.log('🎨 ProductCard - Producto:', product.description);
       console.log('🎨 ProductCard - activePromotion:', activePromotion);
+      console.log('🎨 ProductCard - discount_percentage:', activePromotion.discount_percentage);
+      setHasLoggedPromo(true);
     }
-  }, [activePromotion]);
+  }, [activePromotion, hasLoggedPromo, product.description]);
 
   // Calcular stock total del grupo
   const totalStock = group ? group.reduce((sum, p) => sum + p.stock, 0) : product.stock;

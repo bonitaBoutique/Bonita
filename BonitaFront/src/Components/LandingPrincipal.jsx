@@ -440,6 +440,13 @@ const ProductCard = ({ product, group, activePromotion, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // ✅ Debug: Verificar si llega la promoción (solo una vez por montaje)
+  useEffect(() => {
+    if (product.id_product === 'B001') { // Solo para el primer producto
+      console.log('🎨 ProductCard - activePromotion:', activePromotion);
+    }
+  }, [activePromotion]);
+
   // Calcular stock total del grupo
   const totalStock = group ? group.reduce((sum, p) => sum + p.stock, 0) : product.stock;
   const hasMultipleVariants = group && group.length > 1;

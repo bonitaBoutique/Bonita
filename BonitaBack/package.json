@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-   "scripts": {
+  "scripts": {
     "start": "node index.js",
     "dev": "nodemon -L index.js",
     "build": "node index.js",
@@ -22,6 +22,7 @@
     "colombian-invoice-library": "^1.0.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
+    "dayjs": "^1.11.18",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-session": "^1.18.0",

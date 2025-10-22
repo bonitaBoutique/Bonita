@@ -25,6 +25,7 @@ import {
   getDateForInput,
   validateDateNotFuture,
 } from "../utils/dateUtils";
+import { PAYMENT_METHODS_CAJA, renderPaymentMethodOptions } from "../utils/paymentMethods"; // ✅ IMPORTAR MÉTODOS DE PAGO
 import ServerTimeSync from "./ServerTimeSync";
 import { BASE_URL } from "../Config"; // ✅ IMPORTAR BASE_URL para GiftCard API
 
@@ -1033,21 +1034,7 @@ const Recibo = () => {
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
               >
-                <option value="" disabled>
-                  Seleccione un método
-                </option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Nequi">Nequi</option>
-                <option value="Daviplata">Daviplata</option>
-                <option value="Sistecredito">Sistecredito</option>
-                <option value="Addi">Addi</option>
-                <option value="Bancolombia">Bancolombia</option>
-                <option value="GiftCard">GiftCard</option>
-                <option value="Crédito">Reserva Crédito</option>
-                <option value="Otro">Otro</option>
+                {renderPaymentMethodOptions(PAYMENT_METHODS_CAJA)}
               </select>
 
               {showSecondPayment && (
@@ -1102,18 +1089,11 @@ const Recibo = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
                 >
                   <option value="">Seleccione</option>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                  <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Nequi">Nequi</option>
-                  <option value="Daviplata">Daviplata</option>
-                  <option value="Sistecredito">Sistecredito</option>
-                  <option value="Addi">Addi</option>
-                  <option value="Bancolombia">Bancolombia</option>
-                  <option value="GiftCard">GiftCard</option>
-                  <option value="Crédito">Reserva Crédito</option>
-                  <option value="Otro">Otro</option>
+                  {PAYMENT_METHODS_CAJA.map((method) => (
+                    <option key={method} value={method}>
+                      {method}
+                    </option>
+                  ))}
                 </select>
                 <input
                   type="number"

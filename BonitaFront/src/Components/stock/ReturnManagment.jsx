@@ -9,6 +9,7 @@ import {
   fetchProducts,
 } from "../../Redux/Actions/actions";
 import { getColombiaDateTime, formatDateForDisplay } from "../../utils/dateUtils";
+import { PAYMENT_METHODS_RETURNS } from "../../utils/paymentMethods"; // ✅ IMPORTAR MÉTODOS DE PAGO
 import { BASE_URL } from "../../Config";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
@@ -2172,7 +2173,7 @@ const searchReceipt = useCallback(async () => {
                 </p>
                 
                 <div className="space-y-3 mb-6">
-                  {["Efectivo", "Tarjeta de Crédito", "Tarjeta de Débito", "Transferencia", "Nequi", "Daviplata"].map((method) => (
+                  {PAYMENT_METHODS_RETURNS.map((method) => (
                     <label
                       key={method}
                       className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"

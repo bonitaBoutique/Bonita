@@ -22,18 +22,11 @@ import {
 function App() {
   const location = useLocation();
   const dispatch = useDispatch();
-  const activePromotion = useSelector((state) => state.promotions?.activePromotion);
 
-  // ✅ Cargar promoción activa al montar la app
+  // Cargar promoción activa al montar la app
   useEffect(() => {
-    console.log('🎯 App.jsx - Llamando a fetchActivePromotion...');
     dispatch(fetchActivePromotion());
   }, [dispatch]);
-
-  // ✅ Debug: Mostrar en consola cuando cambia la promoción activa
-  useEffect(() => {
-    console.log('🎉 PROMOCIÓN ACTIVA EN APP:', activePromotion);
-  }, [activePromotion]);
 
   const isAdminRoute = (pathname) => {
     return adminPaths.some(path => pathname.startsWith(path));

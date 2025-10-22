@@ -14,12 +14,7 @@ const LandingPrincipal = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const searchResults = useSelector((state) => state.searchResults || []);
-  const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
-  
-  // ✅ Debug: Verificar promoción en Landing
-  useEffect(() => {
-    console.log('🏪 LandingPrincipal - activePromotion:', activePromotion);
-  }, [activePromotion]);
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion);
   
   // Estados locales
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -444,17 +439,6 @@ const LandingPrincipal = () => {
 const ProductCard = ({ product, group, activePromotion, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [hasLoggedPromo, setHasLoggedPromo] = useState(false);
-
-  // ✅ Debug: Verificar si llega la promoción (solo una vez)
-  useEffect(() => {
-    if (!hasLoggedPromo && activePromotion) {
-      console.log('🎨 ProductCard - Producto:', product.description);
-      console.log('🎨 ProductCard - activePromotion:', activePromotion);
-      console.log('🎨 ProductCard - discount_percentage:', activePromotion.discount_percentage);
-      setHasLoggedPromo(true);
-    }
-  }, [activePromotion, hasLoggedPromo, product.description]);
 
   // Calcular stock total del grupo
   const totalStock = group ? group.reduce((sum, p) => sum + p.stock, 0) : product.stock;

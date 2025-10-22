@@ -14,24 +14,9 @@ app.use(express.json()); // Solo este para manejar JSON
 app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// CORS Configuration - Permitir localhost y dominio de producción
-const allowedOrigins = [
-  'http://localhost:5173',
-  'https://www.bonitaboutiquecumaral.com',
-  'https://bonitaboutiquecumaral.com'
-];
-
+// CORS Configuration - Permitir todos los orígenes (como estaba antes)
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir requests sin origin (como Postman, apps móviles, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Permite cualquier origen
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,

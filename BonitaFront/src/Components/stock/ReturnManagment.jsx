@@ -570,7 +570,13 @@ const ReturnManagement = () => {
     doc.text(`Diferencia a pagar: $${difference.toLocaleString("es-CO")}`, 20, currentY);
     currentY += 15;
 
-    doc.text(`Método de pago: ${paymentMethod || 'Efectivo'}`, 20, currentY);
+    // ✅ MOSTRAR MÉTODO DE PAGO (con logs para debugging)
+    console.log("💳 [PDF] paymentMethod recibido:", paymentMethod);
+    console.log("💳 [PDF] selectedPaymentMethod:", selectedPaymentMethod);
+    const displayPaymentMethod = paymentMethod || selectedPaymentMethod || 'Efectivo';
+    console.log("💳 [PDF] método final a mostrar:", displayPaymentMethod);
+    
+    doc.text(`Método de pago: ${displayPaymentMethod}`, 20, currentY);
     currentY += 20;
 
     doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
@@ -635,10 +641,28 @@ const ReturnManagement = () => {
     });
     currentY += 20;
 
-    // ✅ Información del cajero (nombre y apellido)
-    const cashierName = user?.first_name && user?.last_name 
-      ? `${user.first_name} ${user.last_name}`
-      : cashierDocument || 'N/A';
+    // ✅ INFORMACIÓN DEL CAJERO (priorizar datos validados)
+    console.log("👤 [PDF] user de Redux:", user);
+    console.log("👤 [PDF] cashierDocument:", cashierDocument);
+    console.log("👤 [PDF] cashierDocumentValidation:", cashierDocumentValidation);
+    
+    let cashierName = 'N/A';
+    
+    // 1. Prioridad: Usar datos del usuario validado en cashierDocumentValidation
+    if (cashierDocumentValidation?.user) {
+      cashierName = `${cashierDocumentValidation.user.first_name || ''} ${cashierDocumentValidation.user.last_name || ''}`.trim();
+      console.log("👤 [PDF] Nombre obtenido de cashierDocumentValidation:", cashierName);
+    }
+    // 2. Fallback: Usar datos del usuario de Redux
+    else if (user?.first_name && user?.last_name) {
+      cashierName = `${user.first_name} ${user.last_name}`;
+      console.log("👤 [PDF] Nombre obtenido de Redux user:", cashierName);
+    }
+    // 3. Último fallback: Mostrar solo el documento
+    else if (cashierDocument) {
+      cashierName = `Cajero ${cashierDocument}`;
+      console.log("👤 [PDF] Fallback a documento:", cashierName);
+    }
     
     doc.setFontSize(10);
     doc.text(`Atendido por: ${cashierName}`, 20, currentY);
@@ -675,7 +699,7 @@ const ReturnManagement = () => {
     doc.output("dataurlnewwindow");
     
     console.log("✅ PDF de recibo de diferencia generado exitosamente");
-  }, [originalReceipt, totals, returnData, cashierDocument, user]);
+  }, [originalReceipt, totals, returnData, cashierDocument, cashierDocumentValidation, user, selectedPaymentMethod]);
 
   // ✅ LOG DEL ESTADO ACTUAL AL RENDERIZAR
   console.log("📊 ESTADO ACTUAL:", {

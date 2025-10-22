@@ -1,6 +1,12 @@
 const { Return, Receipt, User, conn: sequelize } = require("../../data");
 const { Op } = require("sequelize");
 const response = require("../../utils/response");
+const dayjs = require('dayjs');
+const timezone = require('dayjs/plugin/timezone');
+const utc = require('dayjs/plugin/utc');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // ✅ OBTENER TODAS LAS DEVOLUCIONES CON PAGINACIÓN
 const getReturns = async (req, res) => {
@@ -15,17 +21,26 @@ const getReturns = async (req, res) => {
       where.status = status;
     }
     
+    // ✅ AJUSTAR FECHAS CON TIMEZONE DE COLOMBIA
     if (date_from && date_to) {
+      // Convertir las fechas a Colombia timezone y luego a UTC para la query
+      const startDate = dayjs.tz(date_from, 'America/Bogota').startOf('day').utc().format();
+      const endDate = dayjs.tz(date_to, 'America/Bogota').endOf('day').utc().format();
+      
       where.return_date = {
-        [Op.between]: [date_from, date_to]
+        [Op.between]: [startDate, endDate]
       };
     } else if (date_from) {
+      const startDate = dayjs.tz(date_from, 'America/Bogota').startOf('day').utc().format();
+      
       where.return_date = {
-        [Op.gte]: date_from
+        [Op.gte]: startDate
       };
     } else if (date_to) {
+      const endDate = dayjs.tz(date_to, 'America/Bogota').endOf('day').utc().format();
+      
       where.return_date = {
-        [Op.lte]: date_to
+        [Op.lte]: endDate
       };
     }
 

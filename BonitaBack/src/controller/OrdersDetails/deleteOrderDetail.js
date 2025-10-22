@@ -1,4 +1,4 @@
-const { OrderDetail, Product, StockMovement } = require("../../data");
+const { OrderDetail, Product, StockMovement, Receipt } = require("../../data");
 const response = require("../../utils/response");
 const { v4: uuidv4 } = require("uuid");
 
@@ -8,19 +8,33 @@ module.exports = async (req, res) => {
   try {
     const orderDetailToDelete = await OrderDetail.findOne({
       where: { id_orderDetail: id },
-      include: {
-        model: Product,
-        as: "products",
-        through: {
-          attributes: ["quantity"],
+      include: [
+        {
+          model: Product,
+          as: "products",
+          through: {
+            attributes: ["quantity"],
+          },
         },
-      },
+        {
+          model: Receipt,
+          attributes: ["id_receipt", "total_amount", "payMethod"],
+          required: false
+        }
+      ],
     });
 
     if (!orderDetailToDelete) {
       return response(res, 404, { error: "Order detail not found" });
     }
 
+    // ✅ VERIFICAR SI TIENE RECIBO ASOCIADO
+    const hasReceipt = orderDetailToDelete.Receipt;
+    if (hasReceipt) {
+      console.log(`⚠️ Orden ${id} tiene recibo asociado: #${hasReceipt.id_receipt}`);
+    }
+
+    // ✅ RESTAURAR STOCK DE LOS PRODUCTOS
     if (orderDetailToDelete.products && orderDetailToDelete.products.length > 0) {
       for (const product of orderDetailToDelete.products) {
         // --- DEBUGGING: Imprime la estructura del objeto product ---
@@ -52,6 +66,15 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ✅ BORRAR EL RECIBO ASOCIADO SI EXISTE
+    if (hasReceipt) {
+      await Receipt.destroy({
+        where: { id_receipt: hasReceipt.id_receipt }
+      });
+      console.log(`✅ Recibo #${hasReceipt.id_receipt} eliminado junto con la orden ${id}`);
+    }
+
+    // ✅ BORRAR LA ORDEN
     await orderDetailToDelete.destroy();
 
     console.log(`Order detail ${id} deleted successfully.`);

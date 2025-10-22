@@ -105,25 +105,50 @@ const OrdenesPendientes = ({ filterType, mode, onSelectOrder }) => {
   };
 
   const handleDeleteOrder = async (id_orderDetail) => {
+    // ✅ BUSCAR LA ORDEN PARA VERIFICAR SI TIENE RECIBO
+    const order = Array.isArray(orders) 
+      ? orders.find((o) => o.id_orderDetail === id_orderDetail)
+      : null;
+
+    const hasReceipt = order && order.receipt_info;
+
+    // ✅ MENSAJE DIFERENTE SI TIENE RECIBO
+    const alertText = hasReceipt
+      ? `⚠️ ATENCIÓN: Esta orden tiene un recibo asociado (#${order.receipt_info.id_receipt}).
+
+📄 Detalles del recibo:
+• Método de pago: ${order.receipt_info.payMethod}
+• Monto: $${order.receipt_info.total_amount?.toLocaleString('es-CO')}
+
+🗑️ Si eliminas esta orden, también se eliminará el recibo de manera permanente.
+
+¿Deseas continuar?`
+      : `Esta acción borrará la orden N° ${id_orderDetail} definitivamente. ¡No podrás revertir esto!`;
+
     const result = await Swal.fire({
-      title: "¿Estás seguro?",
-      text: `Esta acción borrará la orden N° ${id_orderDetail} definitivamente. ¡No podrás revertir esto!`,
+      title: hasReceipt ? "⚠️ Orden con Recibo Asociado" : "¿Estás seguro?",
+      text: alertText,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Sí, ¡bórrala!",
+      confirmButtonText: hasReceipt ? "Sí, borrar orden y recibo" : "Sí, ¡bórrala!",
       cancelButtonText: "Cancelar",
     });
 
     if (result.isConfirmed) {
       try {
         await dispatch(deleteOrderDetail(id_orderDetail));
+        
+        const successMessage = hasReceipt
+          ? `La orden N° ${id_orderDetail} y su recibo #${order.receipt_info.id_receipt} han sido eliminados.`
+          : `La orden N° ${id_orderDetail} ha sido eliminada.`;
+
         Swal.fire({
           title: "¡Borrada!",
-          text: `La orden N° ${id_orderDetail} ha sido eliminada.`,
+          text: successMessage,
           icon: "success",
-          timer: 1500,
+          timer: 2000,
           showConfirmButton: false,
         });
         // ✅ Refrescar la lista después de eliminar

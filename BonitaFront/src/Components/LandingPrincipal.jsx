@@ -16,6 +16,11 @@ const LandingPrincipal = () => {
   const searchResults = useSelector((state) => state.searchResults || []);
   const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
   
+  // ✅ Debug: Verificar promoción en Landing
+  useEffect(() => {
+    console.log('🏪 LandingPrincipal - activePromotion:', activePromotion);
+  }, [activePromotion]);
+  
   // Estados locales
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [displayedProducts, setDisplayedProducts] = useState([]);

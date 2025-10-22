@@ -652,7 +652,7 @@ const rootReducer = (state = initialState, action) => {
       const activePromotion = state.promotions?.activePromotion;
       let finalPrice = action.payload.priceSell;
       
-      if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+      if (activePromotion && activePromotion.discount_percentage) {
         const discount = activePromotion.discount_percentage;
         finalPrice = action.payload.priceSell * (1 - discount / 100);
       }

@@ -187,11 +187,20 @@ const Recibo = () => {
   useEffect(() => {
     if (userInfo && userInfo.n_document) {
       setLoadingCashier(true);
+      console.log('🔵 [Recibo] Cargando datos del cajero para:', userInfo.n_document);
+      console.log('🔵 [Recibo] userInfo completo:', userInfo);
+      
       dispatch(fetchUserByDocument(userInfo.n_document)).finally(() => {
         setLoadingCashier(false);
       });
     }
   }, [userInfo, dispatch]);
+
+  // ✅ DEBUG: Verificar cashierInfo cuando cambie
+  useEffect(() => {
+    console.log('👤 [Recibo] cashierInfo actualizado:', cashierInfo);
+    console.log('👤 [Recibo] userInfo actual:', userInfo);
+  }, [cashierInfo, userInfo]);
 
   // ✅ FUNCIÓN PARA VALIDAR GIFTCARD
   const validateGiftCard = async (email) => {
@@ -684,27 +693,24 @@ const Recibo = () => {
 
     // ✅ INFORMACIÓN DEL CAJERO CORREGIDA
     doc.setFontSize(10);
+    
+    // Determinar el nombre del cajero de las diferentes fuentes posibles
+    let cashierName = "N/A";
+    
+    if (cashierInfo && cashierInfo.first_name && cashierInfo.last_name) {
+      cashierName = `${cashierInfo.first_name} ${cashierInfo.last_name}`;
+    } else if (userInfo && userInfo.first_name && userInfo.last_name) {
+      cashierName = `${userInfo.first_name} ${userInfo.last_name}`;
+    }
+    
+    console.log('📄 [PDF] Datos para cajero:', { userInfo, cashierInfo, cashierName });
+    
     doc.text(
-      `Atendido por: ${
-        userInfo 
-          ? `${userInfo?.first_name} ${userInfo?.last_name}`
-          : cashierInfo
-          ? `${cashierInfo?.first_name} ${cashierInfo?.last_name}`
-          : "N/A"
-      }`,
+      `Atendido por: ${cashierName}`,
       20,
       currentY
     );
-    currentY += 15;
-
-    if (userInfo?.n_document || cashierInfo?.n_document) {
-      doc.text(
-        `Cajero: ${userInfo?.n_document || cashierInfo?.n_document}`,
-        20,
-        currentY
-      );
-      currentY += 15;
-    }
+    currentY += 20;
 
     doc.setFontSize(8);
     doc.text(`Orden: ${order.id_orderDetail}`, 20, currentY);
@@ -741,7 +747,9 @@ const Recibo = () => {
     currentY += 12;
 
     doc.text(
+
       `FORMA DE PAGO: ${isReservation ? "Reserva a Crédito" : paymentMethod}`,
+
       doc.internal.pageSize.width / 2,
       currentY,
       { align: "center" }
@@ -769,12 +777,14 @@ const Recibo = () => {
     });
     currentY += 10;
 
+
     doc.text("311 8318191", doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
     currentY += 8;
 
     doc.text("bonitaboutiquecumaral@gmail.com", doc.internal.pageSize.width / 2, currentY, {
+
       align: "center",
     });
     currentY += 15;
@@ -782,13 +792,17 @@ const Recibo = () => {
     // ✅ POLÍTICA DE PROTECCIÓN DE DATOS
     doc.setFontSize(5);
     const politicaLines = doc.splitTextToSize(
+
       "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales.",
-      200
+
+      "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales. Consulta política de protección de datos en:"
+     
     );
     doc.text(politicaLines, doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
     currentY += 8 * politicaLines.length;
+
 
     doc.text("Consulta política de protección de datos en:", doc.internal.pageSize.width / 2, currentY, {
       align: "center",
@@ -798,6 +812,7 @@ const Recibo = () => {
     doc.setFontSize(5);
     doc.text(
       "www.bonitaboutiquecumaral.com/politicadedatos",
+
       doc.internal.pageSize.width / 2,
       currentY,
       { align: "center" }
@@ -1041,13 +1056,16 @@ const Recibo = () => {
                   Seleccione un método
                 </option>
                 <option value="Efectivo">Efectivo</option>
-                <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Nequi">Nequi</option>
+                <option value="Daviplata">Daviplata</option>
+                <option value="Sistecredito">Sistecredito</option>
+                <option value="Addi">Addi</option>
+                <option value="Bancolombia">Bancolombia</option>
                 <option value="GiftCard">GiftCard</option>
                 <option value="Crédito">Reserva Crédito</option>
-                <option value="Addi">Addi</option>
-                <option value="Nequi">Nequi</option>
-                <option value="Sistecredito">Sistecredito</option>
-                <option value="Bancolombia">Bancolombia</option>
                 <option value="Otro">Otro</option>
               </select>
 
@@ -1104,13 +1122,16 @@ const Recibo = () => {
                 >
                   <option value="">Seleccione</option>
                   <option value="Efectivo">Efectivo</option>
-                  <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
-                  <option value="Crédito">Reserva Crédito</option>
-                  <option value="Addi">Addi</option>
-                  <option value="Sistecredito">Sistecredito</option>
+                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                  <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                  <option value="Transferencia">Transferencia</option>
                   <option value="Nequi">Nequi</option>
+                  <option value="Daviplata">Daviplata</option>
+                  <option value="Sistecredito">Sistecredito</option>
+                  <option value="Addi">Addi</option>
                   <option value="Bancolombia">Bancolombia</option>
                   <option value="GiftCard">GiftCard</option>
+                  <option value="Crédito">Reserva Crédito</option>
                   <option value="Otro">Otro</option>
                 </select>
                 <input

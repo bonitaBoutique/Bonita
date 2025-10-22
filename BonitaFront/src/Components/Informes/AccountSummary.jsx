@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getClientAccountBalance, fetchOrdersByIdOrder } from "../../Redux/Actions/actions"; // ✅ Usar la misma action
 import { useParams, useNavigate } from "react-router-dom";
+// ✅ Importar utilidades de fecha para Colombia
+import { formatDateForDisplay, formatMovementDate } from "../../utils/dateUtils";
 
 const AccountSummary = (props) => {
   const params = useParams();
@@ -325,7 +327,7 @@ const AccountSummary = (props) => {
                     {giftCard.reference_type === 'RETURN_CREDIT' && (
                       <p><strong>Recibo:</strong> #{giftCard.reference_id}</p>
                     )}
-                    <p><strong>Creada:</strong> {new Date(giftCard.createdAt).toLocaleDateString('es-CO')}</p>
+                    <p><strong>Creada:</strong> {formatMovementDate(giftCard.createdAt)}</p>
                     {giftCard.description && (
                       <p><strong>Descripción:</strong> {giftCard.description}</p>
                     )}
@@ -363,9 +365,7 @@ const AccountSummary = (props) => {
                   <th className="py-3 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     📊 Estado
                   </th>
-                  <th className="py-3 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    💳 Transacción
-                  </th>
+                  
                   <th className="py-3 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     🏪 Punto de Venta
                   </th>
@@ -378,11 +378,7 @@ const AccountSummary = (props) => {
                 {paginatedMovimientos.map((mov, idx) => (
                   <tr key={mov.id_orderDetail || idx} className="hover:bg-gray-50 transition-colors duration-200">
                     <td className="py-3 px-4 text-sm text-gray-700">
-                      {new Date(mov.fecha).toLocaleDateString('es-CO', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+                      {formatDateForDisplay(mov.fecha)}
                     </td>
                     <td
                       className="py-3 px-4 text-sm font-mono text-gray-700 cursor-pointer"
@@ -418,19 +414,7 @@ const AccountSummary = (props) => {
                         {mov.state_order || 'Sin estado'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        mov.transaction_status === 'Aprobado'
-                          ? 'bg-green-100 text-green-800'
-                          : mov.transaction_status === 'Pendiente'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : mov.transaction_status === 'Rechazado'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {mov.transaction_status || 'N/A'}
-                      </span>
-                    </td>
+                    
                     <td className="py-3 px-4 text-sm text-gray-700">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         mov.pointOfSale === 'Online'
@@ -452,7 +436,7 @@ const AccountSummary = (props) => {
                                 style: "currency",
                                 currency: "COP",
                               }) || 'N/A'}</p>
-                              <p><strong>Vencimiento:</strong> {reservation.dueDate ? new Date(reservation.dueDate).toLocaleDateString('es-CO') : 'N/A'}</p>
+                              <p><strong>Vencimiento:</strong> {reservation.dueDate ? formatDateForDisplay(reservation.dueDate) : 'N/A'}</p>
                               <p><strong>Estado:</strong> 
                                 <span className={`ml-1 px-1 py-0.5 rounded text-xs ${
                                   reservation.status === 'Completada' ? 'bg-green-100 text-green-800' :
@@ -565,8 +549,8 @@ const AccountSummary = (props) => {
         <h3 className="text-lg font-semibold mb-2 text-gray-700">ℹ️ Información Adicional</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
           <div>
-            <p><strong>Fecha de registro:</strong> {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-CO') : 'No disponible'}</p>
-            <p><strong>Última actualización:</strong> {user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('es-CO') : 'No disponible'}</p>
+            <p><strong>Fecha de registro:</strong> {user.createdAt ? formatDateForDisplay(user.createdAt) : 'No disponible'}</p>
+            <p><strong>Última actualización:</strong> {user.updatedAt ? formatDateForDisplay(user.updatedAt) : 'No disponible'}</p>
           </div>
           <div>
             <p><strong>Estado del cliente:</strong> {user.deletedAt ? '❌ Inactivo' : '✅ Activo'}</p>

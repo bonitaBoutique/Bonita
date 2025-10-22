@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchReturns } from '../../Redux/Actions/actions';
+import { fetchReturns, fetchReturnById } from '../../Redux/Actions/actions';
 import { Link, useNavigate } from 'react-router-dom';
 import TruncatedText from '../Informes/TruncatedText';
 import * as XLSX from 'xlsx';
+import ReturnDetailModal from './ReturnDetailModal';
 
 const ReturnsList = () => {
   const dispatch = useDispatch();
@@ -27,6 +28,11 @@ const ReturnsList = () => {
     date_to: '',
     search: ''
   });
+
+  // ✅ Estado para el modal de detalle
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedReturn, setSelectedReturn] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // ✅ Cargar datos al montar el componente
   useEffect(() => {
@@ -100,6 +106,32 @@ const ReturnsList = () => {
     }
   };
 
+  // ✅ Abrir modal con detalles completos de la devolución
+  const handleViewDetail = async (returnId) => {
+    setLoadingDetail(true);
+    try {
+      const result = await dispatch(fetchReturnById(returnId));
+      
+      if (result.success && result.data) {
+        setSelectedReturn(result.data);
+        setShowDetailModal(true);
+      } else {
+        alert(result.error || 'Error al cargar los detalles de la devolución');
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar detalle de devolución:', error);
+      alert('Error al cargar los detalles de la devolución');
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  // ✅ Cerrar modal
+  const handleCloseModal = () => {
+    setShowDetailModal(false);
+    setSelectedReturn(null);
+  };
+
   // ✅ Formatear fecha
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('es-CO', {
@@ -147,6 +179,20 @@ const ReturnsList = () => {
     }
   };
 
+  // ✅ Obtener motivos de productos devueltos
+  const getProductReasons = (returnItem) => {
+    if (!returnItem.returned_products || returnItem.returned_products.length === 0) {
+      return 'Sin productos devueltos';
+    }
+    
+    const reasons = returnItem.returned_products
+      .map(product => product.reason)
+      .filter(reason => reason && reason.trim() !== '')
+      .join(', ');
+    
+    return reasons || 'Sin especificar';
+  };
+
   // ✅ Exportar a Excel
   const handleExportToExcel = () => {
     if (!returns || returns.length === 0) {
@@ -167,7 +213,7 @@ const ReturnsList = () => {
       'Total_Devuelto': parseFloat(returnItem.total_returned || 0),
       'Total_Nueva_Compra': parseFloat(returnItem.total_new_purchase || 0),
       'Diferencia': parseFloat(returnItem.difference_amount || 0),
-      'Motivo': returnItem.reason || 'Sin especificar',
+      'Motivo': getProductReasons(returnItem),
       'Nuevo_Recibo': returnItem.new_receipt_id || 'N/A',
       'Productos_Devueltos': returnItem.returned_products?.length || 0,
       'Productos_Nuevos': returnItem.new_products?.length || 0
@@ -421,7 +467,7 @@ const ReturnsList = () => {
             {returns.length > 0 ? (
               returns.map((returnItem) => (
                 <tr
-                  key={returnItem.id}
+                  key={returnItem.id_return || returnItem.id}
                   className="transition-colors duration-200 hover:bg-gray-50"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -456,15 +502,16 @@ const ReturnsList = () => {
                     ${parseFloat(returnItem.total_returned || 0).toLocaleString('es-CO')}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
-                    <TruncatedText text={returnItem.reason || 'Sin especificar'} maxLength={30} />
+                    <TruncatedText text={getProductReasons(returnItem)} maxLength={30} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <Link
-                      to={`/returns/${returnItem.id_return}`}
-                      className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded text-xs"
+                    <button
+                      onClick={() => handleViewDetail(returnItem.id_return)}
+                      disabled={loadingDetail}
+                      className="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      👁️ Ver Detalles
-                    </Link>
+                      👁️ Ver Detalle
+                    </button>
                   </td>
                 </tr>
               ))
@@ -568,6 +615,13 @@ const ReturnsList = () => {
           ← Volver
         </button>
       </div>
+
+      {/* ✅ Modal de Detalle */}
+      <ReturnDetailModal
+        isOpen={showDetailModal}
+        onClose={handleCloseModal}
+        returnData={selectedReturn}
+      />
     </div>
   );
 };

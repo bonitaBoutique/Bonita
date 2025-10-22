@@ -219,14 +219,15 @@ const promotionSlice = createSlice({
         
         if (index !== -1) {
           state.allPromotions[index].is_active = action.payload.is_active;
+          
+          // Actualizar promoción activa con la data completa del array
+          if (action.payload.is_active) {
+            state.activePromotion = state.allPromotions[index];
+          }
         }
         
-        // Actualizar promoción activa
-        if (action.payload.is_active) {
-          // Buscar la promoción completa
-          const fullPromotion = state.allPromotions[index];
-          state.activePromotion = fullPromotion;
-        } else if (state.activePromotion?.id_promotion === action.payload.id_promotion) {
+        // Si se desactiva, limpiar activePromotion solo si es la misma
+        if (!action.payload.is_active && state.activePromotion?.id_promotion === action.payload.id_promotion) {
           state.activePromotion = null;
         }
       })

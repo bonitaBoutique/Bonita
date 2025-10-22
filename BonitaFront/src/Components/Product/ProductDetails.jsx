@@ -17,6 +17,7 @@ const ProductDetails = () => {
   // Si el detalle viene con un grupo (de la lista agrupada), se usará ese grupo para extraer tallas
   const groupFromState = location.state?.group;
   const product = useSelector((state) => state.product);
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
 
   useEffect(() => {
     // Si se envía un grupo, ya tenemos un representante; de lo contrario, consultamos el back
@@ -175,12 +176,55 @@ const ProductDetails = () => {
                   </div>
                 )}
                 
-                <div className="text-2xl font-bold text-colorBeige">
-                  {new Intl.NumberFormat("es-CO", {
-                    style: "currency",
-                    currency: "COP",
-                    minimumFractionDigits: 0,
-                  }).format(referenceProduct.priceSell)}
+                {/* ✅ PRECIO CON DESCUENTO */}
+                <div className="space-y-2">
+                  {activePromotion && activePromotion.discount_percentage ? (
+                    <>
+                      {/* Badge de descuento */}
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                        <span>🎉 {activePromotion.title}</span>
+                        <span className="bg-white/20 px-2 py-0.5 rounded-full">-{activePromotion.discount_percentage}%</span>
+                      </div>
+                      
+                      {/* Precios */}
+                      <div className="flex items-center gap-3">
+                        {/* Precio original tachado */}
+                        <span className="text-xl text-gray-400 line-through">
+                          {new Intl.NumberFormat("es-CO", {
+                            style: "currency",
+                            currency: "COP",
+                            minimumFractionDigits: 0,
+                          }).format(referenceProduct.priceSell)}
+                        </span>
+                        
+                        {/* Precio con descuento */}
+                        <span className="text-3xl font-bold text-purple-600">
+                          {new Intl.NumberFormat("es-CO", {
+                            style: "currency",
+                            currency: "COP",
+                            minimumFractionDigits: 0,
+                          }).format(Math.round(referenceProduct.priceSell * (1 - activePromotion.discount_percentage / 100)))}
+                        </span>
+                      </div>
+                      
+                      {/* Ahorro */}
+                      <p className="text-sm text-green-600 font-semibold">
+                        ¡Ahorras {new Intl.NumberFormat("es-CO", {
+                          style: "currency",
+                          currency: "COP",
+                          minimumFractionDigits: 0,
+                        }).format(Math.round(referenceProduct.priceSell * activePromotion.discount_percentage / 100))}!
+                      </p>
+                    </>
+                  ) : (
+                    <div className="text-2xl font-bold text-colorBeige">
+                      {new Intl.NumberFormat("es-CO", {
+                        style: "currency",
+                        currency: "COP",
+                        minimumFractionDigits: 0,
+                      }).format(referenceProduct.priceSell)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="prose max-w-none">

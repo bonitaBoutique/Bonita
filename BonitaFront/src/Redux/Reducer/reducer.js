@@ -311,6 +311,7 @@ const initialState = {
           0
         )
       : 0,
+    appliedPromotion: null, // ✅ Promoción aplicada al carrito
   },
   invoice: {
     loading: false,
@@ -646,6 +647,16 @@ const rootReducer = (state = initialState, action) => {
       const existingItem = state.cart.items.find(
         (item) => item.id_product === action.payload.id_product
       );
+      
+      // ✅ Calcular precio con promoción si existe
+      const activePromotion = state.promotions?.activePromotion;
+      let finalPrice = action.payload.priceSell;
+      
+      if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+        const discount = activePromotion.discount_percentage;
+        finalPrice = action.payload.priceSell * (1 - discount / 100);
+      }
+      
       if (existingItem) {
         return {
           ...state,
@@ -657,7 +668,8 @@ const rootReducer = (state = initialState, action) => {
                 : item
             ),
             totalItems: state.cart.totalItems + 1,
-            totalPrice: state.cart.totalPrice + action.payload.priceSell,
+            totalPrice: state.cart.totalPrice + finalPrice,
+            appliedPromotion: activePromotion || state.cart.appliedPromotion, // Guardar promo aplicada
           },
         };
       } else {
@@ -665,9 +677,15 @@ const rootReducer = (state = initialState, action) => {
           ...state,
           cart: {
             ...state.cart,
-            items: [...state.cart.items, { ...action.payload, quantity: 1 }],
+            items: [...state.cart.items, { 
+              ...action.payload, 
+              quantity: 1,
+              originalPrice: action.payload.priceSell, // Guardar precio original
+              finalPrice: finalPrice, // Guardar precio con descuento
+            }],
             totalItems: state.cart.totalItems + 1,
-            totalPrice: state.cart.totalPrice + action.payload.priceSell,
+            totalPrice: state.cart.totalPrice + finalPrice,
+            appliedPromotion: activePromotion || state.cart.appliedPromotion, // Guardar promo aplicada
           },
         };
       }
@@ -676,6 +694,9 @@ const rootReducer = (state = initialState, action) => {
         (item) => item.id_product === action.payload
       );
       if (!itemToRemove) return state;
+
+      // ✅ Usar finalPrice si existe, sino priceSell
+      const priceToRemove = itemToRemove.finalPrice || itemToRemove.priceSell;
 
       return {
         ...state,
@@ -687,10 +708,16 @@ const rootReducer = (state = initialState, action) => {
           totalItems: state.cart.totalItems - itemToRemove.quantity,
           totalPrice:
             state.cart.totalPrice -
-            itemToRemove.priceSell * itemToRemove.quantity,
+            priceToRemove * itemToRemove.quantity,
         },
       };
     case INCREMENT_QUANTITY:
+      const itemToIncrement = state.cart.items.find(
+        (item) => item.id_product === action.payload
+      );
+      // ✅ Usar finalPrice si existe, sino priceSell
+      const priceToIncrement = itemToIncrement?.finalPrice || itemToIncrement?.priceSell || 0;
+      
       return {
         ...state,
         cart: {
@@ -701,16 +728,16 @@ const rootReducer = (state = initialState, action) => {
               : item
           ),
           totalItems: state.cart.totalItems + 1,
-          totalPrice:
-            state.cart.totalPrice +
-            state.cart.items.find((item) => item.id_product === action.payload)
-              .priceSell,
+          totalPrice: state.cart.totalPrice + priceToIncrement,
         },
       };
     case DECREMENT_QUANTITY:
       const itemToDecrement = state.cart.items.find(
         (item) => item.id_product === action.payload
       );
+      // ✅ Usar finalPrice si existe, sino priceSell
+      const priceToDecrement = itemToDecrement?.finalPrice || itemToDecrement?.priceSell || 0;
+      
       if (itemToDecrement.quantity === 1) {
         return {
           ...state,
@@ -720,7 +747,7 @@ const rootReducer = (state = initialState, action) => {
               (item) => item.id_product !== action.payload
             ),
             totalItems: state.cart.totalItems - 1,
-            totalPrice: state.cart.totalPrice - itemToDecrement.priceSell,
+            totalPrice: state.cart.totalPrice - priceToDecrement,
           },
         };
       }
@@ -734,7 +761,7 @@ const rootReducer = (state = initialState, action) => {
               : item
           ),
           totalItems: state.cart.totalItems - 1,
-          totalPrice: state.cart.totalPrice - itemToDecrement.priceSell,
+          totalPrice: state.cart.totalPrice - priceToDecrement,
         },
       };
     case CLEAR_CART:

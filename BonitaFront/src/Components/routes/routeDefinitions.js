@@ -100,6 +100,10 @@ export const adminRoutes = [
     path: '/panelProductos', 
     component: lazy(() => import('../Product/PanelProductos')) 
   },
+  { 
+    path: '/promo-manager', 
+    component: lazy(() => import('../Promotions/PromoManager')) 
+  },
    { 
     path: '/stock/movements', 
     component: lazy(() => import('../stock/StockMovements'))
@@ -247,6 +251,7 @@ export const adminPaths = [
   '/panel/seller',
   '/panel/ordenesPendientes',
   '/panelProductos',
+  '/promo-manager',
   '/panelProveedores',
   '/updateProduct',
   '/panel/createProducts',

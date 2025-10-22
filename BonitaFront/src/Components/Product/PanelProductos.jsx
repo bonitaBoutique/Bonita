@@ -76,7 +76,7 @@ const PanelProductos = () => {
               </div>
             </Link>
 
-            {/* ✅ NUEVA CARD: Devoluciones */}
+            {/* Devoluciones */}
             <Link 
               to="/returns/management" 
               className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 p-6 text-center border-l-4 border-red-500"
@@ -92,6 +92,25 @@ const PanelProductos = () => {
               </p>
               <div className="mt-3 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium">
                 Gestionar
+              </div>
+            </Link>
+
+            {/* ✅ NUEVA CARD: Promociones */}
+            <Link 
+              to="/promo-manager" 
+              className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 p-6 text-center border-l-4 border-purple-500"
+            >
+              <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                🎉
+              </div>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Promociones
+              </h3>
+              <p className="text-gray-600 text-xs mb-3">
+                Descuentos globales con banners
+              </p>
+              <div className="mt-3 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium">
+                Gestionar Promos
               </div>
             </Link>
           </div>

@@ -33,6 +33,7 @@ const Caja = () => {
   const searchTerm = useSelector((state) => state.searchTerm);
   const serverTime = useSelector((state) => state.serverTime);
   const userTaxxa = useSelector((state) => state.userTaxxa);
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
 
   // ✅ ESTADOS BÁSICOS
   const [orderDate, setOrderDate] = useState('');
@@ -480,15 +481,29 @@ const Caja = () => {
   };
 
   const calculateTotals = () => {
-    const totalPrice = selectedProducts.reduce(
+    let totalPrice = selectedProducts.reduce(
       (acc, item) => acc + (item.priceSell * item.quantity),
       0
     );
+    
+    // ✅ Aplicar descuento de promoción automáticamente
+    let promotionDiscount = 0;
+    if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+      promotionDiscount = activePromotion.discount_percentage;
+      totalPrice = totalPrice * (1 - promotionDiscount / 100);
+    }
+    
     const totalQuantity = selectedProducts.reduce(
       (acc, item) => acc + item.quantity,
       0
     );
-    return { totalPrice, totalQuantity };
+    
+    return { 
+      totalPrice: Math.round(totalPrice), // Redondear a entero
+      totalQuantity,
+      promotionDiscount, // Retornar el % de descuento aplicado
+      promotionApplied: activePromotion || null // Retornar promo completa
+    };
   };
 
   const handleRemoveProduct = (id_product) => {
@@ -703,7 +718,13 @@ const Caja = () => {
     );
   }
 
-  const { totalPrice, totalQuantity } = calculateTotals();
+  const { totalPrice, totalQuantity, promotionDiscount, promotionApplied } = calculateTotals();
+
+  // ✅ Calcular subtotal original antes del descuento
+  const originalSubtotal = selectedProducts.reduce(
+    (acc, item) => acc + (item.priceSell * item.quantity),
+    0
+  );
 
   const getDocumentInputClass = () => {
     if (formErrors.document) {
@@ -934,19 +955,57 @@ const Caja = () => {
           {selectedProducts.length > 0 && (
             <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
               <h3 className="text-lg font-semibold mb-4">Resumen del Pedido</h3>
+              
+              {/* ✅ Banner de promoción activa */}
+              {promotionApplied && promotionDiscount > 0 && (
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-3 rounded-lg mb-4 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🎉</span>
+                      <div>
+                        <p className="font-bold text-sm">{promotionApplied.title}</p>
+                        <p className="text-xs opacity-90">{promotionApplied.description}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white text-purple-600 px-3 py-1 rounded-full font-bold text-lg">
+                      -{promotionDiscount}%
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Total de productos:</span>
                   <span className="font-bold">{totalQuantity} unidades</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span className="font-bold">${totalPrice.toLocaleString("es-CO")}</span>
-                </div>
+                
+                {/* ✅ Mostrar subtotal original si hay descuento */}
+                {promotionDiscount > 0 && (
+                  <>
+                    <div className="flex justify-between text-gray-500">
+                      <span>Subtotal:</span>
+                      <span className="line-through">${originalSubtotal.toLocaleString("es-CO")}</span>
+                    </div>
+                    <div className="flex justify-between text-purple-600">
+                      <span>Descuento ({promotionDiscount}%):</span>
+                      <span className="font-bold">-${(originalSubtotal - totalPrice).toLocaleString("es-CO")}</span>
+                    </div>
+                  </>
+                )}
+                
+                {/* ✅ Subtotal (igual al total si no hay promo) */}
+                {!promotionDiscount && (
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span className="font-bold">${totalPrice.toLocaleString("es-CO")}</span>
+                  </div>
+                )}
+                
                 <div className="border-t pt-2">
                   <div className="flex justify-between text-lg">
                     <span className="font-semibold">Total a Pagar:</span>
-                    <span className="font-bold text-green-600">
+                    <span className={`font-bold ${promotionDiscount > 0 ? 'text-purple-600 text-2xl' : 'text-green-600'}`}>
                       ${totalPrice.toLocaleString("es-CO")}
                     </span>
                   </div>

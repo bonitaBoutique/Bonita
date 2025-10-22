@@ -14,6 +14,7 @@ const LandingPrincipal = () => {
   const products = useSelector((state) => state.products || []);
   const loading = useSelector((state) => state.loading);
   const searchResults = useSelector((state) => state.searchResults || []);
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
   
   // Estados locales
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -267,6 +268,7 @@ const LandingPrincipal = () => {
                     key={`${representative.id_product}-${index}`}
                     product={representative}
                     group={representative.group}
+                    activePromotion={activePromotion} 
                     onProductClick={() => navigate(`/product/${representative.id_product}`, {
                       state: { group: representative.group }
                     })}
@@ -434,13 +436,25 @@ const LandingPrincipal = () => {
 };
 
 // ✅ COMPONENTE PRODUCTCARD ACTUALIZADO CON LÓGICA DE GRUPOS
-const ProductCard = ({ product, group, onProductClick }) => {
+const ProductCard = ({ product, group, activePromotion, onProductClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   // Calcular stock total del grupo
   const totalStock = group ? group.reduce((sum, p) => sum + p.stock, 0) : product.stock;
   const hasMultipleVariants = group && group.length > 1;
+
+  // ✅ Calcular precio con descuento
+  const originalPrice = product.priceSell;
+  let discountedPrice = originalPrice;
+  let discountPercentage = 0;
+  
+  if (activePromotion?.is_active && activePromotion?.discount_percentage) {
+    discountPercentage = activePromotion.discount_percentage;
+    discountedPrice = Math.round(originalPrice * (1 - discountPercentage / 100));
+  }
+
+  const hasDiscount = discountPercentage > 0;
 
   return (
     <div 
@@ -472,6 +486,13 @@ const ProductCard = ({ product, group, onProductClick }) => {
 
         {/* Badges */}
         <div className="absolute top-4 left-4 space-y-2">
+          {/* ✅ Badge de DESCUENTO (prioridad máxima) */}
+          {hasDiscount && (
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg animate-pulse">
+              -{discountPercentage}% OFF
+            </div>
+          )}
+          
           {/* Badge de múltiples variantes */}
           {hasMultipleVariants && (
             <div className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
@@ -498,14 +519,47 @@ const ProductCard = ({ product, group, onProductClick }) => {
           {product.description}
         </h3>
         
+        {/* ✅ PRECIOS CON DESCUENTO */}
         <div className="flex items-center justify-between">
-          <p className="text-xl font-light text-gray-900">
-            {new Intl.NumberFormat("es-CO", {
-              style: "currency",
-              currency: "COP",
-              minimumFractionDigits: 0,
-            }).format(product.priceSell)}
-          </p>
+          <div className="flex flex-col gap-1">
+            {hasDiscount ? (
+              <>
+                {/* Precio original tachado */}
+                <p className="text-sm text-gray-400 line-through">
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(originalPrice)}
+                </p>
+                {/* Precio con descuento */}
+                <p className="text-2xl font-bold text-purple-600">
+                  {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(discountedPrice)}
+                </p>
+                {/* Ahorro */}
+                <p className="text-xs text-green-600 font-medium">
+                  Ahorras {new Intl.NumberFormat("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  }).format(originalPrice - discountedPrice)}
+                </p>
+              </>
+            ) : (
+              /* Precio normal sin descuento */
+              <p className="text-xl font-light text-gray-900">
+                {new Intl.NumberFormat("es-CO", {
+                  style: "currency",
+                  currency: "COP",
+                  minimumFractionDigits: 0,
+                }).format(originalPrice)}
+              </p>
+            )}
+          </div>
           
           <span className="text-sm text-gray-500">
             {totalStock} en stock

@@ -1,5 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import ErrorBoundary from './Components/routes/error/ErrorBoundary';
 import ProtectedRoute from './Components/routes/ProtectedRoute/ProtectedRoute';
 import Loading from './Components/Loading';
@@ -7,6 +8,9 @@ import Footer from './Components/Footer';
 import CartButton from './Components/CartButton';
 import WhatsappButton from './Components/WhatsappButton';
 import FixedLogo from './Components/FixedLogo';
+import PromoPopup from './Components/Promotions/PromoPopup';
+import { fetchActivePromotion } from './Redux/promotionSlice';
+
 import { 
   publicRoutes, 
   privateRoutes, 
@@ -17,6 +21,12 @@ import {
 
 function App() {
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  // ✅ Cargar promoción activa al montar la app
+  useEffect(() => {
+    dispatch(fetchActivePromotion());
+  }, [dispatch]);
 
   const isAdminRoute = (pathname) => {
     return adminPaths.some(path => pathname.startsWith(path));
@@ -93,6 +103,9 @@ function App() {
             <WhatsappButton />
           </>
         )}
+
+        {/* ✅ Popup de promoción (se muestra en todas las páginas cuando hay promo activa) */}
+        <PromoPopup />
       </Suspense>
     </ErrorBoundary>
   );

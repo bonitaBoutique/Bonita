@@ -4,7 +4,7 @@
  * Autor: Sistema de Promociones
  */
 
-const { Promotion } = require("../../../models"); // ✅ Importar desde models/index.js
+const { Promotion } = require("../../data"); // ✅ Importar desde data/index.js
 const { Op } = require("sequelize");
 
 /**

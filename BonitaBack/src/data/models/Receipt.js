@@ -40,14 +40,18 @@ module.exports = (sequelize) => {
       payMethod: {
         type: DataTypes.ENUM(
           "Efectivo",
+          "Tarjeta de Crédito",
+          "Tarjeta de Débito",
+          "Transferencia",
+          "Nequi",
+          "Daviplata",
           "Sistecredito",
           "Addi",
-          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",
-          "Otro",
-          "GiftCard"
+          "GiftCard",
+          "Otro"
         ),
         allowNull: false,
       },
@@ -63,14 +67,18 @@ module.exports = (sequelize) => {
       payMethod2: {
         type: DataTypes.ENUM(
           "Efectivo",
+          "Tarjeta de Crédito",
+          "Tarjeta de Débito",
+          "Transferencia",
+          "Nequi",
+          "Daviplata",
           "Sistecredito",
           "Addi",
-          "Nequi",
           "Tarjeta",
           "Crédito",
           "Bancolombia",
-          "Otro",
-          "GiftCard"
+          "GiftCard",
+          "Otro"
         ),
         allowNull: true, // <-- Opcional
       },

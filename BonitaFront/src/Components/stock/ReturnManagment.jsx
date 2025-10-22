@@ -112,9 +112,11 @@ const ProductReturnRow = memo(({
 
     try {
       const qtyElement = document.getElementById(`qty-${product.id_product}`);
+      const priceElement = document.getElementById(`price-${product.id_product}`);
       const reasonElement = document.getElementById(`reason-${product.id_product}`);
       
       const qty = parseInt(qtyElement?.value) || 1;
+      const customPrice = parseFloat(priceElement?.value) || product.priceSell;
       const reason = reasonElement?.value;
       
       if (!reason) {
@@ -127,7 +129,7 @@ const ProductReturnRow = memo(({
         return;
       }
       
-      onAddProduct(product, qty, reason);
+      onAddProduct(product, qty, reason, customPrice);
       
       Swal.fire({
         icon: "success",
@@ -181,6 +183,18 @@ const ProductReturnRow = memo(({
                 defaultValue="1"
                 className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                 id={`qty-${product.id_product}`}
+              />
+            </div>
+            <div className="flex flex-col items-center space-y-2">
+              <label className="text-xs text-gray-600">Precio devolución:</label>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                defaultValue={product.priceSell}
+                className="w-28 border border-gray-300 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id={`price-${product.id_product}`}
+                placeholder="$0"
               />
             </div>
             <div className="flex flex-col items-center space-y-2">
@@ -458,11 +472,12 @@ const ReturnManagement = () => {
   }, [returnData.returned_products, returnData.new_products]);
 
   // ✅ FUNCIÓN PARA GENERAR PDF DEL RECIBO DE DIFERENCIA
-  const generateDifferenceReceiptPDF = useCallback((receiptData, difference, actionRequired) => {
+  const generateDifferenceReceiptPDF = useCallback((receiptData, difference, actionRequired, paymentMethod) => {
     console.log("📄 Generando PDF de recibo de diferencia...");
     console.log("📄 Datos del recibo:", receiptData);
     console.log("📄 Diferencia:", difference);
     console.log("📄 ActionRequired:", actionRequired);
+    console.log("📄 Método de pago:", paymentMethod);
 
     const doc = new jsPDF({
       unit: "pt",
@@ -554,7 +569,7 @@ const ReturnManagement = () => {
     doc.text(`Diferencia a pagar: $${difference.toLocaleString("es-CO")}`, 20, currentY);
     currentY += 15;
 
-    doc.text(`Método de pago: Efectivo`, 20, currentY);
+    doc.text(`Método de pago: ${paymentMethod || 'Efectivo'}`, 20, currentY);
     currentY += 20;
 
     doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
@@ -597,13 +612,58 @@ const ReturnManagement = () => {
     });
     currentY += 20;
 
-    // Información del cajero
+    // ✅ SECCIÓN DE IMPUESTOS (IVA 19%)
     doc.setFontSize(10);
-    doc.text(`Atendido por: ${cashierDocument}`, 20, currentY);
+    doc.text("DETALLE DE IMPUESTOS:", 20, currentY);
+    currentY += 15;
+
+    const baseImponible = difference / 1.19;
+    const ivaAmount = difference - baseImponible;
+
+    doc.text(`Base imponible: $${baseImponible.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, currentY);
+    currentY += 12;
+
+    doc.text(`IVA (19%): $${ivaAmount.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, currentY);
+    currentY += 12;
+
+    doc.text(`Total: $${difference.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 20, currentY);
+    currentY += 20;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // ✅ Información del cajero (nombre y apellido)
+    const cashierName = user?.first_name && user?.last_name 
+      ? `${user.first_name} ${user.last_name}`
+      : cashierDocument || 'N/A';
+    
+    doc.setFontSize(10);
+    doc.text(`Atendido por: ${cashierName}`, 20, currentY);
     currentY += 15;
 
     doc.text(`Transacción: Diferencia por devolución`, 20, currentY);
-    currentY += 30;
+    currentY += 20;
+
+    doc.text("*".repeat(35), doc.internal.pageSize.width / 2, currentY, {
+      align: "center",
+    });
+    currentY += 20;
+
+    // ✅ Servicio al cliente
+    doc.setFontSize(9);
+    doc.text("Servicio al cliente:", 20, currentY);
+    currentY += 12;
+    doc.text("311 8318191 - bonitaboutiquecumaral@gmail.com", 20, currentY);
+    currentY += 20;
+
+    // ✅ Política de protección de datos
+    doc.setFontSize(8);
+    const policyText = "Al realizar esta transacción, acepta nuestra política de protección de datos personales disponible en https://bonitaboutique.com/politica-de-datos";
+    const policyLines = doc.splitTextToSize(policyText, 186);
+    doc.text(policyLines, 20, currentY);
+    currentY += 10 * policyLines.length + 10;
 
     doc.setFontSize(12);
     doc.text("Gracias por elegirnos!", doc.internal.pageSize.width / 2, currentY, {
@@ -614,7 +674,7 @@ const ReturnManagement = () => {
     doc.output("dataurlnewwindow");
     
     console.log("✅ PDF de recibo de diferencia generado exitosamente");
-  }, [originalReceipt, totals, returnData, cashierDocument]);
+  }, [originalReceipt, totals, returnData, cashierDocument, user]);
 
   // ✅ LOG DEL ESTADO ACTUAL AL RENDERIZAR
   console.log("📊 ESTADO ACTUAL:", {
@@ -947,14 +1007,19 @@ const searchReceipt = useCallback(async () => {
   }
 }, [receiptId, cashierDocument, receipts, dispatch, showSwal]);
 
-  const addReturnedProduct = useCallback((product, quantity, reason = "") => {
+  const addReturnedProduct = useCallback((product, quantity, reason = "", customPrice = null) => {
     console.log("🚀 INICIO addReturnedProduct");
+    
+    const returnPrice = customPrice !== null ? customPrice : product.priceSell;
+    
     console.log("📦 Parámetros recibidos:", { 
       product_id: product.id_product,
       product_name: product.description,
       quantity, 
       reason,
-      unit_price: product.priceSell,
+      original_price: product.priceSell,
+      custom_price: customPrice,
+      return_price: returnPrice,
       current_stock: product.stock
     });
 
@@ -964,7 +1029,7 @@ const searchReceipt = useCallback(async () => {
         quantity: quantity,
         reason: reason,
         product_name: product.description,
-        unit_price: product.priceSell,
+        unit_price: returnPrice,
         marca: product.marca,
         sizes: product.sizes,
         colors: product.colors,
@@ -1375,6 +1440,7 @@ const searchReceipt = useCallback(async () => {
       console.log("📤 new_products:", requestData.new_products);
       console.log("📤 cashier_document:", requestData.cashier_document);
       console.log("📤 customer_payment_method:", requestData.customer_payment_method);
+      console.log("📤 difference_payment_method:", requestData.difference_payment_method); // ✅ NUEVO LOG
       console.log("📤 totals:", requestData.totals);
       console.log("📤 REQUEST DATA COMPLETO:", JSON.stringify(requestData, null, 2));
 
@@ -1453,7 +1519,7 @@ const searchReceipt = useCallback(async () => {
         if (actionRequired?.receiptId) {
           console.log("📄 Generando PDF automáticamente para recibo:", actionRequired.receiptId);
           setTimeout(() => {
-            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired, selectedPaymentMethod);
           }, 1000); // Delay para asegurar que el SweetAlert se muestre primero
         }
 
@@ -1475,7 +1541,7 @@ const searchReceipt = useCallback(async () => {
         }).then((result) => {
           if (result.isConfirmed && actionRequired?.receiptId) {
             // Permitir reimprimir el PDF
-            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired);
+            generateDifferenceReceiptPDF(receiptInfo, totals.difference, actionRequired, selectedPaymentMethod);
           }
         });
       } else if (totals.difference === 0) {

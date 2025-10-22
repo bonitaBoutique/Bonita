@@ -156,6 +156,9 @@ DELETE_ORDER_DETAIL_REQUEST,
   FETCH_RETURNS_REQUEST,
   FETCH_RETURNS_SUCCESS,
   FETCH_RETURNS_FAILURE,
+  FETCH_RETURN_BY_ID_REQUEST,
+  FETCH_RETURN_BY_ID_SUCCESS,
+  FETCH_RETURN_BY_ID_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
   GET_SERVER_TIME_REQUEST,
@@ -381,6 +384,11 @@ const initialState = {
       data: [],
       pagination: null,
       stats: null,
+      error: null,
+    },
+    detail: {
+      loading: false,
+      data: null,
       error: null,
     },
   },
@@ -2202,6 +2210,46 @@ case CREATE_SENDING_FAILURE:
           list: {
             ...state.returns.list,
             loading: false,
+            error: action.payload,
+          },
+        },
+      };
+
+    // 🔍 OBTENER DEVOLUCIÓN INDIVIDUAL POR ID
+    case 'FETCH_RETURN_BY_ID_REQUEST':
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          detail: {
+            loading: true,
+            data: null,
+            error: null,
+          },
+        },
+      };
+
+    case 'FETCH_RETURN_BY_ID_SUCCESS':
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          detail: {
+            loading: false,
+            data: action.payload,
+            error: null,
+          },
+        },
+      };
+
+    case 'FETCH_RETURN_BY_ID_FAILURE':
+      return {
+        ...state,
+        returns: {
+          ...state.returns,
+          detail: {
+            loading: false,
+            data: null,
             error: action.payload,
           },
         },

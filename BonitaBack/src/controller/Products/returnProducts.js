@@ -42,8 +42,12 @@ module.exports = async (req, res) => {
       returned_products = [],
       new_products = [],
       customer_payment_method = "Credito en tienda",
+      difference_payment_method = "Efectivo", // ✅ NUEVO: Método de pago para la diferencia
       reason = "Devolución"
     } = req.body;
+
+    console.log("💳 Método de pago para diferencia:", difference_payment_method);
+    console.log("💳 Método de pago del cliente:", customer_payment_method);
 
     // ✅ VALIDACIONES BÁSICAS
     if (!original_receipt_id || !cashier_document || !returned_products.length) {
@@ -311,7 +315,7 @@ module.exports = async (req, res) => {
         buyer_phone: originalReceipt.buyer_phone || null,
         total_amount: difference, // ✅ Importe total
         amount: difference, // ✅ Importe del primer método de pago
-        payMethod: 'Efectivo', // ✅ Método de pago
+        payMethod: difference_payment_method || 'Efectivo', // ✅ Método de pago seleccionado por el usuario
         date: getColombiaDate(),
         description: `Diferencia por devolución de productos (Recibo original: ${original_receipt_id})`
       };

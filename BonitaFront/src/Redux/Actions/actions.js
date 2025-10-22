@@ -157,6 +157,9 @@ SEARCH_RECEIPT_FOR_RETURN_REQUEST,
   FETCH_RETURNS_REQUEST,
   FETCH_RETURNS_SUCCESS,
   FETCH_RETURNS_FAILURE,
+  FETCH_RETURN_BY_ID_REQUEST,
+  FETCH_RETURN_BY_ID_SUCCESS,
+  FETCH_RETURN_BY_ID_FAILURE,
   CLEAR_RETURN_STATE,
   RESET_RECEIPT_SEARCH,
   FETCH_STOCK_MOVEMENTS_REQUEST,
@@ -2317,12 +2320,48 @@ export const fetchReturns = (filters = {}) => async (dispatch) => {
   }
 };
 
-// ✅ 4. LIMPIAR ESTADO DE DEVOLUCIONES
+// ✅ 4. OBTENER DEVOLUCIÓN INDIVIDUAL POR ID
+export const fetchReturnById = (returnId) => async (dispatch) => {
+  dispatch({ type: 'FETCH_RETURN_BY_ID_REQUEST' });
+
+  try {
+    console.log('🔍 [ACTION] Obteniendo devolución:', returnId);
+    
+    const response = await axios.get(`${BASE_URL}/product/returns/${returnId}`);
+
+    console.log('✅ [ACTION] Devolución obtenida:', response.data);
+
+    // La estructura es: response.data.data.data (igual que fetchReturns)
+    const returnData = response.data?.data?.data || response.data?.data;
+
+    if (returnData) {
+      dispatch({
+        type: 'FETCH_RETURN_BY_ID_SUCCESS',
+        payload: returnData
+      });
+      return { success: true, data: returnData };
+    } else {
+      throw new Error('No se encontraron datos de la devolución');
+    }
+  } catch (error) {
+    console.error('❌ [ACTION] Error obteniendo devolución:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Error al obtener devolución';
+    
+    dispatch({
+      type: 'FETCH_RETURN_BY_ID_FAILURE',
+      payload: errorMessage
+    });
+
+    return { error: errorMessage };
+  }
+};
+
+// ✅ 5. LIMPIAR ESTADO DE DEVOLUCIONES
 export const clearReturnState = () => ({
   type: CLEAR_RETURN_STATE
 });
 
-// ✅ 5. RESETEAR BÚSQUEDA DE RECIBO
+// ✅ 6. RESETEAR BÚSQUEDA DE RECIBO
 export const resetReceiptSearch = () => ({
   type: RESET_RECEIPT_SEARCH
 });

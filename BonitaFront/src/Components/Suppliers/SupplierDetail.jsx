@@ -68,11 +68,15 @@ const SupplierDetail = () => {
   };
 
   const handlePaymentSuccess = () => {
+    console.log('🔄 [SUPPLIER DETAIL] handlePaymentSuccess llamado - Refrescando datos del proveedor:', id);
     // Recargar datos del proveedor, facturas y pagos
     if (id && id !== 'undefined' && id !== 'null') {
+      console.log('✅ [SUPPLIER DETAIL] Despachando acciones de refresh...');
       dispatch(fetchSupplierById(id));
       dispatch(fetchPurchaseInvoices({ id_supplier: id, limit: 50 }));
       dispatch(fetchSupplierPayments({ id_supplier: id, limit: 50 }));
+    } else {
+      console.warn('⚠️ [SUPPLIER DETAIL] ID inválido, no se puede refrescar:', id);
     }
   };
 

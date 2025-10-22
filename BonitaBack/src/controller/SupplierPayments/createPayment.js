@@ -62,11 +62,34 @@ module.exports = async (req, res) => {
     });
 
     // Actualizar paid_amount de la factura
-    const newPaidAmount = (invoice.paid_amount || 0) + parseFloat(amount);
-    await invoice.update({ paid_amount: newPaidAmount });
+    const newPaidAmount = parseFloat((invoice.paid_amount || 0)) + parseFloat(amount);
+    console.log(`💰 [CREATE PAYMENT] ANTES del update - Factura ${invoice.invoice_number}:`, {
+      id_invoice: invoice.id_invoice,
+      monto_anterior_pagado: invoice.paid_amount,
+      tipo_monto_anterior: typeof invoice.paid_amount,
+      nuevo_pago: amount,
+      tipo_nuevo_pago: typeof amount,
+      nuevo_monto_pagado: newPaidAmount,
+      tipo_nuevo_monto: typeof newPaidAmount,
+      total_factura: invoice.total_amount
+    });
+    
+    const updateResult = await invoice.update({ paid_amount: newPaidAmount });
+    console.log(`✏️ [CREATE PAYMENT] Resultado del update:`, {
+      paid_amount_actualizado: updateResult.paid_amount,
+      tipo: typeof updateResult.paid_amount
+    });
 
     // Recargar la factura para obtener el estado actualizado
-    const updatedInvoice = await SupplierInvoice.findByPk(id_invoice);
+    const updatedInvoice = await SupplierInvoice.findByPk(id_invoice, { raw: true });
+    console.log(`📊 [CREATE PAYMENT] DESPUÉS de recargar - Factura actualizada:`, {
+      invoice_number: updatedInvoice.invoice_number,
+      total: updatedInvoice.total_amount,
+      paid: updatedInvoice.paid_amount,
+      tipo_paid: typeof updatedInvoice.paid_amount,
+      balance: parseFloat(updatedInvoice.total_amount) - parseFloat(updatedInvoice.paid_amount),
+      status: updatedInvoice.status
+    });
 
     // Incluir datos relacionados en la respuesta
     const paymentWithDetails = await SupplierPayment.findByPk(newPayment.id_payment, {

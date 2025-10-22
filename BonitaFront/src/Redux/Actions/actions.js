@@ -2547,9 +2547,16 @@ export const fetchSupplierById = (id) => async (dispatch) => {
   try {
     dispatch({ type: FETCH_SUPPLIER_BY_ID_REQUEST });
 
-    console.log('🏢 [SUPPLIER] Fetching supplier by ID:', id);
+    console.log('🏢 [SUPPLIER ACTION] Fetching supplier by ID:', id);
 
     const { data } = await axios.get(`${BASE_URL}/supplier/${id}`);
+
+    console.log('✅ [SUPPLIER ACTION] Datos recibidos:', {
+      supplier: data.message.supplier?.business_name,
+      totalDebt: data.message.summary?.totalDebt,
+      totalPaid: data.message.summary?.totalPaid,
+      invoices: data.message.supplier?.invoices?.length || 0
+    });
 
     dispatch({
       type: FETCH_SUPPLIER_BY_ID_SUCCESS,
@@ -2955,9 +2962,15 @@ export const createSupplierPayment = (paymentData) => async (dispatch) => {
   try {
     dispatch({ type: CREATE_SUPPLIER_PAYMENT_REQUEST });
 
-    console.log('💰 [PAYMENT] Creating supplier payment:', paymentData);
+    console.log('💰 [PAYMENT ACTION] Creating supplier payment:', paymentData);
 
     const { data } = await axios.post(`${BASE_URL}/supplier/supplier-payments/create`, paymentData);
+
+    console.log('✅ [PAYMENT ACTION] Respuesta del servidor:', {
+      payment: data.message.payment,
+      invoiceStatus: data.message.invoiceStatus,
+      remainingBalance: data.message.remainingBalance
+    });
 
     dispatch({
       type: CREATE_SUPPLIER_PAYMENT_SUCCESS,
@@ -2967,8 +2980,8 @@ export const createSupplierPayment = (paymentData) => async (dispatch) => {
     Swal.fire({
       icon: 'success',
       title: '¡Éxito!',
-      text: `Pago registrado. Estado de factura: ${data.message.invoiceStatus}`,
-      timer: 2000
+      text: `Pago registrado. Estado de factura: ${data.message.invoiceStatus}. Saldo restante: $${data.message.remainingBalance.toLocaleString('es-CO')}`,
+      timer: 3000
     });
 
     return data.message;

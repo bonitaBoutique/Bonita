@@ -105,7 +105,9 @@ const QuickPaymentModal = ({ isOpen, onClose, invoice, supplier, onPaymentSucces
         ...formData,
       };
 
-      await dispatch(createSupplierPayment(paymentData));
+      console.log('💳 [QUICK PAYMENT] Enviando pago:', paymentData);
+      const result = await dispatch(createSupplierPayment(paymentData));
+      console.log('✅ [QUICK PAYMENT] Respuesta del pago:', result);
 
       Swal.fire({
         icon: "success",
@@ -116,13 +118,14 @@ const QuickPaymentModal = ({ isOpen, onClose, invoice, supplier, onPaymentSucces
       });
 
       // Llamar callback para actualizar datos
+      console.log('🔄 [QUICK PAYMENT] Llamando onPaymentSuccess...', { hasCallback: !!onPaymentSuccess });
       if (onPaymentSuccess) {
         onPaymentSuccess();
       }
 
       onClose();
     } catch (error) {
-      console.error("Error creating payment:", error);
+      console.error("❌ [QUICK PAYMENT] Error creating payment:", error);
       Swal.fire("Error", "No se pudo registrar el pago", "error");
     } finally {
       setIsSubmitting(false);

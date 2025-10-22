@@ -747,9 +747,7 @@ const Recibo = () => {
     currentY += 12;
 
     doc.text(
-
-      `FORMA DE PAGO: ${isReservation ? "Reserva a Crédito" : paymentMethod}`,
-
+      `FORMA DE PAGO: ${isReservation ? "Reserva a Crédito" : "Contado"}`,
       doc.internal.pageSize.width / 2,
       currentY,
       { align: "center" }
@@ -777,14 +775,7 @@ const Recibo = () => {
     });
     currentY += 10;
 
-
-    doc.text("311 8318191", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 8;
-
-    doc.text("bonitaboutiquecumaral@gmail.com", doc.internal.pageSize.width / 2, currentY, {
-
+    doc.text("311 8318191 - bonitaboutiquecumaral@gmail.com", doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
     currentY += 15;
@@ -792,27 +783,17 @@ const Recibo = () => {
     // ✅ POLÍTICA DE PROTECCIÓN DE DATOS
     doc.setFontSize(5);
     const politicaLines = doc.splitTextToSize(
-
-      "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales.",
-
-      "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales. Consulta política de protección de datos en:"
-     
+      "Por virtud del decreto 1377 de 2013 y su Art. 7, manifiesto que he autorizado la recolección, almacenamiento y tratamiento de mi información para fines netamente comerciales. Consulta política de protección de datos en:",
+      200
     );
     doc.text(politicaLines, doc.internal.pageSize.width / 2, currentY, {
       align: "center",
     });
     currentY += 8 * politicaLines.length;
 
-
-    doc.text("Consulta política de protección de datos en:", doc.internal.pageSize.width / 2, currentY, {
-      align: "center",
-    });
-    currentY += 8;
-
     doc.setFontSize(5);
     doc.text(
-      "www.bonitaboutiquecumaral.com/politicadedatos",
-
+      "https://www.bonitaboutiquecumaral.com/politicadedatos",
       doc.internal.pageSize.width / 2,
       currentY,
       { align: "center" }

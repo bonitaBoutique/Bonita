@@ -67,8 +67,26 @@ module.exports = async (req, res) => {
       return null;
     }).filter(card => card !== null);
 
-    console.log("Final Active Cards Result:", activeCardsResult);
-    return res.status(200).json({ activeCards: activeCardsResult });
+    // 🆕 Obtener la fecha de creación de la GiftCard más reciente de cada email
+    console.log("📅 Obteniendo fechas de creación de GiftCards...");
+    const giftCardsWithDates = await Promise.all(
+      activeCardsResult.map(async (card) => {
+        const latestGiftCard = await GiftCard.findOne({
+          where: { buyer_email: card.email, estado: 'activa' },
+          order: [['createdAt', 'DESC']],
+          attributes: ['createdAt'],
+          raw: true
+        });
+        
+        return {
+          ...card,
+          created_at: latestGiftCard?.createdAt || null
+        };
+      })
+    );
+
+    console.log("Final Active Cards Result with dates:", giftCardsWithDates);
+    return res.status(200).json({ activeCards: giftCardsWithDates });
 
   } catch (error) {
     console.error("Error fetching active GiftCards:", error);

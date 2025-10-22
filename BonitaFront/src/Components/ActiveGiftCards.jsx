@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; // Importa axios
 import Navbar2 from './Navbar2';
 import { BASE_URL } from '../Config'; // Asegúrate que BASE_URL esté definida y exportada
+// ✅ Importar utilidades de fecha para Colombia
+import { formatDateForDisplay } from '../utils/dateUtils';
 
 const ActiveGiftCards = () => {
   const navigate = useNavigate();
@@ -146,6 +148,7 @@ const ActiveGiftCards = () => {
                   <th className="py-3 px-6 text-left">Nombre Cliente</th>
                   <th className="py-3 px-6 text-left">Email</th>
                   <th className="py-3 px-6 text-right">💰 Saldo Total</th>
+                  <th className="py-3 px-6 text-left">📅 Fecha Creación</th>
                   <th className="py-3 px-6 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -172,6 +175,9 @@ const ActiveGiftCards = () => {
                       </td>
                       <td className="py-3 px-6 text-right font-bold text-green-600 text-lg">
                         ${card.balance?.toLocaleString('es-CO') ?? 0}
+                      </td>
+                      <td className="py-3 px-6 text-left text-sm text-gray-600">
+                        {card.created_at ? formatDateForDisplay(card.created_at, true) : 'N/A'}
                       </td>
                       <td className="py-3 px-6 text-center">
                         <button

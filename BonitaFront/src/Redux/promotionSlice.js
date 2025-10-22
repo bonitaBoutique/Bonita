@@ -6,8 +6,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:3001';
+import { BASE_URL } from '../Config'; // ✅ Importar BASE_URL del config
 
 // ==================== ASYNC THUNKS ====================
 

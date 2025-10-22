@@ -141,15 +141,16 @@ const PromoManager = () => {
     }
   };
 
-  // Editar promoción
+  // Editar promoción existente
   const handleEdit = (promo) => {
     setFormData({
       title: promo.title,
       description: promo.description,
       discount_percentage: promo.discount_percentage,
       image_url: promo.image_url || '',
-      start_date: promo.start_date ? promo.start_date.split('T')[0] : '',
-      end_date: promo.end_date ? promo.end_date.split('T')[0] : '',
+      // ✅ Convertir a formato datetime-local (YYYY-MM-DDTHH:mm)
+      start_date: promo.start_date ? promo.start_date.slice(0, 16) : '',
+      end_date: promo.end_date ? promo.end_date.slice(0, 16) : '',
     });
     setEditingId(promo.id_promotion);
     setImagePreview(promo.image_url || '');
@@ -286,12 +287,24 @@ const PromoManager = () => {
                   </span>
                   {activePromotion.start_date && (
                     <span className="text-sm">
-                      Desde: {new Date(activePromotion.start_date).toLocaleDateString('es-CO')}
+                      Desde: {new Date(activePromotion.start_date).toLocaleString('es-CO', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </span>
                   )}
                   {activePromotion.end_date && (
                     <span className="text-sm">
-                      Hasta: {new Date(activePromotion.end_date).toLocaleDateString('es-CO')}
+                      Hasta: {new Date(activePromotion.end_date).toLocaleString('es-CO', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </span>
                   )}
                 </div>
@@ -410,10 +423,10 @@ const PromoManager = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha inicio
+                      Fecha y hora de inicio
                     </label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       name="start_date"
                       value={formData.start_date}
                       onChange={handleChange}
@@ -423,10 +436,10 @@ const PromoManager = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha fin
+                      Fecha y hora de fin
                     </label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       name="end_date"
                       value={formData.end_date}
                       onChange={handleChange}
@@ -509,12 +522,24 @@ const PromoManager = () => {
                           <div className="flex items-center space-x-4 text-xs text-gray-500">
                             {promo.start_date && (
                               <span>
-                                📅 Inicio: {new Date(promo.start_date).toLocaleDateString('es-CO')}
+                                📅 Inicio: {new Date(promo.start_date).toLocaleString('es-CO', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
                               </span>
                             )}
                             {promo.end_date && (
                               <span>
-                                🏁 Fin: {new Date(promo.end_date).toLocaleDateString('es-CO')}
+                                🏁 Fin: {new Date(promo.end_date).toLocaleString('es-CO', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
                               </span>
                             )}
                           </div>

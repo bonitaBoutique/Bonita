@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import ErrorBoundary from './Components/routes/error/ErrorBoundary';
 import ProtectedRoute from './Components/routes/ProtectedRoute/ProtectedRoute';
 import Loading from './Components/Loading';
@@ -22,11 +22,18 @@ import {
 function App() {
   const location = useLocation();
   const dispatch = useDispatch();
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion);
 
   // ✅ Cargar promoción activa al montar la app
   useEffect(() => {
+    console.log('🎯 App.jsx - Llamando a fetchActivePromotion...');
     dispatch(fetchActivePromotion());
   }, [dispatch]);
+
+  // ✅ Debug: Mostrar en consola cuando cambia la promoción activa
+  useEffect(() => {
+    console.log('🎉 PROMOCIÓN ACTIVA EN APP:', activePromotion);
+  }, [activePromotion]);
 
   const isAdminRoute = (pathname) => {
     return adminPaths.some(path => pathname.startsWith(path));

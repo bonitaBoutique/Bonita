@@ -177,17 +177,25 @@ module.exports = (sequelize) => {
   // Método estático para obtener la promoción activa vigente
   Promotion.getActivePromotion = async function() {
     try {
+      console.log("🔍 Buscando promoción con is_active: true");
       const promotion = await Promotion.findOne({
         where: { is_active: true },
       });
       
-      // Verificar si está dentro del rango de fechas
-      if (promotion && promotion.isValid()) {
-        return promotion;
-      }
+      console.log("📦 Promoción encontrada:", promotion ? `ID: ${promotion.id_promotion}, Title: ${promotion.title}` : "null");
       
-      // Si está fuera del rango, desactivarla automáticamente
-      if (promotion && !promotion.isValid()) {
+      // Verificar si está dentro del rango de fechas
+      if (promotion) {
+        const isValid = promotion.isValid();
+        console.log("✅ isValid():", isValid);
+        console.log("📅 Fechas - Inicio:", promotion.start_date, "Fin:", promotion.end_date);
+        console.log("🕐 Fecha actual:", new Date());
+        
+        if (isValid) {
+          return promotion;
+        }
+        
+        // Si está fuera del rango, desactivarla automáticamente
         await promotion.update({ is_active: false });
         console.log("⚠️ Promoción desactivada automáticamente (fuera de rango de fechas)");
       }

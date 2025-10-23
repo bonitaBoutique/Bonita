@@ -145,7 +145,7 @@ const Checkout = () => {
         id_product: item.id_product,
         quantity: item.quantity,
         description: item.description || item.name,
-        price: item.priceSell
+        price: item.finalPrice || item.priceSell // ✅ Usar finalPrice si hay descuento
       })),
       amount: cart.totalPrice,
       quantity: cart.totalItems,
@@ -255,7 +255,7 @@ const Checkout = () => {
         cartItems: cart.items.map((item) => ({
           id_product: item.id_product,
           quantity: item.quantity,
-          price: item.priceSell,
+          price: item.finalPrice || item.priceSell, // ✅ Usar finalPrice si existe (con descuento)
         })),
       },
     };

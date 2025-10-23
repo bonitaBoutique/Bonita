@@ -31,7 +31,7 @@ async function fetchProductsSnapshot(products, transaction) {
   const productIds = products.map((p) => p.id_product);
   const dbProducts = await Product.findAll({
     where: { id_product: productIds },
-    attributes: ["id_product", "stock", "isDian", "description", "price"],
+    attributes: ["id_product", "stock", "isDian", "description", "price", "priceSell"], // ✅ Agregar priceSell
     transaction,
     lock: transaction ? transaction.LOCK.UPDATE : undefined,
   });

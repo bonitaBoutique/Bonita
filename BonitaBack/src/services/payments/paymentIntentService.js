@@ -51,10 +51,16 @@ async function createPaymentIntent(orderPayload) {
 
   const dbProducts = await fetchProductsSnapshot(products); // Valida existencia y stock
 
+  // ✅ MEJORADO: Si metadata.cartItems tiene precios (con descuentos aplicados), usar esos
+  // Si no, calcular desde DB usando priceSell
+  const cartItemsFromMetadata = metadata?.cartItems || [];
   const subtotalFromDb = dbProducts.reduce((acc, dbProduct) => {
     const orderProduct = products.find((item) => item.id_product === dbProduct.id_product);
+    const cartItem = cartItemsFromMetadata.find((item) => item.id_product === dbProduct.id_product);
     const quantityRequested = Number(orderProduct?.quantity || 0);
-    const unitPrice = Number(dbProduct.price || 0);
+    
+    // Prioridad: 1) Precio del cart (con descuentos), 2) priceSell (DB), 3) price (DB - fallback)
+    const unitPrice = Number(cartItem?.price || dbProduct.priceSell || dbProduct.price || 0);
     return acc + unitPrice * quantityRequested;
   }, 0);
 

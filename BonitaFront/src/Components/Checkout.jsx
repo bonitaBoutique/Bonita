@@ -39,6 +39,17 @@ const Checkout = () => {
   };
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
+  const activePromotion = useSelector((state) => state.promotions?.activePromotion); // ✅ Promoción activa
+
+  // ✅ Calcular subtotal sin descuento y descuento aplicado
+  const subtotalWithoutDiscount = cart.items.reduce(
+    (acc, item) => acc + (item.originalPrice || item.priceSell) * item.quantity,
+    0
+  );
+  const discountAmount = activePromotion && activePromotion.discount_percentage 
+    ? subtotalWithoutDiscount * (activePromotion.discount_percentage / 100)
+    : 0;
+  const hasDiscount = discountAmount > 0;
 
   console.log('>>> Checkout Component Render - order state:', JSON.stringify(orderState));
 
@@ -351,14 +362,56 @@ const Checkout = () => {
                   <li key={item.id_product} className="py-2">
                     <div className="flex justify-between items-center text-sm">
                       <span className='flex-1 mr-2'>{item.description || item.name} (x{item.quantity})</span>
-                      <span className='text-right font-medium'>${(item.quantity * item.priceSell).toLocaleString('es-CO')}</span>
+                      <span className='text-right font-medium'>${((item.originalPrice || item.priceSell) * item.quantity).toLocaleString('es-CO')}</span>
                     </div>
                   </li>
                 ))}
               </ul>
-              <div className="flex justify-between mt-4 pt-2 border-t uppercase font-semibold">
-                <span>Total ({cart.totalItems} items):</span>
-                <span>${cart.totalPrice.toLocaleString('es-CO')}</span>
+              
+              {/* ✅ Mostrar desglose con promoción si aplica */}
+              <div className="mt-4 pt-2 border-t space-y-2">
+                {/* Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal ({cart.totalItems} items):</span>
+                  <span>${subtotalWithoutDiscount.toLocaleString('es-CO')}</span>
+                </div>
+                
+                {/* Descuento si aplica */}
+                {hasDiscount && activePromotion && (
+                  <>
+                    {/* Banner de promoción */}
+                    <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-2 rounded-lg border border-purple-300">
+                      <div className="flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-semibold text-purple-700">🎉 {activePromotion.title}</p>
+                          <p className="text-purple-600">{activePromotion.description}</p>
+                        </div>
+                        <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          -{activePromotion.discount_percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Línea de descuento */}
+                    <div className="flex justify-between text-sm text-green-600 font-semibold">
+                      <span>Descuento ({activePromotion.discount_percentage}%):</span>
+                      <span>-${discountAmount.toLocaleString('es-CO')}</span>
+                    </div>
+                  </>
+                )}
+                
+                {/* Total final */}
+                <div className={`flex justify-between pt-2 border-t uppercase font-semibold ${hasDiscount ? 'text-purple-600 text-lg' : ''}`}>
+                  <span>Total a pagar:</span>
+                  <span>${cart.totalPrice.toLocaleString('es-CO')}</span>
+                </div>
+                
+                {/* Ahorro total si hay descuento */}
+                {hasDiscount && (
+                  <div className="text-center text-xs text-green-600 font-semibold">
+                    ¡Ahorras ${discountAmount.toLocaleString('es-CO')}!
+                  </div>
+                )}
               </div>
             </div>
 

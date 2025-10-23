@@ -7,7 +7,7 @@ import Navbar from "../Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const location = useLocation();
+  const location = useLocation();   
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);

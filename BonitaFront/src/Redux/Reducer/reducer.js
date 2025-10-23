@@ -307,7 +307,7 @@ const initialState = {
       : 0,
     totalPrice: localStorage.getItem("cart")
       ? JSON.parse(localStorage.getItem("cart")).reduce(
-          (acc, item) => acc + item.price * item.quantity,
+          (acc, item) => acc + (item.finalPrice || item.priceSell || 0) * item.quantity,
           0
         )
       : 0,

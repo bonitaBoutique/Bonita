@@ -31,14 +31,17 @@ module.exports = async (req, res) => {
   // Validaciones iniciales
   const validPayMethods = [
     "Efectivo",
+    "Tarjeta de Crédito",
+    "Tarjeta de Débito",
+    "Transferencia",
+    "Nequi",
+    "Daviplata",
     "Sistecredito",
     "Addi",
-    "Tarjeta",
-    "Crédito",
     "Bancolombia",
-    "Otro",
     "GiftCard",
-    "Nequi"
+    "Crédito",
+    "Otro"
   ];
 
   if (

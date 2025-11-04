@@ -2597,9 +2597,34 @@ export const createSupplier = (supplierData) => async (dispatch) => {
 
     return data.message.supplier;
   } catch (error) {
-    console.error('❌ [SUPPLIER] Error creating supplier:', error);
+    console.error('❌ [SUPPLIER] Error creating supplier:', error.response || error);
     
-    const errorMessage = error.response?.data?.error || error.message;
+    let errorMessage = 'Error al crear el proveedor';
+    
+    if (error.response) {
+      const { status, data: responseData } = error.response;
+      
+      switch (status) {
+        case 400:
+          errorMessage = responseData?.error || 'Datos de proveedor inválidos';
+          
+          if (errorMessage.includes('Ya existe un proveedor')) {
+            errorMessage = `⚠️ ${errorMessage}`;
+          } else if (errorMessage.includes('requeridos')) {
+            errorMessage = '⚠️ Por favor completa todos los campos obligatorios.';
+          }
+          break;
+          
+        case 500:
+          errorMessage = '❌ Error en el servidor. Por favor, intenta nuevamente.';
+          break;
+          
+        default:
+          errorMessage = responseData?.error || error.message || errorMessage;
+      }
+    } else if (error.request) {
+      errorMessage = '🌐 No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    }
     
     dispatch({
       type: CREATE_SUPPLIER_FAILURE,
@@ -2608,11 +2633,13 @@ export const createSupplier = (supplierData) => async (dispatch) => {
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
-      text: errorMessage
+      title: 'Error al Crear Proveedor',
+      text: errorMessage,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#d33'
     });
 
-    throw error;
+    throw new Error(errorMessage);
   }
 };
 
@@ -2786,9 +2813,41 @@ export const createPurchaseInvoice = (invoiceData) => async (dispatch) => {
 
     return data.message.invoice;
   } catch (error) {
-    console.error('❌ [INVOICE] Error creating invoice:', error);
+    console.error('❌ [INVOICE] Error creating invoice:', error.response || error);
     
-    const errorMessage = error.response?.data?.error || error.message;
+    // Extraer mensaje de error específico del backend
+    let errorMessage = 'Error al crear la factura';
+    
+    if (error.response) {
+      const { status, data: responseData } = error.response;
+      
+      switch (status) {
+        case 400:
+          // Errores de validación o duplicados
+          errorMessage = responseData?.error || 'Datos de factura inválidos';
+          
+          // Mensajes específicos más amigables
+          if (errorMessage.includes('Ya existe una factura')) {
+            errorMessage = `⚠️ ${errorMessage}. Por favor, verifica el número de factura.`;
+          } else if (errorMessage.includes('son requeridos')) {
+            errorMessage = '⚠️ Por favor completa todos los campos obligatorios: Proveedor, Número de factura, Fecha y Monto total.';
+          }
+          break;
+          
+        case 404:
+          errorMessage = '❌ Proveedor no encontrado. Por favor, selecciona un proveedor válido.';
+          break;
+          
+        case 500:
+          errorMessage = '❌ Error en el servidor. Por favor, intenta nuevamente o contacta al administrador.';
+          break;
+          
+        default:
+          errorMessage = responseData?.error || error.message || errorMessage;
+      }
+    } else if (error.request) {
+      errorMessage = '🌐 No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    }
     
     dispatch({
       type: CREATE_PURCHASE_INVOICE_FAILURE,
@@ -2797,11 +2856,13 @@ export const createPurchaseInvoice = (invoiceData) => async (dispatch) => {
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
-      text: errorMessage
+      title: 'Error al Crear Factura',
+      text: errorMessage,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#d33'
     });
 
-    throw error;
+    throw new Error(errorMessage);
   }
 };
 
@@ -2828,9 +2889,32 @@ export const updatePurchaseInvoice = (id, invoiceData) => async (dispatch) => {
 
     return data.message.invoice;
   } catch (error) {
-    console.error('❌ [INVOICE] Error updating invoice:', error);
+    console.error('❌ [INVOICE] Error updating invoice:', error.response || error);
     
-    const errorMessage = error.response?.data?.error || error.message;
+    let errorMessage = 'Error al actualizar la factura';
+    
+    if (error.response) {
+      const { status, data: responseData } = error.response;
+      
+      switch (status) {
+        case 400:
+          errorMessage = responseData?.error || 'Datos de factura inválidos';
+          break;
+          
+        case 404:
+          errorMessage = '❌ Factura no encontrada. Es posible que haya sido eliminada.';
+          break;
+          
+        case 500:
+          errorMessage = '❌ Error en el servidor. Por favor, intenta nuevamente.';
+          break;
+          
+        default:
+          errorMessage = responseData?.error || error.message || errorMessage;
+      }
+    } else if (error.request) {
+      errorMessage = '🌐 No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    }
     
     dispatch({
       type: UPDATE_PURCHASE_INVOICE_FAILURE,
@@ -2839,11 +2923,13 @@ export const updatePurchaseInvoice = (id, invoiceData) => async (dispatch) => {
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
-      text: errorMessage
+      title: 'Error al Actualizar Factura',
+      text: errorMessage,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#d33'
     });
 
-    throw error;
+    throw new Error(errorMessage);
   }
 };
 
@@ -2986,9 +3072,44 @@ export const createSupplierPayment = (paymentData) => async (dispatch) => {
 
     return data.message;
   } catch (error) {
-    console.error('❌ [PAYMENT] Error creating payment:', error);
+    console.error('❌ [PAYMENT] Error creating payment:', error.response || error);
     
-    const errorMessage = error.response?.data?.error || error.message;
+    let errorMessage = 'Error al registrar el pago';
+    
+    if (error.response) {
+      const { status, data: responseData } = error.response;
+      
+      switch (status) {
+        case 400:
+          errorMessage = responseData?.error || 'Datos de pago inválidos';
+          
+          if (errorMessage.includes('excede el saldo pendiente')) {
+            errorMessage = `⚠️ ${errorMessage}. Verifica el monto ingresado.`;
+          } else if (errorMessage.includes('requeridos')) {
+            errorMessage = '⚠️ Por favor completa todos los campos obligatorios: Factura, Proveedor, Fecha y Monto.';
+          } else if (errorMessage.includes('debe ser mayor a 0')) {
+            errorMessage = '⚠️ El monto del pago debe ser mayor a cero.';
+          }
+          break;
+          
+        case 404:
+          if (errorMessage.includes('Factura')) {
+            errorMessage = '❌ Factura no encontrada. Por favor, verifica la factura seleccionada.';
+          } else if (errorMessage.includes('Proveedor')) {
+            errorMessage = '❌ Proveedor no encontrado. Por favor, selecciona un proveedor válido.';
+          }
+          break;
+          
+        case 500:
+          errorMessage = '❌ Error en el servidor. Por favor, intenta nuevamente.';
+          break;
+          
+        default:
+          errorMessage = responseData?.error || error.message || errorMessage;
+      }
+    } else if (error.request) {
+      errorMessage = '🌐 No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    }
     
     dispatch({
       type: CREATE_SUPPLIER_PAYMENT_FAILURE,
@@ -2997,11 +3118,13 @@ export const createSupplierPayment = (paymentData) => async (dispatch) => {
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
-      text: errorMessage
+      title: 'Error al Registrar Pago',
+      text: errorMessage,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#d33'
     });
 
-    throw error;
+    throw new Error(errorMessage);
   }
 };
 

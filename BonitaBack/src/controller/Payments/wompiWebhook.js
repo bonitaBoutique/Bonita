@@ -65,9 +65,23 @@ function verifySignature(req) {
 
 module.exports = async (req, res) => {
   try {
+    console.log("🔔 [WOMPI WEBHOOK] ===== INICIO =====");
+    console.log("🔔 [WOMPI WEBHOOK] Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("🔔 [WOMPI WEBHOOK] Body:", JSON.stringify(req.body, null, 2));
+    
     verifySignature(req);
+    console.log("✅ [WOMPI WEBHOOK] Firma verificada correctamente");
 
     const { paymentIntent, order } = await handleWompiEvent(req.body);
+
+    console.log("✅ [WOMPI WEBHOOK] Evento procesado exitosamente:", {
+      paymentIntentId: paymentIntent.id_payment_intent,
+      status: paymentIntent.status,
+      orderReference: paymentIntent.order_reference,
+      wompiTransactionId: paymentIntent.wompi_transaction_id,
+      orderCreated: Boolean(order),
+      orderId: order?.id_orderDetail
+    });
 
     return response(res, 200, {
       paymentIntent: {
@@ -81,6 +95,7 @@ module.exports = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ [WOMPI WEBHOOK] Error:", error);
+    console.error("❌ [WOMPI WEBHOOK] Stack:", error.stack);
     const status = error.message === "Firma inválida" ? 401 : 400;
     return response(res, status, { error: error.message });
   }

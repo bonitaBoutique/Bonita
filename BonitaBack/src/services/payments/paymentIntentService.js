@@ -180,27 +180,50 @@ async function finalizeApprovedIntent(paymentIntent, transactionPayload) {
 }
 
 async function handleWompiEvent(eventPayload) {
+  console.log("📨 [HANDLE WOMPI EVENT] Procesando evento:", JSON.stringify(eventPayload, null, 2));
+  
   const { data } = eventPayload;
   const transaction = data?.transaction;
 
   if (!transaction) {
+    console.error("❌ [HANDLE WOMPI EVENT] Falta transaction en el payload");
     throw new Error("Evento de Wompi inválido: falta transaction");
   }
+
+  console.log("🔍 [HANDLE WOMPI EVENT] Transaction data:", {
+    id: transaction.id,
+    reference: transaction.reference,
+    status: transaction.status,
+    amount_in_cents: transaction.amount_in_cents
+  });
 
   const intent = await PaymentIntent.findOne({
     where: { wompi_reference: transaction.reference },
   });
 
   if (!intent) {
+    console.error("❌ [HANDLE WOMPI EVENT] No se encontró PaymentIntent con referencia:", transaction.reference);
     throw new Error(`No se encontró PaymentIntent con referencia ${transaction.reference}`);
   }
 
+  console.log("✅ [HANDLE WOMPI EVENT] PaymentIntent encontrado:", {
+    id: intent.id_payment_intent,
+    order_reference: intent.order_reference,
+    current_status: intent.status
+  });
+
   const wompiStatus = STATUS_MAP[transaction.status] || STATUS_MAP.ERROR;
+  console.log("🔄 [HANDLE WOMPI EVENT] Mapeando estado:", {
+    wompiStatus: transaction.status,
+    mappedStatus: wompiStatus
+  });
 
   if (wompiStatus === STATUS_MAP.APPROVED) {
+    console.log("✅ [HANDLE WOMPI EVENT] Estado APPROVED - Finalizando intent...");
     return finalizeApprovedIntent(intent, transaction);
   }
 
+  console.log("⏳ [HANDLE WOMPI EVENT] Actualizando estado a:", wompiStatus);
   const updatedIntent = await setIntentStatus(
     intent,
     wompiStatus,
@@ -209,6 +232,11 @@ async function handleWompiEvent(eventPayload) {
       raw_transaction: transaction,
     }
   );
+
+  console.log("✅ [HANDLE WOMPI EVENT] Estado actualizado:", {
+    id: updatedIntent.id_payment_intent,
+    new_status: updatedIntent.status
+  });
 
   return { paymentIntent: updatedIntent, order: null };
 }

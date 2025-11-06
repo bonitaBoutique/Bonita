@@ -139,10 +139,10 @@ const PaymentIntentsList = () => {
 
   // Funciones para manejo del tooltip de productos
   const handleMouseEnter = (paymentId, event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    // Usar la posición del mouse directamente para mayor precisión
     setTooltipPosition({
-      x: rect.left,
-      y: rect.bottom + window.scrollY + 5,
+      x: event.clientX + 10, // 10px a la derecha del cursor
+      y: event.clientY + 10, // 10px debajo del cursor
     });
     setHoveredPaymentId(paymentId);
   };

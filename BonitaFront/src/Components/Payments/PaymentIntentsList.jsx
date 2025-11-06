@@ -25,11 +25,34 @@ const PaymentIntentsList = () => {
     toDate: ''
   });
 
+  const [autoRefresh, setAutoRefresh] = useState(true); // ✅ Auto-refresh activado por defecto
+  const [refreshInterval, setRefreshInterval] = useState(30); // ✅ Intervalo en segundos
+  const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+
+  // ✅ NUEVO: Función para refrescar datos
+  const refreshData = () => {
+    console.log('🔄 [PaymentIntents] Refrescando datos...');
+    dispatch(fetchPaymentIntents(filters));
+    setLastRefreshTime(Date.now());
+  };
+
   // Cargar datos iniciales
   useEffect(() => {
     console.log('🚀 [PaymentIntents] Componente montado, cargando datos iniciales...');
-    dispatch(fetchPaymentIntents(filters));
+    refreshData();
   }, []);
+
+  // ✅ NUEVO: Auto-refresh periódico
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const intervalId = setInterval(() => {
+      console.log(`🔄 [PaymentIntents] Auto-refresh cada ${refreshInterval} segundos`);
+      refreshData();
+    }, refreshInterval * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefresh, refreshInterval, filters]);
 
   // Debug de estado
   useEffect(() => {
@@ -286,10 +309,44 @@ const PaymentIntentsList = () => {
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            💳 Pagos en Línea
-          </h1>
-          <div className="flex gap-3">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              💳 Pagos en Línea
+            </h1>
+            {/* ✅ NUEVO: Indicador de última actualización */}
+            <p className="text-sm text-gray-500 mt-1">
+              Última actualización: {new Date(lastRefreshTime).toLocaleTimeString('es-CO')}
+              {autoRefresh && ` • Auto-refresh cada ${refreshInterval}s`}
+            </p>
+          </div>
+          <div className="flex gap-3 items-center">
+            {/* ✅ NUEVO: Toggle Auto-refresh */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-gray-300">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Auto-refresh
+                </span>
+              </label>
+              {autoRefresh && (
+                <select
+                  value={refreshInterval}
+                  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                  className="text-sm border-l border-gray-300 pl-2 focus:outline-none"
+                >
+                  <option value={10}>10s</option>
+                  <option value={30}>30s</option>
+                  <option value={60}>1min</option>
+                  <option value={120}>2min</option>
+                </select>
+              )}
+            </div>
+
             <button
               onClick={handleExportToExcel}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200 flex items-center gap-2"
@@ -298,11 +355,20 @@ const PaymentIntentsList = () => {
               📊 Exportar Excel
             </button>
             <button
-              onClick={() => dispatch(fetchPaymentIntents(filters))}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2"
+              onClick={refreshData}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              {loading ? '🔄' : '🔄'} Actualizar
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Actualizando...
+                </>
+              ) : (
+                <>
+                  🔄 Actualizar
+                </>
+              )}
             </button>
           </div>
         </div>

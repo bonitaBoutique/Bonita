@@ -28,6 +28,10 @@ const PaymentIntentsList = () => {
   const [autoRefresh, setAutoRefresh] = useState(true); // ✅ Auto-refresh activado por defecto
   const [refreshInterval, setRefreshInterval] = useState(30); // ✅ Intervalo en segundos
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+  
+  // Estados para tooltip de productos
+  const [hoveredPaymentId, setHoveredPaymentId] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   // ✅ NUEVO: Función para refrescar datos
   const refreshData = () => {
@@ -131,6 +135,20 @@ const PaymentIntentsList = () => {
   const formatAmount = (amountInCents) => {
     const amount = amountInCents / 100;
     return formatCurrency(amount);
+  };
+
+  // Funciones para manejo del tooltip de productos
+  const handleMouseEnter = (paymentId, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left,
+      y: rect.bottom + window.scrollY + 5,
+    });
+    setHoveredPaymentId(paymentId);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredPaymentId(null);
   };
 
   const handleExportToExcel = () => {
@@ -606,12 +624,16 @@ const PaymentIntentsList = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="space-y-1 text-sm">
+                          <div 
+                            className="space-y-1 text-sm cursor-pointer hover:bg-gray-50 rounded p-1 transition-colors"
+                            onMouseEnter={(e) => handleMouseEnter(payment.id_payment_intent, e)}
+                            onMouseLeave={handleMouseLeave}
+                          >
                             <div className="font-medium text-gray-900">
                               {formatAmount(payment.amount_in_cents)}
                             </div>
-                            <div className="text-gray-500 text-xs">
-                              {payment.products?.length || 0} productos
+                            <div className="text-blue-600 text-xs hover:underline">
+                              {payment.products?.length || 0} producto{payment.products?.length !== 1 ? 's' : ''} →
                             </div>
                             {(payment.discount > 0 || payment.shipping_cost > 0) && (
                               <div className="text-gray-500 text-xs">
@@ -721,6 +743,47 @@ const PaymentIntentsList = () => {
           )}
         </div>
       </div>
+
+      {/* Tooltip de productos */}
+      {hoveredPaymentId && (
+        <div
+          className="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-xl p-4 max-w-md"
+          style={{
+            top: `${tooltipPosition.y}px`,
+            left: `${tooltipPosition.x}px`,
+          }}
+        >
+          <div className="space-y-2">
+            <div className="font-semibold text-gray-900 border-b pb-2">
+              Productos del pedido:
+            </div>
+            {paymentIntents
+              .find(p => p.id_payment_intent === hoveredPaymentId)
+              ?.products?.map((product, idx) => (
+                <div key={idx} className="flex justify-between items-start gap-4 py-1 border-b last:border-b-0">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm text-gray-900">
+                      {product.description || product.id_product}
+                    </div>
+                    {product.id_product && (
+                      <div className="text-xs text-gray-500">
+                        Código: {product.id_product}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900">
+                      {product.quantity} x {formatCurrency(product.price)}
+                    </div>
+                    <div className="text-xs text-gray-600 font-semibold">
+                      = {formatCurrency(product.price * product.quantity)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

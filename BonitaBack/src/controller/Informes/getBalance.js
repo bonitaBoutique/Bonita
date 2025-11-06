@@ -588,12 +588,20 @@ const getBalance = async (req, res) => {
       ...formattedPartialPayments
     ];
 
-    // ✅ Función para calcular ingresos por método
+    // ✅ Función para calcular ingresos por método (con soporte para variantes)
     const calculateIncomeByMethod = (method) => {
       return allLocalPayments
         .filter(payment => {
           // Para GiftCards, usar el método real del Payment si existe
           const paymentMethod = payment.actualPaymentMethod || payment.paymentMethod;
+          
+          // ✅ MANEJO ESPECIAL: "Tarjeta" incluye "Tarjeta de Débito" y "Tarjeta de Crédito"
+          if (method === "Tarjeta") {
+            return paymentMethod === "Tarjeta" || 
+                   paymentMethod === "Tarjeta de Débito" || 
+                   paymentMethod === "Tarjeta de Crédito";
+          }
+          
           return paymentMethod === method;
         })
         .reduce((acc, payment) => acc + (payment.amount || 0), 0);
@@ -601,7 +609,7 @@ const getBalance = async (req, res) => {
 
     // ✅ Calcular totales por cada método
     const ingresosEfectivo = calculateIncomeByMethod("Efectivo");
-    const ingresosTarjeta = calculateIncomeByMethod("Tarjeta");
+    const ingresosTarjeta = calculateIncomeByMethod("Tarjeta"); // Incluye Débito y Crédito
     const ingresosNequi = calculateIncomeByMethod("Nequi");
     const ingresosBancolombia = calculateIncomeByMethod("Bancolombia");
     const ingresosAddi = calculateIncomeByMethod("Addi");

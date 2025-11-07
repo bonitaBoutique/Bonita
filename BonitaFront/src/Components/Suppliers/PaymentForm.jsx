@@ -149,6 +149,11 @@ const PaymentForm = () => {
   const pendingInvoices = invoices.filter(
     inv => inv.status === 'pending' || inv.status === 'partial'
   );
+  
+  console.log('🔍 [PAYMENT FORM] invoices from Redux:', invoices);
+  console.log('🔍 [PAYMENT FORM] invoices.length:', invoices.length);
+  console.log('🔍 [PAYMENT FORM] pendingInvoices:', pendingInvoices);
+  console.log('🔍 [PAYMENT FORM] pendingInvoices.length:', pendingInvoices.length);
 
   return (
     <>

@@ -48,13 +48,16 @@ const PaymentForm = () => {
   }, [dispatch, suppliers.length]);
 
   useEffect(() => {
+    console.log('🔍 [PAYMENT FORM] formData.id_supplier:', formData.id_supplier);
     if (formData.id_supplier && formData.id_supplier !== 'undefined') {
-      dispatch(fetchPurchaseInvoices({ 
+      const filters = { 
         id_supplier: formData.id_supplier,
         status: 'pending,partial',
         page: 1, 
         limit: 100 
-      }));
+      };
+      console.log('📤 [PAYMENT FORM] Despachando fetchPurchaseInvoices con filtros:', filters);
+      dispatch(fetchPurchaseInvoices(filters));
     }
   }, [dispatch, formData.id_supplier]);
 

@@ -29,6 +29,7 @@ const GiftCard = () => {
 
   // Estados locales del formulario
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NUEVO: Prevenir doble submit
   const [amount, setAmount] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
@@ -168,6 +169,12 @@ const GiftCard = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ✅ Prevenir doble submit
+    if (isSubmitting) {
+      console.log("⚠️ Ya se está procesando una GiftCard");
+      return;
+    }
+
     // Validar que los datos del cliente se hayan cargado
     if (!buyerName || !buyerEmail) {
       Swal.fire("Error", "No se pudieron cargar los datos del cliente.", "error");
@@ -211,6 +218,9 @@ const GiftCard = () => {
     console.log("Enviando GiftCard con fecha de Colombia:", receiptData);
 
     try {
+      // ✅ Activar estado de carga
+      setIsSubmitting(true);
+
       // Mostrar loading
       Swal.fire({
         title: "Creando GiftCard...",
@@ -261,6 +271,9 @@ const GiftCard = () => {
         title: "Error al crear GiftCard",
         text: `${error.response?.data?.message || error.message || "Inténtalo de nuevo."}`,
       });
+    } finally {
+      // ✅ Desactivar estado de carga siempre (éxito o error)
+      setIsSubmitting(false);
     }
   };
 
@@ -534,8 +547,14 @@ const GiftCard = () => {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
             >
               <option value="Efectivo">Efectivo</option>
-              <option value="Tarjeta">Tarjeta de Débito o Crédito</option>
+              <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+              <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Daviplata">Daviplata</option>
               <option value="Bancolombia">Bancolombia</option>
+              <option value="Addi">Addi</option>
+              <option value="Sistecredito">Sistecredito</option>
               <option value="Otro">Otro</option>
             </select>
           </div>
@@ -544,10 +563,10 @@ const GiftCard = () => {
           <div className="flex gap-4">
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 transition duration-300"
-              disabled={isSubmitted || clientLoading || cashierLoading}
+              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition duration-300"
+              disabled={isSubmitted || isSubmitting || clientLoading || cashierLoading}
             >
-              Generar Recibo GiftCard
+              {isSubmitting ? "Procesando..." : "Generar Recibo GiftCard"}
             </button>
             
             {isSubmitted && (

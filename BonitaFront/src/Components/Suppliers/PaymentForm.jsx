@@ -50,7 +50,7 @@ const PaymentForm = () => {
   useEffect(() => {
     if (formData.id_supplier && formData.id_supplier !== 'undefined') {
       dispatch(fetchPurchaseInvoices({ 
-        supplierId: formData.id_supplier,
+        id_supplier: formData.id_supplier,
         status: 'pending,partial',
         page: 1, 
         limit: 100 
@@ -124,7 +124,7 @@ const PaymentForm = () => {
       // ✅ Recargar facturas para actualizar estados
       if (formData.id_supplier) {
         await dispatch(fetchPurchaseInvoices({ 
-          supplierId: formData.id_supplier,
+          id_supplier: formData.id_supplier,
           status: 'pending,partial',
           page: 1, 
           limit: 100 

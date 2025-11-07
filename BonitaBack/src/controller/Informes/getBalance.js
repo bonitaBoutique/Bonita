@@ -399,28 +399,50 @@ const getBalance = async (req, res) => {
     localSales.forEach(sale => {
       const saleData = sale.toJSON();
       
-      // ✅ VERIFICAR SI ES GIFTCARD DE DEVOLUCIÓN (sin Payment asociado)
-      if (saleData.payMethod === 'GiftCard' && (!saleData.Payments || saleData.Payments.length === 0)) {
-        console.log(`🎁 GiftCard de devolución detectada - EXCLUIR del balance: ${sale.id_receipt}`);
-        return; // Saltar este receipt (no agregarlo al balance)
-      }
-
-      // ✅ NUEVO: VERIFICAR SI ES USO DE GIFTCARD (cuando se redime para pagar)
-      // Si payMethod o payMethod2 es GiftCard Y hay Payments asociados, significa que se USÓ una GiftCard existente
-      // En este caso, solo queremos mostrar el otro método de pago (el que no es GiftCard)
-      const isGiftCardUsage = (saleData.payMethod === 'GiftCard' || saleData.payMethod2 === 'GiftCard') 
-                              && saleData.Payments 
-                              && saleData.Payments.length > 0;
+      // ✅ DIFERENCIAR: COMPRA DE GIFTCARD vs USO DE GIFTCARD
+      // COMPRA: Receipt.payMethod = "GiftCard" + Payment.payMethod = método real (Efectivo, Tarjeta, etc.)
+      // USO: Receipt tiene GiftCard en payMethod o payMethod2 como REDENCIÓN, sin Payment asociado
       
-      if (isGiftCardUsage) {
-        console.log(`🎁 Uso de GiftCard detectado - SOLO mostrar método secundario: ${sale.id_receipt}`);
+      const hasPaymentRecord = saleData.Payments && saleData.Payments.length > 0;
+      const isGiftCardPurchase = saleData.payMethod === 'GiftCard' && hasPaymentRecord;
+      const isGiftCardRedemption = (saleData.payMethod === 'GiftCard' || saleData.payMethod2 === 'GiftCard') 
+                                   && !hasPaymentRecord;
+      
+      // ✅ CASO 1: COMPRA DE GIFTCARD (debe aparecer en Balance con método real)
+      if (isGiftCardPurchase) {
+        console.log(`🎁 Compra de GiftCard detectada - usar método de Payment: ${sale.id_receipt}`);
+        
+        const realPaymentMethod = saleData.Payments[0].payMethod; // El método real usado para comprar
+        const giftCardPurchase = {
+          id: `${sale.id_receipt}-giftcard-purchase`,
+          originalReceiptId: sale.id_receipt,
+          date: sale.createdAt,
+          amount: parseFloat(saleData.amount || 0),
+          pointOfSale: 'Local',
+          paymentMethod: realPaymentMethod, // ✅ Usar el método REAL
+          cashierDocument: saleData.cashier_document || 'Sin asignar',
+          buyerName: saleData.buyer_name || 'Cliente general',
+          buyerEmail: saleData.buyer_email || '',
+          buyerPhone: saleData.buyer_phone || '',
+          type: 'Compra GiftCard',
+          isMainPayment: true,
+          totalReceiptAmount: parseFloat(saleData.total_amount || 0),
+          id_orderDetail: saleData.OrderDetail?.id_orderDetail || null
+        };
+        formattedLocalSales.push(giftCardPurchase);
+        return; // Ya procesamos este receipt
+      }
+      
+      // ✅ CASO 2: USO/REDENCIÓN DE GIFTCARD (solo mostrar método secundario si existe)
+      if (isGiftCardRedemption) {
+        console.log(`🎁 Redención de GiftCard detectada - SOLO mostrar método secundario: ${sale.id_receipt}`);
         
         // Si payMethod principal es GiftCard, solo agregar el secundario (si existe)
         if (saleData.payMethod === 'GiftCard' && saleData.payMethod2 && saleData.amount2 && saleData.amount2 > 0) {
           const secondaryPayment = {
             id: `${sale.id_receipt}-secondary`,
             originalReceiptId: sale.id_receipt,
-            date: sale.createdAt, // ✅ Usar createdAt para incluir hora
+            date: sale.createdAt,
             amount: parseFloat(saleData.amount2 || 0),
             pointOfSale: 'Local',
             paymentMethod: saleData.payMethod2,
@@ -440,7 +462,7 @@ const getBalance = async (req, res) => {
           const mainPayment = {
             id: `${sale.id_receipt}-main`,
             originalReceiptId: sale.id_receipt,
-            date: sale.createdAt, // ✅ Usar createdAt para incluir hora
+            date: sale.createdAt,
             amount: parseFloat(saleData.amount || 0),
             pointOfSale: 'Local',
             paymentMethod: saleData.payMethod,
@@ -456,14 +478,14 @@ const getBalance = async (req, res) => {
           formattedLocalSales.push(mainPayment);
         }
         
-        return; // Ya procesamos este receipt, continuar con el siguiente
+        return; // Ya procesamos este receipt
       }
       
-      // ✅ PAGO PRINCIPAL (siempre existe para ventas normales sin GiftCard)
+      // ✅ VENTAS NORMALES (sin GiftCard)
       const mainPayment = {
         id: `${sale.id_receipt}-main`,
         originalReceiptId: sale.id_receipt,
-        date: sale.createdAt, // ✅ Usar createdAt para incluir hora
+        date: sale.createdAt,
         amount: parseFloat(saleData.amount || 0),
         pointOfSale: 'Local',
         paymentMethod: saleData.payMethod || 'Efectivo',
@@ -475,11 +497,7 @@ const getBalance = async (req, res) => {
         isMainPayment: true,
         totalReceiptAmount: parseFloat(saleData.total_amount || 0),
         hasSecondaryPayment: !!(saleData.payMethod2 && saleData.amount2),
-        id_orderDetail: saleData.OrderDetail?.id_orderDetail || null,
-        // ✅ Para GiftCards compradas, usar el método real del Payment
-        actualPaymentMethod: saleData.Payments && saleData.Payments.length > 0 
-          ? saleData.Payments[0].payMethod 
-          : saleData.payMethod
+        id_orderDetail: saleData.OrderDetail?.id_orderDetail || null
       };
 
       formattedLocalSales.push(mainPayment);

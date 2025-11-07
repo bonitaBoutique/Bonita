@@ -2748,10 +2748,6 @@ export const fetchPurchaseInvoices = (filters = {}) => async (dispatch) => {
     console.log('📄 [INVOICE] Fetching purchase invoices:', url);
 
     const { data } = await axios.get(url);
-    
-    console.log('✅ [INVOICE] Respuesta del backend:', data);
-    console.log('📦 [INVOICE] data.message:', data.message);
-    console.log('📊 [INVOICE] Cantidad de facturas:', data.message?.data?.length || data.message?.length || 0);
 
     dispatch({
       type: FETCH_PURCHASE_INVOICES_SUCCESS,

@@ -48,16 +48,13 @@ const PaymentForm = () => {
   }, [dispatch, suppliers.length]);
 
   useEffect(() => {
-    console.log('🔍 [PAYMENT FORM] formData.id_supplier:', formData.id_supplier);
     if (formData.id_supplier && formData.id_supplier !== 'undefined') {
-      const filters = { 
+      dispatch(fetchPurchaseInvoices({ 
         id_supplier: formData.id_supplier,
         status: 'pending,partial,overdue',
         page: 1, 
         limit: 100 
-      };
-      console.log('📤 [PAYMENT FORM] Despachando fetchPurchaseInvoices con filtros:', filters);
-      dispatch(fetchPurchaseInvoices(filters));
+      }));
     }
   }, [dispatch, formData.id_supplier]);
 
@@ -149,11 +146,7 @@ const PaymentForm = () => {
   const pendingInvoices = invoices.filter(
     inv => inv.status === 'pending' || inv.status === 'partial' || inv.status === 'overdue'
   );
-  
-  console.log('🔍 [PAYMENT FORM] invoices from Redux:', invoices);
-  console.log('🔍 [PAYMENT FORM] invoices.length:', invoices.length);
-  console.log('🔍 [PAYMENT FORM] pendingInvoices:', pendingInvoices);
-  console.log('🔍 [PAYMENT FORM] pendingInvoices.length:', pendingInvoices.length);
+
 
   return (
     <>

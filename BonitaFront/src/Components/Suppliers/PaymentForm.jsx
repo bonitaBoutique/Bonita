@@ -52,7 +52,7 @@ const PaymentForm = () => {
     if (formData.id_supplier && formData.id_supplier !== 'undefined') {
       const filters = { 
         id_supplier: formData.id_supplier,
-        status: 'pending,partial',
+        status: 'pending,partial,overdue',
         page: 1, 
         limit: 100 
       };
@@ -128,7 +128,7 @@ const PaymentForm = () => {
       if (formData.id_supplier) {
         await dispatch(fetchPurchaseInvoices({ 
           id_supplier: formData.id_supplier,
-          status: 'pending,partial',
+          status: 'pending,partial,overdue',
           page: 1, 
           limit: 100 
         }));
@@ -147,7 +147,7 @@ const PaymentForm = () => {
   }
 
   const pendingInvoices = invoices.filter(
-    inv => inv.status === 'pending' || inv.status === 'partial'
+    inv => inv.status === 'pending' || inv.status === 'partial' || inv.status === 'overdue'
   );
   
   console.log('🔍 [PAYMENT FORM] invoices from Redux:', invoices);

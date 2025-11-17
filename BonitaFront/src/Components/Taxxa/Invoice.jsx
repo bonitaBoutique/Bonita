@@ -392,10 +392,9 @@ const Invoice = () => {
         throw new Error("ID de orden no válido");
       }
 
-      if (
-        !jDocumentData.sdocumentsuffix ||
-        typeof jDocumentData.sdocumentsuffix !== "number"
-      ) {
+      // Validar que sdocumentsuffix sea un número válido (puede venir como string o number)
+      const suffixValue = Number(jDocumentData.sdocumentsuffix);
+      if (!jDocumentData.sdocumentsuffix || isNaN(suffixValue) || suffixValue <= 0) {
         throw new Error("Número de factura no válido");
       }
 

@@ -49,6 +49,38 @@ const createInvoice = async (req, res) => {
       });
     }
 
+    // 4.5 Permitir override del consecutivo (ej: continuar desde 65)
+    const requestedSuffix = req.body.overrideSuffix
+      || invoiceData.overrideSuffix
+      || invoiceData.sdocumentsuffix;
+    const invoiceSuffix = String(requestedSuffix || '').trim();
+    if (!invoiceSuffix) {
+      return res.status(400).json({
+        message: 'No se pudo determinar el consecutivo de factura',
+        success: false
+      });
+    }
+    invoiceData.sdocumentsuffix = invoiceSuffix;
+    const invoiceNumber = `${invoiceData.sdocumentprefix}${invoiceSuffix}`;
+    console.log('Verificando número de factura (override admitido):', invoiceNumber);
+
+    const existingInvoice = await Invoice.findOne({
+      where: { invoiceNumber }
+    });
+
+    if (existingInvoice) {
+      console.error('=== Número de factura duplicado ===');
+      console.error('Factura existente:', existingInvoice.toJSON());
+      return res.status(400).json({
+        message: `El número de factura ${invoiceNumber} ya existe en el sistema`,
+        success: false,
+        invoiceNumber,
+        existingInvoiceId: existingInvoice.id,
+        orderReference: id_orderDetail,
+        suggestion: 'Proporciona un nuevo overrideSuffix para continuar'
+      });
+    }
+
     // 5. Obtener datos adicionales
     console.log('=== Consultando datos adicionales ===');
     const [sellerData, userData] = await Promise.all([

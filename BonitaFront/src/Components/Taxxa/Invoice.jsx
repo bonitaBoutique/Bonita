@@ -448,6 +448,7 @@ const Invoice = () => {
       const invoiceDataToSend = {
         invoiceData: jDocumentDataWithOrderId,
         sellerId: sellerId,
+        overrideSuffix: jDocumentDataWithOrderId.sdocumentsuffix,
       };
 
       const response = await dispatch(sendInvoice(invoiceDataToSend));

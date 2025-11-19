@@ -3,7 +3,7 @@ const response = require('../../utils/response');
 
 module.exports = async (req, res) => {
   const { id } = req.params;
-  const { marca, codigoProv, description, price, priceSell, stock, sizes, colors, tiendaOnLine } = req.body;
+  const { marca, codigoProv, description, price, priceSell, stock, sizes, colors, tiendaOnLine, isDian } = req.body;
   const images = req.body.images; // Recoger la propiedad images
 
   if (
@@ -16,7 +16,8 @@ module.exports = async (req, res) => {
     !sizes &&
     !colors &&
     !images &&
-    tiendaOnLine === undefined
+    tiendaOnLine === undefined &&
+    isDian === undefined
   ) {
     return response(res, 400, { error: "No data to update" });
   }
@@ -35,16 +36,17 @@ module.exports = async (req, res) => {
     product.stock = stock !== undefined ? parseInt(stock, 10) : product.stock;
     product.priceSell = priceSell !== undefined ? parseFloat(priceSell) : product.priceSell;
     product.tiendaOnLine = tiendaOnLine !== undefined ? JSON.parse(tiendaOnLine) : product.tiendaOnLine;
+    product.isDian = isDian !== undefined ? JSON.parse(isDian) : product.isDian; // ✅ Agregar isDian
     product.sizes = sizes !== undefined ? sizes : product.sizes;
     product.colors = colors !== undefined ? colors : product.colors;
-    product.codigoProv = codigoProv !== undefined ? codigoProv : product.codigoProv; // <-- AGREGADO
+    product.codigoProv = codigoProv !== undefined ? codigoProv : product.codigoProv;
     product.images = images !== undefined ? images : product.images;
 
     // Guardar los cambios en la base de datos
     await product.save();
     console.log('Product updated:', product);
 
-    return response(res, 200, { message: "Product updated successfully", product });
+    return response(res, 200, "Product updated successfully", { product });
   } catch (error) {
     console.error('Error updating product:', error);
     return response(res, 500, { error: error.message });

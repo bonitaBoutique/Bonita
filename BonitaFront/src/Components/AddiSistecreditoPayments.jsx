@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -82,7 +82,7 @@ const ControlAddiSistecreditoPayments = () => {
   };
 
   // ✅ FUNCIÓN: Registrar depósito
-  const handleRegisterDeposit = async (e) => {
+  const handleRegisterDeposit = useCallback(async (e) => {
     e.preventDefault();
     
     if (!depositForm.amount || depositForm.amount <= 0) {
@@ -121,10 +121,10 @@ const ControlAddiSistecreditoPayments = () => {
       console.error('❌ Error al registrar depósito:', error);
       alert(`❌ Error: ${error.response?.data?.message || error.message}`);
     }
-  };
+  }, [depositForm]);
 
   // ✅ FUNCIÓN: Marcar recibo como conciliado
-  const markReceiptAsConciliated = async (receiptId, platform) => {
+  const markReceiptAsConciliated = useCallback(async (receiptId, platform) => {
     try {
       const confirmed = window.confirm(
         `¿Marcar el recibo #${receiptId} de ${platform} como conciliado?`
@@ -152,7 +152,7 @@ const ControlAddiSistecreditoPayments = () => {
       console.error('❌ Error al marcar recibo:', error);
       alert(`❌ Error: ${error.response?.data?.message || error.message}`);
     }
-  };
+  }, []);
 
   // ✅ Cargar datos al inicio y cuando cambien los filtros
   useEffect(() => {
@@ -222,8 +222,8 @@ const ControlAddiSistecreditoPayments = () => {
     </div>
   );
 
-  // ✅ COMPONENTE: Formulario de depósito
-  const DepositForm = () => (
+  // ✅ COMPONENTE: Formulario de depósito (memoizado para evitar recreación)
+  const DepositForm = React.memo(() => (
     <div className="bg-white p-6 rounded-lg shadow-lg border">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">💰 Registrar Nuevo Depósito</h3>
@@ -325,10 +325,10 @@ const ControlAddiSistecreditoPayments = () => {
         </div>
       </form>
     </div>
-  );
+  ));
 
-  // ✅ COMPONENTE: Lista de recibos pendientes
-  const ReceiptsList = ({ platform }) => {
+  // ✅ COMPONENTE: Lista de recibos pendientes (memoizado)
+  const ReceiptsList = React.memo(({ platform }) => {
     const filteredReceipts = conciliationData.receipts.filter(
       receipt => !platform || receipt.payMethod === platform
     );
@@ -399,7 +399,7 @@ const ControlAddiSistecreditoPayments = () => {
         </div>
       </div>
     );
-  };
+  });
 
   if (loading) {
     return (

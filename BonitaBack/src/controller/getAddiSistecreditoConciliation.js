@@ -42,7 +42,8 @@ const getAddiSistecreditoConciliation = async (req, res) => {
         'buyer_name', 
         'total_amount',
         'payMethod',
-        'date'
+        'date',
+        'isConciliated' // ✅ Agregar campo de conciliación
       ],
       order: [['date', 'DESC']]
     });

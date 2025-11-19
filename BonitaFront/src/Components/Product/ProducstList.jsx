@@ -33,12 +33,10 @@ const ProductsList = () => {
   const [hasMore, setHasMore] = useState(true);
   const productsPerLoad = 12;
 
-  // Cargar productos al inicio
+  // Cargar productos al inicio - SIEMPRE recargar para obtener cambios
   useEffect(() => {
-    if (products.length === 0) {
-      dispatch(fetchProducts());
-    }
-  }, [dispatch, products.length]);
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   // ✅ LÓGICA DE AGRUPACIÓN (conservada tal como está)
   useEffect(() => {

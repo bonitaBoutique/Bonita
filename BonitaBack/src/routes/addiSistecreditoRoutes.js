@@ -3,7 +3,8 @@ const {
   createAddiSistecreditoDeposit,
   getAddiSistecreditoConciliation,
   getAddiSistecreditoDeposits,
-  updateAddiSistecreditoDeposit
+  updateAddiSistecreditoDeposit,
+  markReceiptAsConciliated
 } = require("../controller");
 
 const router = Router();
@@ -19,5 +20,8 @@ router.get("/conciliation", getAddiSistecreditoConciliation);
 
 // ✅ ACTUALIZAR UN DEPÓSITO (ESTADO, NOTAS, ETC.)
 router.put("/deposit/:depositId", updateAddiSistecreditoDeposit);
+
+// ✅ MARCAR RECIBO COMO CONCILIADO
+router.put("/receipt/:receiptId/conciliate", markReceiptAsConciliated);
 
 module.exports = router;

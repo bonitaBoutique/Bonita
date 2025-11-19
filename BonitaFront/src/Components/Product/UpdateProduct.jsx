@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProductById, updateProduct } from "../../Redux/Actions/actions";
+import { fetchProductById, updateProduct, fetchProducts } from "../../Redux/Actions/actions";
 import { useParams, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Navbar2 from "../Navbar2";
@@ -56,16 +56,35 @@ const UpdateProduct = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(updateProduct(id, formData));
-    Swal.fire({
-      title: "Modificado",
-      text: "Producto modificado exitosamente",
-      icon: "success",
-      confirmButtonText: "OK",
-    });
-    navigate("/");
+    
+    console.log('Datos enviados', formData);
+    
+    try {
+      await dispatch(updateProduct(id, formData));
+      
+      // ✅ Recargar los productos después de actualizar
+      await dispatch(fetchProducts());
+      
+      Swal.fire({
+        title: "Modificado",
+        text: "Producto modificado exitosamente",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
+      
+      // ✅ Navegar a la lista de productos
+      navigate("/panel/productos");
+    } catch (error) {
+      console.error('Error al actualizar producto:', error);
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo actualizar el producto",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   return (

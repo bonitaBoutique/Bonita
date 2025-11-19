@@ -35,6 +35,7 @@ const createAddiSistecreditoDeposit = require("./createAddiSistecreditoDeposit")
 const getAddiSistecreditoConciliation = require("./getAddiSistecreditoConciliation");
 const getAddiSistecreditoDeposits = require("./getAddiSistecreditoDeposits");
 const updateAddiSistecreditoDeposit = require("./updateAddiSistecreditoDeposit");
+const markReceiptAsConciliated = require("./markReceiptAsConciliated");
 
 const { createExpense, filterExpenses } = require("./Informes");
 const getSendingById = require("./MiPaquete/getSendingById");
@@ -146,6 +147,7 @@ module.exports = {
   getAddiSistecreditoConciliation: catchedAsync(getAddiSistecreditoConciliation),
   getAddiSistecreditoDeposits: catchedAsync(getAddiSistecreditoDeposits),
   updateAddiSistecreditoDeposit: catchedAsync(updateAddiSistecreditoDeposit),
+  markReceiptAsConciliated: catchedAsync(markReceiptAsConciliated),
 
   returnProducts: catchedAsync(require("./Products/returnProducts")),
   getReceiptForReturn: catchedAsync(require("./Products/getReceiptForReturn")),

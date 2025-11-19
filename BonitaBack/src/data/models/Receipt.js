@@ -89,6 +89,12 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE, // Fecha y hora
         allowNull: true,
       },
+      isConciliated: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+        comment: 'Indica si el recibo Addi/Sistecredito ha sido conciliado'
+      },
     },
     {
       paranoid: true,

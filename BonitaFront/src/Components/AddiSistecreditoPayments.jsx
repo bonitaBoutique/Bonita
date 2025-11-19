@@ -114,6 +114,9 @@ const ControlAddiSistecreditoPayments = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
+  // ✅ Obtener usuario actual
+  const userInfo = useSelector((state) => state.userLogin?.userInfo);
+  
   // ✅ Estados para gestión de datos
   const [conciliationData, setConciliationData] = useState({
     summary: {
@@ -207,7 +210,7 @@ const ControlAddiSistecreditoPayments = () => {
       const response = await axios.post(`${BASE_URL}/addi-sistecredito/deposit`, {
         ...formData,
         amount: parseFloat(formData.amount),
-        registeredBy: 'admin'
+        registeredBy: userInfo?.n_document || 'admin'
       });
 
       if (response.data.success) {

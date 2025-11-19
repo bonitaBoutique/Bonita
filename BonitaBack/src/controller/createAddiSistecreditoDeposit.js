@@ -13,10 +13,10 @@ const createAddiSistecreditoDeposit = async (req, res) => {
     } = req.body;
 
     // Validaciones
-    if (!platform || !depositDate || !amount || !registeredBy) {
+    if (!platform || !depositDate || !amount) {
       return res.status(400).json({
         success: false,
-        message: "Faltan campos obligatorios: platform, depositDate, amount, registeredBy"
+        message: "Faltan campos obligatorios: platform, depositDate, amount"
       });
     }
 
@@ -40,7 +40,7 @@ const createAddiSistecreditoDeposit = async (req, res) => {
       amount: parseFloat(amount),
       referenceNumber: referenceNumber || null,
       description: description || null,
-      registeredBy,
+      registeredBy: registeredBy || 'sistema',
       status: "Registrado",
       notes: notes || null
     });

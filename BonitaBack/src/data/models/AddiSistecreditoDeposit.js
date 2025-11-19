@@ -33,11 +33,8 @@ module.exports = (sequelize) => {
       },
       registeredBy: {
         type: DataTypes.STRING,
-        allowNull: false,
-        references: {
-          model: "Users",
-          key: "n_document",
-        },
+        allowNull: true, // ✅ Hacer opcional para no requerir usuario válido
+        // Remover references temporalmente hasta tener usuarios correctos
       },
       status: {
         type: DataTypes.ENUM("Registrado", "Conciliado", "Revisión"),

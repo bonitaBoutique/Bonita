@@ -81,6 +81,7 @@ useEffect(() => {
       gastos: expenses?.data?.length || 0,
       ingresos: (income?.online?.length || 0) + (income?.local?.length || 0),
       depositos: deposits?.length || 0,
+      depositosData: deposits, // ✅ Ver estructura completa
       balance: backendBalance
     });
   }

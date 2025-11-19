@@ -5,6 +5,111 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 import { BASE_URL } from '../Config';
 
+// ✅ COMPONENTE: Formulario de depósito (FUERA del componente principal)
+const DepositForm = ({ depositForm, setDepositForm, handleRegisterDeposit, setShowDepositForm }) => (
+  <div className="bg-white p-6 rounded-lg shadow-lg border">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-lg font-semibold">💰 Registrar Nuevo Depósito</h3>
+      <button
+        onClick={() => setShowDepositForm(false)}
+        className="text-gray-500 hover:text-gray-700"
+      >
+        ✕
+      </button>
+    </div>
+    
+    <form onSubmit={handleRegisterDeposit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Plataforma *
+          </label>
+          <select
+            value={depositForm.platform}
+            onChange={(e) => setDepositForm(prev => ({...prev, platform: e.target.value}))}
+            className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="Addi">🛒 Addi</option>
+            <option value="Sistecredito">💰 Sistecredito</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha de Depósito *
+          </label>
+          <input
+            type="date"
+            value={depositForm.depositDate}
+            onChange={(e) => setDepositForm(prev => ({...prev, depositDate: e.target.value}))}
+            className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Monto *
+          </label>
+          <input
+            type="number"
+            value={depositForm.amount}
+            onChange={(e) => setDepositForm(prev => ({...prev, amount: e.target.value}))}
+            className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Número de Referencia
+          </label>
+          <input
+            type="text"
+            value={depositForm.referenceNumber}
+            onChange={(e) => setDepositForm(prev => ({...prev, referenceNumber: e.target.value}))}
+            className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="REF123456"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Descripción
+          </label>
+          <input
+            type="text"
+            value={depositForm.description}
+            onChange={(e) => setDepositForm(prev => ({...prev, description: e.target.value}))}
+            className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+            placeholder="Depósito mensual Addi, etc."
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setShowDepositForm(false)}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200"
+        >
+          💰 Registrar Depósito
+        </button>
+      </div>
+    </form>
+  </div>
+);
+
 const ControlAddiSistecreditoPayments = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -228,111 +333,6 @@ const ControlAddiSistecreditoPayments = () => {
     </div>
   );
 
-  // ✅ COMPONENTE: Formulario de depósito (memoizado para evitar recreación)
-  const DepositForm = React.memo(() => (
-    <div className="bg-white p-6 rounded-lg shadow-lg border">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">💰 Registrar Nuevo Depósito</h3>
-        <button
-          onClick={() => setShowDepositForm(false)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
-      </div>
-      
-      <form onSubmit={handleRegisterDeposit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Plataforma *
-            </label>
-            <select
-              value={depositForm.platform}
-              onChange={(e) => setDepositForm(prev => ({...prev, platform: e.target.value}))}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="Addi">🛒 Addi</option>
-              <option value="Sistecredito">💰 Sistecredito</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Depósito *
-            </label>
-            <input
-              type="date"
-              value={depositForm.depositDate}
-              onChange={(e) => setDepositForm(prev => ({...prev, depositDate: e.target.value}))}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Monto *
-            </label>
-            <input
-              type="number"
-              value={depositForm.amount}
-              onChange={(e) => setDepositForm(prev => ({...prev, amount: e.target.value}))}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Número de Referencia
-            </label>
-            <input
-              type="text"
-              value={depositForm.referenceNumber}
-              onChange={(e) => setDepositForm(prev => ({...prev, referenceNumber: e.target.value}))}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-              placeholder="REF123456"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descripción
-            </label>
-            <input
-              type="text"
-              value={depositForm.description}
-              onChange={(e) => setDepositForm(prev => ({...prev, description: e.target.value}))}
-              className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
-              placeholder="Depósito mensual Addi, etc."
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setShowDepositForm(false)}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition duration-200"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200"
-          >
-            💰 Registrar Depósito
-          </button>
-        </div>
-      </form>
-    </div>
-  ));
-
   // ✅ COMPONENTE: Lista de recibos pendientes (memoizado)
   const ReceiptsList = React.memo(({ platform }) => {
     const filteredReceipts = conciliationData.receipts.filter(
@@ -513,7 +513,14 @@ const ControlAddiSistecreditoPayments = () => {
       </div>
 
       {/* ✅ Formulario de depósito (condicional) */}
-      {showDepositForm && <DepositForm />}
+      {showDepositForm && (
+        <DepositForm 
+          depositForm={depositForm}
+          setDepositForm={setDepositForm}
+          handleRegisterDeposit={handleRegisterDeposit}
+          setShowDepositForm={setShowDepositForm}
+        />
+      )}
 
       {/* ✅ Tarjetas de resumen */}
       <SummaryCards />

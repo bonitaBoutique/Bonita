@@ -476,7 +476,7 @@ const ControlAddiSistecreditoPayments = () => {
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+              onChange={(e) => setFilters(prev => ({...prev, startDate: e.target.value}))}
               className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -486,7 +486,7 @@ const ControlAddiSistecreditoPayments = () => {
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+              onChange={(e) => setFilters(prev => ({...prev, endDate: e.target.value}))}
               className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -495,7 +495,7 @@ const ControlAddiSistecreditoPayments = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
             <select
               value={filters.platform}
-              onChange={(e) => setFilters({...filters, platform: e.target.value})}
+              onChange={(e) => setFilters(prev => ({...prev, platform: e.target.value}))}
               className="border rounded px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Todas las plataformas</option>

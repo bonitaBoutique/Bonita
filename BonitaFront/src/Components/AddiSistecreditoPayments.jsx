@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -42,8 +42,14 @@ const ControlAddiSistecreditoPayments = () => {
     notes: ''
   });
 
-  // ✅ FUNCIÓN: Cargar datos de conciliación
-  const fetchConciliationData = async () => {
+  // ✅ Ref para acceder al formulario sin causar re-renders
+  const depositFormRef = useRef(depositForm);
+  useEffect(() => {
+    depositFormRef.current = depositForm;
+  }, [depositForm]);
+
+  // ✅ FUNCIÓN: Cargar datos de conciliación (memoizada)
+  const fetchConciliationData = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -79,22 +85,24 @@ const ControlAddiSistecreditoPayments = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  // ✅ FUNCIÓN: Registrar depósito
+  // ✅ FUNCIÓN: Registrar depósito (usando ref para evitar recreación)
   const handleRegisterDeposit = useCallback(async (e) => {
     e.preventDefault();
     
-    if (!depositForm.amount || depositForm.amount <= 0) {
+    const formData = depositFormRef.current;
+    
+    if (!formData.amount || formData.amount <= 0) {
       alert('❌ Ingresa un monto válido');
       return;
     }
 
     try {
       const response = await axios.post(`${BASE_URL}/addi-sistecredito/deposit`, {
-        ...depositForm,
-        amount: parseFloat(depositForm.amount),
-        registeredBy: 'admin' // Aquí deberías usar el usuario actual
+        ...formData,
+        amount: parseFloat(formData.amount),
+        registeredBy: 'admin'
       });
 
       if (response.data.success) {
@@ -102,7 +110,7 @@ const ControlAddiSistecreditoPayments = () => {
         
         // Limpiar formulario
         setDepositForm({
-          platform: depositForm.platform,
+          platform: formData.platform,
           depositDate: dayjs().format('YYYY-MM-DD'),
           amount: '',
           referenceNumber: '',
@@ -111,8 +119,6 @@ const ControlAddiSistecreditoPayments = () => {
         });
         
         setShowDepositForm(false);
-        
-        // Recargar datos
         await fetchConciliationData();
       } else {
         throw new Error(response.data.message || 'Error al registrar');
@@ -121,7 +127,7 @@ const ControlAddiSistecreditoPayments = () => {
       console.error('❌ Error al registrar depósito:', error);
       alert(`❌ Error: ${error.response?.data?.message || error.message}`);
     }
-  }, [depositForm]);
+  }, [fetchConciliationData]);
 
   // ✅ FUNCIÓN: Marcar recibo como conciliado
   const markReceiptAsConciliated = useCallback(async (receiptId, platform) => {
@@ -152,7 +158,7 @@ const ControlAddiSistecreditoPayments = () => {
       console.error('❌ Error al marcar recibo:', error);
       alert(`❌ Error: ${error.response?.data?.message || error.message}`);
     }
-  }, []);
+  }, [fetchConciliationData]);
 
   // ✅ Cargar datos al inicio y cuando cambien los filtros
   useEffect(() => {

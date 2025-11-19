@@ -254,7 +254,7 @@ useEffect(() => {
     if (deposits && deposits.length > 0) {
       const depositMovements = deposits.map(deposit => ({
         id: deposit.id,
-        date: deposit.date,
+        date: deposit.date || deposit.depositDate, // ✅ Usar depositDate si date no existe
         type: 'Depósito Crédito',
         description: `${deposit.platform} - ${deposit.description || 'Depósito'}`,
         paymentMethod: 'Bancolombia',

@@ -322,11 +322,13 @@ const initialState = {
   totalIncome: 0,
   totalOnlineSales: 0,
   totalLocalSales: 0,
+  totalDeposits: 0,
   totalExpenses: 0,
   income: {
     online: [],
     local: []
   },
+  deposits: [], // ✅ NUEVO: Array de depósitos Addi/Sistecredito
 
   expenses: {
     data: [],
@@ -1705,11 +1707,13 @@ case FETCH_RECEIPTS_FAILURE:
         totalIncome: action.payload.totalIncome || 0,
         totalOnlineSales: action.payload.totalOnlineSales || 0,
         totalLocalSales: action.payload.totalLocalSales || 0,
+        totalDeposits: action.payload.totalDeposits || 0,
         totalExpenses: action.payload.totalExpenses || 0,
         income: {
           online: action.payload.income?.online || [],
           local: action.payload.income?.local || []
         },
+        deposits: action.payload.deposits || [], // ✅ NUEVO: Agregar depósitos
         expenses: {
           ...state.expenses,
           data: action.payload.expenses?.data || [],

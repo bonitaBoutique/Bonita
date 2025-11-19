@@ -857,8 +857,11 @@ export const updateProduct =
         type: UPDATE_PRODUCT_SUCCESS,
         payload: updatedProduct, // Producto actualizado desde el backend
       });
+      
+      return updatedProduct; // ✅ Retornar para que await funcione
     } catch (error) {
       dispatch({ type: UPDATE_PRODUCT_FAILURE, payload: error.message });
+      throw error; // ✅ Lanzar error para que catch funcione
     }
   };
 

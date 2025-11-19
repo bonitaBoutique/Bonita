@@ -38,6 +38,16 @@ const ProductsList = () => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
+  // Re-cargar productos cuando navegamos a esta página
+  useEffect(() => {
+    const handleFocus = () => {
+      dispatch(fetchProducts());
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [dispatch]);
+
   // ✅ LÓGICA DE AGRUPACIÓN (conservada tal como está)
   useEffect(() => {
     // Mostrar productos filtrados si existen, de lo contrario, mostrar todos.

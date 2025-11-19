@@ -62,20 +62,21 @@ const UpdateProduct = () => {
     console.log('Datos enviados', formData);
     
     try {
+      // Actualizar producto
       await dispatch(updateProduct(id, formData));
       
-      // ✅ Recargar los productos después de actualizar
-      await dispatch(fetchProducts());
-      
-      Swal.fire({
+      // Mostrar mensaje de éxito
+      await Swal.fire({
         title: "Modificado",
         text: "Producto modificado exitosamente",
         icon: "success",
         confirmButtonText: "OK",
       });
       
-      // ✅ Navegar a la lista de productos
+      // Recargar productos y navegar
+      await dispatch(fetchProducts());
       navigate("/panel/productos");
+      
     } catch (error) {
       console.error('Error al actualizar producto:', error);
       Swal.fire({

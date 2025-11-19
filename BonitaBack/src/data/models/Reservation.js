@@ -36,10 +36,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: "Pendiente",
       },
+      paymentMethod: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'Método de pago del pago inicial'
+      },
     },
     {
       paranoid: true,
-      
+      timestamps: true, // ✅ Habilitar explícitamente createdAt y updatedAt
     }
   );
 };

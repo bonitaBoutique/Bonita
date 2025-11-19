@@ -246,7 +246,8 @@ const getBalance = async (req, res) => {
           'partialPayment',
           'totalPaid',
           'createdAt',
-          'status'
+          'status',
+          'paymentMethod' // ✅ AGREGAR paymentMethod
         ],
         include: [
           {
@@ -540,7 +541,7 @@ const getBalance = async (req, res) => {
         date: reservation.createdAt,
         amount: parseFloat(reservation.partialPayment || 0), // ✅ SOLO EL PAGO INICIAL
         pointOfSale: 'Local',
-        paymentMethod: 'Efectivo',
+        paymentMethod: reservation.paymentMethod || 'Efectivo', // ✅ USAR EL MÉTODO DE PAGO DE LA RESERVA
         cashierDocument: 'Sin asignar',
         buyerName: buyerName,
         buyerEmail: reservation.OrderDetail?.User?.email || '',

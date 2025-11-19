@@ -62,7 +62,9 @@ useEffect(() => {
     totalOnlineSales = 0,
     totalLocalSales: backendTotalLocalSales = 0,
     totalExpenses = 0,
+    totalDeposits = 0,
     income = { online: [], local: [] },
+    deposits = [],
     expenses = { data: [] },
     cashierTotals = {},
     paymentMethodBreakdown = {},
@@ -78,6 +80,7 @@ useEffect(() => {
     console.log("📊 Balance cargado:", {
       gastos: expenses?.data?.length || 0,
       ingresos: (income?.online?.length || 0) + (income?.local?.length || 0),
+      depositos: deposits?.length || 0,
       balance: backendBalance
     });
   }
@@ -245,6 +248,23 @@ useEffect(() => {
         buyerName: payment.buyerName
       }));
       movements.push(...localMovements);
+    }
+
+    // 💰 DEPÓSITOS ADDI/SISTECREDITO
+    if (deposits && deposits.length > 0) {
+      const depositMovements = deposits.map(deposit => ({
+        id: deposit.id,
+        date: deposit.date,
+        type: 'Depósito Crédito',
+        description: `${deposit.platform} - ${deposit.description || 'Depósito'}`,
+        paymentMethod: 'Bancolombia',
+        amount: deposit.amount,
+        category: 'Ingreso',
+        pointOfSale: 'Depósito',
+        platform: deposit.platform,
+        referenceNumber: deposit.referenceNumber
+      }));
+      movements.push(...depositMovements);
     }
 
     // 💸 GASTOS

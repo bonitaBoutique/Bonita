@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment, AddiSistecreditoDeposit } = require("../../data");
 const { Op } = require("sequelize");
 const { getColombiaDate } = require("../../utils/dateUtils");
 
@@ -373,6 +373,39 @@ const getBalance = async (req, res) => {
 
     console.log(`✅ Gastos encontrados: ${expenses.length}`);
 
+    // ✅ PASO 5.5: OBTENER DEPÓSITOS DE ADDI/SISTECREDITO
+    console.log("💰 Consultando depósitos de Addi/Sistecredito...");
+    
+    let depositDateFilter = {};
+    if (!startDate && !endDate) {
+      const today = getColombiaDate();
+      const startOfDay = parseDateForColombia(today, false);
+      const endOfDay = parseDateForColombia(today, true);
+      
+      depositDateFilter.depositDate = {
+        [Op.gte]: startOfDay,
+        [Op.lte]: endOfDay
+      };
+    } else {
+      depositDateFilter.depositDate = {};
+      
+      if (startDate) {
+        depositDateFilter.depositDate[Op.gte] = parseDateForColombia(startDate, false);
+      }
+      
+      if (endDate) {
+        depositDateFilter.depositDate[Op.lte] = parseDateForColombia(endDate, true);
+      }
+    }
+
+    const addiSistecreditoDeposits = await AddiSistecreditoDeposit.findAll({
+      where: depositDateFilter,
+      attributes: ['id', 'platform', 'depositDate', 'amount', 'referenceNumber', 'description', 'status'],
+      order: [['depositDate', 'DESC']]
+    });
+
+    console.log(`✅ Depósitos Addi/Sistecredito encontrados: ${addiSistecreditoDeposits.length}`);
+
     // ✅ PASO 6: FORMATEAR DATOS
     console.log("🔄 Formateando datos...");
 
@@ -593,8 +626,21 @@ const getBalance = async (req, res) => {
       destinatario: expense.destinatario || 'No especificado'
     }));
 
+    // ✅ Depósitos Addi/Sistecredito (ingresos reales separados de ventas)
+    const formattedDeposits = addiSistecreditoDeposits.map(deposit => ({
+      id: `deposit-${deposit.id}`,
+      date: deposit.depositDate,
+      amount: parseFloat(deposit.amount || 0),
+      platform: deposit.platform,
+      referenceNumber: deposit.referenceNumber || 'Sin referencia',
+      description: deposit.description || `Depósito ${deposit.platform}`,
+      status: deposit.status,
+      notes: deposit.notes
+    }));
+
     console.log(`✅ Total ventas locales formateadas: ${formattedLocalSales.length}`);
     console.log(`✅ Total pagos de reservas formateados: ${formattedReservationPayments.length}`);
+    console.log(`✅ Total depósitos Addi/Sistecredito: ${formattedDeposits.length}`);
     console.log(`✅ Total pagos parciales formateados: ${formattedPartialPayments.length}`);
 
     // ✅ PASO 7: CALCULAR TOTALES POR MÉTODO DE PAGO
@@ -644,6 +690,7 @@ const getBalance = async (req, res) => {
     // ✅ Totales generales
     const totalOnlineSales = formattedOnlineSales.reduce((sum, sale) => sum + sale.amount, 0);
     const totalLocalSales = formattedLocalSales.reduce((sum, sale) => sum + sale.amount, 0);
+    const totalDeposits = formattedDeposits.reduce((sum, deposit) => sum + deposit.amount, 0);
     
     // ✅ Para el balance, excluir Addi y Sistecredito (GiftCard ya está filtrado arriba)
     const totalLocalSalesForBalance = allLocalPayments
@@ -653,7 +700,8 @@ const getBalance = async (req, res) => {
       })
       .reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
-    const totalIncome = totalOnlineSales + totalLocalSalesForBalance;
+    // ✅ Ingresos totales = ventas + depósitos (los depósitos son dinero real que ingresa)
+    const totalIncome = totalOnlineSales + totalLocalSalesForBalance + totalDeposits;
     const totalExpenses = formattedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     const balance = totalIncome - totalExpenses;
 
@@ -668,6 +716,7 @@ const getBalance = async (req, res) => {
       totalOnlineSales: totalOnlineSales.toFixed(2),
       totalLocalSales: totalLocalSales.toFixed(2),
       totalLocalSalesForBalance: totalLocalSalesForBalance.toFixed(2),
+      totalDeposits: totalDeposits.toFixed(2),
       ingresosEfectivo: ingresosEfectivo.toFixed(2),
       ingresosPagosIniciales: ingresosPagosIniciales.toFixed(2),
       ingresosPagosParciales: ingresosPagosParciales.toFixed(2),
@@ -681,12 +730,15 @@ const getBalance = async (req, res) => {
       totalIncome: parseFloat(totalIncome.toFixed(2)),
       totalOnlineSales: parseFloat(totalOnlineSales.toFixed(2)),
       totalLocalSales: parseFloat(totalLocalSalesForBalance.toFixed(2)),
+      totalDeposits: parseFloat(totalDeposits.toFixed(2)),
       totalExpenses: parseFloat(totalExpenses.toFixed(2)),
       
       income: {
         online: formattedOnlineSales,
         local: allLocalPayments
       },
+
+      deposits: formattedDeposits,
       
       expenses: {
         data: formattedExpenses,

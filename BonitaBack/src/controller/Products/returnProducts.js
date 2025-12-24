@@ -337,28 +337,50 @@ module.exports = async (req, res) => {
       const creditAmount = Math.abs(difference);
       console.log('🎁 Cliente recibe crédito:', creditAmount);
       
-      const giftCardData = {
-        buyer_email: originalReceipt.buyer_email || 'no-email@bonita.com',
-        buyer_name: originalReceipt.buyer_name || 'Cliente',
-        buyer_phone: originalReceipt.buyer_phone || null,
-        saldo: creditAmount,
-        estado: 'activa',
-        payment_method: 'Devolución', // ✅ AGREGAR: Método de pago para identificar origen
-        description: `Crédito por devolución del recibo ${original_receipt_id}`,
-        reference_id: String(original_receipt_id), // ✅ AGREGAR: Referencia al recibo original
-        reference_type: 'RETURN_CREDIT' // ✅ AGREGAR: Tipo de referencia
-      };
+      // ✅ PROTECCIÓN: Verificar si ya existe una GiftCard para esta devolución
+      const existingGiftCard = await GiftCard.findOne({
+        where: {
+          reference_id: String(original_receipt_id),
+          reference_type: 'RETURN_CREDIT'
+        },
+        transaction
+      });
 
-      const newGiftCard = await GiftCard.create(giftCardData, { transaction });
-      newGiftCardId = newGiftCard.id_giftcard; // ✅ CORREGIDO: usar id_giftcard
-      console.log('✅ Gift Card de crédito creada:', newGiftCardId);
+      if (existingGiftCard) {
+        console.log('⚠️ Ya existe una GiftCard para esta devolución:', existingGiftCard.id_giftcard);
+        newGiftCardId = existingGiftCard.id_giftcard;
+        
+        actionRequired = {
+          type: 'credit_issued',
+          amount: Math.abs(difference),
+          message: `Crédito ya emitido por $${Math.abs(difference).toLocaleString("es-CO")}`,
+          giftCardId: newGiftCardId,
+          warning: 'GiftCard ya existía - no se creó duplicado'
+        };
+      } else {
+        const giftCardData = {
+          buyer_email: originalReceipt.buyer_email || 'no-email@bonita.com',
+          buyer_name: originalReceipt.buyer_name || 'Cliente',
+          buyer_phone: originalReceipt.buyer_phone || null,
+          saldo: creditAmount,
+          estado: 'activa',
+          payment_method: 'Devolución', // ✅ AGREGAR: Método de pago para identificar origen
+          description: `Crédito por devolución del recibo ${original_receipt_id}`,
+          reference_id: String(original_receipt_id), // ✅ AGREGAR: Referencia al recibo original
+          reference_type: 'RETURN_CREDIT' // ✅ AGREGAR: Tipo de referencia
+        };
 
-      actionRequired = {
-        type: 'credit_issued',
-        amount: Math.abs(difference),
-        message: `Crédito emitido por $${Math.abs(difference).toLocaleString("es-CO")}`,
-        giftCardId: newGiftCardId
-      };
+        const newGiftCard = await GiftCard.create(giftCardData, { transaction });
+        newGiftCardId = newGiftCard.id_giftcard; // ✅ CORREGIDO: usar id_giftcard
+        console.log('✅ Gift Card de crédito creada:', newGiftCardId);
+
+        actionRequired = {
+          type: 'credit_issued',
+          amount: Math.abs(difference),
+          message: `Crédito emitido por $${Math.abs(difference).toLocaleString("es-CO")}`,
+          giftCardId: newGiftCardId
+        };
+      }
 
     } else {
       console.log("🔍 DEBUG - ENTRANDO AL ELSE (difference === 0)");

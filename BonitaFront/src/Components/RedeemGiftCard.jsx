@@ -23,6 +23,7 @@ const RedeemGiftCard = () => {
   const [clientInfo, setClientInfo] = useState(null);
   const [balance, setBalance] = useState(0);
   const [loadingClient, setLoadingClient] = useState(true);
+  const [isRedeeming, setIsRedeeming] = useState(false); // ✅ NUEVO: Estado para prevenir doble submit
 
   // Cargar productos al montar
   useEffect(() => {
@@ -123,6 +124,12 @@ const RedeemGiftCard = () => {
 
   // Confirmar canje
   const handleConfirmRedemption = async () => {
+    // ✅ Prevenir doble submit
+    if (isRedeeming) {
+      console.log("⚠️ Ya se está procesando un canje");
+      return;
+    }
+
     if (selectedProducts.length === 0) {
       Swal.fire("Aviso", "No hay productos para canjear.", "warning");
       return;
@@ -131,7 +138,22 @@ const RedeemGiftCard = () => {
       Swal.fire("Error", "El total supera el saldo de la GiftCard.", "error");
       return;
     }
+
     try {
+      // ✅ Activar estado de carga
+      setIsRedeeming(true);
+
+      // Mostrar loading
+      Swal.fire({
+        title: "Procesando canje...",
+        text: "Por favor espera",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       await axios.post(`${BASE_URL}/caja/redeem/${n_document}`, {
         items: selectedProducts.map((item) => ({
           id_product: item.id_product,
@@ -139,10 +161,15 @@ const RedeemGiftCard = () => {
         })),
         totalAmount: totalPrice,
       });
+
       Swal.fire("Éxito", "Canje realizado correctamente.", "success");
       navigate("/active-giftcards");
     } catch (err) {
-      Swal.fire("Error", "No se pudo procesar el canje.", "error");
+      console.error("❌ Error en canje:", err);
+      Swal.fire("Error", err.response?.data?.message || "No se pudo procesar el canje.", "error");
+    } finally {
+      // ✅ Desactivar estado de carga siempre
+      setIsRedeeming(false);
     }
   };
 
@@ -225,14 +252,14 @@ const RedeemGiftCard = () => {
         <button
           type="button"
           onClick={handleConfirmRedemption}
-          disabled={selectedProducts.length === 0 || remainingBalance < 0}
+          disabled={selectedProducts.length === 0 || remainingBalance < 0 || isRedeeming}
           className={`w-full py-2 px-4 rounded text-white font-bold ${
-            selectedProducts.length === 0 || remainingBalance < 0
+            selectedProducts.length === 0 || remainingBalance < 0 || isRedeeming
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-green-500 hover:bg-green-700"
           }`}
         >
-          Confirmar Canje
+          {isRedeeming ? "Procesando..." : "Confirmar Canje"}
         </button>
       </div>
     </div>

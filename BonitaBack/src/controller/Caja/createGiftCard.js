@@ -1,15 +1,55 @@
 const { GiftCard, User } = require("../../data");
 
-// Crear GiftCard
+// Crear GiftCard - ⚠️ ESTE ENDPOINT DEBE USARSE CON PRECAUCIÓN
 exports.createGiftCard = async (req, res) => {
-  const { buyer_email, saldo, id_receipt } = req.body;
+  const { buyer_email, saldo, id_receipt, reference_id, reference_type } = req.body;
   try {
-    console.log("Intentando crear GiftCard con:", { buyer_email, saldo, id_receipt }); // <-- LOG IMPORTANTE
-    const giftcard = await GiftCard.create({ buyer_email, saldo, id_receipt });
-    console.log("GiftCard creada:", giftcard); // <-- LOG DE ÉXITO
+    console.log("Intentando crear GiftCard con:", { buyer_email, saldo, id_receipt, reference_id, reference_type });
+    
+    // ✅ PROTECCIÓN: Verificar si ya existe una GiftCard con la misma referencia
+    if (reference_id && reference_type) {
+      const existingGiftCard = await GiftCard.findOne({
+        where: {
+          reference_id: String(reference_id),
+          reference_type
+        }
+      });
+
+      if (existingGiftCard) {
+        console.log("⚠️ GiftCard ya existe con esta referencia:", existingGiftCard.id_giftcard);
+        return res.status(409).json({ 
+          message: "Ya existe una GiftCard con esta referencia",
+          giftcard: existingGiftCard
+        });
+      }
+    }
+
+    // ✅ Si hay id_receipt, verificar que no exista ya una GiftCard para ese recibo
+    if (id_receipt) {
+      const existingByReceipt = await GiftCard.findOne({
+        where: { id_receipt }
+      });
+
+      if (existingByReceipt) {
+        console.log("⚠️ GiftCard ya existe para este recibo:", existingByReceipt.id_giftcard);
+        return res.status(409).json({
+          message: "Ya existe una GiftCard para este recibo",
+          giftcard: existingByReceipt
+        });
+      }
+    }
+
+    const giftcard = await GiftCard.create({ 
+      buyer_email, 
+      saldo, 
+      id_receipt,
+      reference_id: reference_id ? String(reference_id) : null,
+      reference_type: reference_type || null
+    });
+    console.log("✅ GiftCard creada:", giftcard.id_giftcard);
     res.status(201).json({ giftcard });
   } catch (error) {
-    console.error("Error al crear GiftCard:", error); // <-- LOG DE ERROR
+    console.error("❌ Error al crear GiftCard:", error);
     res.status(500).json({ message: "Error al crear GiftCard" });
   }
 };

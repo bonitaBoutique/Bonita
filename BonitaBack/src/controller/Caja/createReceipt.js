@@ -111,11 +111,29 @@ module.exports = async (req, res) => {
       });
 
       // 🎁 CREAR REGISTRO EN TABLA GIFTCARD (COMPRA - SUMA SALDO)
-      await GiftCard.create({
-        buyer_email,
-        saldo: amount, // El saldo inicial es el monto pagado
-        id_receipt: receipt.id_receipt
+      // ✅ PROTECCIÓN: Verificar si ya existe una GiftCard para este recibo
+      const existingGiftCard = await GiftCard.findOne({
+        where: {
+          id_receipt: receipt.id_receipt
+        }
       });
+
+      if (!existingGiftCard) {
+        await GiftCard.create({
+          buyer_email,
+          buyer_name,
+          buyer_phone,
+          saldo: amount,
+          id_receipt: receipt.id_receipt,
+          payment_method: actualPaymentMethod,
+          description: `Compra de GiftCard - Recibo ${receipt.id_receipt}`,
+          reference_id: String(receipt.id_receipt),
+          reference_type: 'PURCHASE'
+        });
+        console.log('✅ GiftCard creada para recibo:', receipt.id_receipt);
+      } else {
+        console.log('⚠️ GiftCard ya existe para recibo:', receipt.id_receipt);
+      }
 
       console.log('🟢 [CREATE RECEIPT] GiftCard COMPRADA - creado con fecha del cliente:', {
         receiptNumber,

@@ -238,15 +238,19 @@ const GiftCard = () => {
       const createdReceipt = receiptResponse?.payload?.receipt || receiptResponse?.receipt;
       const id_receipt = createdReceipt?.id_receipt;
 
-      if (id_receipt) {
-        await axios.post(`${BASE_URL}/giftcard/createGift`, {
-          buyer_email: buyerEmail,
-          saldo: Number(amount),
-          id_receipt: id_receipt,
-        });
-      } else {
-        throw new Error("No se pudo obtener el id del recibo para crear la GiftCard.");
+      // ✅ CORREGIDO: createReceipt YA crea la GiftCard en el backend
+      // NO es necesario llamar a /giftcard/createGift nuevamente
+      // La GiftCard se crea automáticamente en createReceipt.js líneas 114-128
+      
+      if (!id_receipt) {
+        throw new Error("No se pudo obtener el id del recibo.");
       }
+
+      console.log("✅ GiftCard creada automáticamente por createReceipt:", {
+        id_receipt,
+        buyer_email: buyerEmail,
+        saldo: Number(amount)
+      });
 
       Swal.fire({
         icon: "success",

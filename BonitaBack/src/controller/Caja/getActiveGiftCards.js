@@ -15,33 +15,36 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // ✅ USAR LÓGICA RAMA 32: Obtener monto original desde Receipt con SUM(total_amount)
-    console.log("🎁 Consultando monto original de GiftCards desde Receipt...");
+    // ✅ NUEVA LÓGICA: Obtener directamente desde GiftCards con saldo > 0
+    console.log("🎁 Consultando GiftCards activas directamente desde tabla GiftCards...");
     
-    // 1. Obtener la suma total de GiftCards compradas por cada email (MONTO ORIGINAL)
-    const purchasedBalances = await Receipt.findAll({
+    // 1. Obtener saldo consolidado por email desde GiftCards activas
+    const activeGiftCards = await GiftCard.findAll({
       attributes: [
         'buyer_email',
-        [sequelize.fn('SUM', sequelize.col('total_amount')), 'totalPurchased']
+        [sequelize.fn('SUM', sequelize.col('saldo')), 'totalBalance'],
+        [sequelize.fn('MAX', sequelize.col('createdAt')), 'latestDate']
       ],
       where: {
-        payMethod: "GiftCard"
+        estado: 'activa',
+        saldo: { [sequelize.Sequelize.Op.gt]: 0 }
       },
       group: ['buyer_email'],
-      having: sequelize.literal('SUM(total_amount) > 0'),
+      having: sequelize.literal('SUM(saldo) > 0'),
       raw: true
     });
 
-    console.log("✅ Monto original por email (SUM > 0):", purchasedBalances);
+    console.log("✅ GiftCards activas encontradas:", activeGiftCards.length);
 
-    if (!purchasedBalances || purchasedBalances.length === 0) {
-      console.log("No active GiftCards found based on purchase sum.");
+    if (!activeGiftCards || activeGiftCards.length === 0) {
+      console.log("No active GiftCards found.");
       return res.status(200).json({ activeCards: [] });
     }
 
-    const activeEmails = purchasedBalances.map(item => item.buyer_email);
+    const activeEmails = activeGiftCards.map(item => item.buyer_email);
     console.log("Active Emails:", activeEmails);
 
+    // 2. Obtener información de usuarios
     const activeUsers = await User.findAll({
       where: {
         email: activeEmails
@@ -49,44 +52,27 @@ module.exports = async (req, res) => {
       attributes: ['n_document', 'first_name', 'last_name', 'email'],
       raw: true
     });
-    console.log("Active Users Found:", activeUsers);
+    console.log("Active Users Found:", activeUsers.length);
 
+    // 3. Combinar información
     const activeCardsResult = activeUsers.map(user => {
-      const balanceInfo = purchasedBalances.find(balance => balance.buyer_email === user.email);
-      const originalBalance = balanceInfo ? parseFloat(balanceInfo.totalPurchased) : 0;
-
-      if (originalBalance > 0) {
+      const giftCardInfo = activeGiftCards.find(gc => gc.buyer_email === user.email);
+      
+      if (giftCardInfo && parseFloat(giftCardInfo.totalBalance) > 0) {
         return {
           n_document: user.n_document,
           first_name: user.first_name,
           last_name: user.last_name,
-          email: user.email, // 🎯 IMPORTANTE: Incluir email para consulta saldo disponible
-          balance: originalBalance // 🎯 ESTE ES EL MONTO ORIGINAL (200k)
+          email: user.email,
+          balance: parseFloat(giftCardInfo.totalBalance), // Saldo real disponible
+          created_at: giftCardInfo.latestDate // Fecha de la GiftCard más reciente
         };
       }
       return null;
     }).filter(card => card !== null);
 
-    // 🆕 Obtener la fecha de creación de la GiftCard más reciente de cada email
-    console.log("📅 Obteniendo fechas de creación de GiftCards...");
-    const giftCardsWithDates = await Promise.all(
-      activeCardsResult.map(async (card) => {
-        const latestGiftCard = await GiftCard.findOne({
-          where: { buyer_email: card.email, estado: 'activa' },
-          order: [['createdAt', 'DESC']],
-          attributes: ['createdAt'],
-          raw: true
-        });
-        
-        return {
-          ...card,
-          created_at: latestGiftCard?.createdAt || null
-        };
-      })
-    );
-
-    console.log("Final Active Cards Result with dates:", giftCardsWithDates);
-    return res.status(200).json({ activeCards: giftCardsWithDates });
+    console.log("Final Active Cards Result:", activeCardsResult);
+    return res.status(200).json({ activeCards: activeCardsResult });
 
   } catch (error) {
     console.error("Error fetching active GiftCards:", error);

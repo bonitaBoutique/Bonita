@@ -1,4 +1,4 @@
-const { User, OrderDetail, Receipt, Reservation, GiftCard } = require('../../data'); // ✅ AGREGAR: GiftCard
+const { User, OrderDetail, Receipt, Reservation, GiftCard, CreditPayment } = require('../../data'); // ✅ AGREGAR: GiftCard y CreditPayment
 const response = require('../../utils/response');
 
 exports.getClientAccountBalance = async (req, res) => {
@@ -11,7 +11,7 @@ exports.getClientAccountBalance = async (req, res) => {
       return response(res, 404, "Usuario no encontrado");
     }
 
-    // ✅ OBTENER: OrderDetails del usuario
+    // ✅ OBTENER: OrderDetails del usuario CON pagos parciales de reserva
     const orderDetails = await OrderDetail.findAll({
       where: { n_document: user.n_document },
       include: [
@@ -21,7 +21,13 @@ exports.getClientAccountBalance = async (req, res) => {
         },
         {
           model: Reservation,
-          attributes: ['id_reservation', 'totalPaid', 'dueDate', 'status'],
+          attributes: ['id_reservation', 'totalPaid', 'dueDate', 'status', 'partialPayment', 'createdAt'],
+          include: [
+            {
+              model: CreditPayment,
+              attributes: ['id_payment', 'amount', 'date', 'createdAt']
+            }
+          ]
         },
       ],
     });

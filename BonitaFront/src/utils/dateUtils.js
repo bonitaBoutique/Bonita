@@ -69,10 +69,11 @@ export const formatDateForDisplay = (dateInput, includeTime = false) => {
     else if (typeof dateInput === 'string' && (dateInput.includes('+') || dateInput.includes('T'))) {
       date = dayjs(dateInput).tz(COLOMBIA_TIMEZONE);
     }
-    // Si es solo fecha (YYYY-MM-DD)
+    // Si es solo fecha (YYYY-MM-DD) - CORRECCIÓN: Parsear sin zona horaria
     else if (typeof dateInput === 'string' && dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      // Interpretar como fecha local de Colombia, no UTC
-      date = dayjs.tz(dateInput, 'YYYY-MM-DD', COLOMBIA_TIMEZONE);
+      // ✅ CORRECCIÓN: No usar .tz() con formato, solo dayjs() para que use la fecha tal cual
+      // Agregar hora para forzar interpretación local y evitar conversiones UTC
+      date = dayjs(`${dateInput}T12:00:00`);
     }
     // Cualquier otro formato
     else {

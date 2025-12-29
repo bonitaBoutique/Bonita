@@ -2,22 +2,29 @@ const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment
 const { Op } = require("sequelize");
 const { getColombiaDate } = require("../../utils/dateUtils");
 
-// ✅ NUEVA: Función para manejar fechas de Colombia (igual que en StockMovements)
-const parseDateForColombia = (dateString, isEndDate = false) => {
+// ✅ NUEVA: Función para manejar fechas de Colombia con soporte para campos DATE
+const parseDateForColombia = (dateString, isEndDate = false, isDateField = false) => {
   if (!dateString) return null;
   
-  console.log(`🕒 [getBalance] Input: ${dateString}, isEndDate: ${isEndDate}`);
+  console.log(`🕒 [getBalance] Input: ${dateString}, isEndDate: ${isEndDate}, isDateField: ${isDateField}`);
   
-  // Si es formato YYYY-MM-DD, interpretar como fecha local de Colombia
+  // Si es formato YYYY-MM-DD
   if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // ✅ Para campos DATE (sin hora), devolver solo la fecha string
+    if (isDateField) {
+      console.log(`📅 [getBalance DATE field] ${dateString} → ${dateString}`);
+      return dateString;
+    }
+    
+    // Para campos TIMESTAMP
     if (isEndDate) {
-      // Para dateTo: 23:59:59.999 del día seleccionado
-      const endDate = new Date(`${dateString}T23:59:59.999`);
+      // Para dateTo: 23:59:59.999 del día seleccionado en Colombia (UTC-5)
+      const endDate = new Date(`${dateString}T23:59:59.999-05:00`);
       console.log(`📅 [getBalance dateTo] ${dateString} → ${endDate.toISOString()}`);
       return endDate;
     } else {
-      // Para dateFrom: 00:00:00 del día seleccionado  
-      const startDate = new Date(`${dateString}T00:00:00.000`);
+      // Para dateFrom: 00:00:00 del día seleccionado en Colombia (UTC-5)
+      const startDate = new Date(`${dateString}T00:00:00.000-05:00`);
       console.log(`📅 [getBalance dateFrom] ${dateString} → ${startDate.toISOString()}`);
       return startDate;
     }
@@ -34,55 +41,47 @@ const getBalance = async (req, res) => {
 
     let dateFilter = {};
 
-    // ✅ MANEJO DE FECHAS PARA RECEIPTS CORREGIDO
+    // ✅ MANEJO DE FECHAS PARA RECEIPTS CORREGIDO - Usar isDateField=true para campos DATE
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       console.log("📅 Sin fechas especificadas, usando día actual:", today);
       
-      const startOfDay = parseDateForColombia(today, false);
-      const endOfDay = parseDateForColombia(today, true);
-      
-      dateFilter.date = {
-        [Op.gte]: startOfDay,
-        [Op.lte]: endOfDay
-      };
+      // Para campos DATE, usar solo la fecha string
+      dateFilter.date = today;
     } else {
       dateFilter.date = {};
       
       if (startDate) {
-        dateFilter.date[Op.gte] = parseDateForColombia(startDate, false);
-        console.log("📅 Fecha inicio:", startDate);
+        dateFilter.date[Op.gte] = parseDateForColombia(startDate, false, true); // isDateField = true
+        console.log("📅 Fecha inicio:", startDate, "→", dateFilter.date[Op.gte]);
       }
       
       if (endDate) {
-        dateFilter.date[Op.lte] = parseDateForColombia(endDate, true);
-        console.log("📅 Fecha fin:", endDate);
+        dateFilter.date[Op.lte] = parseDateForColombia(endDate, true, true); // isDateField = true
+        console.log("📅 Fecha fin:", endDate, "→", dateFilter.date[Op.lte]);
       }
     }
 
-    // ✅ FILTRO DE FECHA PARA RESERVAS (CORREGIDO)
+    // ✅ FILTRO DE FECHA PARA RESERVAS (CORREGIDO) - Usar createdAt (TIMESTAMP)
     let reservationDateFilter = {};
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       console.log("📅 Usando día actual para reservas:", today);
       
-      const startOfDay = parseDateForColombia(today, false);
-      const endOfDay = parseDateForColombia(today, true);
-      
       reservationDateFilter.createdAt = {
-        [Op.gte]: startOfDay,
-        [Op.lte]: endOfDay
+        [Op.gte]: parseDateForColombia(today, false, false), // isDateField = false (TIMESTAMP)
+        [Op.lte]: parseDateForColombia(today, true, false)
       };
     } else {
       reservationDateFilter.createdAt = {};
       
       if (startDate) {
-        reservationDateFilter.createdAt[Op.gte] = parseDateForColombia(startDate, false);
+        reservationDateFilter.createdAt[Op.gte] = parseDateForColombia(startDate, false, false);
         console.log("📅 Fecha inicio reservas:", startDate);
       }
       
       if (endDate) {
-        reservationDateFilter.createdAt[Op.lte] = parseDateForColombia(endDate, true);
+        reservationDateFilter.createdAt[Op.lte] = parseDateForColombia(endDate, true, false);
         console.log("📅 Fecha fin reservas:", endDate);
       }
     }
@@ -312,10 +311,28 @@ const getBalance = async (req, res) => {
     // ✅ PASO 4: PAGOS PARCIALES ADICIONALES
     console.log("💰 Buscando pagos parciales adicionales...");
     
+    // ✅ NUEVO: Filtro separado para CreditPayments.date (TIMESTAMP)
+    let creditPaymentDateFilter = {};
+    if (!startDate && !endDate) {
+      const today = getColombiaDate();
+      creditPaymentDateFilter.date = {
+        [Op.gte]: parseDateForColombia(today, false, false), // isDateField = false (TIMESTAMP)
+        [Op.lte]: parseDateForColombia(today, true, false)
+      };
+    } else {
+      creditPaymentDateFilter.date = {};
+      if (startDate) {
+        creditPaymentDateFilter.date[Op.gte] = parseDateForColombia(startDate, false, false);
+      }
+      if (endDate) {
+        creditPaymentDateFilter.date[Op.lte] = parseDateForColombia(endDate, true, false);
+      }
+    }
+    
     let partialPayments = [];
     try {
       partialPayments = await CreditPayment.findAll({
-        where: dateFilter,
+        where: creditPaymentDateFilter,
         attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
         include: [
           {
@@ -379,22 +396,17 @@ const getBalance = async (req, res) => {
     let depositDateFilter = {};
     if (!startDate && !endDate) {
       const today = getColombiaDate();
-      const startOfDay = parseDateForColombia(today, false);
-      const endOfDay = parseDateForColombia(today, true);
-      
-      depositDateFilter.depositDate = {
-        [Op.gte]: startOfDay,
-        [Op.lte]: endOfDay
-      };
+      // Para campos DATE, usar solo la fecha string
+      depositDateFilter.depositDate = today;
     } else {
       depositDateFilter.depositDate = {};
       
       if (startDate) {
-        depositDateFilter.depositDate[Op.gte] = parseDateForColombia(startDate, false);
+        depositDateFilter.depositDate[Op.gte] = parseDateForColombia(startDate, false, true); // isDateField = true
       }
       
       if (endDate) {
-        depositDateFilter.depositDate[Op.lte] = parseDateForColombia(endDate, true);
+        depositDateFilter.depositDate[Op.lte] = parseDateForColombia(endDate, true, true); // isDateField = true
       }
     }
 

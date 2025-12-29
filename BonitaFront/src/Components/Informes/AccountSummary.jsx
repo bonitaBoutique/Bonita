@@ -102,7 +102,9 @@ const AccountSummary = (props) => {
   const movimientos = (orderDetails || [])
     .map(order => ({
       tipo: "orden",
-      fecha: order.createdAt || order.date,
+      // ✅ CORRECCIÓN: Usar solo order.date ya que OrderDetails no tiene createdAt
+      // Si hay Receipt asociado, usar la fecha del recibo
+      fecha: order.Receipts?.[0]?.date || order.date,
       ...order,
     }))
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Orden descendente por fecha

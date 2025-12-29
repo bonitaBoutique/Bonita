@@ -257,15 +257,28 @@ const getBalance = async (req, res) => {
       // ✅ FILTRAR en memoria basándonos en Receipt.date
       if (startDate && endDate) {
         reservationPayments = allReservationsWithPayment.filter(reservation => {
-          const receiptDate = reservation.OrderDetail?.Receipt?.date;
+          const receiptDateRaw = reservation.OrderDetail?.Receipt?.date;
           
-          if (receiptDate) {
-            // Si tiene Receipt.date, usar ese
-            return receiptDate >= startDate && receiptDate <= endDate;
+          if (receiptDateRaw) {
+            // Si tiene Receipt.date, convertirlo a string YYYY-MM-DD
+            let receiptDateStr;
+            if (receiptDateRaw instanceof Date) {
+              receiptDateStr = receiptDateRaw.toISOString().split('T')[0];
+            } else if (typeof receiptDateRaw === 'string') {
+              receiptDateStr = receiptDateRaw.split('T')[0]; // Por si viene con hora
+            } else {
+              receiptDateStr = String(receiptDateRaw).split('T')[0];
+            }
+            
+            const isInRange = receiptDateStr >= startDate && receiptDateStr <= endDate;
+            console.log(`🔍 Reservation ${reservation.id_reservation}: Receipt.date=${receiptDateStr}, inRange=${isInRange}`);
+            return isInRange;
           } else {
             // Si NO tiene Receipt, usar createdAt (casos viejos)
             const createdDate = reservation.createdAt.toISOString().split('T')[0];
-            return createdDate >= startDate && createdDate <= endDate;
+            const isInRange = createdDate >= startDate && createdDate <= endDate;
+            console.log(`🔍 Reservation ${reservation.id_reservation}: No receipt, using createdAt=${createdDate}, inRange=${isInRange}`);
+            return isInRange;
           }
         });
       } else {

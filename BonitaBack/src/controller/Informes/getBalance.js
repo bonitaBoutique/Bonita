@@ -48,27 +48,23 @@ const getBalance = async (req, res) => {
       
       // Para campos DATE, usar solo la fecha string
       dateFilter.date = {
-        [Op.and]: [
-          { [Op.ne]: null }, // Excluir nulls
-          { [Op.eq]: today }
-        ]
+        [Op.ne]: null, // Excluir nulls
+        [Op.eq]: today
       };
     } else {
       dateFilter.date = {
-        [Op.and]: [
-          { [Op.ne]: null } // Excluir nulls
-        ]
+        [Op.ne]: null // Excluir nulls
       };
       
       if (startDate) {
         const startDateValue = parseDateForColombia(startDate, false, true);
-        dateFilter.date[Op.and].push({ [Op.gte]: startDateValue });
+        dateFilter.date[Op.gte] = startDateValue;
         console.log("📅 Fecha inicio:", startDate, "→", startDateValue);
       }
       
       if (endDate) {
         const endDateValue = parseDateForColombia(endDate, true, true);
-        dateFilter.date[Op.and].push({ [Op.lte]: endDateValue });
+        dateFilter.date[Op.lte] = endDateValue;
         console.log("📅 Fecha fin:", endDate, "→", endDateValue);
       }
     }
@@ -80,28 +76,24 @@ const getBalance = async (req, res) => {
       console.log("📅 Usando día actual para reservas:", today);
       
       reservationDateFilter.createdAt = {
-        [Op.and]: [
-          { [Op.ne]: null },
-          { [Op.gte]: parseDateForColombia(today, false, false) }, // isDateField = false (TIMESTAMP)
-          { [Op.lte]: parseDateForColombia(today, true, false) }
-        ]
+        [Op.ne]: null,
+        [Op.gte]: parseDateForColombia(today, false, false), // isDateField = false (TIMESTAMP)
+        [Op.lte]: parseDateForColombia(today, true, false)
       };
     } else {
       reservationDateFilter.createdAt = {
-        [Op.and]: [
-          { [Op.ne]: null }
-        ]
+        [Op.ne]: null
       };
       
       if (startDate) {
         const startValue = parseDateForColombia(startDate, false, false);
-        reservationDateFilter.createdAt[Op.and].push({ [Op.gte]: startValue });
+        reservationDateFilter.createdAt[Op.gte] = startValue;
         console.log("📅 Fecha inicio reservas:", startDate);
       }
       
       if (endDate) {
         const endValue = parseDateForColombia(endDate, true, false);
-        reservationDateFilter.createdAt[Op.and].push({ [Op.lte]: endValue });
+        reservationDateFilter.createdAt[Op.lte] = endValue;
         console.log("📅 Fecha fin reservas:", endDate);
       }
     }
@@ -336,27 +328,23 @@ const getBalance = async (req, res) => {
     if (!startDate && !endDate) {
       const today = getColombiaDate();
       creditPaymentDateFilter.date = {
-        [Op.and]: [
-          { [Op.ne]: null },
-          { [Op.gte]: parseDateForColombia(today, false, false) }, // isDateField = false (TIMESTAMP)
-          { [Op.lte]: parseDateForColombia(today, true, false) }
-        ]
+        [Op.ne]: null,
+        [Op.gte]: parseDateForColombia(today, false, false), // isDateField = false (TIMESTAMP)
+        [Op.lte]: parseDateForColombia(today, true, false)
       };
     } else {
       creditPaymentDateFilter.date = {
-        [Op.and]: [
-          { [Op.ne]: null }
-        ]
+        [Op.ne]: null
       };
       
       if (startDate) {
         const startValue = parseDateForColombia(startDate, false, false);
-        creditPaymentDateFilter.date[Op.and].push({ [Op.gte]: startValue });
+        creditPaymentDateFilter.date[Op.gte] = startValue;
       }
       
       if (endDate) {
         const endValue = parseDateForColombia(endDate, true, false);
-        creditPaymentDateFilter.date[Op.and].push({ [Op.lte]: endValue });
+        creditPaymentDateFilter.date[Op.lte] = endValue;
       }
     }
     
@@ -429,26 +417,22 @@ const getBalance = async (req, res) => {
       const today = getColombiaDate();
       // Para campos DATE, usar solo la fecha string
       depositDateFilter.depositDate = {
-        [Op.and]: [
-          { [Op.ne]: null },
-          { [Op.eq]: today }
-        ]
+        [Op.ne]: null,
+        [Op.eq]: today
       };
     } else {
       depositDateFilter.depositDate = {
-        [Op.and]: [
-          { [Op.ne]: null }
-        ]
+        [Op.ne]: null
       };
       
       if (startDate) {
         const startValue = parseDateForColombia(startDate, false, true);
-        depositDateFilter.depositDate[Op.and].push({ [Op.gte]: startValue });
+        depositDateFilter.depositDate[Op.gte] = startValue;
       }
       
       if (endDate) {
         const endValue = parseDateForColombia(endDate, true, true);
-        depositDateFilter.depositDate[Op.and].push({ [Op.lte]: endValue });
+        depositDateFilter.depositDate[Op.lte] = endValue;
       }
     }
 

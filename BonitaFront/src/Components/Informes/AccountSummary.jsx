@@ -99,15 +99,54 @@ const AccountSummary = (props) => {
   }
 
   // ✅ CAMBIAR: Usar orderDetails directamente (ya es un array según el reducer)
-  const movimientos = (orderDetails || [])
-    .map(order => ({
+  // ✅ MEJORAR: Incluir pagos parciales de reserva como movimientos separados
+  const movimientos = [];
+  
+  (orderDetails || []).forEach(order => {
+    // ✅ Agregar la orden principal
+    movimientos.push({
       tipo: "orden",
       // ✅ CORRECCIÓN: Usar solo order.date ya que OrderDetails no tiene createdAt
       // Si hay Receipt asociado, usar la fecha del recibo
       fecha: order.Receipts?.[0]?.date || order.date,
       ...order,
-    }))
-    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); // Orden descendente por fecha
+    });
+    
+    // ✅ NUEVO: Agregar pagos parciales de reserva como movimientos separados
+    if (order.Reservations && order.Reservations.length > 0) {
+      order.Reservations.forEach(reservation => {
+        // Agregar el pago inicial de la reserva
+        if (reservation.partialPayment && reservation.partialPayment > 0) {
+          movimientos.push({
+            tipo: "pago_inicial_reserva",
+            fecha: reservation.createdAt,
+            amount: reservation.partialPayment,
+            description: `Pago inicial reserva - ${order.id_orderDetail?.substring(0, 8)}`,
+            id_orderDetail: order.id_orderDetail,
+            reservation: reservation
+          });
+        }
+        
+        // Agregar cada pago parcial
+        if (reservation.CreditPayments && reservation.CreditPayments.length > 0) {
+          reservation.CreditPayments.forEach(payment => {
+            movimientos.push({
+              tipo: "pago_parcial_reserva",
+              fecha: payment.date || payment.createdAt,
+              amount: payment.amount,
+              description: `Pago parcial reserva - ${order.id_orderDetail?.substring(0, 8)}`,
+              id_payment: payment.id_payment,
+              id_orderDetail: order.id_orderDetail,
+              reservation: reservation
+            });
+          });
+        }
+      });
+    }
+  });
+  
+  // Ordenar todos los movimientos por fecha
+  movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   // Paginación
   const totalPages = Math.ceil(movimientos.length / itemsPerPage);
@@ -377,86 +416,108 @@ const AccountSummary = (props) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {paginatedMovimientos.map((mov, idx) => (
-                  <tr key={mov.id_orderDetail || idx} className="hover:bg-gray-50 transition-colors duration-200">
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      {formatDateForDisplay(mov.fecha)}
-                    </td>
-                    <td
-                      className="py-3 px-4 text-sm font-mono text-gray-700 cursor-pointer"
-                      onClick={(event) => handleOrderDetailClick(mov.id_orderDetail, event)}
-                      onMouseLeave={handleTooltipClose}
-                      title={mov.id_orderDetail || "Sin ID"}
-                    >
-                      {mov.id_orderDetail
-                        ? `${mov.id_orderDetail.substring(0, 8)}...`
-                        : "N/A"}
-                    </td>
-                    <td className="py-3 px-4 text-sm font-semibold text-right text-green-600">
-                      {mov.amount ? 
-                        mov.amount.toLocaleString("es-CO", {
-                          style: "currency",
-                          currency: "COP",
-                        }) : 
-                        'N/A'
-                      }
-                    </td>
-                    <td className="py-3 px-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        mov.state_order?.toLowerCase().includes('completad') || 
-                        mov.state_order?.toLowerCase().includes('entregad') || 
-                        mov.state_order?.toLowerCase().includes('finalizada')
-                          ? 'bg-green-100 text-green-800'
-                          : mov.state_order?.toLowerCase().includes('pendiente')
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : mov.state_order?.toLowerCase().includes('cancelad')
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {mov.state_order || 'Sin estado'}
-                      </span>
-                    </td>
-                    
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        mov.pointOfSale === 'Online'
-                          ? 'bg-blue-100 text-blue-800'
-                          : mov.pointOfSale === 'Local'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {mov.pointOfSale || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700">
-                      {mov.Reservations && mov.Reservations.length > 0 ? (
-                        <div className="space-y-1">
-                          {mov.Reservations.map((reservation, resIdx) => (
-                            <div key={reservation.id_reservation || resIdx} className="text-xs bg-purple-50 p-2 rounded border">
-                              <p><strong>ID:</strong> {reservation.id_reservation}</p>
-                              <p><strong>Pagado:</strong> {reservation.totalPaid?.toLocaleString("es-CO", {
-                                style: "currency",
-                                currency: "COP",
-                              }) || 'N/A'}</p>
-                              <p><strong>Vencimiento:</strong> {reservation.dueDate ? formatDateForDisplay(reservation.dueDate) : 'N/A'}</p>
-                              <p><strong>Estado:</strong> 
-                                <span className={`ml-1 px-1 py-0.5 rounded text-xs ${
-                                  reservation.status === 'Completada' ? 'bg-green-100 text-green-800' :
-                                  reservation.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {reservation.status}
-                                </span>
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Sin reservas</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {paginatedMovimientos.map((mov, idx) => {
+                  // ✅ Determinar tipo de movimiento y sus propiedades
+                  const isPayment = mov.tipo === 'pago_inicial_reserva' || mov.tipo === 'pago_parcial_reserva';
+                  const displayId = mov.id_orderDetail || mov.id_payment || `mov-${idx}`;
+                  
+                  return (
+                    <tr key={displayId} className="hover:bg-gray-50 transition-colors duration-200">
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        {formatDateForDisplay(mov.fecha)}
+                      </td>
+                      <td
+                        className="py-3 px-4 text-sm font-mono text-gray-700 cursor-pointer"
+                        onClick={(event) => !isPayment && handleOrderDetailClick(mov.id_orderDetail, event)}
+                        onMouseLeave={handleTooltipClose}
+                        title={mov.id_orderDetail || "Sin ID"}
+                      >
+                        {mov.id_orderDetail
+                          ? `${mov.id_orderDetail.substring(0, 8)}...`
+                          : mov.id_payment
+                          ? `Pago: ${mov.id_payment.substring(0, 8)}...`
+                          : "N/A"}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-semibold text-right text-green-600">
+                        {mov.amount ? 
+                          mov.amount.toLocaleString("es-CO", {
+                            style: "currency",
+                            currency: "COP",
+                          }) : 
+                          'N/A'
+                        }
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {isPayment ? (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            mov.tipo === 'pago_inicial_reserva'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {mov.tipo === 'pago_inicial_reserva' ? '💳 Pago Inicial' : '💰 Pago Parcial'}
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            mov.state_order?.toLowerCase().includes('completad') || 
+                            mov.state_order?.toLowerCase().includes('entregad') || 
+                            mov.state_order?.toLowerCase().includes('finalizada')
+                              ? 'bg-green-100 text-green-800'
+                              : mov.state_order?.toLowerCase().includes('pendiente')
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : mov.state_order?.toLowerCase().includes('cancelad')
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {mov.state_order || 'Sin estado'}
+                          </span>
+                        )}
+                      </td>
+                      
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          mov.pointOfSale === 'Online'
+                            ? 'bg-blue-100 text-blue-800'
+                            : mov.pointOfSale === 'Local' || isPayment
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {isPayment ? 'Local' : (mov.pointOfSale || 'N/A')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        {isPayment && mov.description ? (
+                          <div className="text-xs bg-blue-50 p-2 rounded border">
+                            <p className="font-medium">{mov.description}</p>
+                          </div>
+                        ) : mov.Reservations && mov.Reservations.length > 0 ? (
+                          <div className="space-y-1">
+                            {mov.Reservations.map((reservation, resIdx) => (
+                              <div key={reservation.id_reservation || resIdx} className="text-xs bg-purple-50 p-2 rounded border">
+                                <p><strong>ID:</strong> {reservation.id_reservation}</p>
+                                <p><strong>Pagado:</strong> {reservation.totalPaid?.toLocaleString("es-CO", {
+                                  style: "currency",
+                                  currency: "COP",
+                                }) || 'N/A'}</p>
+                                <p><strong>Vencimiento:</strong> {reservation.dueDate ? formatDateForDisplay(reservation.dueDate) : 'N/A'}</p>
+                                <p><strong>Estado:</strong> 
+                                  <span className={`ml-1 px-1 py-0.5 rounded text-xs ${
+                                    reservation.status === 'Completada' ? 'bg-green-100 text-green-800' :
+                                    reservation.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {reservation.status}
+                                  </span>
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Sin reservas</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 

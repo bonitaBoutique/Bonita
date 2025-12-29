@@ -270,6 +270,11 @@ const getBalance = async (req, res) => {
                 model: User,
                 attributes: ['n_document', 'first_name', 'last_name', 'email', 'phone'],
                 required: false
+              },
+              {
+                model: Receipt,
+                attributes: ['id_receipt', 'date'],
+                required: false
               }
             ]
           }
@@ -607,9 +612,12 @@ const getBalance = async (req, res) => {
         buyerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Cliente no identificado';
       }
 
+      // ✅ CORRECCIÓN: Usar la fecha del Receipt si existe, sino usar createdAt de la reserva
+      const paymentDate = reservation.OrderDetail?.Receipt?.date || reservation.createdAt;
+
       return {
         id: `reservation-${reservation.id_reservation}`,
-        date: reservation.createdAt,
+        date: paymentDate, // ✅ USAR FECHA DEL RECIBO
         amount: parseFloat(reservation.partialPayment || 0), // ✅ SOLO EL PAGO INICIAL
         pointOfSale: 'Local',
         paymentMethod: reservation.paymentMethod || 'Efectivo', // ✅ USAR EL MÉTODO DE PAGO DE LA RESERVA

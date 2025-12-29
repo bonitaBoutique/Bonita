@@ -84,6 +84,15 @@ useEffect(() => {
       depositosData: deposits, // ✅ Ver estructura completa
       balance: backendBalance
     });
+    
+    // ✅ DEBUG ESPECÍFICO: Ver pagos parciales de reserva
+    const pagosParciales = income?.local?.filter(p => 
+      p.type === 'Pago Parcial Reserva' || p.type === 'Pago Inicial Reserva'
+    ) || [];
+    console.log("💰 Pagos de reserva encontrados:", {
+      total: pagosParciales.length,
+      pagos: pagosParciales
+    });
   }
 
   // ✅ USAR FECHA DEL SERVIDOR en lugar de fecha local
@@ -234,20 +243,31 @@ useEffect(() => {
       movements.push(...onlineMovements);
     }
 
-    // 🏪 INGRESOS LOCALES
+    // 🏪 INGRESOS LOCALES (incluye pagos parciales de reserva)
     if (income?.local) {
-      const localMovements = income.local.map(payment => ({
-        id: payment.id || `local-${payment.date}-${payment.amount}`,
-        date: payment.date,
-        type: 'Venta Local',
-        description: `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
-        paymentMethod: payment.paymentMethod,
-        amount: payment.amount,
-        category: 'Ingreso',
-        pointOfSale: 'Local',
-        cashierDocument: payment.cashierDocument,
-        buyerName: payment.buyerName
-      }));
+      const localMovements = income.local.map(payment => {
+        // ✅ Diferenciar entre ventas normales y pagos de reserva
+        const isReservationPayment = payment.type === 'Pago Parcial Reserva' || payment.type === 'Pago Inicial Reserva';
+        
+        return {
+          id: payment.id || `local-${payment.date}-${payment.amount}`,
+          date: payment.date,
+          type: payment.type || 'Venta Local', // ✅ Usar tipo del backend
+          description: isReservationPayment 
+            ? `${payment.buyerName || 'Cliente'} - ${payment.type}` 
+            : `${payment.buyerName || 'Cliente'} - ${payment.type || 'Venta'}`,
+          paymentMethod: payment.paymentMethod || 'Efectivo',
+          amount: payment.amount,
+          category: 'Ingreso',
+          pointOfSale: 'Local',
+          cashierDocument: payment.cashierDocument,
+          buyerName: payment.buyerName,
+          // ✅ Incluir datos adicionales de reserva si existen
+          reservationId: payment.reservationId,
+          reservationStatus: payment.reservationStatus,
+          id_orderDetail: payment.id_orderDetail
+        };
+      });
       movements.push(...localMovements);
     }
 

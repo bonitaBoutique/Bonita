@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios'; // Importa axios
+import Swal from 'sweetalert2';
 import Navbar2 from './Navbar2';
 import { BASE_URL } from '../Config'; // Asegúrate que BASE_URL esté definida y exportada
 // ✅ Importar utilidades de fecha para Colombia
@@ -105,6 +106,56 @@ const ActiveGiftCards = () => {
     // El array de dependencias vacío [] asegura que se ejecute solo al montar
   }, []);
 
+  // Función para eliminar una giftcard
+  const handleDeleteGiftCard = async (card) => {
+    const result = await Swal.fire({
+      title: '⚠️ ¿Eliminar GiftCard?',
+      html: `
+        <div class="text-left p-4">
+          <p class="mb-3"><strong>⚠️ ESTA ACCIÓN ES IRREVERSIBLE</strong></p>
+          <hr class="my-3">
+          <p><strong>Cliente:</strong> ${card.first_name} ${card.last_name}</p>
+          <p><strong>Documento:</strong> ${card.n_document}</p>
+          <p><strong>Email:</strong> ${card.email || 'Sin email'}</p>
+          <p><strong>Saldo actual:</strong> $${card.balance?.toLocaleString('es-CO') ?? 0}</p>
+          <hr class="my-3">
+          <p class="text-red-600 font-semibold">⛔ Se eliminarán TODAS las giftcards asociadas a este email.</p>
+          <p class="text-red-600">⛔ El saldo no podrá ser recuperado.</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${BASE_URL}/giftcard/delete/${encodeURIComponent(card.email)}`);
+        
+        Swal.fire({
+          title: '✅ Eliminada',
+          text: 'La GiftCard ha sido eliminada correctamente.',
+          icon: 'success',
+          timer: 2000
+        });
+
+        // Actualizar la lista eliminando la tarjeta
+        setActiveCards(activeCards.filter(c => c.email !== card.email));
+      } catch (error) {
+        console.error('Error al eliminar giftcard:', error);
+        Swal.fire({
+          title: '❌ Error',
+          text: error.response?.data?.message || 'No se pudo eliminar la GiftCard',
+          icon: 'error'
+        });
+      }
+    }
+  };
+
   // Muestra mensaje de carga
   if (loading) return (
     <>
@@ -182,9 +233,15 @@ const ActiveGiftCards = () => {
                       <td className="py-3 px-6 text-center">
                         <button
                           onClick={() => navigate(`/giftcard/redeem/${card.n_document}`)}
-                          className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+                          className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out mr-2"
                         >
                           🎁 Usar Saldo
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGiftCard(card)}
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
+                        >
+                          🗑️ Eliminar
                         </button>
                       </td>
                     </tr>

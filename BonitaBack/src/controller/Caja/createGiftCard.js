@@ -182,3 +182,49 @@ exports.redeemGiftCard = async (req, res) => {
     res.status(500).json({ message: "Error al canjear saldo" });
   }
 };
+
+// Eliminar TODAS las GiftCards de un email (ACCIÓN IRREVERSIBLE)
+exports.deleteGiftCardsByEmail = async (req, res) => {
+  const { buyer_email } = req.params;
+  
+  try {
+    console.log(`🗑️ Intentando eliminar GiftCards para: ${buyer_email}`);
+    
+    // Buscar todas las GiftCards (activas o usadas) del email
+    const giftcards = await GiftCard.findAll({ 
+      where: { buyer_email } 
+    });
+    
+    if (!giftcards || giftcards.length === 0) {
+      return res.status(404).json({ 
+        message: "No se encontraron GiftCards para este email"
+      });
+    }
+    
+    // Calcular saldo total antes de eliminar
+    const saldoTotal = giftcards.reduce((total, gc) => total + (gc.saldo || 0), 0);
+    
+    // Eliminar todas las GiftCards
+    const deletedCount = await GiftCard.destroy({
+      where: { buyer_email }
+    });
+    
+    console.log(`✅ GiftCards eliminadas:`, {
+      email: buyer_email,
+      cantidad: deletedCount,
+      saldoEliminado: saldoTotal
+    });
+    
+    res.json({ 
+      message: "GiftCards eliminadas exitosamente",
+      cantidad: deletedCount,
+      saldoEliminado: saldoTotal
+    });
+  } catch (error) {
+    console.error('❌ Error al eliminar GiftCards:', error);
+    res.status(500).json({ 
+      message: "Error al eliminar GiftCards",
+      error: error.message 
+    });
+  }
+};

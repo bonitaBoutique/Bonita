@@ -93,6 +93,11 @@ useEffect(() => {
       total: pagosParciales.length,
       pagos: pagosParciales
     });
+    
+    // ✅ DEBUG: Ver fechas de todos los movimientos locales
+    console.log("📅 Fechas de movimientos locales:", 
+      income?.local?.map(m => ({ date: m.date, type: m.type, buyer: m.buyerName }))
+    );
   }
 
   // ✅ USAR FECHA DEL SERVIDOR en lugar de fecha local

@@ -570,6 +570,11 @@ useEffect(() => {
       pagos: pagosParciales,
       todosLosMovimientos: allMovements.length
     });
+    
+    // ✅ DEBUG: Ver todas las fechas únicas en allMovements
+    const fechasUnicas = [...new Set(allMovements.map(m => m.date))].sort();
+    console.log('📅 Fechas únicas en allMovements:', fechasUnicas);
+    console.log('📊 Total movimientos en allMovements:', allMovements.length);
   }
   
   const totalPages = Math.ceil(allMovements.length / itemsPerPage);

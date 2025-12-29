@@ -554,6 +554,19 @@ useEffect(() => {
   }
 
   const allMovements = getAllMovements();
+  
+  // ✅ DEBUG: Ver pagos parciales en movimientos
+  if (process.env.NODE_ENV === 'development') {
+    const pagosParciales = allMovements.filter(m => 
+      m.type === 'Pago Parcial Reserva' || m.type === 'Pago Inicial Reserva'
+    );
+    console.log('💰 Pagos de reserva en allMovements:', {
+      total: pagosParciales.length,
+      pagos: pagosParciales,
+      todosLosMovimientos: allMovements.length
+    });
+  }
+  
   const totalPages = Math.ceil(allMovements.length / itemsPerPage);
 
   const paginatedMovements = allMovements.slice(

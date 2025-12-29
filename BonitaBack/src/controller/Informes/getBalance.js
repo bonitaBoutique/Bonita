@@ -213,42 +213,14 @@ const getBalance = async (req, res) => {
 
     // ✅ PASO 3: PAGOS DE RESERVAS A CRÉDITO (USAR SOLO DATOS DE RESERVATION)
     console.log("💳 Buscando pagos de reservas a crédito...");
-    console.log("💳 Usando filtro:", reservationDateFilter);
     
     let reservationPayments = [];
     try {
-      // ✅ PRIMERO: Consulta sin filtros para debug
-      const allReservations = await Reservation.findAll({
-        attributes: ['id_reservation', 'createdAt', 'partialPayment', 'status'],
-        limit: 5
-      });
-      
-      console.log("🔍 DEBUG - Todas las reservas (primeras 5):");
-      allReservations.forEach((res, idx) => {
-        console.log(`  ${idx + 1}. ID: ${res.id_reservation}, createdAt: ${res.createdAt}, partialPayment: ${res.partialPayment}`);
-      });
-
-      // ✅ SEGUNDO: Consulta con filtro de fecha pero sin includes
-      const reservationsWithDateFilter = await Reservation.findAll({
+      // ✅ Obtener TODAS las reservas con pago inicial, sin filtro de fecha inicial
+      // Luego filtraremos por Receipt.date en memoria
+      const allReservationsWithPayment = await Reservation.findAll({
         where: {
-          ...reservationDateFilter,
           partialPayment: { [Op.gt]: 0 }
-        },
-        attributes: ['id_reservation', 'id_orderDetail', 'partialPayment', 'createdAt', 'status']
-      });
-      
-      console.log(`🔍 DEBUG - Reservas con filtro de fecha: ${reservationsWithDateFilter.length}`);
-      reservationsWithDateFilter.forEach((res, idx) => {
-        console.log(`  ${idx + 1}. ID: ${res.id_reservation}, OrderDetail: ${res.id_orderDetail}, Payment: ${res.partialPayment}`);
-      });
-
-      // ✅ TERCERO: Consulta completa con includes
-      reservationPayments = await Reservation.findAll({
-        where: {
-          ...reservationDateFilter,
-          partialPayment: {
-            [Op.gt]: 0
-          }
         },
         attributes: [
           'id_reservation',
@@ -264,7 +236,7 @@ const getBalance = async (req, res) => {
           {
             model: OrderDetail,
             attributes: ['id_orderDetail', 'n_document', 'amount', 'state_order'],
-            required: false, // ✅ CAMBIAR A FALSE PARA NO FILTRAR
+            required: false,
             include: [
               {
                 model: User,
@@ -279,45 +251,30 @@ const getBalance = async (req, res) => {
             ]
           }
         ],
-        order: [['createdAt', 'DESC']],
-        logging: console.log // ✅ ACTIVAR LOGGING PARA DEBUG
+        order: [['createdAt', 'DESC']]
       });
       
-      console.log(`✅ Pagos iniciales de reservas encontrados: ${reservationPayments.length}`);
-      
-      // ✅ LOG DE DEBUG para pagos de reservas
-      reservationPayments.forEach((reservation, index) => {
-        console.log(`Pago reserva ${index + 1}:`, {
-          id: reservation.id_reservation,
-          orderDetailId: reservation.id_orderDetail,
-          partialPayment: reservation.partialPayment,
-          totalPaid: reservation.totalPaid,
-          orderState: reservation.OrderDetail?.state_order || 'Sin estado',
-          status: reservation.status,
-          createdAt: reservation.createdAt
+      // ✅ FILTRAR en memoria basándonos en Receipt.date
+      if (startDate && endDate) {
+        reservationPayments = allReservationsWithPayment.filter(reservation => {
+          const receiptDate = reservation.OrderDetail?.Receipt?.date;
+          
+          if (receiptDate) {
+            // Si tiene Receipt.date, usar ese
+            return receiptDate >= startDate && receiptDate <= endDate;
+          } else {
+            // Si NO tiene Receipt, usar createdAt (casos viejos)
+            const createdDate = reservation.createdAt.toISOString().split('T')[0];
+            return createdDate >= startDate && createdDate <= endDate;
+          }
         });
-      });
-      
-      // ✅ CONSULTA ALTERNATIVA SI NO HAY RESULTADOS
-      if (reservationPayments.length === 0) {
-        console.log("🟡 No se encontraron pagos de reservas. Intentando consulta alternativa...");
-        
-        const allReservationsToday = await Reservation.findAll({
-          where: {
-            createdAt: {
-              [Op.gte]: `${startDate || getColombiaDate()}T00:00:00.000Z`,
-              [Op.lte]: `${endDate || getColombiaDate()}T23:59:59.999Z`
-            }
-          },
-          attributes: ['id_reservation', 'partialPayment', 'createdAt', 'status'],
-          limit: 10
-        });
-        
-        console.log(`🔍 Reservas alternativas encontradas: ${allReservationsToday.length}`);
-        allReservationsToday.forEach((res, idx) => {
-          console.log(`  ${idx + 1}. ${res.id_reservation} - $${res.partialPayment} - ${res.createdAt}`);
-        });
+      } else {
+        // Sin filtro de fechas, tomar todas
+        reservationPayments = allReservationsWithPayment;
       }
+      
+      console.log(`✅ Pagos iniciales de reservas encontrados ANTES de filtrar: ${allReservationsWithPayment.length}`);
+      console.log(`✅ Pagos iniciales de reservas encontrados DESPUÉS de filtrar: ${reservationPayments.length}`);
       
     } catch (reservationError) {
       console.log('🟡 Error buscando pagos de reservas:', reservationError.message);

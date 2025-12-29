@@ -493,7 +493,7 @@ const getBalance = async (req, res) => {
         const giftCardPurchase = {
           id: `${sale.id_receipt}-giftcard-purchase`,
           originalReceiptId: sale.id_receipt,
-          date: sale.createdAt,
+          date: sale.date,
           amount: parseFloat(saleData.amount || 0),
           pointOfSale: 'Local',
           paymentMethod: realPaymentMethod, // ✅ Usar el método REAL
@@ -519,7 +519,7 @@ const getBalance = async (req, res) => {
           const secondaryPayment = {
             id: `${sale.id_receipt}-secondary`,
             originalReceiptId: sale.id_receipt,
-            date: sale.createdAt,
+            date: sale.date,
             amount: parseFloat(saleData.amount2 || 0),
             pointOfSale: 'Local',
             paymentMethod: saleData.payMethod2,
@@ -539,7 +539,7 @@ const getBalance = async (req, res) => {
           const mainPayment = {
             id: `${sale.id_receipt}-main`,
             originalReceiptId: sale.id_receipt,
-            date: sale.createdAt,
+            date: sale.date,
             amount: parseFloat(saleData.amount || 0),
             pointOfSale: 'Local',
             paymentMethod: saleData.payMethod,
@@ -562,7 +562,7 @@ const getBalance = async (req, res) => {
       const mainPayment = {
         id: `${sale.id_receipt}-main`,
         originalReceiptId: sale.id_receipt,
-        date: sale.createdAt,
+        date: sale.date,
         amount: parseFloat(saleData.amount || 0),
         pointOfSale: 'Local',
         paymentMethod: saleData.payMethod || 'Efectivo',
@@ -584,7 +584,7 @@ const getBalance = async (req, res) => {
         const secondaryPayment = {
           id: `${sale.id_receipt}-secondary`,
           originalReceiptId: sale.id_receipt,
-          date: sale.createdAt, // ✅ Usar createdAt para incluir hora
+          date: sale.date, // ✅ Usar date para consistencia
           amount: parseFloat(saleData.amount2 || 0),
           pointOfSale: 'Local',
           paymentMethod: saleData.payMethod2,

@@ -36,6 +36,20 @@ const Invoice = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Función para obtener la fecha/hora actual en Colombia (UTC-5)
+  const getColombiaDateTime = () => {
+    const now = new Date();
+    // Convertir a hora de Colombia (UTC-5)
+    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    return colombiaTime.toISOString();
+  };
+
+  const getColombiaDate = () => {
+    const now = new Date();
+    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    return colombiaTime.toISOString().split('T')[0];
+  };
+
   const [jDocumentData, setJDocumentData] = useState({
     // Cambia invoiceData a jDocumentData
     wVersionUBL: "2.1",
@@ -46,8 +60,8 @@ const Invoice = () => {
     wcurrency: "COP",
     sdocumentprefix: "FVB",
     sdocumentsuffix: 2,
-    tissuedate: new Date().toISOString(),
-    tduedate: new Date().toISOString().split("T")[0],
+    tissuedate: getColombiaDateTime(),
+    tduedate: getColombiaDate(),
     wpaymentmeans: 1,
     wpaymentmethod: "10",
     nlineextensionamount: 0,
@@ -337,8 +351,8 @@ const Invoice = () => {
       wcurrency: "COP",
       sdocumentprefix: "FVB",
       sdocumentsuffix: 4,
-      tissuedate: new Date().toISOString(),
-      tduedate: new Date().toISOString().split("T")[0],
+      tissuedate: getColombiaDateTime(),
+      tduedate: getColombiaDate(),
       wpaymentmeans: 1,
       wpaymentmethod: "10",
       nlineextensionamount: 0,

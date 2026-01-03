@@ -39,15 +39,24 @@ const Invoice = () => {
   // Función para obtener la fecha/hora actual en Colombia (UTC-5)
   const getColombiaDateTime = () => {
     const now = new Date();
-    // Convertir a hora de Colombia (UTC-5)
-    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-    return colombiaTime.toISOString();
+    // Obtener fecha actual en Colombia (formato YYYY-MM-DD)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Formato: YYYY-MM-DDTHH:mm:ss.000Z (pero con fecha local, no UTC)
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
   };
 
   const getColombiaDate = () => {
     const now = new Date();
-    const colombiaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-    return colombiaTime.toISOString().split('T')[0];
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const [jDocumentData, setJDocumentData] = useState({
@@ -117,27 +126,28 @@ const Invoice = () => {
     const fetchLastInvoiceNumber = async () => {
       try {
         const response = await axios.get(`${BASE_URL}/invoice/lastNumber`);
+        console.log('📊 Respuesta del endpoint lastNumber:', response.data);
 
-        if (response.data.success) {
-          // Convert string to number
+        if (response.data.success && response.data.nextInvoiceNumber) {
           const nextNumber = parseInt(response.data.nextInvoiceNumber);
+          console.log('✅ Próximo número de factura:', nextNumber);
 
-          setJDocumentData((prev) => ({
-            ...prev,
-            sdocumentsuffix: nextNumber, // Store as number
-          }));
-        } else {
-          // Use 2 as default number
           setJDocumentData((prev) => ({
             ...prev,
             sdocumentsuffix: nextNumber,
           }));
+        } else {
+          console.warn('⚠️ No se recibió nextInvoiceNumber, usando 2 por defecto');
+          setJDocumentData((prev) => ({
+            ...prev,
+            sdocumentsuffix: 2,
+          }));
         }
       } catch (error) {
-        console.error("Error obteniendo número de factura:", error);
+        console.error("❌ Error obteniendo número de factura:", error);
         setJDocumentData((prev) => ({
           ...prev,
-          sdocumentsuffix: nextNumber,
+          sdocumentsuffix: 2,
         }));
       }
     };
@@ -457,6 +467,8 @@ const Invoice = () => {
         "5. Datos completos a enviar:",
         JSON.stringify(jDocumentDataWithOrderId, null, 2)
       );
+      console.log("🕐 FECHA DE EMISIÓN (tissuedate):", jDocumentDataWithOrderId.tissuedate);
+      console.log("📅 FECHA DE VENCIMIENTO (tduedate):", jDocumentDataWithOrderId.tduedate);
 
       const invoiceDataToSend = {
         invoiceData: jDocumentDataWithOrderId,
@@ -628,9 +640,15 @@ const Invoice = () => {
           <div>
             <label className="block mb-2">Fecha de emisión:</label>
             <input
-              type="date"
-              value={jDocumentData.tissuedate} // Cambia invoiceData a jDocumentData
-              onChange={(e) => handleChange(e, "tissuedate")} // Cambia jDocument.tissuedate a tissuedate
+              type="datetime-local"
+              value={jDocumentData.tissuedate.slice(0, 16)} // Convertir ISO a formato datetime-local (YYYY-MM-DDTHH:mm)
+              onChange={(e) => {
+                // Convertir datetime-local de vuelta a ISO
+                const localDateTime = e.target.value; // "2026-01-02T14:30"
+                const isoDateTime = `${localDateTime}:00.000Z`;
+                console.log('📅 Nueva fecha seleccionada:', isoDateTime);
+                handleChange({ target: { value: isoDateTime } }, "tissuedate");
+              }}
               className="border p-2 w-full"
             />
           </div>

@@ -110,6 +110,9 @@ const createInvoice = async (req, res) => {
 
     // 8. Construir documento para Taxxa
     console.log('=== Construyendo documento para Taxxa ===');
+    console.log('🕐 FECHA DE EMISIÓN RECIBIDA (tissuedate):', invoiceData.tissuedate);
+    console.log('📅 FECHA DE VENCIMIENTO RECIBIDA (tduedate):', invoiceData.tduedate);
+    
     const documentBody = {
       sMethod: 'classTaxxa.fjDocumentAdd',
       jParams: {

@@ -24,13 +24,13 @@ const getLastInvoiceNumber = async (req, res) => {
   try {
     console.log('📊 Consultando última factura...');
     
-    // Obtener la última factura ordenada por número de factura
+    // Obtener la última factura ordenada por fecha de creación (más reciente primero)
     const lastInvoice = await Invoice.findOne({
-      order: [['invoiceNumber', 'DESC']], // Ordenar por número de factura
-      attributes: ['invoiceNumber'] // Solo necesitamos este campo
+      order: [['createdAt', 'DESC']], // ✅ Ordenar por fecha de creación en lugar de string
+      attributes: ['invoiceNumber', 'createdAt'] // Incluir createdAt para debug
     });
 
-    console.log('📄 Última factura encontrada:', lastInvoice?.invoiceNumber);
+    console.log('📄 Última factura encontrada:', lastInvoice?.invoiceNumber, 'creada el:', lastInvoice?.createdAt);
 
     // Si no hay facturas, comenzar desde 5
     if (!lastInvoice) {
@@ -41,11 +41,11 @@ const getLastInvoiceNumber = async (req, res) => {
       });
     }
 
-    // Extraer el número de la factura eliminando el prefijo
-    const currentNumber = parseInt(lastInvoice.invoiceNumber.replace(/^\D+/g, '') || "2"); // Eliminar cualquier carácter no numérico
+    // Extraer el número de la factura eliminando el prefijo (FVB105 -> 105)
+    const currentNumber = parseInt(lastInvoice.invoiceNumber.replace(/^\D+/g, '') || "2");
     const nextNumber = (currentNumber + 1).toString();
 
-    console.log('✅ Próximo número de factura:', nextNumber);
+    console.log('✅ Número actual:', currentNumber, '→ Próximo número:', nextNumber);
 
     return res.status(200).json({ 
       success: true,

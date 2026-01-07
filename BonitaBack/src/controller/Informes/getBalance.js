@@ -1,4 +1,4 @@
-const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment, AddiSistecreditoDeposit } = require("../../data");
+const { OrderDetail, Receipt, Expense, CreditPayment, Reservation, User, Payment, AddiSistecreditoDeposit, GiftCard } = require("../../data");
 const { Op } = require("sequelize");
 const { getColombiaDate } = require("../../utils/dateUtils");
 
@@ -204,6 +204,12 @@ const getBalance = async (req, res) => {
           model: Payment,
           attributes: ['id_payment', 'payMethod', 'amount'],
           required: false // No obligatorio, para incluir receipts sin payment
+        },
+        {
+          // ✅ INCLUIR GiftCard para verificar si fue eliminada
+          model: GiftCard,
+          attributes: ['id_giftcard', 'code', 'saldo', 'status'],
+          required: false // No obligatorio, puede no tener giftcard asociada
         }
       ],
       order: [['date', 'DESC']]
@@ -452,6 +458,17 @@ const getBalance = async (req, res) => {
       
       const hasPaymentRecord = saleData.Payments && saleData.Payments.length > 0;
       const isGiftCardPurchase = saleData.payMethod === 'GiftCard' && hasPaymentRecord;
+      
+      // ✅ NUEVO: Verificar si la GiftCard fue eliminada
+      // Si es compra de GiftCard pero NO tiene GiftCard asociada, significa que fue eliminada
+      const hasGiftCard = saleData.GiftCards && saleData.GiftCards.length > 0;
+      const isDeletedGiftCard = isGiftCardPurchase && !hasGiftCard;
+      
+      // ⚠️ SKIP: Si la GiftCard fue eliminada, no incluir este recibo en el balance
+      if (isDeletedGiftCard) {
+        console.log(`⚠️ GiftCard eliminada detectada - omitiendo recibo: ${sale.id_receipt}`);
+        return; // Saltar este recibo
+      }
       const isGiftCardRedemption = (saleData.payMethod === 'GiftCard' || saleData.payMethod2 === 'GiftCard') 
                                    && !hasPaymentRecord;
       

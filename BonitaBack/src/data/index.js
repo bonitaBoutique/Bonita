@@ -157,6 +157,10 @@ User.hasMany(Receipt, {
 Payment.belongsTo(Receipt, { foreignKey: 'id_receipt' });
 Receipt.hasMany(Payment, { foreignKey: 'id_receipt' });
 
+// GiftCard --> Receipt
+GiftCard.belongsTo(Receipt, { foreignKey: 'id_receipt' });
+Receipt.hasMany(GiftCard, { foreignKey: 'id_receipt' });
+
 // AddiSistecreditoDeposit --> User
 AddiSistecreditoDeposit.belongsTo(User, { 
   foreignKey: 'registeredBy',

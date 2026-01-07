@@ -328,30 +328,31 @@ const currentReservations = filteredReservations.slice(
   try {
     console.log('🔵 [ReservationsList] Aplicando pago:', { id_reservation, amount, paymentMethod });
     
-    await dispatch(applyPayment(id_reservation, amount, paymentMethod));
-    
-    const updatedReservation = reservations.find(
+    // ✅ GUARDAR DATOS ANTES DE APLICAR EL PAGO
+    const currentReservation = reservations.find(
       (res) => res.id_reservation === id_reservation
     );
     
-    if (!updatedReservation || !updatedReservation.OrderDetail) {
+    if (!currentReservation || !currentReservation.OrderDetail) {
       throw new Error("No se encontró la reserva o los detalles de la orden");
     }
 
-    const buyerFirstName = updatedReservation.OrderDetail?.User?.first_name || "";
-    const buyerLastName = updatedReservation.OrderDetail?.User?.last_name || "";
+    const buyerFirstName = currentReservation.OrderDetail?.User?.first_name || "";
+    const buyerLastName = currentReservation.OrderDetail?.User?.last_name || "";
     const buyerName = `${buyerFirstName} ${buyerLastName}`.trim() || "Cliente no identificado";
     const receiptNumber = latestReceipt ? latestReceipt + 1 : 1001;
+    const currentTotalPaid = currentReservation.totalPaid || 0;
+    const orderAmount = currentReservation.OrderDetail.amount;
 
     // ✅ USAR FECHA DEL SERVIDOR
     const receiptData = {
       receiptNumber,
-      id_orderDetail: updatedReservation.id_orderDetail,
+      id_orderDetail: currentReservation.id_orderDetail,
       total_amount: amount,
       amount,
       buyer_name: buyerName,
-      buyer_email: updatedReservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
-      buyer_phone: updatedReservation.OrderDetail?.User?.phone || "Sin teléfono",
+      buyer_email: currentReservation.OrderDetail?.User?.email || "sin-email@ejemplo.com",
+      buyer_phone: currentReservation.OrderDetail?.User?.phone || "Sin teléfono",
       payMethod: paymentMethod,
       payMethod2: null,
       amount2: null,
@@ -360,37 +361,59 @@ const currentReservations = filteredReservations.slice(
       tipo_transaccion: "Pago Parcial Reserva"
     };
 
-    // ❌ NO LLAMES A createReceipt PARA PAGOS PARCIALES
-    // await dispatch(createReceipt(receiptData));
-
     const saldoPendiente = calculatePendingDebt(
-      updatedReservation.OrderDetail.amount,
-      (updatedReservation.totalPaid || 0) + amount
+      orderAmount,
+      currentTotalPaid + amount
     );
-
-    Swal.fire({
-      title: "Pago Aplicado",
-      text: `Pago aplicado correctamente para ${buyerName}. Puedes descargar el comprobante.`,
-      icon: "success",
-      confirmButtonText: "Descargar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        generatePDF({
-          ...receiptData,
-          saldoPendiente,
-        });
-      }
-    });
+    
+    // ✅ APLICAR EL PAGO
+    await dispatch(applyPayment(id_reservation, amount, paymentMethod));
+    
+    console.log('✅ Pago aplicado exitosamente');
 
     // ✅ Verificar si está completamente pagada
-    if ((updatedReservation.totalPaid || 0) + amount >= updatedReservation.OrderDetail.amount) {
+    if (currentTotalPaid + amount >= orderAmount) {
       await dispatch(updateReservation(id_reservation, "Completada"));
     }
 
+    // ✅ RECARGAR RESERVAS ANTES DE MOSTRAR EL DIÁLOGO
     await dispatch(getAllReservations());
+    
+    // ✅ CERRAR POPUP ANTES DE MOSTRAR SWEET ALERT
     handleClosePaymentPopup();
+
+    // ✅ MOSTRAR DIÁLOGO CON OPCIÓN DE DESCARGA
+    Swal.fire({
+      title: "Pago Aplicado",
+      text: `Pago de $${amount.toLocaleString()} aplicado correctamente para ${buyerName}.`,
+      icon: "success",
+      showCancelButton: true,
+      confirmButtonText: "📄 Descargar Comprobante",
+      cancelButtonText: "Cerrar",
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#6c757d',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        try {
+          generatePDF({
+            ...receiptData,
+            saldoPendiente,
+          });
+          console.log('✅ PDF generado exitosamente');
+        } catch (pdfError) {
+          console.error('❌ Error generando PDF:', pdfError);
+          Swal.fire({
+            title: "Error",
+            text: "No se pudo generar el comprobante PDF",
+            icon: "error",
+          });
+        }
+      }
+    });
+    
   } catch (error) {
     console.error('❌ [ReservationsList] Error aplicando pago:', error);
+    handleClosePaymentPopup();
     Swal.fire({
       title: "Error",
       text: error.message || "No se pudo aplicar el pago. Por favor, inténtalo de nuevo.",
@@ -1135,6 +1158,7 @@ const currentReservations = filteredReservations.slice(
 const PaymentPopup = ({ reservation, onClose, onPayment }) => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Efectivo");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const calculatePendingDebt = (totalAmount, paidAmount) => {
     const total = Number(totalAmount) || 0;
@@ -1147,8 +1171,15 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
     reservation.totalPaid || 0
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevenir múltiples clics
+    if (isProcessing) {
+      console.log('⚠️ Pago ya en proceso, ignorando...');
+      return;
+    }
+    
     const amount = parseFloat(paymentAmount) || 0;
 
     if (amount <= 0) {
@@ -1169,7 +1200,14 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
       return;
     }
 
-    onPayment(reservation.id_reservation, amount, paymentMethod);
+    setIsProcessing(true);
+    try {
+      await onPayment(reservation.id_reservation, amount, paymentMethod);
+    } catch (error) {
+      console.error('Error en handleSubmit:', error);
+      setIsProcessing(false);
+    }
+    // No resetear isProcessing aquí porque el popup se cerrará
   };
 
   // ✅ Verificar que la reserva tenga OrderDetail
@@ -1255,9 +1293,14 @@ const PaymentPopup = ({ reservation, onClose, onPayment }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={isProcessing}
+              className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isProcessing 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              ✅ Aplicar Pago
+              {isProcessing ? '⏳ Procesando...' : '✅ Aplicar Pago'}
             </button>
           </div>
         </form>

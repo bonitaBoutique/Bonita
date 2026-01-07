@@ -317,9 +317,25 @@ useEffect(() => {
 
     // Filtro por método de pago
     if (filters.paymentMethod) {
-      filteredMovements = filteredMovements.filter(m => 
-        m.paymentMethod === filters.paymentMethod
-      );
+      const beforeFilterCount = filteredMovements.length;
+      filteredMovements = filteredMovements.filter(m => {
+        // ✅ MANEJO ESPECIAL: "Tarjeta" incluye "Tarjeta de Débito" y "Tarjeta de Crédito"
+        if (filters.paymentMethod === "Tarjeta") {
+          return m.paymentMethod === "Tarjeta" || 
+                 m.paymentMethod === "Tarjeta de Débito" || 
+                 m.paymentMethod === "Tarjeta de Crédito";
+        }
+        return m.paymentMethod === filters.paymentMethod;
+      });
+      
+      // Debug: Mostrar resultados del filtro en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔍 Filtro de método de pago "${filters.paymentMethod}":`, {
+          antes: beforeFilterCount,
+          después: filteredMovements.length,
+          métodosEncontrados: [...new Set(filteredMovements.map(m => m.paymentMethod))]
+        });
+      }
     }
 
     // Filtro por punto de venta

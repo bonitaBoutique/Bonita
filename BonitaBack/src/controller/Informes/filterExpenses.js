@@ -72,7 +72,14 @@ const filterExpenses = async (req, res) => {
     }
     
     if (paymentMethods) {
-      where.paymentMethods = paymentMethods;
+      // ✅ MANEJO ESPECIAL: "Tarjeta" incluye "Tarjeta de Débito" y "Tarjeta de Crédito"
+      if (paymentMethods === "Tarjeta") {
+        where.paymentMethods = {
+          [Op.in]: ["Tarjeta", "Tarjeta de Débito", "Tarjeta de Crédito"]
+        };
+      } else {
+        where.paymentMethods = paymentMethods;
+      }
     }
 
     if (destinatario) {

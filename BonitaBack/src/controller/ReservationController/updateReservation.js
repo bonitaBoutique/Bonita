@@ -3,7 +3,7 @@ const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
   const { id_reservation } = req.params;
-  const { partialPayment, status, dueDate } = req.body;
+  const { partialPayment, status, dueDate, paymentMethod } = req.body;
 
   try {
     const reservation = await Reservation.findByPk(id_reservation, {
@@ -26,6 +26,7 @@ module.exports = async (req, res) => {
       await CreditPayment.create({
         id_reservation,
         amount: partialPayment,
+        paymentMethod: paymentMethod || 'Efectivo',
       });
 
       // Update total paid amount

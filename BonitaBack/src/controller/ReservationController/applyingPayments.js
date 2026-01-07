@@ -3,9 +3,9 @@ const response = require("../../utils/response");
 
 module.exports = async (req, res) => {
   const { id_reservation } = req.params;
-  const { amount } = req.body;
+  const { amount, paymentMethod } = req.body;
 
-  console.log("Received request to apply payment:", { id_reservation, amount });
+  console.log("Received request to apply payment:", { id_reservation, amount, paymentMethod });
 
   try {
     // ✅ INCLUIR User en la consulta de la reserva
@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
     await CreditPayment.create({
       id_reservation,
       amount,
+      paymentMethod: paymentMethod || 'Efectivo',
     });
 
     // Update total paid amount

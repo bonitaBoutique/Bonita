@@ -327,7 +327,7 @@ const getBalance = async (req, res) => {
     try {
       partialPayments = await CreditPayment.findAll({
         where: creditPaymentDateFilter,
-        attributes: ['id_payment', 'id_reservation', 'amount', 'date'],
+        attributes: ['id_payment', 'id_reservation', 'amount', 'date', 'paymentMethod'],
         include: [
           {
             model: Reservation,
@@ -619,7 +619,7 @@ const getBalance = async (req, res) => {
         date: payment.date,
         amount: parseFloat(payment.amount || 0),
         pointOfSale: 'Local',
-        paymentMethod: 'Efectivo',
+        paymentMethod: payment.paymentMethod || 'Efectivo',
         type: 'Pago Parcial Reserva',
         reservationId: payment.id_reservation,
         reservationStatus: payment.Reservation?.status || 'Sin estado',

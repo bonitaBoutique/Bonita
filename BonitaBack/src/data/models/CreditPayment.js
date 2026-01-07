@@ -23,6 +23,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
+      paymentMethod: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: 'Efectivo',
+        comment: 'Método de pago utilizado para el pago parcial'
+      },
     },
     {
       timestamps: true,

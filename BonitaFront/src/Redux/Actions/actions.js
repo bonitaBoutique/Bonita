@@ -1757,10 +1757,13 @@ export const getAllReservations = (filters = {}) => async (dispatch) => {
   }
 };
   
-  export const applyPayment = (id_reservation, amount) => async (dispatch) => {
+  export const applyPayment = (id_reservation, amount, paymentMethod) => async (dispatch) => {
     dispatch({ type: APPLY_PAYMENT_REQUEST });
     try {
-      const res = await axios.post(`${BASE_URL}/reservation/applyPayments/${id_reservation}`, { amount });
+      const res = await axios.post(`${BASE_URL}/reservation/applyPayments/${id_reservation}`, { 
+        amount, 
+        paymentMethod: paymentMethod || 'Efectivo' 
+      });
       dispatch({
         type: APPLY_PAYMENT_SUCCESS,
         payload: res.data.reservation,

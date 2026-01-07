@@ -8,7 +8,15 @@ require('./src/utils/dbBackup.js');
 require('dotenv').config();
 
 // Syncing all the models at once.
-conn.sync({ alter: true }).then(async () => {
+// ⚠️ IMPORTANTE: No usar alter: true en producción para evitar cambios automáticos en el schema
+// En producción, los cambios deben hacerse mediante migraciones
+const syncOptions = process.env.NODE_ENV === 'production' 
+  ? { alter: false } // Solo verificar conexión en producción
+  : { alter: true };  // Permitir alteraciones en desarrollo
+
+console.log(`🔄 Sincronizando modelos (alter: ${syncOptions.alter})...`);
+
+conn.sync(syncOptions).then(async () => {
   const umzug = new Umzug({
     migrations: {
       glob: 'migrations/*.js', // Changed from pattern to glob

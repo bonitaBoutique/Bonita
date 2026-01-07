@@ -208,7 +208,7 @@ const getBalance = async (req, res) => {
         {
           // ✅ INCLUIR GiftCard para verificar si fue eliminada
           model: GiftCard,
-          attributes: ['id_giftcard', 'code', 'saldo', 'status'],
+          attributes: ['id_giftcard', 'buyer_email', 'saldo', 'estado'],
           required: false // No obligatorio, puede no tener giftcard asociada
         }
       ],
